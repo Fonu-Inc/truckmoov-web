@@ -188,7 +188,8 @@ export type DevicesQuery = {
   params?: {
     query?: string
     manufacturer?: string
-    status?: DeviceStatus
+    /** Includes the two non-lifecycle statuses from TRU-FE-4 § 3: `unassigned` = vehicleId is null; `unregistered` = provisionStatus != "registered". */
+    status?: DeviceStatus | 'unassigned' | 'unregistered'
     lifecycleStatus?: DeviceLifecycleStatus
     assigned?: boolean
     lastSeenBucket?: DeviceLastSeenBucket
@@ -197,6 +198,8 @@ export type DevicesQuery = {
 
 export type DeviceInput = {
   imei: string
+  /** Optional Device Name (TRU-FE-4 § 6). Falls back to `manufacturer + model` in listings when null. */
+  name?: string | null
   manufacturer: string
   model: string
   firmwareVersion: string
@@ -210,6 +213,8 @@ export type CreateDevicePayload = {
 export type UpdateDevicePayload = {
   id: string
   data: {
+    /** TRU-FE-4 § 6 — Device Name (optional). */
+    name?: string | null
     manufacturer?: string
     model?: string
     firmwareVersion?: string
@@ -401,11 +406,18 @@ export type LegacyGpsDevicesQuery = {
 
 // ─── Drivers ──────────────────────────────────────────────────────────────────
 
+// TRU-FE-3 § 1 — new filter bands and preferred-channel filter.
+export type DriverScoreBand = 'excellent' | 'strong' | 'fair' | 'poor' | 'unscored'
+export type DriverTripBand = 'high' | 'medium' | 'low' | 'none'
+
 export type DriversQuery = {
   params?: {
     query?: string
     status?: DriverStatus
     assigned?: boolean
+    scoreBand?: DriverScoreBand
+    tripBand?: DriverTripBand
+    preferredChannel?: DriverCommunicationPreference
   }
 }
 
@@ -457,6 +469,198 @@ export type UpdateDriverContactChannelsPayload = {
     voiceNumber?: string | null
   }
 }
+
+// TRU-FE-3 — pre-wire types. Endpoints are 404 today; shapes are best-guess per spec
+// and get tightened when BE ships.
+
+// § 2
+export type DriversSummary = {
+  total: number
+  active: number
+  available: number
+  offline: number
+  suspended: number
+  allowance?: VehicleAllowance | null
+}
+
+// § 3
+export type DriversFilterOption = { value: string, label: string }
+export type DriversFilters = {
+  scoreBands: DriversFilterOption[]
+  tripBands: DriversFilterOption[]
+  channels: DriversFilterOption[]
+  statuses: DriversFilterOption[]
+}
+
+// § 5
+export type SuspendDriverPayload = { id: string, data?: { reason?: string } }
+export type ReinstateDriverPayload = { id: string }
+
+// § 6
+export type DriverConsentChannel = 'whatsapp' | 'sms'
+export type DriverConsentState = 'opted_in' | 'opted_out' | 'pending' | 'unknown'
+export type DriverConsentEntry = {
+  state: DriverConsentState
+  canSend: boolean
+  source: string | null
+  requestedAt: string | null
+  respondedAt: string | null
+}
+export type DriverConsent = {
+  whatsapp: DriverConsentEntry
+  sms: DriverConsentEntry
+}
+export type RequestDriverConsentPayload = { id: string, channel: DriverConsentChannel }
+export type PatchDriverConsentPayload = {
+  id: string
+  channel: DriverConsentChannel
+  data: { state: 'opted_in' | 'opted_out', source: string }
+}
+
+// § 7
+export type SendDriverMessagePayload = {
+  id: string
+  channel: DriverConsentChannel
+  data: { message: string }
+}
+export type SendDriverMessageResult = {
+  messageId?: string
+  channel: DriverConsentChannel
+  status: string
+}
+
+// § 8
+export type DriverLicenseState = 'valid' | 'expiring' | 'expired' | 'unknown'
+export type DriverLicense = {
+  number: string | null
+  expiryDate: string | null
+  daysUntilExpiry: number | null
+  state: DriverLicenseState
+}
+export type DriverScoreDimension = {
+  key: string
+  label: string
+  weightPercent: number
+  score: number | null
+  events: number
+}
+export type DriverScoreBreakdown = {
+  overall: number | null
+  eventsRecorded: number
+  windowDays: number
+  dimensions: DriverScoreDimension[]
+}
+export type DriverDetailTrip = {
+  id: string
+  startedAt: string
+  endedAt: string | null
+  distanceKm: number | null
+  onTime: boolean | null
+}
+export type DriverDetail = {
+  driver: FleetDriver
+  header: {
+    behaviorScore: number | null
+    fatigueScore: number | null
+    alertCount: number
+  }
+  scoreBreakdown: DriverScoreBreakdown
+  contact: {
+    consent: DriverConsent
+  }
+  license: DriverLicense
+  safety: Record<string, unknown>
+  trips: DriverDetailTrip[]
+}
+
+// § 9
+export type DriverBehaviorSeverity = 'low' | 'medium' | 'high' | 'critical'
+export type DriverBehaviorSummary = {
+  averageScore: number | null
+  driversScored: number
+  driversTotal: number
+  criticalLast24h: number
+}
+export type DriverBehaviorRankingItem = {
+  driverId: string
+  driverName: string
+  score: number
+  events: number
+  dimensions: DriverScoreDimension[]
+}
+export type DriverBehaviorRanking = {
+  weights: Record<string, number>
+  items: DriverBehaviorRankingItem[]
+}
+export type DriverBehaviorEvent = {
+  id: string
+  driverId: string
+  severity: DriverBehaviorSeverity
+  type: string
+  speedKph: number | null
+  at: string
+}
+export type DriverBehaviorEventsResult = {
+  total: number
+  criticalCount: number
+  items: DriverBehaviorEvent[]
+}
+export type DriverBehaviorEventsQuery = {
+  params?: {
+    period_days?: number
+    severity?: DriverBehaviorSeverity
+    driverId?: string
+    limit?: number
+  }
+}
+export type DriverGeofenceAlert = {
+  id: string
+  vehicleId: string
+  driverId: string | null
+  geofenceId: string
+  type: 'entry' | 'exit'
+  at: string
+  read: boolean
+}
+export type MarkGeofenceAlertsReadPayload = { data: { alertIds: string[] } }
+export type MarkGeofenceAlertsReadResult = { markedRead: number, ignored: number }
+export type DriverBehavior = {
+  overall: number | null
+  windowDays: number
+  dimensions: DriverScoreDimension[]
+  recentEvents: DriverBehaviorEvent[]
+}
+
+// § 10
+export type DriverFatigueDataQuality = 'partial' | 'good' | 'full'
+export type DriverFatigueSummary = {
+  driversAnalyzed: number
+  driversTotal: number
+  averageScore: number | null
+  dataQuality: DriverFatigueDataQuality
+}
+export type DriverFatigue = {
+  score: number | null
+  band: 'low' | 'medium' | 'high' | 'critical' | null
+  restCompliance: number | null
+  drivingMinutes: number | null
+  breakMinutes: number | null
+  dataQuality: DriverFatigueDataQuality
+  analysisText: string
+}
+export type RunDriverFatiguePayload = {
+  id: string
+  data?: { drivingMinutes?: number, breakMinutes?: number }
+}
+
+// § 4 companion (import/export)
+export type DriverImportColumn = {
+  header: string
+  required: boolean
+  example: string
+  note?: string
+}
+export type DriverImportColumns = { columns: DriverImportColumn[] }
 
 // ─── Dispatch ─────────────────────────────────────────────────────────────────
 
@@ -951,10 +1155,16 @@ export type FleetDriver = {
   licenseNumber: string
   licenseExpiryDate: string | null
   tenantId: string
-  status: Record<string, unknown>
-  communicationPreference: Record<string, unknown>
+  status: DriverStatus
+  communicationPreference: DriverCommunicationPreference | null
   assignedVehicleId: string | null
   contactChannels: DriverContactChannels
+  // TRU-FE-3 § 1 — server-driven enrichment fields. Null on legacy rows / no telemetry.
+  behaviorScore?: number | null
+  scoreBand?: DriverScoreBand | null
+  trips?: number | null
+  tripBand?: DriverTripBand | null
+  preferredChannel?: DriverCommunicationPreference | null
   createdAt: string
   updatedAt: string
 }
@@ -964,6 +1174,8 @@ export type DeviceProvisionStatus = 'pending' | 'registered' | 'failed'
 export type FleetDevice = {
   id: string
   imei: string
+  /** Optional Device Name (TRU-FE-4 § 3). Null on legacy rows — fall back to `manufacturer + model`. */
+  name?: string | null
   manufacturer: string
   model: string
   firmwareVersion: string
@@ -980,6 +1192,53 @@ export type FleetDevice = {
   createdAt: string
   updatedAt: string
 }
+
+// TRU-FE-4 § 1 — status cards + allowance bar
+export type DevicesSummary = {
+  total: number
+  active: number
+  registered: number
+  assigned: number
+  unassigned: number
+  configured: number
+  suspended: number
+  allowance?: VehicleAllowance | null
+}
+
+// TRU-FE-4 § 2 — dropdown data
+export type DevicesFilterOption = { value: string, label: string }
+export type DevicesFilters = {
+  statuses: DevicesFilterOption[]
+  manufacturers: string[]
+  lastSeen: DevicesFilterOption[]
+}
+
+// TRU-FE-4 § 5 — import format explainer JSON
+export type DeviceImportColumn = {
+  header: string
+  required: boolean
+  example: string
+  note?: string
+}
+export type DeviceImportColumns = { columns: DeviceImportColumn[] }
+
+// TRU-FE-4 § 7 — catalog dropdowns
+export type DeviceCatalogManufacturers = { manufacturers: string[] }
+export type DeviceCatalogModel = {
+  manufacturer: string
+  model: string
+  protocol: string
+  defaultPort: number
+}
+export type DeviceCatalogModels = { models: DeviceCatalogModel[] }
+
+// TRU-FE-4 § 8 — tracker types
+export type DeviceSetupRequestTrackerType = {
+  value: DeviceTrackerType
+  label: string
+  description?: string
+}
+export type DeviceSetupRequestTrackerTypes = { trackerTypes: DeviceSetupRequestTrackerType[] }
 
 export type GpsDevice = {
   id: string
@@ -1456,6 +1715,12 @@ export type FleetDriverResponse = ServerResponse<FleetDriver>
 export type FleetDriverListResponse = ServerResponse<FleetDriver[]>
 export type FleetDeviceResponse = ServerResponse<FleetDevice>
 export type FleetDeviceListResponse = ServerResponse<FleetDevice[]>
+export type DevicesSummaryResponse = ServerResponse<DevicesSummary>
+export type DevicesFiltersResponse = ServerResponse<DevicesFilters>
+export type DeviceImportColumnsResponse = ServerResponse<DeviceImportColumns>
+export type DeviceCatalogManufacturersResponse = ServerResponse<DeviceCatalogManufacturers>
+export type DeviceCatalogModelsResponse = ServerResponse<DeviceCatalogModels>
+export type DeviceSetupRequestTrackerTypesResponse = ServerResponse<DeviceSetupRequestTrackerTypes>
 export type GpsDeviceListResponse = ServerResponse<GpsDevice[]>
 export type FleetAlertResponse = ServerResponse<FleetAlert>
 export type FleetAlertListResponse = ServerResponse<FleetAlert[]>
@@ -1517,6 +1782,22 @@ export type DeviceSetupRequestResponse = ServerResponse<DeviceSetupRequest>
 export type DeviceSetupRequestListResponse = ServerResponse<DeviceSetupRequest[]>
 export type BulkVehicleImportResponse = ServerResponse<BulkImportResult<Vehicle>>
 export type BulkDriverImportResponse = ServerResponse<BulkImportResult<FleetDriver>>
+// TRU-FE-3 pre-wire response envelopes.
+export type DriversSummaryResponse = ServerResponse<DriversSummary>
+export type DriversFiltersResponse = ServerResponse<DriversFilters>
+export type DriverConsentResponse = ServerResponse<DriverConsent>
+export type DriverConsentEntryResponse = ServerResponse<DriverConsentEntry>
+export type SendDriverMessageResponse = ServerResponse<SendDriverMessageResult>
+export type DriverDetailResponse = ServerResponse<DriverDetail>
+export type DriverBehaviorSummaryResponse = ServerResponse<DriverBehaviorSummary>
+export type DriverBehaviorRankingResponse = ServerResponse<DriverBehaviorRanking>
+export type DriverBehaviorEventsResponse = ServerResponse<DriverBehaviorEventsResult>
+export type DriverGeofenceAlertsResponse = ServerResponse<DriverGeofenceAlert[]>
+export type MarkGeofenceAlertsReadResponse = ServerResponse<MarkGeofenceAlertsReadResult>
+export type DriverBehaviorResponse = ServerResponse<DriverBehavior>
+export type DriverFatigueSummaryResponse = ServerResponse<DriverFatigueSummary>
+export type DriverFatigueResponse = ServerResponse<DriverFatigue>
+export type DriverImportColumnsResponse = ServerResponse<DriverImportColumns>
 export type BulkDeviceImportResponse = ServerResponse<BulkImportResult<FleetDevice>>
 export type FleetDashboardResponse = ServerResponse<FleetDashboard>
 export type DeliveryMetricsResponse = ServerResponse<DeliveryMetrics>

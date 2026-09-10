@@ -455,8 +455,131 @@ export type UpdateFeatureFlagPayload = {
 
 // ─── System admin — settings ──────────────────────────────────────────────────
 
+// TRU-FE-7 § A — PATCH is section-wise. Send only the section you're editing; the
+// server leaves the other sections untouched (verified 2026-09-09).
 export type UpdateSystemSettingsPayload = {
-  data: Record<string, unknown>
+  data: Partial<Pick<AuthSystemSettings, 'platformName' | 'supportEmail' | 'defaults' | 'features' | 'retention' | 'security'>>
+}
+
+// ─── TRU-FE-7 § B — AI governance / usage / requests ─────────────────────────
+
+export type AIProviderKey = 'openai' | 'anthropic' | 'lovable'
+export type AIRequestStatusFilter = 'all' | 'success' | 'failed'
+
+export type AIProviderConfig = {
+  provider: AIProviderKey
+  label: string
+  description: string
+  enabled: boolean
+  allowedModels: string[]
+  defaultModel: string
+  allowedTools: string[]
+}
+
+export type AIRateLimits = {
+  maxTokensPerRequest: number
+  maxRequestsPerMinute: number
+  maxTokensPerDayPerTenant: number
+}
+
+export type AIDataProtection = {
+  redactPhoneNumbers: boolean
+  redactDriverNames: boolean
+  redactVehiclePlates: boolean
+  storePromptsAndResponses: boolean
+}
+
+export type AIGovernance = {
+  matchingEnabled: boolean
+  providers: AIProviderConfig[]
+  rateLimits: AIRateLimits
+  dataProtection: AIDataProtection
+  availableTools: string[]
+  updatedAt: string
+  updatedByUserId: string | null
+}
+
+/** PATCH is partial — send only what you change. Providers are patched by key
+ *  (§ B: sending one provider leaves the others untouched). */
+export type UpdateAIGovernancePayload = {
+  data: {
+    matchingEnabled?: boolean
+    providers?: Array<Partial<AIProviderConfig> & { provider: AIProviderKey }>
+    rateLimits?: Partial<AIRateLimits>
+    dataProtection?: Partial<AIDataProtection>
+  }
+}
+
+export type AIUsageProviderStat = {
+  provider: AIProviderKey
+  requests: number
+  tokens: number
+  percentOfTotal: number
+}
+
+export type AIUsageTenantStat = {
+  tenantId: string
+  tenantName?: string | null
+  requests: number
+  tokens: number
+  percentOfTotal: number
+}
+
+export type AIUsage = {
+  totalRequests: number
+  totalTokens: number
+  /** null before anything has run — render a dash, not zero. */
+  successRate: number | null
+  /** null before anything has run — render a dash, not zero. */
+  averageLatencyMs: number | null
+  byProvider: AIUsageProviderStat[]
+  byTenant: AIUsageTenantStat[]
+  generatedAt: string
+}
+
+export type AIUsageQuery = {
+  params?: {
+    from?: string
+    to?: string
+  }
+}
+
+export type AIRequestItem = {
+  id: string
+  createdAt: string
+  tenantId: string
+  tenantName?: string | null
+  provider: AIProviderKey
+  model: string
+  feature: string
+  tokens: number
+  latencyMs: number
+  succeeded: boolean
+  errorMessage: string | null
+}
+
+export type AIRequestsList = {
+  total: number
+  items: AIRequestItem[]
+}
+
+export type AIRequestsQuery = {
+  params?: {
+    search?: string
+    provider?: AIProviderKey
+    status?: AIRequestStatusFilter
+    limit?: number
+  }
+}
+
+// ─── § B — OpenRouter credential ──────────────────────────────────────────────
+export type UpdateOpenRouterCredentialPayload = {
+  data: {
+    category: 'ai'
+    enabled: boolean
+    /** Rotates on send; omit to leave the current secret in place. Never comes back on read. */
+    secret?: string
+  }
 }
 
 export type SupportTicketCategory =
@@ -696,7 +819,16 @@ export type SystemSupportEscalatedResponse = ServerResponse<{
   }>
 }>
 
-export type SystemDeviceSetupStatus = 'pending_review' | 'in_progress' | 'assigned' | 'rejected'
+// TRU-FE-5 § 2 — new status vocabulary: pending_review → approved → in_progress → provisioned → assigned; rejected/cancelled at any point.
+export type SystemDeviceSetupStatus = 'pending_review' | 'approved' | 'in_progress' | 'provisioned' | 'assigned' | 'rejected' | 'cancelled'
+
+export type SystemDeviceSetupKycStatus = 'verified' | 'pending' | 'rejected' | null
+
+export type SystemDeviceSetupTimelineEntry = {
+  status: SystemDeviceSetupStatus
+  at: string
+  note?: string | null
+}
 
 export type SystemDeviceSetupRequestsQuery = {
   params?: {
@@ -719,22 +851,49 @@ export type RejectSystemDeviceSetupRequestPayload = {
   }
 }
 
+// TRU-FE-5 § 4 — Approve. Optional note; only valid on pending_review.
+export type ApproveSystemDeviceSetupRequestPayload = {
+  id: string
+  data?: {
+    note?: string
+  }
+}
+
+// TRU-FE-5 § 3 — Approval Queue cards. `devicesRequested` counts devices, not requests
+// (one request for 8 trackers = 8 devices). `approved` also counts in_progress / provisioned / assigned.
+export type SystemDeviceSetupSummary = {
+  pendingApproval: number
+  approved: number
+  rejected: number
+  devicesRequested: number
+}
+
+// TRU-FE-5 § 2 — reshaped per spec. `organisationName` / `requestingEmail` /
+// `kycStatus` can be null on rows with no onboarding on file — fall back to
+// `tenantId` in the UI; do not render null kycStatus as Verified.
 export type SystemDeviceSetupRequest = {
   id: string
-  imei: string
+  tenantId: string
+  organisationName: string | null
+  requestingEmail: string | null
   manufacturer: string
   model: string
-  connectionType: string
-  requesterName: string
-  needsSim: boolean
-  vehiclePlate: string
-  location: string
-  tenantId: string
-  status: SystemDeviceSetupStatus | string
-  assignedTo?: string
-  notes?: string
-  preferredInstallDate?: string
-  rejectedReason?: string
+  trackerType: string
+  quantity: number
+  simRequired: boolean
+  vehicleId: string | null
+  state: string | null
+  city: string | null
+  preferredInstallDate: string | null
+  useCase: string | null
+  notes: string | null
+  status: SystemDeviceSetupStatus
+  kycStatus: SystemDeviceSetupKycStatus
+  assignedTo: string | null
+  decidedBy: string | null
+  decidedAt: string | null
+  decisionReason: string | null
+  timeline: SystemDeviceSetupTimelineEntry[]
   createdAt: string
   updatedAt: string
 }
@@ -823,6 +982,27 @@ export type AuthSession = {
   user: AuthUser
 }
 
+// TRU-FE-7 § D — per-account TOTP two-factor.
+export type TwoFactorState = {
+  /** True only after `enrol/confirm` succeeds. Scanning the QR alone doesn't count. */
+  enrolled: boolean
+  /** True after `enrol` but before a valid confirm code lands. Log-in still works normally. */
+  pendingConfirmation: boolean
+  /** Reflects the platform-wide `security.requireTwoFactor` on the caller's tenant/scope. */
+  requiredByPlatform: boolean
+  lastConfirmedAt: string | null
+}
+
+/** Returned by `POST /auth/two-factor/enrol`. `secret` and `recoveryCodes` are shown ONCE. */
+export type TwoFactorEnrolment = {
+  secret: string
+  otpauthUri: string
+  recoveryCodes: string[]
+}
+
+export type ConfirmTwoFactorPayload = { data: { code: string } }
+export type DisableTwoFactorPayload = { data: { code: string } }
+
 export type UserProfile = {
   userId?: string
   firstName?: string
@@ -889,22 +1069,47 @@ export type UploadedMedia = {
   size?: number
 }
 
+// TRU-FE-7 § A — one of six documented keys; unknown values are ignored on read.
+export type SystemDefaultTimeRange
+  = | 'today'
+    | 'last_7_days'
+    | 'last_30_days'
+    | 'last_90_days'
+    | 'this_month'
+    | 'this_year'
+
+// TRU-FE-7 § C — enforced (session-timeout is checked on every refresh); one of 15|30|60|120|480.
+export type SystemSessionTimeoutMinutes = 15 | 30 | 60 | 120 | 480
+
 export type AuthSystemSettings = {
   platformName?: string
   supportEmail?: string
   defaults?: {
     timezone?: string
     language?: string
+    defaultTimeRange?: SystemDefaultTimeRange
+    complianceReminderDays?: number
+    walletTopUpMinKobo?: number
+    walletTopUpMaxKobo?: number
+    platformCurrency?: string
   }
   features?: {
     allowNewTenantRegistration?: boolean
     maintenanceMode?: boolean
+    /** ⚠️ Placebo. Spec § A: not read anywhere on the platform — do NOT put a toggle on the page. */
     enableBetaFeatures?: boolean
+    internationalCurrency?: boolean
   }
+  /** ⚠️ Not yet enforced. Spec § A: no sweep, no deletion, no backup job keyed off these (TD-6). */
   retention?: {
     gpsDataRetentionDays?: number
     logRetentionDays?: number
     backupFrequency?: string
+  }
+  security?: {
+    requireTwoFactor?: boolean
+    sessionTimeoutMinutes?: SystemSessionTimeoutMinutes
+    auditLogging?: boolean
   }
   updatedAt?: string
   updatedByUserId?: string | null
@@ -1132,12 +1337,22 @@ export type SystemDevicesSummary = {
   totalDevices: number
   registeredDevices: number
   configuredDevices: number
+  /** TRU-FE-5 § 8 — includes assigned; use `activeDevices` (excludes assigned) for the Active card. */
   verifiedActiveDevices: number
   pendingConfigDevices: number
   onlineNowDevices: number
   assignableDevices: number
   assignedDevices: number
+  /** TRU-FE-5 § 8 — Active card. Excludes assigned so it doesn't double-count with Assigned. */
   activeDevices: number
+  /** TRU-FE-5 § 8 — added. Devices with `vehicleId === null`. */
+  unassignedDevices: number
+  /** TRU-FE-5 § 8 — added. `provisionStatus != "registered"` (upstream telemetry platform), not the lifecycle `registered`. */
+  unregisteredDevices: number
+  /** TRU-FE-5 § 8 — added. Anything out of service for any reason — faulty, suspended or decommissioned. */
+  inactiveDevices: number
+  /** TRU-FE-5 § 8 — added. Real lifecycle state now. */
+  suspendedDevices: number
   faultyDevices: number
   totalCatalogModels: number
   supportedCatalogModels: number
@@ -1698,12 +1913,20 @@ export type AuthHealthResponse = ServerResponse<{
 }>
 export type InviteActionResponse = ServerResponse<Record<string, unknown>>
 export type AuthSystemSettingsResponse = ServerResponse<AuthSystemSettings>
+// TRU-FE-7 § B — AI envelopes.
+export type AIGovernanceResponse = ServerResponse<AIGovernance>
+export type AIUsageResponse = ServerResponse<AIUsage>
+export type AIRequestsListResponse = ServerResponse<AIRequestsList>
+// TRU-FE-7 § D — 2FA envelopes.
+export type TwoFactorStateResponse = ServerResponse<TwoFactorState>
+export type TwoFactorEnrolmentResponse = ServerResponse<TwoFactorEnrolment>
 export type SystemDashboardResponse = ServerResponse<SystemDashboard>
 export type SystemHealthResponse = ServerResponse<SystemHealth>
 export type SystemSupportDashboardResponse = ServerResponse<SystemSupportDashboard>
 export type SystemSupportTicketSummaryResponse = ServerResponse<SystemSupportTicketSummary>
 export type SystemDeviceSetupRequestsListResponse = ServerResponse<SystemDeviceSetupRequestsList>
 export type SystemDeviceSetupRequestResponse = ServerResponse<SystemDeviceSetupRequest>
+export type SystemDeviceSetupSummaryResponse = ServerResponse<SystemDeviceSetupSummary>
 export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
 export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
 export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown>>
@@ -2784,3 +3007,69 @@ export type UpdateSubscriptionPlanEntitlementsPayload = {
     trialDays?: number
   }
 }
+
+// ─── System — cross-tenant audit log ─────────────────────────────────────────
+
+export type SystemAuditLogEntry = {
+  id: string
+  occurredAt: string
+  actorId: string | null
+  actorName: string | null
+  actorEmail: string | null
+  actorRole: string | null
+  action: string
+  resourceType: string
+  resourceId: string | null
+  tenantId: string | null
+  tenantName: string | null
+  ipAddress: string | null
+  source: string
+  summary: string | null
+}
+
+export type SystemAuditLogQuery = {
+  params?: {
+    search?: string
+    tenantId?: string
+    actor?: string
+    action?: string
+    resourceType?: string
+    source?: string
+    from?: string
+    to?: string
+    limit?: number
+    // ponytail: server ignores offset until backend adds it; hook already sends it.
+    offset?: number
+  }
+}
+
+// TRU-FE-8: GET /auth/system/audit-log — spec says data is `SystemAuditLogEntry[]`
+// actual: data is { total: number, items: SystemAuditLogEntry[] }
+export type SystemAuditLogResponse = ServerResponse<{
+  total: number
+  items: SystemAuditLogEntry[]
+}>
+
+// TRU-FE-8: GET /auth/system/audit-log/filters — spec says each tenant carries a
+// `tenantName` string; actual response returns `tenantName: null` for every tenant.
+export type SystemAuditLogFilters = {
+  tenants: { tenantId: string; tenantName: string | null }[]
+  actions: string[]
+  resourceTypes: string[]
+  services: string[]
+}
+
+export type SystemAuditLogFiltersResponse = ServerResponse<SystemAuditLogFilters>
+
+export type SystemAuditLogVerification = {
+  intact: boolean
+  chainsChecked: number
+  entriesChecked: number
+  brokenChains: {
+    tenantId: string
+    firstBreak: { seq: number; id: string; reason: 'hash_mismatch' | 'broken_link' }
+  }[]
+  verifiedAt: string
+}
+
+export type SystemAuditLogVerifyResponse = ServerResponse<SystemAuditLogVerification>

@@ -1,15 +1,31 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import {
+  exportSystemAuditLog,
+  getSystemAuditLogFiltersQueryOptions,
+  getSystemAuditLogQueryOptions,
+  getSystemAuditLogVerifyQueryOptions,
+  type SystemAuditLogEntry,
+  type SystemAuditLogQuery,
+} from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
+  Download,
   Lock,
+  RefreshCw,
   Search,
+  ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
 import {
+  useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
+import { useBatchedQuery } from "@truckmoov/reusables/hooks/useBatchedQuery";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -21,7 +37,6 @@ import {
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { DataTable } from "@/components/shadcn/data-table";
-import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
@@ -36,305 +51,124 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { useTenants } from "@/hooks/useTenants";
 
-type AuditFilters = {
-  startDate?: string;
-  endDate?: string;
-  tenantId?: string;
-  actor?: string;
-  actionType?: string;
-  resourceType?: string;
+type DraftFilters = {
+  enableDate: boolean;
+  startDate: string;
+  endDate: string;
+  enableTenant: boolean;
+  tenantId: string;
+  enableActor: boolean;
+  actor: string;
+  enableAction: boolean;
+  action: string;
+  enableResource: boolean;
+  resourceType: string;
+  enableSource: boolean;
+  source: string;
+};
+
+const emptyDraft: DraftFilters = {
+  enableDate: false,
+  startDate: "",
+  endDate: "",
+  enableTenant: false,
+  tenantId: "",
+  enableActor: false,
+  actor: "",
+  enableAction: false,
+  action: "",
+  enableResource: false,
+  resourceType: "",
+  enableSource: false,
+  source: "",
 };
 
 export default function PlatformComplianceAudit() {
-  const [
-    search,
-    setSearch,
-  ] = useState("");
-  const [
-    filters,
-    setFilters,
-  ] = useState<AuditFilters>({});
-  const [
-    draft,
-    setDraft,
-  ] = useState<{
-    enableDate: boolean;
-    startDate: string;
-    endDate: string;
-    enableTenant: boolean;
-    tenantId: string;
-    enableActor: boolean;
-    actor: string;
-    enableAction: boolean;
-    actionType: string;
-    enableResource: boolean;
-    resourceType: string;
-  }>({
-    enableDate: false,
-    startDate: "",
-    endDate: "",
-    enableTenant: false,
-    tenantId: "",
-    enableActor: false,
-    actor: "",
-    enableAction: false,
-    actionType: "",
-    enableResource: false,
-    resourceType: "",
-  });
+  const [search, setSearch] = useState("");
+  const [draft, setDraft] = useState<DraftFilters>(emptyDraft);
+  const [applied, setApplied] = useState<SystemAuditLogQuery["params"]>({});
+  const [exporting, setExporting] = useState(false);
 
-  const liveEntries: any[] = [];
-  const isLoading = false;
-  const { tenants } = useTenants();
+  const filterParams: SystemAuditLogQuery["params"] = {
+    ...applied,
+    ...(search ? { search } : {}),
+  };
 
-  const dummyEntries = useMemo<typeof liveEntries>(
-    () => {
-      const actors = [
-        {
-          id: "u-001",
-          name: "Adaeze Okafor",
-          email: "adaeze.okafor@mtn.ng",
-        },
-        {
-          id: "u-002",
-          name: "Tunde Bakare",
-          email: "tunde.bakare@fleetpro.ng",
-        },
-        {
-          id: "u-003",
-          name: "Chika Eze",
-          email: "chika.eze@lagosexpress.ng",
-        },
-        {
-          id: "u-004",
-          name: "System Worker",
-          email: "system@platform",
-        },
-        {
-          id: "u-005",
-          name: "Ifeoma Nwosu",
-          email: "ifeoma.nwosu@mtn.ng",
-        },
-        {
-          id: "u-006",
-          name: "Bola Adeyemi",
-          email: "bola.adeyemi@truckmoov.com",
-        },
-      ];
-      const actions = [
-        "tenant.created",
-        "tenant.suspended",
-        "user.invited",
-        "user.login",
-        "sim.activated",
-        "sim.deactivated",
-        "invoice.approved",
-        "invoice.voided",
-        "webhook.delivered",
-        "api_key.rotated",
-        "kyc.verified",
-        "kyc.rejected",
-        "device.assigned",
-        "geofence.updated",
-        "role.granted",
-      ];
-      const resources = [
-        "tenant",
-        "user",
-        "sim",
-        "invoice",
-        "webhook",
-        "api_key",
-        "kyc_document",
-        "device",
-        "geofence",
-        "role",
-      ];
-      const sources: Array<"integration" | "security"> = [
-        "integration",
-        "security",
-      ];
-      const ips = [
-        "102.89.34.18",
-        "197.210.65.221",
-        "105.112.45.9",
-        "154.113.22.7",
-        "41.58.99.3",
-      ];
-      const tenantPool = tenants.length > 0
-        ? tenants.slice(
-            0,
-            5,
-          ).map(t => ({
-            id: t.id,
-            name: t.name,
-          }))
-        : [
-            {
-              id: "demo-t-1",
-              name: "Lagos Express Logistics",
-            },
-            {
-              id: "demo-t-2",
-              name: "Abuja Cargo Movers",
-            },
-            {
-              id: "demo-t-3",
-              name: "Port Harcourt Haulage",
-            },
-            {
-              id: "demo-t-4",
-              name: "Kano Freight Co.",
-            },
-          ];
-
-      const now = Date.now();
-      return Array.from({ length: 40 }).map((_, i) => {
-        const a = actors[i % actors.length];
-        const action = actions[i % actions.length];
-        const resource = resources[i % resources.length];
-        const tenant = tenantPool[i % tenantPool.length];
-        const src = sources[i % sources.length];
-        return {
-          id: `dummy-${i}`,
-          source: src,
-          timestamp: new Date(now - i * 1000 * 60 * 37).toISOString(),
-          actor_id: a.id,
-          actor_name: a.name,
-          actor_email: a.email,
-          action_type: action,
-          resource_type: resource,
-          resource_id: `${resource}-${(1000 + i).toString(16)}`,
-          tenant_id: tenant.id,
-          ip_address: ips[i % ips.length],
-          user_agent: "Mozilla/5.0",
-          metadata: {
-            note: "demo entry",
-            index: i,
-          },
-          severity: src === "security" ? (i % 3 === 0 ? "high" : "medium") : "info",
-          description: `${a.name} performed ${action} on ${resource}`,
-        };
-      });
-    },
-    [tenants],
+  const listQueryOptions = useCallback(
+    ({ offset, limit }: { offset: number; limit: number }) =>
+      getSystemAuditLogQueryOptions({ params: { ...filterParams, offset, limit } }),
+    // filterParams is a fresh object each render; depend on its stable inputs instead.
+    [applied, search],
   );
 
-  const allEntries = liveEntries.length > 0 ? liveEntries : dummyEntries;
+  const {
+    items: entries,
+    total,
+    isLoading: listLoading,
+    isError: listError,
+    error: listErrorObj,
+    pagination,
+    setPage,
+  } = useBatchedQuery<SystemAuditLogEntry>({ queryOptions: listQueryOptions });
 
-  const entries = useMemo(
-    () => {
-      let rows = allEntries;
-      if (filters.tenantId)
-        rows = rows.filter(r => r.tenant_id === filters.tenantId);
-      if (filters.actionType)
-        rows = rows.filter(r => r.action_type === filters.actionType);
-      if (filters.resourceType)
-        rows = rows.filter(r => r.resource_type === filters.resourceType);
-      if (filters.startDate)
-        rows = rows.filter(r => r.timestamp >= filters.startDate!);
-      if (filters.endDate)
-        rows = rows.filter(r => r.timestamp <= filters.endDate!);
-      if (filters.actor) {
-        const t = filters.actor.toLowerCase();
-        rows = rows.filter(r =>
-          (r.actor_name || "").toLowerCase().includes(t)
-          || (r.actor_email || "").toLowerCase().includes(t)
-          || (r.actor_id || "").toLowerCase().includes(t));
-      }
-      if (search) {
-        const t = search.toLowerCase();
-        rows = rows.filter(r =>
-          [
-            r.actor_id,
-            r.actor_name,
-            r.actor_email,
-            r.action_type,
-            r.resource_type,
-            r.resource_id,
-            r.tenant_id,
-            r.ip_address,
-            r.description,
-            r.severity,
-          ]
-            .filter(Boolean)
-            .some(v => String(v).toLowerCase().includes(t)));
-      }
-      return rows;
-    },
-    [
-      allEntries,
-      filters,
-      search,
-    ],
-  );
+  useEffect(() => {
+    setPage(1);
+  }, [applied, search, setPage]);
 
-  const actionTypes = useMemo(
-    () => Array.from(new Set(entries.map(e => e.action_type))).sort(),
-    [entries],
-  );
-  const resourceTypes = useMemo(
-    () => Array.from(new Set(entries.map(e => e.resource_type))).sort(),
-    [entries],
-  );
+  const filtersQuery = useQuery(getSystemAuditLogFiltersQueryOptions());
+  const verifyQuery = useQuery(getSystemAuditLogVerifyQueryOptions());
+
+  const availableFilters = filtersQuery.data?.data;
+  const verification = verifyQuery.data?.data;
 
   const applyFilters = () => {
-    const next: AuditFilters = {};
-    if (draft.enableDate && draft.startDate)
-      next.startDate = new Date(draft.startDate).toISOString();
-    if (draft.enableDate && draft.endDate)
-      next.endDate = new Date(draft.endDate).toISOString();
-    if (draft.enableTenant && draft.tenantId)
-      next.tenantId = draft.tenantId;
-    if (draft.enableActor && draft.actor)
-      next.actor = draft.actor;
-    if (draft.enableAction && draft.actionType)
-      next.actionType = draft.actionType;
-    if (draft.enableResource && draft.resourceType)
-      next.resourceType = draft.resourceType;
-    setFilters(next);
+    const next: SystemAuditLogQuery["params"] = {};
+    if (draft.enableDate && draft.startDate) next.from = new Date(draft.startDate).toISOString();
+    if (draft.enableDate && draft.endDate) next.to = new Date(draft.endDate).toISOString();
+    if (draft.enableTenant && draft.tenantId) next.tenantId = draft.tenantId;
+    if (draft.enableActor && draft.actor) next.actor = draft.actor;
+    if (draft.enableAction && draft.action) next.action = draft.action;
+    if (draft.enableResource && draft.resourceType) next.resourceType = draft.resourceType;
+    if (draft.enableSource && draft.source) next.source = draft.source;
+    setApplied(next);
   };
 
   const clearFilters = () => {
-    setDraft({
-      enableDate: false,
-      startDate: "",
-      endDate: "",
-      enableTenant: false,
-      tenantId: "",
-      enableActor: false,
-      actor: "",
-      enableAction: false,
-      actionType: "",
-      enableResource: false,
-      resourceType: "",
-    });
-    setFilters({});
+    setDraft(emptyDraft);
+    setApplied({});
   };
 
-  const tenantNameOf = (tid: string | null) => {
-    if (!tid)
-      return "—";
-    const t = tenants.find(x => x.id === tid);
-    return t?.name || tid.slice(
-      0,
-      8,
-    );
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const blob = await exportSystemAuditLog({ params: { ...applied, ...(search ? { search } : {}) } });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `platform_audit_log_${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to export audit log");
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const columns: ColumnDef<any>[] = useMemo(
+  const tenantLabel = (t: { tenantId: string; tenantName: string | null }) =>
+    t.tenantName || t.tenantId;
+
+  const columns = useMemo<ColumnDef<SystemAuditLogEntry>[]>(
     () => [
       {
         id: "timestamp",
         header: "Timestamp",
         cell: ({ row }) => (
           <span className="font-mono text-xs whitespace-nowrap">
-            {formatWithPattern(
-              row.original.timestamp,
-              "yyyy-MM-dd HH:mm:ss",
-            )}
+            {formatWithPattern(row.original.occurredAt, "yyyy-MM-dd HH:mm:ss")}
           </span>
         ),
       },
@@ -345,12 +179,9 @@ export default function PlatformComplianceAudit() {
           const e = row.original;
           return (
             <>
-              <div className="text-sm font-medium">{e.actor_name || "System"}</div>
+              <div className="text-sm font-medium">{e.actorName || "—"}</div>
               <div className="text-xs text-muted-foreground font-mono">
-                {e.actor_email || e.actor_id?.slice(
-                  0,
-                  8,
-                ) || "—"}
+                {e.actorEmail || e.actorId?.slice(0, 8) || "—"}
               </div>
             </>
           );
@@ -360,11 +191,8 @@ export default function PlatformComplianceAudit() {
         id: "action",
         header: "Action",
         cell: ({ row }) => (
-          <Badge
-            variant="outline"
-            className="text-xs"
-          >
-            {row.original.action_type}
+          <Badge variant="outline" className="text-xs">
+            {row.original.action}
           </Badge>
         ),
       },
@@ -375,13 +203,10 @@ export default function PlatformComplianceAudit() {
           const e = row.original;
           return (
             <>
-              <div className="text-sm">{e.resource_type}</div>
-              {e.resource_id && (
+              <div className="text-sm">{e.resourceType}</div>
+              {e.resourceId && (
                 <div className="text-xs text-muted-foreground font-mono">
-                  {e.resource_id.slice(
-                    0,
-                    8,
-                  )}
+                  {e.resourceId.slice(0, 8)}
                 </div>
               )}
             </>
@@ -391,90 +216,32 @@ export default function PlatformComplianceAudit() {
       {
         id: "tenant",
         header: "Tenant",
-        cell: ({ row }) => <span className="text-sm">{tenantNameOf(row.original.tenant_id)}</span>,
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {row.original.tenantName || row.original.tenantId || "—"}
+          </span>
+        ),
       },
       {
         id: "ip",
         header: "IP Address",
-        cell: ({ row }) => <span className="font-mono text-xs">{row.original.ip_address || "—"}</span>,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.ipAddress || "—"}</span>
+        ),
       },
       {
         id: "source",
         header: "Source",
         cell: ({ row }) => (
-          <Badge
-            variant={row.original.source === "security" ? "destructive" : "secondary"}
-            className="text-xs"
-          >
+          // ponytail: source is which service recorded the entry, not a severity — plain tag.
+          <Badge variant="outline" className="text-xs">
             {row.original.source}
           </Badge>
         ),
       },
     ],
-    [tenants],
+    [],
   );
-
-  const exportColumns = [
-    {
-      header: "Timestamp",
-      accessor: (r: any) => formatWithPattern(
-        r.timestamp,
-        "yyyy-MM-dd HH:mm:ss",
-      ),
-    },
-    {
-      header: "Source",
-      accessor: "source" as const,
-    },
-    {
-      header: "Actor ID",
-      accessor: (r: any) => r.actor_id || "",
-    },
-    {
-      header: "Actor Name",
-      accessor: (r: any) => r.actor_name || "",
-    },
-    {
-      header: "Actor Email",
-      accessor: (r: any) => r.actor_email || "",
-    },
-    {
-      header: "Action Type",
-      accessor: "action_type" as const,
-    },
-    {
-      header: "Resource Type",
-      accessor: "resource_type" as const,
-    },
-    {
-      header: "Resource ID",
-      accessor: (r: any) => r.resource_id || "",
-    },
-    {
-      header: "Tenant ID",
-      accessor: (r: any) => r.tenant_id || "",
-    },
-    {
-      header: "Tenant Name",
-      accessor: (r: any) => tenantNameOf(r.tenant_id),
-    },
-    {
-      header: "IP Address",
-      accessor: (r: any) => r.ip_address || "",
-    },
-    {
-      header: "Severity",
-      accessor: (r: any) => r.severity || "",
-    },
-    {
-      header: "Description",
-      accessor: (r: any) => r.description || "",
-    },
-    {
-      header: "Metadata",
-      accessor: (r: any) => (r.metadata ? JSON.stringify(r.metadata) : ""),
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -498,7 +265,7 @@ export default function PlatformComplianceAudit() {
             </div>
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground">Total Entries</div>
-              <div className="text-xl font-bold break-words">{entries.length.toLocaleString()}</div>
+              <div className="text-xl font-bold break-words">{total.toLocaleString()}</div>
             </div>
           </CardContent>
         </Card>
@@ -513,30 +280,30 @@ export default function PlatformComplianceAudit() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 shrink-0 rounded-md bg-primary/10 flex items-center justify-center">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">Retention (NCC)</div>
-              <div className="text-xl font-bold break-words">7 years</div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-start justify-between space-y-0">
-          <div>
-            <CardTitle>Audit Log Entries</CardTitle>
-            <CardDescription>Immutable cross-tenant audit trail retained for 7 years per NCC requirements</CardDescription>
+          <div className="space-y-1.5">
+            <CardTitle className="flex items-center gap-2">
+              Audit Log Entries
+              <VerifyBadge
+                verification={verification}
+                isLoading={verifyQuery.isFetching}
+                onRefresh={() => verifyQuery.refetch()}
+              />
+            </CardTitle>
+            <CardDescription>Immutable cross-tenant audit trail.</CardDescription>
           </div>
-          <ExportButton
-            rows={entries}
-            columns={exportColumns as any}
-            filename="platform_audit_log"
-          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={exporting || listLoading}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {exporting ? "Exporting…" : "Export CSV"}
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
@@ -551,220 +318,139 @@ export default function PlatformComplianceAudit() {
             </div>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                >
+                <Button variant="outline" size="sm">
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filter
                 </Button>
               </PopoverTrigger>
-              <PopoverContent
-                className="w-80 p-4 space-y-4"
-                align="end"
-              >
+              <PopoverContent className="w-80 p-4 space-y-4" align="end">
                 <div className="font-medium text-sm">Show Audit Entries</div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="f-date"
-                      checked={draft.enableDate}
-                      onCheckedChange={v => setDraft({
-                        ...draft,
-                        enableDate: !!v,
-                      })}
-                    />
-                    <Label
-                      htmlFor="f-date"
-                      className="text-xs"
-                    >
-                      By date range
-                    </Label>
-                  </div>
+                <FilterRow
+                  id="f-date"
+                  label="By date range"
+                  checked={draft.enableDate}
+                  onCheckedChange={v => setDraft({ ...draft, enableDate: v })}
+                >
                   <div className="flex items-center gap-2">
                     <Input
                       type="date"
                       disabled={!draft.enableDate}
                       value={draft.startDate}
-                      onChange={e => setDraft({
-                        ...draft,
-                        startDate: e.target.value,
-                      })}
+                      onChange={e => setDraft({ ...draft, startDate: e.target.value })}
                       className="flex-1 min-w-0"
                     />
                     <Input
                       type="date"
                       disabled={!draft.enableDate}
                       value={draft.endDate}
-                      onChange={e => setDraft({
-                        ...draft,
-                        endDate: e.target.value,
-                      })}
+                      onChange={e => setDraft({ ...draft, endDate: e.target.value })}
                       className="flex-1 min-w-0"
                     />
                   </div>
-                </div>
+                </FilterRow>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="f-tenant"
-                      checked={draft.enableTenant}
-                      onCheckedChange={v => setDraft({
-                        ...draft,
-                        enableTenant: !!v,
-                      })}
-                    />
-                    <Label
-                      htmlFor="f-tenant"
-                      className="text-xs"
-                    >
-                      By tenant
-                    </Label>
-                  </div>
+                <FilterRow
+                  id="f-tenant"
+                  label="By tenant"
+                  checked={draft.enableTenant}
+                  onCheckedChange={v => setDraft({ ...draft, enableTenant: v })}
+                >
                   <Select
                     disabled={!draft.enableTenant}
                     value={draft.tenantId}
-                    onValueChange={v => setDraft({
-                      ...draft,
-                      tenantId: v,
-                    })}
+                    onValueChange={v => setDraft({ ...draft, tenantId: v })}
                   >
                     <SelectTrigger><SelectValue placeholder="Select tenant" /></SelectTrigger>
                     <SelectContent>
-                      {tenants.map(t => (
-                        <SelectItem
-                          key={t.id}
-                          value={t.id}
-                        >
-                          {t.name}
+                      {availableFilters?.tenants.map(t => (
+                        <SelectItem key={t.tenantId} value={t.tenantId}>
+                          {tenantLabel(t)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FilterRow>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="f-actor"
-                      checked={draft.enableActor}
-                      onCheckedChange={v => setDraft({
-                        ...draft,
-                        enableActor: !!v,
-                      })}
-                    />
-                    <Label
-                      htmlFor="f-actor"
-                      className="text-xs"
-                    >
-                      By actor (name / email / ID)
-                    </Label>
-                  </div>
+                <FilterRow
+                  id="f-actor"
+                  label="By actor (name / email / ID)"
+                  checked={draft.enableActor}
+                  onCheckedChange={v => setDraft({ ...draft, enableActor: v })}
+                >
                   <Input
                     disabled={!draft.enableActor}
                     placeholder="e.g. jane@…"
                     value={draft.actor}
-                    onChange={e => setDraft({
-                      ...draft,
-                      actor: e.target.value,
-                    })}
+                    onChange={e => setDraft({ ...draft, actor: e.target.value })}
                   />
-                </div>
+                </FilterRow>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="f-action"
-                      checked={draft.enableAction}
-                      onCheckedChange={v => setDraft({
-                        ...draft,
-                        enableAction: !!v,
-                      })}
-                    />
-                    <Label
-                      htmlFor="f-action"
-                      className="text-xs"
-                    >
-                      By action type
-                    </Label>
-                  </div>
+                <FilterRow
+                  id="f-action"
+                  label="By action type"
+                  checked={draft.enableAction}
+                  onCheckedChange={v => setDraft({ ...draft, enableAction: v })}
+                >
                   <Select
                     disabled={!draft.enableAction}
-                    value={draft.actionType}
-                    onValueChange={v => setDraft({
-                      ...draft,
-                      actionType: v,
-                    })}
+                    value={draft.action}
+                    onValueChange={v => setDraft({ ...draft, action: v })}
                   >
                     <SelectTrigger><SelectValue placeholder="Select action" /></SelectTrigger>
                     <SelectContent>
-                      {actionTypes.map(a => (
-                        <SelectItem
-                          key={a}
-                          value={a}
-                        >
-                          {a}
-                        </SelectItem>
+                      {availableFilters?.actions.map(a => (
+                        <SelectItem key={a} value={a}>{a}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FilterRow>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="f-resource"
-                      checked={draft.enableResource}
-                      onCheckedChange={v => setDraft({
-                        ...draft,
-                        enableResource: !!v,
-                      })}
-                    />
-                    <Label
-                      htmlFor="f-resource"
-                      className="text-xs"
-                    >
-                      By resource type
-                    </Label>
-                  </div>
+                <FilterRow
+                  id="f-resource"
+                  label="By resource type"
+                  checked={draft.enableResource}
+                  onCheckedChange={v => setDraft({ ...draft, enableResource: v })}
+                >
                   <Select
                     disabled={!draft.enableResource}
                     value={draft.resourceType}
-                    onValueChange={v => setDraft({
-                      ...draft,
-                      resourceType: v,
-                    })}
+                    onValueChange={v => setDraft({ ...draft, resourceType: v })}
                   >
                     <SelectTrigger><SelectValue placeholder="Select resource" /></SelectTrigger>
                     <SelectContent>
-                      {resourceTypes.map(r => (
-                        <SelectItem
-                          key={r}
-                          value={r}
-                        >
-                          {r}
-                        </SelectItem>
+                      {availableFilters?.resourceTypes.map(r => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FilterRow>
+
+                <FilterRow
+                  id="f-source"
+                  label="By service (source)"
+                  checked={draft.enableSource}
+                  onCheckedChange={v => setDraft({ ...draft, enableSource: v })}
+                >
+                  <Select
+                    disabled={!draft.enableSource}
+                    value={draft.source}
+                    onValueChange={v => setDraft({ ...draft, source: v })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select service" /></SelectTrigger>
+                    <SelectContent>
+                      {availableFilters?.services.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterRow>
 
                 <div className="flex gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={applyFilters}
-                  >
+                  <Button size="sm" className="flex-1" onClick={applyFilters}>
                     Apply
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={clearFilters}
-                  >
+                  <Button size="sm" variant="outline" className="flex-1" onClick={clearFilters}>
                     Show All
                   </Button>
                 </div>
@@ -772,23 +458,115 @@ export default function PlatformComplianceAudit() {
             </Popover>
           </div>
 
+          {listError && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              Failed to load audit entries: {(listErrorObj as any)?.message ?? "unknown error"}
+            </div>
+          )}
+
           <div className="border rounded-md overflow-x-auto">
             <DataTable
               columns={columns}
               data={entries}
-              isLoading={isLoading}
-              hasActiveFilters={Object.keys(filters).length > 0 || !!search}
+              isLoading={listLoading}
+              hasActiveFilters={Object.keys(applied).length > 0 || !!search}
               emptyState="No audit entries found"
               filteredEmptyState="No audit entries match your filters."
+              pagination={pagination}
             />
           </div>
 
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
             <Lock className="h-3 w-3" />
-            Entries are immutable. Retained for 7 years per NCC regulatory requirement.
+            Entries are immutable.
           </p>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function FilterRow({
+  id,
+  label,
+  checked,
+  onCheckedChange,
+  children,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onCheckedChange: (v: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id={id}
+          checked={checked}
+          onCheckedChange={v => onCheckedChange(!!v)}
+        />
+        <Label htmlFor={id} className="text-xs">{label}</Label>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function VerifyBadge({
+  verification,
+  isLoading,
+  onRefresh,
+}: {
+  verification?: {
+    intact: boolean;
+    chainsChecked: number;
+    brokenChains: { tenantId: string; firstBreak: { seq: number; reason: string } }[];
+  };
+  isLoading: boolean;
+  onRefresh: () => void;
+}) {
+  if (!verification) {
+    return (
+      <Badge variant="outline" className="text-xs font-normal">
+        {isLoading ? "Verifying…" : "Not verified"}
+      </Badge>
+    );
+  }
+  const label = verification.intact
+    ? `Chain intact · ${verification.chainsChecked} chains`
+    : `Chain broken · ${verification.brokenChains.length} chain(s)`;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Badge
+        variant={verification.intact ? "outline" : "destructive"}
+        className="text-xs font-normal"
+        title={
+          verification.intact
+            ? undefined
+            : verification.brokenChains
+                .map(c => `${c.tenantId}: seq ${c.firstBreak.seq} (${c.firstBreak.reason})`)
+                .join(", ")
+        }
+      >
+        {verification.intact ? (
+          <ShieldCheck className="h-3 w-3 mr-1" />
+        ) : (
+          <ShieldAlert className="h-3 w-3 mr-1" />
+        )}
+        {label}
+      </Badge>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 px-1.5"
+        onClick={onRefresh}
+        disabled={isLoading}
+        title="Re-verify chain"
+      >
+        <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
+      </Button>
+    </span>
   );
 }

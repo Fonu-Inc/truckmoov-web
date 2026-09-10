@@ -42,15 +42,40 @@ import {
   getComplianceDocumentHistory,
   getDeliveryMetrics,
   getDevice,
+  getDeviceCatalogManufacturers,
+  getDeviceCatalogModels,
+  getDeviceImportColumns,
   getDeviceSetupRequest,
+  getDeviceSetupRequestTrackerTypes,
   getDeviceSetupRequests,
   getDevices,
+  getDevicesFilters,
+  getDevicesSummary,
   getDispatchSearch,
   getDocumentAccessLog,
   getDocumentDownloadUrl,
   getDocuments,
   getDriver,
+  getDriverBehaviorById,
+  getDriverBehaviorEvents,
+  getDriverBehaviorRanking,
+  getDriverBehaviorSummary,
+  getDriverConsent,
+  getDriverDetail,
+  getDriverFatigueById,
+  getDriverFatigueSummary,
+  getDriverGeofenceAlerts,
+  getDriverImportColumns,
   getDrivers,
+  getDriversFilters,
+  getDriversSummary,
+  markGeofenceAlertsRead,
+  patchDriverConsent,
+  reinstateDriver,
+  requestDriverConsent,
+  runDriverFatigue,
+  sendDriverMessage,
+  suspendDriver,
   getFleetAnalyticsDriverScores,
   getFleetAnalyticsEvents,
   getFleetAnalyticsFleetStatus,
@@ -151,6 +176,7 @@ import type {
   DevicesQuery,
   DispatchSearchQuery,
   DocumentsQuery,
+  DriverBehaviorEventsQuery,
   DriversQuery,
   FleetAnalyticsDriverScoresQuery,
   FleetAnalyticsEventsQuery,
@@ -199,6 +225,20 @@ export const FLEET_QUERY_KEY = {
   legacyGpsDevices: (payload?: LegacyGpsDevicesQuery) => ['fleet', 'legacyGpsDevices', payload],
   drivers: (payload?: DriversQuery) => ['fleet', 'drivers', payload],
   driver: (id: string) => ['fleet', 'driver', id],
+  // TRU-FE-3 pre-wire query keys.
+  driversRoot: ['fleet', 'drivers'],
+  driversSummary: ['fleet', 'driversSummary'],
+  driversFilters: ['fleet', 'driversFilters'],
+  driverImportColumns: ['fleet', 'driverImportColumns'],
+  driverConsent: (id: string) => ['fleet', 'driver', id, 'consent'],
+  driverDetail: (id: string) => ['fleet', 'driver', id, 'detail'],
+  driverBehaviorSummary: (periodDays?: number) => ['fleet', 'driversBehavior', 'summary', periodDays],
+  driverBehaviorRanking: ['fleet', 'driversBehavior', 'ranking'],
+  driverBehaviorEvents: (payload?: DriverBehaviorEventsQuery) => ['fleet', 'driversBehavior', 'events', payload],
+  driverGeofenceAlerts: (periodDays?: number) => ['fleet', 'driversBehavior', 'geofenceAlerts', periodDays],
+  driverBehaviorById: (id: string, periodDays?: number) => ['fleet', 'driver', id, 'behavior', periodDays],
+  driverFatigueSummary: ['fleet', 'driversFatigue', 'summary'],
+  driverFatigueById: (id: string) => ['fleet', 'driver', id, 'fatigue'],
   dispatchSearch: (payload?: DispatchSearchQuery) => ['fleet', 'dispatchSearch', payload],
   recommendDrivers: (payload?: RecommendDriversQuery) => ['fleet', 'recommendDrivers', payload],
   carriers: ['fleet', 'carriers'],
@@ -256,6 +296,13 @@ export const FLEET_QUERY_KEY = {
   complianceSummary: ['fleet', 'complianceSummary'],
   capacityUnits: ['fleet', 'capacityUnits'],
   vehicleImportColumns: ['fleet', 'vehicleImportColumns'],
+  // TRU-FE-4 pre-wire — endpoints in flight on backend, queries render loading / empty until they land.
+  devicesSummary: ['fleet', 'devicesSummary'],
+  devicesFilters: ['fleet', 'devicesFilters'],
+  deviceImportColumns: ['fleet', 'deviceImportColumns'],
+  deviceCatalogManufacturers: ['fleet', 'deviceCatalog', 'manufacturers'],
+  deviceCatalogModels: (manufacturer?: string) => ['fleet', 'deviceCatalog', 'models', manufacturer],
+  deviceSetupRequestTrackerTypes: ['fleet', 'deviceSetupRequestTrackerTypes'],
 } as const
 
 function invalidateVehicles() {
@@ -349,6 +396,49 @@ export function getDeviceQueryOptions(id: string) {
   })
 }
 
+// TRU-FE-4 pre-wire query options.
+export function getDevicesSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.devicesSummary,
+    queryFn: getDevicesSummary,
+  })
+}
+
+export function getDevicesFiltersQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.devicesFilters,
+    queryFn: getDevicesFilters,
+  })
+}
+
+export function getDeviceImportColumnsQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.deviceImportColumns,
+    queryFn: getDeviceImportColumns,
+  })
+}
+
+export function getDeviceCatalogManufacturersQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.deviceCatalogManufacturers,
+    queryFn: getDeviceCatalogManufacturers,
+  })
+}
+
+export function getDeviceCatalogModelsQueryOptions(manufacturer?: string) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.deviceCatalogModels(manufacturer),
+    queryFn: () => getDeviceCatalogModels(manufacturer ? { manufacturer } : undefined),
+  })
+}
+
+export function getDeviceSetupRequestTrackerTypesQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.deviceSetupRequestTrackerTypes,
+    queryFn: getDeviceSetupRequestTrackerTypes,
+  })
+}
+
 export function getGeofencesQueryOptions(payload?: GeofencesQuery) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.geofences(payload),
@@ -397,6 +487,84 @@ export function getDriverQueryOptions(id: string) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.driver(id),
     queryFn: () => getDriver({ id }),
+  })
+}
+
+// TRU-FE-3 pre-wire query options.
+export function getDriversSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driversSummary,
+    queryFn: getDriversSummary,
+  })
+}
+export function getDriversFiltersQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driversFilters,
+    queryFn: getDriversFilters,
+  })
+}
+export function getDriverImportColumnsQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverImportColumns,
+    queryFn: getDriverImportColumns,
+  })
+}
+export function getDriverConsentQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverConsent(id),
+    queryFn: () => getDriverConsent({ id }),
+    enabled: Boolean(id),
+  })
+}
+export function getDriverDetailQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverDetail(id),
+    queryFn: () => getDriverDetail({ id }),
+    enabled: Boolean(id),
+  })
+}
+export function getDriverBehaviorSummaryQueryOptions(periodDays?: number) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverBehaviorSummary(periodDays),
+    queryFn: () => getDriverBehaviorSummary(periodDays ? { period_days: periodDays } : undefined),
+  })
+}
+export function getDriverBehaviorRankingQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverBehaviorRanking,
+    queryFn: getDriverBehaviorRanking,
+  })
+}
+export function getDriverBehaviorEventsQueryOptions(payload?: DriverBehaviorEventsQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverBehaviorEvents(payload),
+    queryFn: () => getDriverBehaviorEvents(payload),
+  })
+}
+export function getDriverGeofenceAlertsQueryOptions(periodDays?: number) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverGeofenceAlerts(periodDays),
+    queryFn: () => getDriverGeofenceAlerts(periodDays ? { period_days: periodDays } : undefined),
+  })
+}
+export function getDriverBehaviorByIdQueryOptions(id: string, periodDays?: number) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverBehaviorById(id, periodDays),
+    queryFn: () => getDriverBehaviorById({ id, params: periodDays ? { period_days: periodDays } : undefined }),
+    enabled: Boolean(id),
+  })
+}
+export function getDriverFatigueSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverFatigueSummary,
+    queryFn: getDriverFatigueSummary,
+  })
+}
+export function getDriverFatigueByIdQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.driverFatigueById(id),
+    queryFn: () => getDriverFatigueById({ id }),
+    enabled: Boolean(id),
   })
 }
 
@@ -771,6 +939,31 @@ export function useDevice(id: string) {
   return useQuery(getDeviceQueryOptions(id))
 }
 
+// TRU-FE-4 pre-wire hooks.
+export function useDevicesSummary() {
+  return useQuery(getDevicesSummaryQueryOptions())
+}
+
+export function useDevicesFilters() {
+  return useQuery(getDevicesFiltersQueryOptions())
+}
+
+export function useDeviceImportColumns() {
+  return useQuery(getDeviceImportColumnsQueryOptions())
+}
+
+export function useDeviceCatalogManufacturers() {
+  return useQuery(getDeviceCatalogManufacturersQueryOptions())
+}
+
+export function useDeviceCatalogModels(manufacturer?: string) {
+  return useQuery(getDeviceCatalogModelsQueryOptions(manufacturer))
+}
+
+export function useDeviceSetupRequestTrackerTypes() {
+  return useQuery(getDeviceSetupRequestTrackerTypesQueryOptions())
+}
+
 export function useGeofences(payload?: GeofencesQuery) {
   return useQuery(getGeofencesQueryOptions(payload))
 }
@@ -806,6 +999,74 @@ export function useDrivers(payload?: DriversQuery) {
 
 export function useDriver(id: string) {
   return useQuery(getDriverQueryOptions(id))
+}
+
+// TRU-FE-3 pre-wire hooks (queries).
+export function useDriversSummary() { return useQuery(getDriversSummaryQueryOptions()) }
+export function useDriversFilters() { return useQuery(getDriversFiltersQueryOptions()) }
+export function useDriverImportColumns() { return useQuery(getDriverImportColumnsQueryOptions()) }
+export function useDriverConsent(id: string) { return useQuery(getDriverConsentQueryOptions(id)) }
+export function useDriverDetail(id: string) { return useQuery(getDriverDetailQueryOptions(id)) }
+export function useDriverBehaviorSummary(periodDays?: number) { return useQuery(getDriverBehaviorSummaryQueryOptions(periodDays)) }
+export function useDriverBehaviorRanking() { return useQuery(getDriverBehaviorRankingQueryOptions()) }
+export function useDriverBehaviorEvents(payload?: DriverBehaviorEventsQuery) { return useQuery(getDriverBehaviorEventsQueryOptions(payload)) }
+export function useDriverGeofenceAlerts(periodDays?: number) { return useQuery(getDriverGeofenceAlertsQueryOptions(periodDays)) }
+export function useDriverBehaviorById(id: string, periodDays?: number) { return useQuery(getDriverBehaviorByIdQueryOptions(id, periodDays)) }
+export function useDriverFatigueSummary() { return useQuery(getDriverFatigueSummaryQueryOptions()) }
+export function useDriverFatigueById(id: string) { return useQuery(getDriverFatigueByIdQueryOptions(id)) }
+
+// TRU-FE-3 pre-wire hooks (mutations).
+function invalidateDriverRoots(id?: string) {
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driversRoot })
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driversSummary })
+  if (id)
+    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driver(id) })
+}
+
+export function useSuspendDriver() {
+  return useMutation({
+    mutationFn: suspendDriver,
+    onSuccess: (_, vars) => invalidateDriverRoots(vars.id),
+  })
+}
+
+export function useReinstateDriver() {
+  return useMutation({
+    mutationFn: reinstateDriver,
+    onSuccess: (_, vars) => invalidateDriverRoots(vars.id),
+  })
+}
+
+export function useRequestDriverConsent() {
+  return useMutation({
+    mutationFn: requestDriverConsent,
+    onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driverConsent(vars.id) }),
+  })
+}
+
+export function usePatchDriverConsent() {
+  return useMutation({
+    mutationFn: patchDriverConsent,
+    onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driverConsent(vars.id) }),
+  })
+}
+
+export function useSendDriverMessage() {
+  return useMutation({ mutationFn: sendDriverMessage })
+}
+
+export function useMarkGeofenceAlertsRead() {
+  return useMutation({
+    mutationFn: markGeofenceAlertsRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fleet', 'driversBehavior', 'geofenceAlerts'] }),
+  })
+}
+
+export function useRunDriverFatigue() {
+  return useMutation({
+    mutationFn: runDriverFatigue,
+    onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driverFatigueById(vars.id) }),
+  })
 }
 
 export function useDispatchSearch(payload?: DispatchSearchQuery) {

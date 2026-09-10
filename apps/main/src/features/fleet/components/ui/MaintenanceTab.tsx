@@ -94,6 +94,7 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { cn } from "@/lib/utils";
+import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 
 type MaintenanceFormState = {
   vehicleId: string;
@@ -312,10 +313,9 @@ export function MaintenanceTab() {
   const recordsQuery = useMaintenanceRecords(recordsQueryParams);
   const summaryQuery = useMaintenanceRecordsSummary();
   const vehiclesQuery = useVehicles();
-  // ponytail: page-shell tabbed summary from GET /fleet/vehicles. Payload shape
-  // is `unknown` until the server response is typed — filtering/pagination for
-  // this tab still comes from useMaintenanceRecords above.
-  useVehiclesByTab('maintenance');
+  // ponytail: page-shell tabbed summary — rendered via TabSummaryStrip; filtering
+  // stays on useMaintenanceRecords above.
+  const tabSummaryQuery = useVehiclesByTab('maintenance');
   const createRecordMutation = useCreateMaintenanceRecord();
   const updateRecordMutation = useUpdateMaintenanceRecord();
   const deleteRecordMutation = useDeleteMaintenanceRecord();
@@ -861,6 +861,7 @@ export function MaintenanceTab() {
 
   return (
     <div className="space-y-6">
+      <TabSummaryStrip query={tabSummaryQuery} />
       <div className="flex items-center justify-end gap-2">
         <Button
           variant="outline"

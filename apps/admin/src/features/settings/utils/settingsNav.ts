@@ -34,9 +34,6 @@ export const SETTINGS_TABS: SettingsTab[] = [
   {
     to: "/settings/notifications", label: "Notifications", hasPermissions: [],
   },
-  {
-    to: "/settings/security", label: "Security", hasPermissions: [],
-  },
 ];
 
 /**

@@ -13,12 +13,17 @@ import {
   getSystemDeviceSetupRequestQueryOptions,
   getSystemDeviceSetupRequestsExportQueryOptions,
   getSystemDeviceSetupRequestsQueryOptions,
+  useApproveSystemDeviceSetupRequest,
   useAssignSystemDeviceSetupRequest,
   useRejectSystemDeviceSetupRequest,
+  useSystemDeviceSetupSummary,
 } from "@truckmoov/api/auth";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   Calendar,
+  Boxes,
+  CheckCircle2,
+  Clock,
   Cpu,
   Download,
   Eye,
@@ -87,13 +92,24 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { Textarea } from "@/components/shadcn/textarea";
 
-type DeviceSetupRow = SystemDeviceSetupRequest & {
-  connectionType: string;
-  requesterName: string;
-  needsSim: boolean;
-  vehiclePlate: string;
+// TRU-FE-5 § 2 — reshaped per spec. `SystemDeviceSetupRequest` now carries all
+// new fields directly; the row alias is kept for readability.
+type DeviceSetupRow = SystemDeviceSetupRequest;
+
+const TRACKER_TYPE_LABELS: Record<string, string> = {
+  hardwired: "Hardwired",
+  obd: "OBD-II",
+  obd2: "OBD-II",
+  asset: "Battery / Portable",
+};
+
+const KYC_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  verified: { label: "Verified", className: "border-transparent bg-success/15 text-success" },
+  pending: { label: "KYC Pending", className: "border-transparent bg-warning/15 text-warning" },
+  rejected: { label: "KYC Rejected", className: "border-transparent bg-destructive/15 text-destructive" },
 };
 
 type DeviceSetupFilterDraft = {
@@ -147,9 +163,17 @@ const STATUS_CONFIG: Record<SystemDeviceSetupStatus, {
     label: "Pending Review",
     className: "border-transparent bg-secondary text-secondary-foreground",
   },
+  approved: {
+    label: "Approved",
+    className: "border-transparent bg-success/15 text-success",
+  },
   in_progress: {
     label: "In Progress",
     className: "border-transparent bg-primary text-primary-foreground",
+  },
+  provisioned: {
+    label: "Provisioned",
+    className: "border-transparent bg-primary/15 text-primary",
   },
   assigned: {
     label: "Assigned",
@@ -159,35 +183,23 @@ const STATUS_CONFIG: Record<SystemDeviceSetupStatus, {
     label: "Rejected",
     className: "border-transparent bg-destructive text-destructive-foreground",
   },
-};
-
-const CONNECTION_LABELS: Record<string, string> = {
-  hardwired: "Hardwired",
-  obd: "OBD-II",
-  obd2: "OBD-II",
-  battery: "Battery",
+  cancelled: {
+    label: "Cancelled",
+    className: "border-transparent bg-muted text-muted-foreground",
+  },
 };
 
 const statusOptions: {
   value: SystemDeviceSetupStatus;
   label: string;
 }[] = [
-  {
-    value: "pending_review",
-    label: "Pending Review",
-  },
-  {
-    value: "in_progress",
-    label: "In Progress",
-  },
-  {
-    value: "assigned",
-    label: "Assigned",
-  },
-  {
-    value: "rejected",
-    label: "Rejected",
-  },
+  { value: "pending_review", label: "Pending Review" },
+  { value: "approved", label: "Approved" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "provisioned", label: "Provisioned" },
+  { value: "assigned", label: "Assigned" },
+  { value: "rejected", label: "Rejected" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -247,116 +259,67 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+// TRU-FE-5 § 2 — new payload shape. `?? null` on the string fields so the UI
+// falls back to `tenantId` for organisation/email per spec.
+function readOptionalString(source: Record<string, unknown> | null, key: string): string | null {
+  const value = source?.[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+function readNumber(source: Record<string, unknown> | null, key: string): number {
+  const value = source?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+function readTimeline(raw: Record<string, unknown>): SystemDeviceSetupRequest["timeline"] {
+  const value = raw.timeline;
+  if (!Array.isArray(value))
+    return [];
+  return value
+    .map(asRecord)
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+    .map(entry => ({
+      status: (readString(entry, "status") ?? "pending_review") as SystemDeviceSetupStatus,
+      at: readString(entry, "at") ?? new Date().toISOString(),
+      note: readOptionalString(entry, "note"),
+    }));
+}
+function readKycStatus(raw: Record<string, unknown>): SystemDeviceSetupRequest["kycStatus"] {
+  const value = raw.kycStatus;
+  if (value === "verified" || value === "pending" || value === "rejected")
+    return value;
+  return null;
+}
+
 function normalizeRequest(raw: Record<string, unknown>): DeviceSetupRow {
   return {
-    id: readString(
-      raw,
-      "id",
-    ) ?? "",
-    imei: readString(
-      raw,
-      "imei",
-    ) ?? "",
-    manufacturer: readString(
-      raw,
-      "manufacturer",
-    ) ?? "",
-    model: readString(
-      raw,
-      "model",
-    ) ?? "",
-    connectionType: readString(
-      raw,
-      "connectionType",
-    ) ?? readString(
-      raw,
-      "trackerType",
-    ) ?? "",
-    requesterName: readString(
-      raw,
-      "requesterName",
-    ) ?? readString(
-      raw,
-      "requester_name",
-    ) ?? "",
-    needsSim: readBoolean(
-      raw,
-      "needsSim",
-    ) || readBoolean(
-      raw,
-      "needs_sim",
-    ),
-    vehiclePlate: readString(
-      raw,
-      "vehiclePlate",
-    ) ?? readString(
-      raw,
-      "vehicle_plate",
-    ) ?? "",
-    location: readString(
-      raw,
-      "location",
-    ) ?? "",
-    tenantId: readString(
-      raw,
-      "tenantId",
-    ) ?? readString(
-      raw,
-      "tenant_id",
-    ) ?? "",
-    status: readString(
-      raw,
-      "status",
-    ) ?? "pending_review",
-    assignedTo: readString(
-      raw,
-      "assignedTo",
-    ) ?? readString(
-      raw,
-      "assigned_to",
-    ),
-    notes: readString(
-      raw,
-      "notes",
-    ) ?? readString(
-      raw,
-      "requesterNotes",
-    ) ?? readString(
-      raw,
-      "requester_notes",
-    ),
+    id: readString(raw, "id") ?? "",
+    tenantId: readString(raw, "tenantId") ?? readString(raw, "tenant_id") ?? "",
+    organisationName: readOptionalString(raw, "organisationName"),
+    requestingEmail: readOptionalString(raw, "requestingEmail"),
+    manufacturer: readString(raw, "manufacturer") ?? "",
+    model: readString(raw, "model") ?? "",
+    // Fall back to legacy `connectionType` so a mid-migration row doesn't render blank.
+    trackerType: readString(raw, "trackerType") ?? readString(raw, "connectionType") ?? "",
+    quantity: readNumber(raw, "quantity") || 1,
+    simRequired: readBoolean(raw, "simRequired") || readBoolean(raw, "needsSim"),
+    vehicleId: readOptionalString(raw, "vehicleId"),
+    state: readOptionalString(raw, "state"),
+    city: readOptionalString(raw, "city"),
     preferredInstallDate:
-      readString(
-        raw,
-        "preferredInstallDate",
-      ) ?? readString(
-        raw,
-        "preferred_install_date",
-      ) ?? readString(
-        raw,
-        "preferredDate",
-      ),
-    rejectedReason: readString(
-      raw,
-      "rejectedReason",
-    ) ?? readString(
-      raw,
-      "rejected_reason",
-    ),
-    createdAt: readString(
-      raw,
-      "createdAt",
-    ) ?? readString(
-      raw,
-      "created_at",
-    ) ?? new Date().toISOString(),
-    updatedAt: readString(
-      raw,
-      "updatedAt",
-    ) ?? readString(
-      raw,
-      "updated_at",
-    ) ?? new Date().toISOString(),
+      readOptionalString(raw, "preferredInstallDate")
+      ?? readOptionalString(raw, "preferred_install_date")
+      ?? readOptionalString(raw, "preferredDate"),
+    useCase: readOptionalString(raw, "useCase"),
+    notes: readOptionalString(raw, "notes"),
+    status: (readString(raw, "status") ?? "pending_review") as SystemDeviceSetupStatus,
+    kycStatus: readKycStatus(raw),
+    assignedTo: readOptionalString(raw, "assignedTo") ?? readOptionalString(raw, "assigned_to"),
+    decidedBy: readOptionalString(raw, "decidedBy"),
+    decidedAt: readOptionalString(raw, "decidedAt"),
+    // decisionReason replaces rejectedReason (§ 2). Read the legacy key too.
+    decisionReason: readOptionalString(raw, "decisionReason") ?? readOptionalString(raw, "rejectedReason"),
+    timeline: readTimeline(raw),
+    createdAt: readString(raw, "createdAt") ?? readString(raw, "created_at") ?? new Date().toISOString(),
+    updatedAt: readString(raw, "updatedAt") ?? readString(raw, "updated_at") ?? new Date().toISOString(),
   };
 }
 
@@ -430,6 +393,11 @@ export function DeviceSetupRequestsQueue() {
 
   const assignRequest = useAssignSystemDeviceSetupRequest();
   const rejectRequest = useRejectSystemDeviceSetupRequest();
+  const approveRequest = useApproveSystemDeviceSetupRequest();
+  const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
+  // TRU-FE-5 § 3 — Approval Queue cards.
+  const summaryQuery = useSystemDeviceSetupSummary();
+  const summary = summaryQuery.data?.data;
   const rejectForm = useForm<RejectRequestFormValues>({
     resolver: zodResolver(rejectRequestSchema),
     defaultValues: { reason: "" },
@@ -511,6 +479,20 @@ export function DeviceSetupRequestsQueue() {
     );
   }
 
+  // TRU-FE-5 § 4 — Approve. Must precede Assign per § 6. Buttons disable on
+  // decided requests, per the "don't rely on the 400" note in the spec.
+  function handleApprove(request: DeviceSetupRow) {
+    setApprovingRequestId(request.id);
+    approveRequest.mutate(
+      { id: request.id },
+      {
+        onSuccess: () => toast.success("Device setup request approved"),
+        onError: error => toast.error(error.message),
+        onSettled: () => setApprovingRequestId(null),
+      },
+    );
+  }
+
   function handleRejectSubmit(values: RejectRequestFormValues) {
     if (!selectedRejectRequest)
       return;
@@ -554,61 +536,72 @@ export function DeviceSetupRequestsQueue() {
       header: "Device",
       cell: ({ row }) => {
         const request = row.original;
+        const trackerLabel = TRACKER_TYPE_LABELS[request.trackerType] ?? request.trackerType;
         return (
           <div className="space-y-1">
             <p className="font-semibold">
-              {[
-                request.manufacturer,
-                request.model,
-              ].filter(Boolean).join(" ")}
+              {[request.manufacturer, request.model].filter(Boolean).join(" ")}
             </p>
-            <p className="font-mono text-xs text-muted-foreground">{request.imei}</p>
-            <Badge
-              variant="outline"
-              className="text-xs"
-            >
-              {CONNECTION_LABELS[request.connectionType] ?? request.connectionType}
-            </Badge>
+            <div className="flex items-center gap-1.5">
+              {trackerLabel && (
+                <Badge variant="outline" className="text-xs">
+                  {trackerLabel}
+                </Badge>
+              )}
+              <span className="text-xs text-muted-foreground">
+                × {request.quantity}
+              </span>
+              {request.simRequired && (
+                <Badge variant="secondary" className="text-xs">
+                  SIM
+                </Badge>
+              )}
+            </div>
           </div>
         );
       },
     },
     {
-      id: "requester",
-      header: "Requester",
+      id: "organisation",
+      header: "Organisation",
       cell: ({ row }) => {
         const request = row.original;
+        // TRU-FE-5 § 2 — fall back to tenantId when organisation isn't populated.
+        const primary = request.organisationName ?? request.tenantId;
         return (
           <div className="space-y-1">
-            <p className="font-semibold">{request.requesterName || "-"}</p>
-            {request.needsSim && (
-              <Badge
-                variant="secondary"
-                className="text-xs"
-              >
-                Needs SIM
-              </Badge>
+            <p className="font-semibold">{primary}</p>
+            {request.requestingEmail && (
+              <p className="text-xs text-muted-foreground">{request.requestingEmail}</p>
             )}
           </div>
         );
       },
     },
     {
-      accessorKey: "vehiclePlate",
-      header: "Vehicle",
-      cell: ({ row }) => (
-        <span className="font-semibold">{row.original.vehiclePlate || "-"}</span>
-      ),
+      id: "kyc",
+      header: "KYC",
+      cell: ({ row }) => {
+        // TRU-FE-5 § 2 — null kycStatus is "unknown", NOT verified. Render neutral.
+        const kyc = row.original.kycStatus;
+        if (!kyc)
+          return <span className="text-xs text-muted-foreground">Unknown</span>;
+        const config = KYC_STATUS_CONFIG[kyc];
+        return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
+      },
     },
     {
-      accessorKey: "location",
+      id: "location",
       header: "Location",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5" />
-          {row.original.location || "-"}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const parts = [row.original.city, row.original.state].filter(Boolean);
+        return (
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            {parts.length ? parts.join(", ") : "-"}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "status",
@@ -656,6 +649,11 @@ export function DeviceSetupRequestsQueue() {
       meta: { className: "w-16" },
       cell: ({ row }) => {
         const request = row.original;
+        // TRU-FE-5 § 4/§ 5/§ 6 — Approve only on pending_review; Assign only on approved.
+        // Disable buttons once decided rather than relying on 400s.
+        const isPending = request.status === "pending_review";
+        const isApproved = request.status === "approved";
+        const anyMutating = assignRequest.isPending || rejectRequest.isPending || approveRequest.isPending;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -673,20 +671,25 @@ export function DeviceSetupRequestsQueue() {
                 View Details
               </DropdownMenuItem>
               <DropdownMenuItem
-                disabled={assignRequest.isPending || rejectRequest.isPending}
+                disabled={!isPending || anyMutating}
+                onClick={() => handleApprove(request)}
+              >
+                {approvingRequestId === request.id
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                Approve
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!isApproved || anyMutating}
                 onClick={() => handleAssign(request)}
               >
                 {assigningRequestId === request.id
-                  ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <UserPlus className="mr-2 h-4 w-4" />
-                    )}
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <UserPlus className="mr-2 h-4 w-4" />}
                 Assign to Me
               </DropdownMenuItem>
               <DropdownMenuItem
-                disabled={rejectRequest.isPending || assignRequest.isPending}
+                disabled={!isPending || anyMutating}
                 className="text-destructive"
                 onClick={() => setSelectedRejectRequest(request)}
               >
@@ -702,7 +705,38 @@ export function DeviceSetupRequestsQueue() {
 
   return (
     <>
-      <Card>
+      {/* TRU-FE-5 § 3 — Approval Queue cards. `devicesRequested` counts trackers, not requests. */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard
+          title="Pending Approval"
+          icon={Clock}
+          variant="warning"
+          value={summary?.pendingApproval ?? 0}
+          loading={summaryQuery.isLoading}
+        />
+        <StatCard
+          title="Approved"
+          icon={CheckCircle2}
+          variant="success"
+          value={summary?.approved ?? 0}
+          loading={summaryQuery.isLoading}
+        />
+        <StatCard
+          title="Rejected"
+          icon={XCircle}
+          variant="danger"
+          value={summary?.rejected ?? 0}
+          loading={summaryQuery.isLoading}
+        />
+        <StatCard
+          title="Total Devices Requested"
+          icon={Boxes}
+          value={summary?.devicesRequested ?? 0}
+          loading={summaryQuery.isLoading}
+        />
+      </div>
+
+      <Card className="mt-4">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2">
@@ -729,7 +763,7 @@ export function DeviceSetupRequestsQueue() {
               <Input
                 value={search}
                 onChange={event => setSearch(event.target.value)}
-                placeholder="Search by IMEI, manufacturer, requester..."
+                placeholder="Search by organisation, email, manufacturer, model or tenant id..."
                 className="h-10 bg-transparent pl-10"
               />
             </div>
@@ -989,6 +1023,14 @@ export function DeviceSetupRequestsQueue() {
               )}
               <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-sm">
                 <DetailItem
+                  label="Organisation"
+                  value={detailRequest.organisationName ?? detailRequest.tenantId}
+                />
+                <DetailItem
+                  label="Request Email"
+                  value={detailRequest.requestingEmail ?? "-"}
+                />
+                <DetailItem
                   label="Manufacturer"
                   value={detailRequest.manufacturer}
                 />
@@ -997,46 +1039,69 @@ export function DeviceSetupRequestsQueue() {
                   value={detailRequest.model}
                 />
                 <DetailItem
-                  label="IMEI"
-                  value={detailRequest.imei}
-                  mono
-                />
-                <DetailItem
                   label="Tracker Type"
-                  value={CONNECTION_LABELS[detailRequest.connectionType] ?? detailRequest.connectionType}
+                  value={TRACKER_TYPE_LABELS[detailRequest.trackerType] ?? detailRequest.trackerType}
                 />
                 <DetailItem
-                  label="Vehicle"
-                  value={detailRequest.vehiclePlate}
+                  label="Quantity"
+                  value={String(detailRequest.quantity)}
                 />
                 <DetailItem
-                  label="Requester"
-                  value={detailRequest.requesterName}
+                  label="KYC"
+                  value={detailRequest.kycStatus ? KYC_STATUS_CONFIG[detailRequest.kycStatus].label : "Unknown"}
+                />
+                <DetailItem
+                  label="SIM Required"
+                  value={detailRequest.simRequired ? "Yes" : "No"}
                 />
               </div>
               <div className="border-t pt-4">
                 <DetailItem
                   label="Installation Location"
-                  value={detailRequest.location}
+                  value={[detailRequest.city, detailRequest.state].filter(Boolean).join(", ") || "-"}
                 />
               </div>
               <DetailItem
                 label="Preferred Date"
-                value={formatWithPattern(
-                  detailRequest.preferredInstallDate ?? detailRequest.updatedAt,
-                  "dd MMMM yyyy",
-                )}
+                value={detailRequest.preferredInstallDate
+                  ? formatWithPattern(detailRequest.preferredInstallDate, "dd MMMM yyyy")
+                  : "-"}
               />
-              {detailRequest.needsSim && <Badge variant="secondary">SIM Requested</Badge>}
+              <DetailItem
+                label="Use Case"
+                value={detailRequest.useCase || "-"}
+              />
               <DetailItem
                 label="Notes"
                 value={detailRequest.notes || "No notes provided."}
               />
-              {detailRequest.rejectedReason && (
+              {detailRequest.decisionReason && (
                 <DetailItem
-                  label="Rejection Reason"
-                  value={detailRequest.rejectedReason}
+                  label={detailRequest.status === "rejected" ? "Rejection Reason" : "Decision Note"}
+                  value={detailRequest.decisionReason}
                 />
+              )}
+              {/* TRU-FE-5 § 2 — timeline drives the audit trail below the details. */}
+              {detailRequest.timeline.length > 0 && (
+                <div className="border-t pt-4">
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">Timeline</p>
+                  <ol className="space-y-2">
+                    {detailRequest.timeline.map((entry, idx) => (
+                      <li key={`${entry.status}-${entry.at}-${idx}`} className="flex items-start gap-2 text-xs">
+                        <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                        <div className="flex-1">
+                          <p className="font-medium capitalize">
+                            {entry.status.replace(/_/g, " ")}
+                          </p>
+                          {entry.note && <p className="text-muted-foreground">{entry.note}</p>}
+                        </div>
+                        <span className="text-muted-foreground">
+                          {formatWithPattern(entry.at, "dd MMM yyyy HH:mm")}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               )}
             </div>
           )}

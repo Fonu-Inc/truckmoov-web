@@ -21,6 +21,9 @@
       "@truckmoov/reusables/components/*": [
         "../../packages/reusables/src/components/*"
       ],
+      "@truckmoov/reusables/hooks/*": [
+        "../../packages/reusables/src/hooks/*"
+      ],
       "@/*": [
         "./src/*"
       ],

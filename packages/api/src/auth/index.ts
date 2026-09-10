@@ -5,7 +5,9 @@ import { setOnboardingToken as persistOnboardingToken } from '../lib/onboarding-
 import { queryClient } from '../lib/query-client'
 import {
   attachSupportTicketFiles,
+  approveSystemDeviceSetupRequest,
   assignSystemDeviceSetupRequest,
+  getSystemDeviceSetupSummary,
   approveSIMRequest,
   changeRole,
   completeProfile,
@@ -126,6 +128,16 @@ import {
   updateSubscriptionPlanPrice,
   updateSupportTicketStatus,
   updateSystemAdminStatus,
+  confirmTwoFactor,
+  disableTwoFactor,
+  enrolTwoFactor,
+  exportAIRequests,
+  getAIGovernance,
+  getAIRequests,
+  getAIUsage,
+  getTwoFactor,
+  updateAIGovernance,
+  updateOpenRouterCredential,
   updateSystemSettings,
   updateSystemSim,
   updateTenant,
@@ -235,6 +247,10 @@ import {
   sendOnboardingApplicationEmailVerification,
   sendOnboardingApplicationPhoneVerification,
   submitOnboardingApplication,
+  exportSystemAuditLog,
+  getSystemAuditLog,
+  getSystemAuditLogFilters,
+  verifySystemAuditLog,
   updateMailboxMessageFlags,
   updateOnboardingApplication,
   updatePlatformIntegration,
@@ -244,6 +260,8 @@ import {
   verifyOnboardingApplicationPhone,
 } from './requests'
 import type {
+  AIRequestsQuery,
+  AIUsageQuery,
   ActivityLogQuery,
   CommunicationChannel,
   DataBundleLedgerQuery,
@@ -280,6 +298,7 @@ import type {
   BundleCatalogQuery,
   CommunicationsWalletRangeQuery,
   CreateOnboardingApplicationResponse,
+  SystemAuditLogQuery,
   SystemOnboardingApplicationsQuery,
 } from './types'
 
@@ -344,6 +363,10 @@ export const AUTH_QUERY_KEY = {
 
   systemFeatureFlags: ['systemFeatureFlags'],
   systemSettings: ['systemSettings'],
+  aiGovernance: ['aiGovernance'],
+  aiUsage: (payload?: AIUsageQuery) => payload?.params ? ['aiUsage', payload.params] : ['aiUsage'],
+  aiRequests: (payload?: AIRequestsQuery) => payload?.params ? ['aiRequests', payload.params] : ['aiRequests'],
+  twoFactor: ['twoFactor'],
 
   systemDashboard: ['systemDashboard'],
   systemHealth: ['systemHealth'],
@@ -386,6 +409,7 @@ export const AUTH_QUERY_KEY = {
   systemDeviceSetupRequests: (payload?: SystemDeviceSetupRequestsQuery) =>
     payload ? ['systemDeviceSetupRequests', payload] : ['systemDeviceSetupRequests'],
   systemDeviceSetupRequest: (id: string) => ['systemDeviceSetupRequest', id],
+  systemDeviceSetupSummary: ['systemDeviceSetupSummary'],
   systemSupportTickets: (payload?: SystemSupportTicketsQuery) =>
     payload ? ['systemSupportTickets', payload] : ['systemSupportTickets'],
   systemSupportTicket: (id: string) => ['systemSupportTicket', id],
@@ -437,6 +461,11 @@ export const AUTH_QUERY_KEY = {
   bundleAdoption: ['bundleAdoption'],
   bundleCatalog: (payload?: BundleCatalogQuery) =>
     payload ? ['bundleCatalog', payload] : ['bundleCatalog'],
+
+  systemAuditLog: (payload?: SystemAuditLogQuery) =>
+    payload ? ['systemAuditLog', payload] : ['systemAuditLog'],
+  systemAuditLogFilters: ['systemAuditLogFilters'],
+  systemAuditLogVerify: ['systemAuditLogVerify'],
 } as const
 
 // Public auth/session
@@ -1113,6 +1142,58 @@ export function useUpdateSystemSettings() {
   })
 }
 
+// TRU-FE-7 § B — AI hooks.
+export function getAIGovernanceQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.aiGovernance, queryFn: getAIGovernance })
+}
+export function useAIGovernance() {
+  return useQuery(getAIGovernanceQueryOptions())
+}
+export function useUpdateAIGovernance() {
+  return useMutation({
+    mutationFn: updateAIGovernance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.aiGovernance })
+    },
+  })
+}
+export function getAIUsageQueryOptions(payload?: AIUsageQuery) {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.aiUsage(payload), queryFn: () => getAIUsage(payload) })
+}
+export function useAIUsage(payload?: AIUsageQuery) {
+  return useQuery(getAIUsageQueryOptions(payload))
+}
+export function getAIRequestsQueryOptions(payload?: AIRequestsQuery) {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.aiRequests(payload), queryFn: () => getAIRequests(payload) })
+}
+export function useAIRequests(payload?: AIRequestsQuery) {
+  return useQuery(getAIRequestsQueryOptions(payload))
+}
+export function useUpdateOpenRouterCredential() {
+  return useMutation({ mutationFn: updateOpenRouterCredential })
+}
+export { exportAIRequests }
+
+// TRU-FE-7 § D — per-account 2FA.
+export function getTwoFactorQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.twoFactor, queryFn: getTwoFactor })
+}
+export function useTwoFactor() {
+  return useQuery(getTwoFactorQueryOptions())
+}
+function invalidateTwoFactor() {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.twoFactor })
+}
+export function useEnrolTwoFactor() {
+  return useMutation({ mutationFn: enrolTwoFactor, onSuccess: invalidateTwoFactor })
+}
+export function useConfirmTwoFactor() {
+  return useMutation({ mutationFn: confirmTwoFactor, onSuccess: invalidateTwoFactor })
+}
+export function useDisableTwoFactor() {
+  return useMutation({ mutationFn: disableTwoFactor, onSuccess: invalidateTwoFactor })
+}
+
 // Dashboard, reference data, and subscription plans
 
 export function getSystemDashboardQueryOptions() {
@@ -1684,12 +1765,37 @@ export function getSystemDeviceSetupRequestsExportQueryOptions(payload?: SystemD
   })
 }
 
+// TRU-FE-5 § 3 — Approval Queue cards.
+export function getSystemDeviceSetupSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDeviceSetupSummary,
+    queryFn: getSystemDeviceSetupSummary,
+  })
+}
+
+export function useSystemDeviceSetupSummary() {
+  return useQuery(getSystemDeviceSetupSummaryQueryOptions())
+}
+
 export function useAssignSystemDeviceSetupRequest() {
   return useMutation({
     mutationFn: assignSystemDeviceSetupRequest,
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequests() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequest(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupSummary })
+    },
+  })
+}
+
+// TRU-FE-5 § 4 — Approve.
+export function useApproveSystemDeviceSetupRequest() {
+  return useMutation({
+    mutationFn: approveSystemDeviceSetupRequest,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequests() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequest(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupSummary })
     },
   })
 }
@@ -1700,6 +1806,7 @@ export function useRejectSystemDeviceSetupRequest() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequests() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequest(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupSummary })
     },
   })
 }
@@ -2267,4 +2374,29 @@ export function useUpdateSubscriptionPlanEntitlements() {
     },
   })
 }
+
+// ─── System — cross-tenant audit log ─────────────────────────────────────────
+
+export function getSystemAuditLogQueryOptions(payload?: SystemAuditLogQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemAuditLog(payload),
+    queryFn: () => getSystemAuditLog(payload),
+  })
+}
+
+export function getSystemAuditLogFiltersQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemAuditLogFilters,
+    queryFn: getSystemAuditLogFilters,
+  })
+}
+
+export function getSystemAuditLogVerifyQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemAuditLogVerify,
+    queryFn: verifySystemAuditLog,
+  })
+}
+
+export { exportSystemAuditLog }
 

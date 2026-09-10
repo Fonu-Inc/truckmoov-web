@@ -6,6 +6,8 @@ import { toast } from "sonner";
 export type DeviceWithTelemetry = {
   id: string;
   imei: string;
+  /** TRU-FE-4 § 3 — optional Device Name; falls back to manufacturer + model in listings. */
+  name?: string | null;
   manufacturer: string;
   model: string | null;
   status: string;

@@ -47,6 +47,12 @@ function flushQueue(error: ServerErrorResponse | null, token: string | null = nu
   pendingQueue = []
 }
 
+function redirectToLogin() {
+  if (typeof window === 'undefined') return
+  if (window.location.pathname.startsWith('/auth')) return
+  window.location.assign('/auth')
+}
+
 // ─── Response interceptor: normalize errors + 401 refresh ─────────────────────
 
 axiosInstance.interceptors.response.use(
@@ -62,6 +68,7 @@ axiosInstance.interceptors.response.use(
 
     if (!refreshToken) {
       logout()
+      redirectToLogin()
       return Promise.reject(normalizeError(error))
     }
 
@@ -95,6 +102,7 @@ axiosInstance.interceptors.response.use(
       }
       logout()
       flushQueue(refreshError, null)
+      redirectToLogin()
       return Promise.reject(refreshError)
     } finally {
       isRefreshing = false

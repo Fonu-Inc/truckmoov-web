@@ -60,12 +60,41 @@ import type {
   FleetProfitabilityPayload,
   FleetProfitabilityResponse,
   FleetDashboardResponse,
+  DeviceCatalogManufacturersResponse,
+  DeviceCatalogModelsResponse,
+  DeviceImportColumnsResponse,
+  DeviceSetupRequestTrackerTypesResponse,
+  DevicesFiltersResponse,
+  DevicesSummaryResponse,
   FleetDeviceListResponse,
   FleetDeviceResponse,
   FleetDocumentListResponse,
   FleetDocumentResponse,
+  DriverBehaviorEventsQuery,
+  DriverBehaviorEventsResponse,
+  DriverBehaviorRankingResponse,
+  DriverBehaviorResponse,
+  DriverBehaviorSummaryResponse,
+  DriverConsentEntryResponse,
+  DriverConsentResponse,
+  DriverDetailResponse,
+  DriverFatigueResponse,
+  DriverFatigueSummaryResponse,
+  DriverGeofenceAlertsResponse,
+  DriverImportColumnsResponse,
+  DriversFiltersResponse,
+  DriversSummaryResponse,
   FleetDriverListResponse,
   FleetDriverResponse,
+  MarkGeofenceAlertsReadPayload,
+  MarkGeofenceAlertsReadResponse,
+  PatchDriverConsentPayload,
+  ReinstateDriverPayload,
+  RequestDriverConsentPayload,
+  RunDriverFatiguePayload,
+  SendDriverMessagePayload,
+  SendDriverMessageResponse,
+  SuspendDriverPayload,
   GeofenceListResponse,
   GeofenceResponse,
   GeofencesQuery,
@@ -336,9 +365,44 @@ export async function exportDevices(payload?: DevicesQuery) {
 }
 
 export async function downloadDeviceImportTemplate() {
-  const { data } = await axiosInstance.get<Blob>('/fleet/devices/import-template', {
+  const { data } = await axiosInstance.get<Blob>('/fleet/devices/import/template', {
     responseType: 'blob',
   })
+  return data
+}
+
+// TRU-FE-4 § 5 — format explainer JSON so the modal can render columns without parsing a file.
+export async function getDeviceImportColumns() {
+  const { data } = await axiosInstance.get<DeviceImportColumnsResponse>('/fleet/devices/import/columns')
+  return data
+}
+
+// TRU-FE-4 § 1 — status cards + allowance bar.
+export async function getDevicesSummary() {
+  const { data } = await axiosInstance.get<DevicesSummaryResponse>('/fleet/devices/summary')
+  return data
+}
+
+// TRU-FE-4 § 2 — filter dropdown options.
+export async function getDevicesFilters() {
+  const { data } = await axiosInstance.get<DevicesFiltersResponse>('/fleet/devices/filters')
+  return data
+}
+
+// TRU-FE-4 § 7 — catalog dropdowns for Register New Device + Request Device Setup.
+export async function getDeviceCatalogManufacturers() {
+  const { data } = await axiosInstance.get<DeviceCatalogManufacturersResponse>('/fleet/devices/catalog/manufacturers')
+  return data
+}
+
+export async function getDeviceCatalogModels(params?: { manufacturer?: string }) {
+  const { data } = await axiosInstance.get<DeviceCatalogModelsResponse>('/fleet/devices/catalog/models', { params })
+  return data
+}
+
+// TRU-FE-4 § 8 — tracker types (currently 400s on dev-api; wired ready for the fix).
+export async function getDeviceSetupRequestTrackerTypes() {
+  const { data } = await axiosInstance.get<DeviceSetupRequestTrackerTypesResponse>('/fleet/device-setup-requests/tracker-types')
   return data
 }
 
@@ -479,6 +543,124 @@ export async function updateDriverStatus({ id, data }: UpdateDriverStatusPayload
 
 export async function updateDriverContactChannels({ id, data }: UpdateDriverContactChannelsPayload) {
   const { data: res } = await axiosInstance.patch<FleetDriverResponse>(`/fleet/drivers/${id}/contact-channels`, data)
+  return res
+}
+
+// ─── Drivers — TRU-FE-3 pre-wire ─────────────────────────────────────────────
+
+export async function getDriversSummary() {
+  const { data } = await axiosInstance.get<DriversSummaryResponse>('/fleet/drivers/summary')
+  return data
+}
+
+export async function getDriversFilters() {
+  const { data } = await axiosInstance.get<DriversFiltersResponse>('/fleet/drivers/filters')
+  return data
+}
+
+export async function downloadDriverImportTemplate() {
+  const { data } = await axiosInstance.get<Blob>('/fleet/drivers/import/template', {
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function getDriverImportColumns() {
+  const { data } = await axiosInstance.get<DriverImportColumnsResponse>('/fleet/drivers/import/columns')
+  return data
+}
+
+export async function exportDrivers(payload?: DriversQuery) {
+  const { data } = await axiosInstance.get<Blob>('/fleet/drivers/export', {
+    params: payload?.params,
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function suspendDriver({ id, data }: SuspendDriverPayload) {
+  const { data: res } = await axiosInstance.post<FleetDriverResponse>(`/fleet/drivers/${id}/suspend`, data ?? {})
+  return res
+}
+
+export async function reinstateDriver({ id }: ReinstateDriverPayload) {
+  const { data: res } = await axiosInstance.post<FleetDriverResponse>(`/fleet/drivers/${id}/reinstate`, {})
+  return res
+}
+
+export async function getDriverConsent({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<DriverConsentResponse>(`/fleet/drivers/${id}/consent`)
+  return data
+}
+
+export async function requestDriverConsent({ id, channel }: RequestDriverConsentPayload) {
+  const { data } = await axiosInstance.post<DriverConsentEntryResponse>(`/fleet/drivers/${id}/consent/${channel}/request`, {})
+  return data
+}
+
+export async function patchDriverConsent({ id, channel, data }: PatchDriverConsentPayload) {
+  const { data: res } = await axiosInstance.patch<DriverConsentEntryResponse>(`/fleet/drivers/${id}/consent/${channel}`, data)
+  return res
+}
+
+export async function sendDriverMessage({ id, channel, data }: SendDriverMessagePayload) {
+  const { data: res } = await axiosInstance.post<SendDriverMessageResponse>(`/fleet/drivers/${id}/messages/${channel}`, data)
+  return res
+}
+
+export async function getDriverDetail({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<DriverDetailResponse>(`/fleet/drivers/${id}/detail`)
+  return data
+}
+
+// ─── Drivers — Behavior tab (TRU-FE-3 § 9) ───────────────────────────────────
+
+export async function getDriverBehaviorSummary(params?: { period_days?: number }) {
+  const { data } = await axiosInstance.get<DriverBehaviorSummaryResponse>('/fleet/drivers/behavior/summary', { params })
+  return data
+}
+
+export async function getDriverBehaviorRanking() {
+  const { data } = await axiosInstance.get<DriverBehaviorRankingResponse>('/fleet/drivers/behavior/ranking')
+  return data
+}
+
+export async function getDriverBehaviorEvents(payload?: DriverBehaviorEventsQuery) {
+  const { data } = await axiosInstance.get<DriverBehaviorEventsResponse>('/fleet/drivers/behavior/events', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getDriverGeofenceAlerts(params?: { period_days?: number }) {
+  const { data } = await axiosInstance.get<DriverGeofenceAlertsResponse>('/fleet/drivers/behavior/geofence-alerts', { params })
+  return data
+}
+
+export async function markGeofenceAlertsRead({ data }: MarkGeofenceAlertsReadPayload) {
+  const { data: res } = await axiosInstance.post<MarkGeofenceAlertsReadResponse>('/fleet/drivers/behavior/geofence-alerts/read', data)
+  return res
+}
+
+export async function getDriverBehaviorById({ id, params }: { id: string, params?: { period_days?: number } }) {
+  const { data } = await axiosInstance.get<DriverBehaviorResponse>(`/fleet/drivers/${id}/behavior`, { params })
+  return data
+}
+
+// ─── Drivers — Fatigue AI (TRU-FE-3 § 10) ────────────────────────────────────
+
+export async function getDriverFatigueSummary() {
+  const { data } = await axiosInstance.get<DriverFatigueSummaryResponse>('/fleet/drivers/fatigue/summary')
+  return data
+}
+
+export async function getDriverFatigueById({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<DriverFatigueResponse>(`/fleet/drivers/${id}/fatigue`)
+  return data
+}
+
+export async function runDriverFatigue({ id, data }: RunDriverFatiguePayload) {
+  const { data: res } = await axiosInstance.post<DriverFatigueResponse>(`/fleet/drivers/${id}/fatigue/run`, data ?? {})
   return res
 }
 

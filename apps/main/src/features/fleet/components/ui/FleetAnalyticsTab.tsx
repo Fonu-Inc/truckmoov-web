@@ -66,6 +66,7 @@ import {
 } from "@/components/shadcn/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
+import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 import { PeriodFilter } from "./PeriodFilter";
 
 const CHART_TOOLTIP_STYLE = {
@@ -349,8 +350,8 @@ function KPICard({
 }
 
 export function FleetAnalyticsTab() {
-  // ponytail: page-shell tabbed summary from GET /fleet/vehicles (summary only, no items).
-  useVehiclesByTab("analytics");
+  // ponytail: page-shell tabbed summary (summary only, no items) — rendered via TabSummaryStrip.
+  const tabSummaryQuery = useVehiclesByTab("analytics");
   const { format: formatCurrency } = useCurrency();
   const [
     lastRefresh,
@@ -589,6 +590,7 @@ export function FleetAnalyticsTab() {
 
   return (
     <div className="space-y-6">
+      <TabSummaryStrip query={tabSummaryQuery} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <LiveIndicator connected={connected} />

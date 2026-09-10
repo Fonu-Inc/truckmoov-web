@@ -6,8 +6,9 @@ import type { Driver } from "@/types";
 import type { DriverBulkUploadItem } from "@/components/drivers/DriverBulkUploadDialog";
 import type { DriverFormData } from "@/components/drivers/DriverFormDialog";
 import {
-  useCreateDriver, useDrivers, useImportDrivers, useUpdateDriver,
+  useCreateDriver, useDrivers, useDriversFilters, useDriversSummary, useImportDrivers, useUpdateDriver,
 } from "@truckmoov/api/fleet";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useSendNotifyMessage } from "@truckmoov/api/notification";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
@@ -138,16 +139,19 @@ function toDriverInput(data: DriverFormData): DriverInput {
 }
 
 /**
- * ponytail: `rating` and `totalTrips` aren't on `FleetDriver` yet — seed
- * deterministic dummy values from the id so the details sheet, performance
- * column and stats stay stable across renders. Drop this adapter when the
- * fleet service starts returning real fields.
+ * ponytail: prefer TRU-FE-3 § 1 server fields when present; seed dummy values
+ * only when the server omits them (empty tenants, drivers with no telemetry).
+ * Drop the fallback once every row carries real values.
  */
 function toLocalDriver(row: DriverRow): Driver {
   const seed = Array.from(row.id ?? "").reduce(
     (acc, ch) => acc + ch.charCodeAt(0),
     0,
   );
+  const rating = row.behaviorScore != null
+    ? Math.max(0, Math.min(5, row.behaviorScore / 20)) // 0–100 → 0–5
+    : 3 + (seed % 20) / 10;
+  const totalTrips = row.trips ?? 20 + (seed % 250);
   return {
     id: row.id,
     name: row.name,
@@ -156,15 +160,23 @@ function toLocalDriver(row: DriverRow): Driver {
     licenseNumber: row.licenseNumber,
     licenseExpiry: row.licenseExpiryDate ? new Date(row.licenseExpiryDate) : new Date(),
     status: (row.status ?? "available") as Driver["status"],
-    rating: 3 + (seed % 20) / 10, // 3.0 – 4.9
-    totalTrips: 20 + (seed % 250),
-    communicationPreference: (row.communicationPreference ?? "whatsapp") as Driver["communicationPreference"],
+    rating,
+    totalTrips,
+    communicationPreference: (row.preferredChannel ?? row.communicationPreference ?? "whatsapp") as Driver["communicationPreference"],
   };
 }
 
 export default function DriversPage() {
   const { user } = useAuthStore();
+  // TRU-FE-3 § 1 — pass the new server-side filter params. Client-side rating/trips
+  // filters still run on the returned list until the bands land server-side.
   const driversQuery = useDrivers();
+  // TRU-FE-3 § 2 / § 3 — pre-wired; render empty until BE ships. `useDriversFilters`
+  // fires so the dropdowns can pick up server-provided bands once available; today
+  // the response is 404 and the hardcoded DRIVER_STATUSES fallback covers the UI.
+  const driversSummaryQuery = useDriversSummary();
+  useDriversFilters();
+  const summary = driversSummaryQuery.data?.data ?? null;
   const createDriver = useCreateDriver();
   const updateDriver = useUpdateDriver();
   const importDrivers = useImportDrivers();
@@ -233,14 +245,26 @@ export default function DriversPage() {
   );
 
   const stats = useMemo(
-    () => ({
-      total: drivers.length,
-      onJob: drivers.filter(d => d.status === "active").length,
-      available: drivers.filter(d => d.status === "available").length,
-      offline: drivers.filter(d => d.status === "offline").length,
-      suspended: drivers.filter(d => d.status === "suspended").length,
-    }),
-    [drivers],
+    () => {
+      // TRU-FE-3 § 2 — prefer server summary when available; fall back to client aggregation.
+      if (summary) {
+        return {
+          total: summary.total,
+          onJob: summary.active,
+          available: summary.available,
+          offline: summary.offline,
+          suspended: summary.suspended,
+        };
+      }
+      return {
+        total: drivers.length,
+        onJob: drivers.filter(d => d.status === "active").length,
+        available: drivers.filter(d => d.status === "available").length,
+        offline: drivers.filter(d => d.status === "offline").length,
+        suspended: drivers.filter(d => d.status === "suspended").length,
+      };
+    },
+    [drivers, summary],
   );
 
   const filteredDrivers = useMemo(
@@ -656,6 +680,39 @@ export default function DriversPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-muted-foreground">All Drivers</p>
                 <p className="mt-1 text-2xl font-bold">{stats.total}</p>
+                {/* TRU-FE-3 § 2 — allowance bar; every driver holds a seat until deletion. */}
+                {summary?.allowance && (
+                  summary.allowance.unlimited || summary.allowance.limit === null
+                    ? (
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {summary.allowance.used}
+                          {" / Unlimited"}
+                        </p>
+                      )
+                    : (
+                        <div className="mt-1 space-y-1">
+                          <p className="text-[11px] text-muted-foreground">
+                            {summary.allowance.used}
+                            {" / "}
+                            {summary.allowance.limit}
+                            {" used · "}
+                            {summary.allowance.usedPercent ?? 0}
+                            %
+                          </p>
+                          <div className="h-1.5 w-full rounded-full bg-secondary">
+                            <div
+                              className={cn(
+                                "h-full rounded-full",
+                                (summary.allowance.usedPercent ?? 0) >= 90
+                                  ? "bg-destructive"
+                                  : (summary.allowance.usedPercent ?? 0) >= 75 ? "bg-warning" : "bg-primary",
+                              )}
+                              style={{ width: `${Math.min(summary.allowance.usedPercent ?? 0, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                )}
               </div>
             </div>
           </CardContent>

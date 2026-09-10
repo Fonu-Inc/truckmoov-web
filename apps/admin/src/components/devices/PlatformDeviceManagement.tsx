@@ -12,7 +12,7 @@ import {
   getSystemDevicesCatalogExportQueryOptions,
   getSystemDevicesQueryOptions,
   getSystemDevicesSummaryQueryOptions,
-
+  getSystemTenantsQueryOptions,
 } from "@truckmoov/api/auth";
 import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
@@ -72,12 +72,19 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/shadcn/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Dialog as Sheet,
+  DialogContent as SheetContent,
+  DialogDescription as SheetDescription,
+  DialogHeader as SheetHeader,
+  DialogTitle as SheetTitle,
+} from "@/components/shadcn/dialog";
+import { Label } from "@/components/shadcn/label";
 import { Skeleton } from "@/components/shadcn/skeleton";
 
 const lifecycleStatuses = [
@@ -259,6 +266,18 @@ export function PlatformDeviceManagement() {
     setSelectedDevice,
   ] = useState<SystemDeviceInventoryItem | null>(null);
   const [
+    editDevice,
+    setEditDevice,
+  ] = useState<SystemDeviceInventoryItem | null>(null);
+  const [
+    reassignDevice,
+    setReassignDevice,
+  ] = useState<SystemDeviceInventoryItem | null>(null);
+  const [
+    reassignTenantId,
+    setReassignTenantId,
+  ] = useState("");
+  const [
     searchQuery,
     setSearchQuery,
   ] = useState("");
@@ -321,11 +340,19 @@ export function PlatformDeviceManagement() {
     ...getSystemDeviceQueryOptions(selectedDevice?.id ?? ""),
     enabled: Boolean(selectedDevice?.id),
   });
+  const tenantsQuery = useQuery({
+    ...getSystemTenantsQueryOptions(),
+    enabled: Boolean(reassignDevice),
+  });
+  const tenants = tenantsQuery.data?.data?.tenants ?? [];
   const summary = summaryQuery.data?.data;
   const devices = useMemo<SystemDeviceInventoryItem[]>(
     () => devicesQuery.data?.data?.devices ?? [],
     [devicesQuery.data],
   );
+  // TRU-FE-5 § 8 — Active excludes assigned so it doesn't double-count with Assigned.
+  // The four new counters (unassignedDevices, unregisteredDevices, inactiveDevices,
+  // suspendedDevices) come straight from the endpoint now.
   const summaryCards = useMemo(
     () => [
       {
@@ -339,27 +366,14 @@ export function PlatformDeviceManagement() {
         className: "text-success",
       },
       {
-        label: "Inactive",
-        // ponytail: API doesn't ship inactiveDevices — treat pending config as inactive.
-        // Drop this fallback when the summary endpoint gains the field.
-        value: summary?.pendingConfigDevices ?? "N/A",
-        className: "text-muted-foreground",
-      },
-      {
         label: "Assigned",
         value: summary?.assignedDevices ?? "N/A",
         className: "text-primary",
       },
       {
         label: "Unassigned",
-        // fleetflow's "unassigned" == assignable-but-not-yet-assigned.
-        value: summary?.assignableDevices ?? "N/A",
+        value: summary?.unassignedDevices ?? "N/A",
         className: "text-warning",
-      },
-      {
-        label: "Configured",
-        value: summary?.configuredDevices ?? "N/A",
-        className: "text-info",
       },
       {
         label: "Registered",
@@ -368,8 +382,22 @@ export function PlatformDeviceManagement() {
       },
       {
         label: "Unregistered",
-        // ponytail: API doesn't ship unregisteredDevices — 0 until backend adds it.
-        value: 0,
+        value: summary?.unregisteredDevices ?? "N/A",
+        className: "text-muted-foreground",
+      },
+      {
+        label: "Configured",
+        value: summary?.configuredDevices ?? "N/A",
+        className: "text-info",
+      },
+      {
+        label: "Suspended",
+        value: summary?.suspendedDevices ?? "N/A",
+        className: "text-warning",
+      },
+      {
+        label: "Inactive",
+        value: summary?.inactiveDevices ?? "N/A",
         className: "text-muted-foreground",
       },
     ],
@@ -479,17 +507,13 @@ export function PlatformDeviceManagement() {
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                // ponytail: wire useUpdateDevice when the API exposes it
-                toast.info("Not yet implemented");
-              }}
-              >
+              <DropdownMenuItem onClick={() => setEditDevice(device)}>
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit Details
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
-                // ponytail: wire useAssignDeviceToTenant when the API exposes it
-                toast.info("Not yet implemented");
+                setReassignDevice(device);
+                setReassignTenantId(device.tenantId ?? "");
               }}
               >
                 <ArrowUpDown className="h-4 w-4 mr-2" />
@@ -1054,6 +1078,164 @@ export function PlatformDeviceManagement() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Edit Device Dialog — ponytail: form-only for now. Wire submit when
+          `PATCH /system/devices/:id` ships. */}
+      <Dialog
+        open={!!editDevice}
+        onOpenChange={open => !open && setEditDevice(null)}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Device Details</DialogTitle>
+            <DialogDescription>
+              Update the record for
+              {" "}
+              {editDevice?.manufacturer}
+              {" "}
+              {editDevice?.model}
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-imei">IMEI</Label>
+              <Input
+                id="edit-imei"
+                defaultValue={editDevice?.imei ?? ""}
+                maxLength={15}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-manufacturer">Manufacturer</Label>
+              <Input
+                id="edit-manufacturer"
+                defaultValue={editDevice?.manufacturer ?? ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-model">Model</Label>
+              <Input
+                id="edit-model"
+                defaultValue={editDevice?.model ?? ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-firmware">Firmware Version</Label>
+              <Input
+                id="edit-firmware"
+                defaultValue={editDevice?.firmwareVersion ?? ""}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-protocol">Protocol</Label>
+                <Input
+                  id="edit-protocol"
+                  defaultValue={editDevice?.protocol ?? ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Input
+                  id="edit-status"
+                  defaultValue={editDevice?.operationalStatus ?? ""}
+                  disabled
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDevice(null)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              toast.info("Backend endpoint pending — form values not saved");
+              setEditDevice(null);
+            }}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reassign Device Dialog — ponytail: tenant list is real, submit is a
+          stub until `POST /system/devices/:id/assign` ships. */}
+      <Dialog
+        open={!!reassignDevice}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReassignDevice(null);
+            setReassignTenantId("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {reassignDevice?.tenantId ? "Reassign Device" : "Assign Device to Tenant"}
+            </DialogTitle>
+            <DialogDescription>
+              Allocate
+              {" "}
+              {reassignDevice?.manufacturer}
+              {" "}
+              {reassignDevice?.model}
+              {" "}
+              (IMEI
+              {" "}
+              {reassignDevice?.imei}
+              ) to a tenant.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>Tenant</Label>
+            <Select
+              value={reassignTenantId}
+              onValueChange={setReassignTenantId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={tenantsQuery.isLoading ? "Loading tenants…" : "Select tenant"} />
+              </SelectTrigger>
+              <SelectContent>
+                {tenants.map(t => (
+                  <SelectItem
+                    key={t.id}
+                    value={t.id}
+                  >
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReassignDevice(null);
+                setReassignTenantId("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!reassignTenantId}
+              onClick={() => {
+                toast.info("Backend endpoint pending — assignment not persisted");
+                setReassignDevice(null);
+                setReassignTenantId("");
+              }}
+            >
+              {reassignDevice?.tenantId ? "Reassign" : "Assign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

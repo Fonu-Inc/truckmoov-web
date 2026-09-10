@@ -1,3 +1,4 @@
+import { useDriverFatigueSummary } from "@truckmoov/api/fleet";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity,
@@ -298,8 +299,14 @@ const DEMO_FATIGUE_ALERTS: FatigueAlert[] = [
 ];
 
 export function DriverFatigueTab() {
+  // TRU-FE-3 § 10 — real fatigue summary. 503 means the feature is disabled and
+  // is not an error state; render the off banner instead of the alerting UI.
+  const fatigueSummary = useDriverFatigueSummary();
+  const featureDisabled = fatigueSummary.isError
+    && (fatigueSummary.error as { statusCode?: number } | undefined)?.statusCode === 503;
+
   const realAlerts: FatigueAlert[] = [];
-  const isLoading = false;
+  const isLoading = fatigueSummary.isLoading;
   const getAlertsStats = () => ({
     total: 0, critical: 0, high: 0, medium: 0, low: 0, avgFatigueScore: 0, avgRestCompliance: 0,
   });
@@ -333,6 +340,20 @@ export function DriverFatigueTab() {
         ),
       }
     : realStats;
+
+  if (featureDisabled) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-border/50 bg-muted/30 p-6 text-center">
+          <Brain className="mx-auto h-8 w-8 text-muted-foreground/40" />
+          <p className="mt-3 text-sm font-medium">Fatigue AI not enabled</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            This feature is off for your workspace. Contact support to enable it.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

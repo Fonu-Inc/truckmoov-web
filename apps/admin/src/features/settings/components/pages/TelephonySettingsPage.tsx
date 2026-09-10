@@ -1,5 +1,5 @@
 import {
-  Activity, BadgeCheck, Phone, Settings,
+  Activity, BadgeCheck, Phone,
 } from "lucide-react";
 import {
   NavLink, Outlet,
@@ -15,9 +15,6 @@ const SUB_TABS = [
   },
   {
     to: "/settings/telephony/sender-ids", label: "Sender IDs", icon: BadgeCheck, end: true,
-  },
-  {
-    to: "/settings/telephony/config", label: "Config", icon: Settings, end: true,
   },
 ];
 

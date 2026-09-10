@@ -862,6 +862,12 @@ export const router = createBrowserRouter([
                   "UpgradeSettingsPanel",
                 ),
               },
+              {
+                // TRU-FE-7 § D — /settings/security is universally accessible (empty
+                // `hasPermissions`). No withGuard wrapper: withGuard([]) would deny all.
+                path: "security",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/SecuritySettingsPage")).default }),
+              },
             ],
           },
 

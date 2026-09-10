@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useLogin } from "@truckmoov/api/auth";
+import { getTwoFactorQueryOptions, useLogin } from "@truckmoov/api/auth";
+import { queryClient } from "@truckmoov/api/lib/query-client";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
   ArrowRight, Mail,
@@ -57,13 +58,22 @@ export function SignInForm() {
         },
       },
       {
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
           useAuthStore.getState().syncFromSession();
           toast.success("Login request completed.");
-          navigate(
-            getPostLoginRedirectPath(res.data.user.role),
-            { replace: true },
-          );
+
+          // TRU-FE-7 § C/§ D — if the platform requires 2FA and this account
+          // isn't enrolled, land on Security to nudge enrolment. Fail-open on
+          // any error (endpoint 404 today) so login can't wedge.
+          let redirectTo = getPostLoginRedirectPath(res.data.user.role);
+          try {
+            const state = await queryClient.fetchQuery(getTwoFactorQueryOptions());
+            if (state.data.requiredByPlatform && !state.data.enrolled)
+              redirectTo = "/settings/security?enrol=required";
+          }
+          catch { /* fail open */ }
+
+          navigate(redirectTo, { replace: true });
         },
         onError: (error) => {
           toast.error(error.message);

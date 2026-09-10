@@ -14,6 +14,8 @@ import {
   useDeleteDevice,
   useDevice,
   useDevices,
+  useDevicesFilters,
+  useDevicesSummary,
   useImportDevices,
   useUnassignDevice,
   useUpdateDevice,
@@ -203,6 +205,12 @@ export default function DeviceManagement() {
       manufacturer: apiManufacturer,
     },
   });
+  // TRU-FE-4 § 1/§ 2 — pre-wired; render nothing new until BE ships. The existing
+  // client-side aggregation below is the fallback path so status cards keep working.
+  const devicesSummaryQuery = useDevicesSummary();
+  const devicesFiltersQuery = useDevicesFilters();
+  const summary = devicesSummaryQuery.data?.data ?? null;
+  const filtersFromServer = devicesFiltersQuery.data?.data ?? null;
   const { data: vehiclesResponse } = useVehicles();
   const { data: availableVehiclesResponse } = useVehicles({ params: { assigned: false } });
   const { data: deviceResponse } = useDevice(selectedDevice?.id ?? "");
@@ -220,6 +228,7 @@ export default function DeviceManagement() {
     () => (devicesResponse?.data ?? []).map(device => ({
       id: device.id,
       imei: device.imei,
+      name: device.name ?? null,
       manufacturer: device.manufacturer,
       model: device.model,
       status: device.status,
@@ -304,16 +313,30 @@ export default function DeviceManagement() {
 
   const manufacturers = useMemo(
     () => [
+      // TRU-FE-4 § 2 — prefer server catalog+tenant union, fall back to hardcoded+tenant.
       ...new Set([
-        ...KNOWN_DEVICE_MANUFACTURERS,
+        ...(filtersFromServer?.manufacturers ?? KNOWN_DEVICE_MANUFACTURERS),
         ...devices.map(device => device.manufacturer),
       ]),
     ],
-    [devices],
+    [devices, filtersFromServer],
   );
 
   const stats = useMemo(
     () => {
+      // TRU-FE-4 § 1 — if the server summary is available, use its counts (they
+      // include suspended devices that hold plan seats). Otherwise, keep the
+      // client-side aggregation so the cards always render something.
+      if (summary) {
+        return {
+          total: summary.total,
+          active: summary.active,
+          registered: summary.registered,
+          assigned: summary.assigned,
+          unassigned: summary.unassigned,
+          configured: summary.configured,
+        };
+      }
       const buckets = devices.map(normalizeStatus);
       return {
         total: devices.length,
@@ -324,7 +347,7 @@ export default function DeviceManagement() {
         configured: buckets.filter(s => s === "configured").length,
       };
     },
-    [devices],
+    [devices, summary],
   );
 
   // Lifecycle status counts
@@ -349,6 +372,9 @@ export default function DeviceManagement() {
       await createDevice.mutateAsync({
         data: {
           imei: newDevice.imei!,
+          // TRU-FE-4 § 6 — send the Device Name captured by the form (rejected by DTO
+          // until BE lands the whitelist fix; blank stays blank).
+          name: (newDevice as IoTDevice & { deviceName?: string }).deviceName?.trim() || undefined,
           manufacturer: newDevice.manufacturer!,
           model: newDevice.model!,
           firmwareVersion: newDevice.firmwareVersion || undefined,
@@ -368,6 +394,7 @@ export default function DeviceManagement() {
     try {
       await updateDevice.mutateAsync({
         id: selectedDevice.id, data: {
+          name: (updatedDevice as IoTDevice & { deviceName?: string }).deviceName?.trim() || undefined,
           manufacturer: updatedDevice.manufacturer,
           model: updatedDevice.model,
           firmwareVersion: updatedDevice.firmwareVersion || undefined,
@@ -604,6 +631,44 @@ export default function DeviceManagement() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Total Devices</p>
                     <p className="mt-1 truncate text-xl font-bold">{stats.total}</p>
+                    {/* TRU-FE-4 § 1 — allowance bar. Renders when summary lands; otherwise the count stands alone. */}
+                    {summary?.allowance && (
+                      summary.allowance.unlimited || summary.allowance.limit === null
+                        ? (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {summary.allowance.used}
+                              {" / Unlimited"}
+                            </p>
+                          )
+                        : (
+                            <div className="mt-1 space-y-1">
+                              <p className="text-[11px] text-muted-foreground">
+                                {summary.allowance.used}
+                                {" / "}
+                                {summary.allowance.limit}
+                                {" used · "}
+                                {summary.allowance.usedPercent ?? 0}
+                                %
+                              </p>
+                              <div className="h-1.5 w-full rounded-full bg-secondary">
+                                <div
+                                  className={cn(
+                                    "h-full rounded-full",
+                                    (summary.allowance.usedPercent ?? 0) >= 90
+                                      ? "bg-destructive"
+                                      : (summary.allowance.usedPercent ?? 0) >= 75 ? "bg-warning" : "bg-primary",
+                                  )}
+                                  style={{
+                                    width: `${Math.min(
+                                      summary.allowance.usedPercent ?? 0,
+                                      100,
+                                    )}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -932,8 +997,13 @@ export default function DeviceManagement() {
                                         />
                                       </div>
                                       <div>
-                                        <p className="font-medium">{device.manufacturer}</p>
-                                        <p className="text-xs text-muted-foreground">{device.model || "—"}</p>
+                                        {/* TRU-FE-4 § 3 — prefer Device Name, fall back to manufacturer+model. */}
+                                        <p className="font-medium">{device.name || device.manufacturer}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {device.name
+                                            ? `${device.manufacturer} · ${device.model || "—"}`
+                                            : device.model || "—"}
+                                        </p>
                                       </div>
                                     </div>
                                   </td>

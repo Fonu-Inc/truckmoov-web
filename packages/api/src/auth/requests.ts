@@ -95,6 +95,11 @@ import type {
   SimRequestDeviceMappingUploadResponse,
   UpdateOnboardingFeaturesPayload,
   PaymentIntentResponse,
+  AIGovernanceResponse,
+  AIRequestsListResponse,
+  AIRequestsQuery,
+  AIUsageQuery,
+  AIUsageResponse,
   AuthSystemSettingsResponse,
   AuthTokenResponse,
   ChangeRolePayload,
@@ -133,6 +138,7 @@ import type {
   ProfileResponse,
   RefreshPayload,
   RegisterPayload,
+  ApproveSystemDeviceSetupRequestPayload,
   RejectSystemDeviceSetupRequestPayload,
   RejectSIMRequestPayload,
   RemoveOrganizationUserResponse,
@@ -207,6 +213,7 @@ import type {
   SystemDeviceSetupRequestResponse,
   SystemDeviceSetupRequestsListResponse,
   SystemDeviceSetupRequestsQuery,
+  SystemDeviceSetupSummaryResponse,
   SystemDeviceSummaryResponse,
   SystemFeatureFlagResponse,
   SystemFeatureFlagsResponse,
@@ -248,6 +255,12 @@ import type {
   ReassignSystemSimPayload,
   SuspendSystemSimPayload,
   UpdateSubscriptionPlanPricePayload,
+  ConfirmTwoFactorPayload,
+  DisableTwoFactorPayload,
+  TwoFactorEnrolmentResponse,
+  TwoFactorStateResponse,
+  UpdateAIGovernancePayload,
+  UpdateOpenRouterCredentialPayload,
   UpdateSystemSettingsPayload,
   UpdateSystemSimPayload,
   UpdateTenantPayload,
@@ -284,6 +297,10 @@ import type {
   SystemOnboardingApplicationDocumentActionPayload,
   SystemOnboardingApplicationDocumentResponse,
   SystemOnboardingApplicationsListResponse,
+  SystemAuditLogFiltersResponse,
+  SystemAuditLogQuery,
+  SystemAuditLogResponse,
+  SystemAuditLogVerifyResponse,
   SystemOnboardingApplicationsQuery,
   SystemRejectOnboardingApplicationDocumentPayload,
   SystemRejectOnboardingApplicationPayload,
@@ -749,6 +766,60 @@ export async function getSystemSettings() {
 
 export async function updateSystemSettings({ data }: UpdateSystemSettingsPayload) {
   const { data: res } = await axiosInstance.patch<AuthSystemSettingsResponse>('/auth/system/settings', data)
+  return res
+}
+
+// ─── TRU-FE-7 § B — AI ────────────────────────────────────────────────────────
+
+export async function getAIGovernance() {
+  const { data } = await axiosInstance.get<AIGovernanceResponse>('/auth/system/ai/governance')
+  return data
+}
+
+export async function updateAIGovernance({ data }: UpdateAIGovernancePayload) {
+  const { data: res } = await axiosInstance.patch<AIGovernanceResponse>('/auth/system/ai/governance', data)
+  return res
+}
+
+export async function getAIUsage(payload?: AIUsageQuery) {
+  const { data } = await axiosInstance.get<AIUsageResponse>('/auth/system/ai/usage', { params: payload?.params })
+  return data
+}
+
+export async function getAIRequests(payload?: AIRequestsQuery) {
+  const { data } = await axiosInstance.get<AIRequestsListResponse>('/auth/system/ai/requests', { params: payload?.params })
+  return data
+}
+
+export async function exportAIRequests(payload?: AIRequestsQuery) {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/ai/requests/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
+// TRU-FE-7 § B — OpenRouter credential (currently 503 on dev-api, see BE bug comment).
+export async function updateOpenRouterCredential({ data }: UpdateOpenRouterCredentialPayload) {
+  const { data: res } = await axiosInstance.put('/auth/system/integrations/openrouter', data)
+  return res
+}
+
+// ─── TRU-FE-7 § D — per-account TOTP two-factor ──────────────────────────────
+export async function getTwoFactor() {
+  const { data } = await axiosInstance.get<TwoFactorStateResponse>('/auth/two-factor')
+  return data
+}
+export async function enrolTwoFactor() {
+  const { data } = await axiosInstance.post<TwoFactorEnrolmentResponse>('/auth/two-factor/enrol', {})
+  return data
+}
+export async function confirmTwoFactor({ data }: ConfirmTwoFactorPayload) {
+  const { data: res } = await axiosInstance.post<TwoFactorStateResponse>('/auth/two-factor/enrol/confirm', data)
+  return res
+}
+export async function disableTwoFactor({ data }: DisableTwoFactorPayload) {
+  const { data: res } = await axiosInstance.post<TwoFactorStateResponse>('/auth/two-factor/disable', data)
   return res
 }
 
@@ -1242,6 +1313,21 @@ export async function getSystemDeviceSetupRequest({ id }: SystemDeviceSetupReque
 
 export async function assignSystemDeviceSetupRequest({ id }: SystemDeviceSetupRequestPayload) {
   const { data } = await axiosInstance.patch<SystemDeviceSetupRequestResponse>(`/auth/system/support/device-setup/${id}/assign`)
+  return data
+}
+
+// TRU-FE-5 § 4 — Approve. Only valid on pending_review; second decision returns 400.
+export async function approveSystemDeviceSetupRequest({ id, data: body }: ApproveSystemDeviceSetupRequestPayload) {
+  const { data } = await axiosInstance.patch<SystemDeviceSetupRequestResponse>(
+    `/auth/system/support/device-setup/${id}/approve`,
+    body ?? {},
+  )
+  return data
+}
+
+// TRU-FE-5 § 3 — Approval Queue card counts.
+export async function getSystemDeviceSetupSummary() {
+  const { data } = await axiosInstance.get<SystemDeviceSetupSummaryResponse>('/auth/system/support/device-setup/summary')
   return data
 }
 
@@ -1876,4 +1962,36 @@ export async function updateSubscriptionPlanEntitlements({
   data: body,
 }: UpdateSubscriptionPlanEntitlementsPayload) {
   await axiosInstance.patch(`/auth/system/subscription-plans/${id}/entitlements`, body)
+}
+
+// ─── System — cross-tenant audit log ─────────────────────────────────────────
+
+export async function getSystemAuditLog(payload?: SystemAuditLogQuery) {
+  const { data } = await axiosInstance.get<SystemAuditLogResponse>(
+    '/auth/system/audit-log',
+    { params: payload?.params },
+  )
+  return data
+}
+
+export async function getSystemAuditLogFilters() {
+  const { data } = await axiosInstance.get<SystemAuditLogFiltersResponse>(
+    '/auth/system/audit-log/filters',
+  )
+  return data
+}
+
+export async function verifySystemAuditLog() {
+  const { data } = await axiosInstance.get<SystemAuditLogVerifyResponse>(
+    '/auth/system/audit-log/verify',
+  )
+  return data
+}
+
+export async function exportSystemAuditLog(payload?: SystemAuditLogQuery) {
+  const res = await axiosInstance.get<Blob>('/auth/system/audit-log/export', {
+    params: payload?.params,
+    responseType: 'blob',
+  })
+  return res.data
 }

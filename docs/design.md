@@ -381,6 +381,45 @@ Conventions that repeat across pages:
 - Search/status/filter state is plain `useState` in the page; filtering is done
   client-side over the query result.
 
+### Tables use `DataTable`, paginated endpoints use `useBatchedQuery`
+
+Every table renders through `DataTable`
+(`packages/reusables/src/components/shadcn/data-table.tsx`) — it already carries
+the three states (skeleton loading row, error row with retry, two empty states),
+sortable columns, and a sticky pagination footer with a `Rows per page` selector.
+Don't hand-roll `<Table>` + `useReactTable` in a page.
+
+For any list backed by a paginated endpoint (server returns `{ total, items }` and
+accepts `limit` + `offset`), pair `DataTable` with `useBatchedQuery`
+(`packages/reusables/src/hooks/useBatchedQuery.ts`):
+
+```tsx
+import { useBatchedQuery } from "@truckmoov/reusables/hooks/useBatchedQuery";
+
+const listQueryOptions = useCallback(
+  ({ offset, limit }: { offset: number; limit: number }) =>
+    getFooQueryOptions({ params: { ...filters, offset, limit } }),
+  [filters],
+);
+
+const { items, pagination, isLoading, setPage } = useBatchedQuery({
+  queryOptions: listQueryOptions,
+});
+
+useEffect(() => { setPage(1); }, [filters, setPage]);
+
+<DataTable columns={columns} data={items} isLoading={isLoading} pagination={pagination} />
+```
+
+The hook fetches in server batches of 500 by default and slices client-side into
+10-row table pages, so one round-trip covers 50 clicks. Always `useCallback` the
+`queryOptions` factory (deps = filter inputs) — react-query keys off its identity.
+Reset the page when filters change; the hook can't watch external state.
+
+Do **not** hand-write `useState({ page, pageSize })` + `useQuery({ offset, limit })`
+in a new page. Three existing security pages (LoginHistory, SecurityEvents,
+BlockedIps) predate the hook and should migrate the next time they're touched.
+
 ### Card grids step at `sm` / `xl`, not `md`
 
 Tailwind breakpoints are **viewport** media queries, but the content column is

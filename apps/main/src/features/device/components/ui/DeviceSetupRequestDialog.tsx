@@ -1,5 +1,10 @@
 import type { SimBundleValue } from "./SimBundlePicker";
 import {
+  useDeviceCatalogManufacturers,
+  useDeviceCatalogModels,
+  useDeviceSetupRequestTrackerTypes,
+} from "@truckmoov/api/fleet";
+import {
   Cpu, Loader2,
 } from "lucide-react";
 import {
@@ -59,9 +64,15 @@ export function DeviceSetupRequestDialog({
   onOpenChange,
   onSubmit,
   onUploadFile: _onUploadFile,
-  manufacturers: manufacturerOptions = DEFAULT_MANUFACTURERS,
+  manufacturers: manufacturerOptionsProp = DEFAULT_MANUFACTURERS,
   vehicles = [],
 }: DeviceSetupRequestDialogProps) {
+  // TRU-FE-4 § 7 / § 8 — pre-wired catalog + tracker types. Fall back to the
+  // hardcoded defaults (prop + hardcoded SelectItems) when BE returns 400/404.
+  const catalogManufacturersQuery = useDeviceCatalogManufacturers();
+  const manufacturerOptions = catalogManufacturersQuery.data?.data?.manufacturers?.length
+    ? catalogManufacturersQuery.data.data.manufacturers
+    : manufacturerOptionsProp;
   const [
     manufacturer,
     setManufacturer,
@@ -136,6 +147,11 @@ export function DeviceSetupRequestDialog({
     submitting,
     setSubmitting,
   ] = useState(false);
+
+  const catalogModelsQuery = useDeviceCatalogModels(manufacturer || undefined);
+  const catalogModels = catalogModelsQuery.data?.data?.models ?? [];
+  const trackerTypesQuery = useDeviceSetupRequestTrackerTypes();
+  const trackerTypes = trackerTypesQuery.data?.data?.trackerTypes ?? [];
 
   // Auto-select vehicle if only one
   useEffect(
@@ -267,12 +283,35 @@ export function DeviceSetupRequestDialog({
             </div>
             <div className="space-y-1.5">
               <Label>Model</Label>
-              <Input
-                value={model}
-                onChange={event => setModel(event.target.value)}
-                disabled={!manufacturer}
-                placeholder="e.g. FMC130"
-              />
+              {/* TRU-FE-4 § 7 — catalog-driven when available, freeform Input as fallback. */}
+              {catalogModels.length > 0
+                ? (
+                    <Select
+                      value={model}
+                      onValueChange={setModel}
+                      disabled={!manufacturer}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {catalogModels.map(m => (
+                          <SelectItem
+                            key={`${m.manufacturer}-${m.model}`}
+                            value={m.model}
+                          >
+                            {m.model}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )
+                : (
+                    <Input
+                      value={model}
+                      onChange={event => setModel(event.target.value)}
+                      disabled={!manufacturer}
+                      placeholder="e.g. FMC130"
+                    />
+                  )}
             </div>
           </div>
 
@@ -287,9 +326,23 @@ export function DeviceSetupRequestDialog({
             >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="obd">OBD-II Plug & Play</SelectItem>
-                <SelectItem value="hardwired">Hardwired</SelectItem>
-                <SelectItem value="asset">Battery / Portable</SelectItem>
+                {/* TRU-FE-4 § 8 — server-driven when available, hardcoded fallback covers the current 400. */}
+                {trackerTypes.length > 0
+                  ? trackerTypes.map(t => (
+                      <SelectItem
+                        key={t.value}
+                        value={t.value}
+                      >
+                        {t.label}
+                      </SelectItem>
+                    ))
+                  : (
+                      <>
+                        <SelectItem value="obd">OBD-II Plug & Play</SelectItem>
+                        <SelectItem value="hardwired">Hardwired</SelectItem>
+                        <SelectItem value="asset">Battery / Portable</SelectItem>
+                      </>
+                    )}
               </SelectContent>
             </Select>
           </div>

@@ -1,3 +1,9 @@
+import {
+  useDriverBehaviorEvents,
+  useDriverBehaviorSummary,
+  useDriverGeofenceAlerts,
+  useMarkGeofenceAlertsRead,
+} from "@truckmoov/api/fleet";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity, AlertTriangle, Bell, Car, Gauge,
@@ -266,23 +272,37 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
 }
 
 export function DriverBehaviorTab() {
-  const realEvents: DriverBehaviorEvent[] = [];
+  // TRU-FE-3 § 9 — real queries. All 404 today, so the tab shows the empty state.
+  const summaryQuery = useDriverBehaviorSummary(30);
+  const eventsQuery = useDriverBehaviorEvents({ params: { period_days: 30, limit: 50 } });
+  const geofenceQuery = useDriverGeofenceAlerts(7);
+  const markReadMutation = useMarkGeofenceAlertsRead();
+
+  const realEvents: DriverBehaviorEvent[] = eventsQuery.data?.data?.items ?? [];
   const realScores: DriverScore[] = [];
   const realBehaviorStats = {
-    averageScore: 0, last24h: 0, critical: 0, total: 0,
+    averageScore: summaryQuery.data?.data?.averageScore ?? 0,
+    last24h: summaryQuery.data?.data?.criticalLast24h ?? 0,
+    critical: eventsQuery.data?.data?.criticalCount ?? 0,
+    total: eventsQuery.data?.data?.total ?? 0,
   };
-  const behaviorLoading = false;
-  const behaviorConnected = false;
-  const refreshBehavior = () => null;
+  const behaviorLoading = summaryQuery.isLoading || eventsQuery.isLoading;
+  const behaviorConnected = !summaryQuery.isError;
+  const refreshBehavior = () => { summaryQuery.refetch(); eventsQuery.refetch(); };
 
-  const realAlerts: GeofenceAlert[] = [];
+  const realAlerts: GeofenceAlert[] = geofenceQuery.data?.data ?? [];
   const realGeofenceStats = {
-    entries: 0, exits: 0,
+    entries: realAlerts.filter((a: any) => a.type === "entry").length,
+    exits: realAlerts.filter((a: any) => a.type === "exit").length,
   };
-  const geofenceConnected = false;
-  const realUnreadCount = 0;
-  const markAllRead = () => null;
-  const refreshGeofence = () => null;
+  const geofenceConnected = !geofenceQuery.isError;
+  const realUnreadCount = realAlerts.filter((a: any) => !a.read).length;
+  const markAllRead = () => {
+    const alertIds = realAlerts.filter((a: any) => !a.read).map((a: any) => a.id);
+    if (alertIds.length > 0)
+      markReadMutation.mutate({ data: { alertIds } });
+  };
+  const refreshGeofence = () => geofenceQuery.refetch();
 
   const [
     activeTab,

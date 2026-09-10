@@ -29,6 +29,7 @@ import {
 } from "@/features/fleet/utils/fleetFinancials";
 import { FINANCIALS_TABS } from "@/features/fleet/utils/fleetFinancialsNav";
 import { cn } from "@/lib/utils";
+import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 
 export type FleetFinancialsLayoutContext = {
   openConfigDialog: () => void;
@@ -49,8 +50,8 @@ export type FleetFinancialsLayoutContext = {
 };
 
 export function FleetFinancialsLayout() {
-  // ponytail: page-shell tabbed summary (summary only, no items).
-  useVehiclesByTab("financials");
+  // ponytail: page-shell tabbed summary (summary only, no items) — rendered via TabSummaryStrip.
+  const tabSummaryQuery = useVehiclesByTab("financials");
   const vehicles: VehicleLookup[] = useMemo(
     () => [],
     [],
@@ -205,6 +206,7 @@ export function FleetFinancialsLayout() {
 
   return (
     <div className="space-y-4">
+      <TabSummaryStrip query={tabSummaryQuery} />
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card>

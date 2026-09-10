@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./components/*": "./src/components/*",
+    "./hooks/*": "./src/hooks/*",
     "./lib/*": "./src/lib/*",
     "./assets/*": "./src/assets/*",
     "./index.css": "./src/index.css"
@@ -53,11 +54,13 @@
     "vaul": "^0.9.9"
   },
   "peerDependencies": {
+    "@tanstack/react-query": "^5.83.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "^7.15.1"
   },
   "devDependencies": {
+    "@tanstack/react-query": "^5.83.0",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7"
   }

@@ -4,8 +4,10 @@ import {
 
   getDeviceSetupRequestQueryOptions,
   useDeviceSetupRequests,
+  useUpdateDeviceSetupRequestStatus,
 } from "@truckmoov/api/fleet";
 import { queryClient } from "@truckmoov/api/lib/query-client";
+import { toast } from "sonner";
 import {
   formatRelative, formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -95,6 +97,19 @@ export function DeviceRequestsTracker() {
     data, isLoading, isError, error, refetch, isFetching,
   } = useDeviceSetupRequests();
   const requests = data?.data ?? [];
+  // TRU-FE-4 § 8 — cancel path. Backend has no dedicated /cancel endpoint yet;
+  // reuses the status PATCH hook that already exists.
+  const cancelRequest = useUpdateDeviceSetupRequestStatus();
+
+  const handleCancel = async (id: string) => {
+    try {
+      await cancelRequest.mutateAsync({ id, data: { status: "cancelled" } });
+      toast.success("Request cancelled");
+    }
+    catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to cancel request");
+    }
+  };
   const [
     expandedId,
     setExpandedId,
@@ -387,6 +402,20 @@ export function DeviceRequestsTracker() {
                                 )}
                               </div>
                             </div>
+
+                            {/* TRU-FE-4 § 8 — cancellable in pending_review / approved per the status graph. */}
+                            {(detail.status === "pending_review" || detail.status === "approved") && (
+                              <div className="flex justify-end border-t border-border pt-3">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => void handleCancel(detail.id)}
+                                  disabled={cancelRequest.isPending}
+                                >
+                                  {cancelRequest.isPending ? "Cancelling…" : "Cancel request"}
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

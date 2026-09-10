@@ -13,6 +13,7 @@ import {
   Plug,
   Radio,
   Receipt,
+  ShieldCheck,
   Users,
   Wrench,
 } from "lucide-react";
@@ -88,6 +89,10 @@ export const SETTINGS_TABS: SettingsTab[] = [
   },
   {
     to: "/settings/upgrade", label: "Upgrade", icon: ArrowUpCircle, hasPermissions: ["OWNER_OPERATOR"],
+  },
+  {
+    // TRU-FE-7 § D — per-account 2FA. Empty array = visible to every role.
+    to: "/settings/security", label: "Security", icon: ShieldCheck, hasPermissions: [],
   },
 ];
 

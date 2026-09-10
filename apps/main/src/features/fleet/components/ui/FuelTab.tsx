@@ -78,6 +78,7 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { cn } from "@/lib/utils";
+import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 import { PeriodFilter } from "./PeriodFilter";
 
 type FuelTransaction = FuelRecord;
@@ -341,8 +342,8 @@ export function FuelTab() {
   const summaryQuery = useFuelSummary();
   const efficiencyQuery = useFuelEfficiency();
   const vehiclesQuery = useVehicles();
-  // ponytail: page-shell tabbed summary — payload untyped until server response is in.
-  useVehiclesByTab('fuel');
+  // ponytail: page-shell tabbed summary — rendered via TabSummaryStrip, empty until BE ships.
+  const tabSummaryQuery = useVehiclesByTab('fuel');
   const driversQuery = useDrivers();
   const fuelMetricsQuery = useFuelMetrics({ params: { period: metricsPeriod } });
   const budgetRange = useMemo(
@@ -766,6 +767,7 @@ export function FuelTab() {
 
   return (
     <div className="space-y-6">
+      <TabSummaryStrip query={tabSummaryQuery} />
       {/* Primary CTAs */}
       <div className="flex justify-end gap-2">
         <Button onClick={() => setIsAddDialogOpen(true)}>

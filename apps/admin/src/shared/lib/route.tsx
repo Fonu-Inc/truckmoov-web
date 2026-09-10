@@ -202,18 +202,11 @@ export const router = createBrowserRouter([
                   {
                     path: "sender-ids", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SenderIdApprovalQueue")).SenderIdApprovalQueue }),
                   },
-                  {
-                    path: "config", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/FonuApiConfig")).FonuApiConfig }),
-                  },
                 ],
               },
               {
                 path: "notifications",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/NotificationsSettingsPage")).default }),
-              },
-              {
-                path: "security",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/SecuritySettingsPage")).default }),
               },
             ],
           },

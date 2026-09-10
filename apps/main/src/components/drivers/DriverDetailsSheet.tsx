@@ -1,4 +1,5 @@
 import type { Driver } from "@/types";
+import { useDriverConsent, useRequestDriverConsent } from "@truckmoov/api/fleet";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   daysUntil, formatDate, formatDayMonthTime, formatRelative,
@@ -178,6 +179,10 @@ function normalizeDeviceId(deviceId?: string) {
 export function DriverDetailsSheet({
   open, onOpenChange, driver,
 }: DriverDetailsSheetProps) {
+  // TRU-FE-3 § 6 — real consent state; canSend drives what the WhatsApp row shows.
+  const consentQuery = useDriverConsent(driver?.id ?? "");
+  const consent = consentQuery.data?.data ?? null;
+  const requestConsent = useRequestDriverConsent();
   const events: any[] = [];
   const driverScores: any[] = [];
   const fatigueAlerts: any[] = [];
@@ -437,25 +442,49 @@ export function DriverDetailsSheet({
                     total trips
                   </span>
                 </div>
-                {/* US-E02-005 / US-E09-005 — WhatsApp opt-in status */}
+                {/* TRU-FE-3 § 6 — WhatsApp opt-in status. Drives from `canSend`; pending is *not* consent. */}
                 <div className="col-span-2 flex items-center justify-between rounded-md border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs">WhatsApp opt-in</span>
-                    <Badge
-                      variant="outline"
-                      className="bg-success/10 text-success border-success/30 text-[10px]"
-                    >
-                      Opted In
-                    </Badge>
+                    {(() => {
+                      const state = consent?.whatsapp?.state ?? "unknown";
+                      const label = state === "opted_in"
+                        ? "Opted In"
+                        : state === "pending"
+                          ? "Opt-in requested"
+                          : state === "opted_out"
+                            ? "Opted Out"
+                            : "Unknown";
+                      const cls = state === "opted_in"
+                        ? "bg-success/10 text-success border-success/30"
+                        : state === "pending"
+                          ? "bg-warning/10 text-warning border-warning/30"
+                          : "bg-muted text-muted-foreground border-muted";
+                      return (
+                        <Badge variant="outline" className={`${cls} text-[10px]`}>
+                          {consentQuery.isLoading ? "Checking…" : label}
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs"
-                    onClick={() => toast.success(`Opt-in request resent to ${driver.name}`)}
+                    disabled={requestConsent.isPending || !driver?.id}
+                    onClick={async () => {
+                      if (!driver?.id) return;
+                      try {
+                        await requestConsent.mutateAsync({ id: driver.id, channel: "whatsapp" });
+                        toast.success(`Opt-in request sent to ${driver.name}`);
+                      }
+                      catch (err) {
+                        toast.error(err instanceof Error ? err.message : "Failed to send opt-in request");
+                      }
+                    }}
                   >
-                    Resend opt-in
+                    {requestConsent.isPending ? "Sending…" : "Resend opt-in"}
                   </Button>
                 </div>
               </CardContent>

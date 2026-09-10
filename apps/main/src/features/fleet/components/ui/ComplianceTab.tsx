@@ -71,6 +71,7 @@ import {
 import { Skeleton } from "@/components/shadcn/skeleton";
 
 import { cn } from "@/lib/utils";
+import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 
 const statusColors: Record<string, string> = {
   valid: "bg-success/20 text-success border-success/30",
@@ -85,8 +86,8 @@ type UploadedDocumentMetadata = {
 
 export function ComplianceTab() {
   // ponytail: page-shell tabbed summary from GET /fleet/vehicles.
-  // Payload is `unknown` until server shape lands; filtering stays on useComplianceDocs.
-  useVehiclesByTab("compliance");
+  // Payload rendered via TabSummaryStrip; strip is neutral until BE ships concrete fields.
+  const tabSummaryQuery = useVehiclesByTab("compliance");
   const [
     searchQuery,
     setSearchQuery,
@@ -603,6 +604,7 @@ export function ComplianceTab() {
 
   return (
     <div className="space-y-6">
+      <TabSummaryStrip query={tabSummaryQuery} />
       {/* Top-right Actions */}
       <div className="flex justify-end gap-2">
         <Button
