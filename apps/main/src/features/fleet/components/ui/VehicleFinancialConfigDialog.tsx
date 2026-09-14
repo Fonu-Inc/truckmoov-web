@@ -126,7 +126,7 @@ export function VehicleFinancialConfigDialog({
   const [
     wageMethod,
     setWageMethod,
-  ] = useState<"fixed" | "per_trip" | "per_km" | "hybrid">("fixed");
+  ] = useState<"fixed_monthly" | "per_trip" | "per_kilometer" | "hybrid">("fixed_monthly");
 
   const resetForm = () => {
     setFuelEstimate("");
@@ -143,25 +143,25 @@ export function VehicleFinancialConfigDialog({
     setDepreciationMethod("straight_line");
     setPerTripWage("");
     setPerKmWage("");
-    setWageMethod("fixed");
+    setWageMethod("fixed_monthly");
   };
 
   const populateForm = (config: FleetFinancialConfig) => {
     setFuelEstimate(config.fuelEstimateNgnPerMonth?.toString() || "");
     setMaintenanceEstimate(config.maintenanceEstimateNgnPerMonth?.toString() || "");
     setMonthlyInsurance(config.monthlyInsuranceNgn?.toString() || "");
-    setMonthlyWage(config.monthlyWagesNgn?.toString() || "");
+    setMonthlyWage(config.monthlyDriverWageNgn?.toString() || config.monthlyWagesNgn?.toString() || "");
     setMonthlyDepreciation(config.monthlyDepreciationNgn?.toString() || "");
     setMonthlyParking("");
     setMonthlyOther(config.monthlyOtherNgn?.toString() || "");
-    setPurchasePrice("");
-    setPurchaseDate("");
-    setUsefulLife("60");
-    setSalvageValue("");
-    setDepreciationMethod("straight_line");
+    setPurchasePrice(config.assetPurchasePriceNgn?.toString() || "");
+    setPurchaseDate(config.assetPurchaseDate || "");
+    setUsefulLife(config.assetUsefulLifeMonths?.toString() || "60");
+    setSalvageValue(config.assetSalvageValueNgn?.toString() || "");
+    setDepreciationMethod(config.depreciationMethod || "straight_line");
     setPerTripWage("");
     setPerKmWage("");
-    setWageMethod("fixed");
+    setWageMethod((config.driverWageAllocationMethod as typeof wageMethod) || "fixed_monthly");
   };
 
   useEffect(
@@ -188,23 +188,26 @@ export function VehicleFinancialConfigDialog({
       await updateConfigMutation.mutateAsync({
         vehicleId: selectedVehicleId,
         data: {
-          fuelEstimateNgnPerMonth: Number.parseFloat(fuelEstimate) || 0,
-          maintenanceEstimateNgnPerMonth: Number.parseFloat(maintenanceEstimate) || 0,
-          monthlyWagesNgn: Number.parseFloat(monthlyWage) || 0,
-          monthlyInsuranceNgn: Number.parseFloat(monthlyInsurance) || 0,
-          monthlyDepreciationNgn: Number.parseFloat(monthlyDepreciation) || 0,
-          monthlyOtherNgn: (Number.parseFloat(monthlyParking) || 0) + (Number.parseFloat(monthlyOther) || 0),
+          fuelEstimateNgnPerMonth: Number.parseFloat(fuelEstimate) || null,
+          maintenanceEstimateNgnPerMonth: Number.parseFloat(maintenanceEstimate) || null,
+          monthlyDriverWageNgn: Number.parseFloat(monthlyWage) || null,
+          monthlyInsuranceNgn: Number.parseFloat(monthlyInsurance) || null,
+          monthlyDepreciationNgn: Number.parseFloat(monthlyDepreciation) || null,
+          monthlyOtherNgn: (Number.parseFloat(monthlyParking) || 0) + (Number.parseFloat(monthlyOther) || 0) || null,
+          driverWageAllocationMethod: wageMethod,
+          assetPurchasePriceNgn: Number.parseFloat(purchasePrice) || null,
+          assetPurchaseDate: purchaseDate || null,
+          assetUsefulLifeMonths: Number.parseInt(usefulLife) || null,
+          assetSalvageValueNgn: Number.parseFloat(salvageValue) || null,
+          depreciationMethod,
         },
       });
       toast.success("Vehicle financial configuration saved");
       onOpenChange(false);
     }
     catch (error) {
-      console.error(
-        "Failed to save config:",
-        error,
-      );
-      toast.error("Failed to save vehicle financial configuration");
+      const err = error as { message?: string };
+      toast.error(err?.message ?? "Failed to save vehicle financial configuration");
     }
   };
 
@@ -363,15 +366,15 @@ export function VehicleFinancialConfigDialog({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="fixed">Fixed Monthly</SelectItem>
+                          <SelectItem value="fixed_monthly">Fixed Monthly</SelectItem>
                           <SelectItem value="per_trip">Per Trip</SelectItem>
-                          <SelectItem value="per_km">Per Kilometer</SelectItem>
+                          <SelectItem value="per_kilometer">Per Kilometer</SelectItem>
                           <SelectItem value="hybrid">Hybrid (Fixed + Per Trip)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {(wageMethod === "fixed" || wageMethod === "hybrid") && (
+                    {(wageMethod === "fixed_monthly" || wageMethod === "hybrid") && (
                       <div className="space-y-2">
                         <Label htmlFor="monthlyWage">Monthly Driver Wage (₦)</Label>
                         <Input
@@ -397,7 +400,7 @@ export function VehicleFinancialConfigDialog({
                       </div>
                     )}
 
-                    {wageMethod === "per_km" && (
+                    {wageMethod === "per_kilometer" && (
                       <div className="space-y-2">
                         <Label htmlFor="perKmWage">Per Kilometer Rate (₦)</Label>
                         <Input

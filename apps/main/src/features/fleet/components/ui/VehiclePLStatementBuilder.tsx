@@ -102,6 +102,10 @@ export function VehiclePLStatementBuilder({
     includePerVehicle,
     setIncludePerVehicle,
   ] = useState(true);
+  const [
+    includeCostBreakdown,
+    setIncludeCostBreakdown,
+  ] = useState(true);
   // ponytail: accent kept in state to preserve the request body; UI hidden
   const [
     accent,
@@ -168,8 +172,9 @@ export function VehiclePLStatementBuilder({
           notes: notes || undefined,
           accentColor: accent,
           includeCoverPage: includeCover,
-          includeFleetSummary: includeSummary,
-          includePerVehicleBreakdown: includePerVehicle,
+          includeSummary,
+          includeVehiclePL: includePerVehicle,
+          includeCostBreakdown,
         },
       });
       const extension = format === "xlsx" ? "xlsx" : format;
@@ -278,10 +283,17 @@ export function VehiclePLStatementBuilder({
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm">Per-Vehicle Breakdown</span>
+              <span className="text-sm">Vehicle P&L</span>
               <Switch
                 checked={includePerVehicle}
                 onCheckedChange={setIncludePerVehicle}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Cost Breakdown</span>
+              <Switch
+                checked={includeCostBreakdown}
+                onCheckedChange={setIncludeCostBreakdown}
               />
             </div>
           </div>

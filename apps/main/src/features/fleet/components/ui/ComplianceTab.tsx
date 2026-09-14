@@ -1041,11 +1041,15 @@ export function ComplianceTab() {
             isLoading={isLoading}
             hasActiveFilters={hasActiveComplianceFilters}
             emptyState="No documents found. Add your first compliance document."
-            filteredEmptyState="No compliance documents match your filters."
+            filteredEmptyState={
+              (issueFrom || issueTo || expiryFrom || expiryTo)
+                ? "No documents match. Note: documents with no date in the filtered field are excluded — an unknown date can't be placed inside a date window."
+                : "No compliance documents match your filters."
+            }
           />
           {(issueFrom || issueTo || expiryFrom || expiryTo) && (
             <p className="px-4 pb-3 text-[11px] text-muted-foreground">
-              Documents without a date in the filtered field are hidden.
+              Documents without a date in the filtered field are excluded — an unknown date can&apos;t be placed inside a date window.
             </p>
           )}
         </CardContent>

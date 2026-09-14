@@ -1660,14 +1660,17 @@ export function MaintenanceTab() {
               </Select>
             </div>
             {schedule && (
-              <div className="rounded-md border border-border bg-secondary/30 p-3 text-xs text-muted-foreground">
-                Last run:
-                {" "}
-                {schedule.lastRunAt ? formatDate(schedule.lastRunAt) : "never"}
-                {" "}
-                · Sent
-                {" "}
-                {schedule.lastSentCount ?? 0}
+              <div className="rounded-md border border-border bg-secondary/30 p-3 text-xs text-muted-foreground space-y-0.5">
+                <p>
+                  Last run:
+                  {" "}
+                  {schedule.lastRunAt ? formatDate(schedule.lastRunAt) : "never"}
+                </p>
+                <p>
+                  {schedule.lastRunAt && schedule.lastSentCount === 0
+                    ? "0 reminders sent — no vehicles were due at last run"
+                    : `${schedule.lastSentCount ?? 0} reminder${(schedule.lastSentCount ?? 0) !== 1 ? "s" : ""} sent`}
+                </p>
               </div>
             )}
           </div>

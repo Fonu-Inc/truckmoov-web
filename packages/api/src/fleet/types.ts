@@ -951,9 +951,10 @@ export type AuditChainVerificationResponse = ServerResponse<unknown>
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
-export type FleetAnalyticsPeriodDays = 7 | 30 | 60 | 90
+/** Validated set — backend returns 400 for any other value. Absent/empty defaults to 30. */
+export type FleetAnalyticsPeriodDays = 1 | 2 | 7 | 30 | 90
 
-/** `fleet-status`, `fuel-levels` and `vehicle-safety-radar` accept a different set. */
+/** `fleet-status`, `fuel-levels` and `vehicle-safety-radar` accept the same set. */
 export type FleetAnalyticsShortPeriodDays = 1 | 2 | 7 | 30 | 90
 
 export type FleetAnalyticsPeriodQuery = {
@@ -1025,8 +1026,12 @@ export type FleetFinancialStatementQuery = {
     notes?: string
     accentColor?: string
     includeCoverPage?: boolean
-    includeFleetSummary?: boolean
-    includePerVehicleBreakdown?: boolean
+    /** Canonical name for fleet totals section. `includeFleetSummary` is accepted as a deprecated alias. */
+    includeSummary?: boolean
+    /** Canonical name for per-vehicle P&L section. `includePerVehicleBreakdown` is accepted as a deprecated alias. */
+    includeVehiclePL?: boolean
+    /** Per-vehicle cost categories (fuel, maintenance, wages, insurance, depreciation, other). New in this release. */
+    includeCostBreakdown?: boolean
   }
 }
 

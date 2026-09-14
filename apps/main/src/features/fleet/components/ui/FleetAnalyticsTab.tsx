@@ -87,17 +87,21 @@ const EMPTY_FUEL_LEVELS: FleetAnalyticsFuelLevel[] = [];
 const EMPTY_DRIVER_SCORES: FleetAnalyticsDriverScore[] = [];
 const EMPTY_EVENTS: FleetAnalyticsEvent[] = [];
 
+// backend validates period_days to [1,2,7,30,90] — 60 is no longer a valid value
 const ANALYTICS_PERIOD_OPTIONS: {
   value: PeriodValue; label: string;
 }[] = [
+  {
+    value: "1", label: "Today",
+  },
+  {
+    value: "2", label: "Yesterday",
+  },
   {
     value: "7", label: "Last 7 Days",
   },
   {
     value: "30", label: "Last 30 Days",
-  },
-  {
-    value: "60", label: "Last 60 Days",
   },
   {
     value: "90", label: "Last 90 Days",
@@ -162,13 +166,12 @@ function formatLabel(value: string) {
     );
 }
 
+// All analytics endpoints now share the same validated set: 1|2|7|30|90
 function toPeriodDays(value: PeriodValue): FleetAnalyticsPeriodDays {
   const days = Number(value);
-  return days === 7 || days === 30 || days === 60 || days === 90 ? days : 30;
+  return days === 1 || days === 2 || days === 7 || days === 30 || days === 90 ? days : 30;
 }
 
-// `fleet-status` and `fuel-levels` accept 1|2|7|30|90 — there is no 60-day bucket,
-// so the 60-day option falls back to 30 rather than being rejected by the server.
 function toShortPeriodDays(value: PeriodValue): FleetAnalyticsShortPeriodDays {
   const days = Number(value);
   return days === 1 || days === 2 || days === 7 || days === 30 || days === 90 ? days : 30;
