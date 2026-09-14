@@ -89,6 +89,10 @@ import {
   getSystemSimsRequestsSummary,
   getSystemSimsSummary,
   getSystemSubscriptionPlans,
+  getSupportTicketContext,
+  getSupportTicketOptions,
+  getSupportTicketsExport,
+  getSupportTicketsSummary,
   getSystemSupportDashboard,
   getSystemSupportTicketSummary,
   getSystemSupportTicket,
@@ -285,6 +289,7 @@ import type {
   SystemSimRequestsQuery,
   SystemSimsQuery,
   SystemSupportTicketsQuery,
+  SupportTicketContextPayload,
   SupportTicketsQuery,
   SystemTenantsQuery,
   DataBundleAnalyticsRangeQuery,
@@ -329,6 +334,12 @@ export const AUTH_QUERY_KEY = {
   supportTickets: (payload?: SupportTicketsQuery) =>
     payload ? ['supportTickets', payload] : ['supportTickets'],
   supportTicket: (id: string) => ['supportTicket', id],
+  supportTicketsSummary: ['supportTicketsSummary'],
+  supportTicketOptions: ['supportTicketOptions'],
+  supportTicketContext: (payload: SupportTicketContextPayload) =>
+    ['supportTicketContext', payload],
+  supportTicketsExport: (payload?: SupportTicketsQuery) =>
+    payload ? ['supportTicketsExport', payload] : ['supportTicketsExport'],
 
   systemAdmins: ['systemAdmins'],
   systemAdminInvites: ['systemAdminInvites'],
@@ -1713,12 +1724,45 @@ export function useCreateSupportTicket() {
     mutationFn: createSupportTicket,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.supportTickets() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.supportTicketsSummary })
     },
   })
 }
 
 export function useAttachSupportTicketFiles() {
   return useMutation({ mutationFn: attachSupportTicketFiles })
+}
+
+export function getSupportTicketsSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.supportTicketsSummary,
+    queryFn: getSupportTicketsSummary,
+  })
+}
+
+export function getSupportTicketOptionsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.supportTicketOptions,
+    queryFn: getSupportTicketOptions,
+    staleTime: 60 * 60 * 1000, // options rarely change
+  })
+}
+
+export function getSupportTicketContextQueryOptions(payload: SupportTicketContextPayload) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.supportTicketContext(payload),
+    queryFn: () => getSupportTicketContext(payload),
+    enabled: Boolean(payload.contextType && payload.contextId),
+  })
+}
+
+export function getSupportTicketsExportQueryOptions(payload?: SupportTicketsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.supportTicketsExport(payload),
+    queryFn: () => getSupportTicketsExport(payload),
+    gcTime: 0,
+    staleTime: 0,
+  })
 }
 
 export function getSystemSupportDashboardQueryOptions() {

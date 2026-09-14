@@ -184,10 +184,14 @@ import type {
   SimDataBundlesResponse,
   SimImportResponse,
   StandardApiResponse,
+  SupportTicketContextPayload,
+  SupportTicketContextResponse,
   SupportTicketDetailResponse,
+  SupportTicketOptionsResponse,
   SupportTicketResponse,
   SupportTicketsListResponse,
   SupportTicketsQuery,
+  SupportTicketsSummaryResponse,
   SystemSimBatchRetryResult,
   SystemSimRequestActionResult,
   SystemSupportEscalatedResponse,
@@ -1274,6 +1278,31 @@ export async function attachSupportTicketFiles({ id, data: files, messageId }: A
     params: { messageId },
   })
   return data
+}
+
+export async function getSupportTicketsSummary() {
+  const { data } = await axiosInstance.get<SupportTicketsSummaryResponse>('/auth/support-tickets/summary')
+  return data
+}
+
+export async function getSupportTicketOptions() {
+  const { data } = await axiosInstance.get<SupportTicketOptionsResponse>('/auth/support-tickets/options')
+  return data
+}
+
+export async function getSupportTicketContext({ contextType, contextId }: SupportTicketContextPayload) {
+  const { data } = await axiosInstance.get<SupportTicketContextResponse>(
+    `/auth/support-tickets/context/${contextType}/${contextId}`,
+  )
+  return data
+}
+
+export async function getSupportTicketsExport(payload?: SupportTicketsQuery) {
+  const res = await axiosInstance.get<Blob>('/auth/support-tickets/export', {
+    params: payload?.params,
+    responseType: 'blob',
+  })
+  return res.data
 }
 
 export async function getSystemSupportDashboard() {

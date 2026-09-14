@@ -1,7 +1,9 @@
 import type {
   SupportTicketCategory, SupportTicketChannel, SupportTicketPriority,
 } from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
 import {
+  getSupportTicketOptionsQueryOptions,
   useAttachSupportTicketFiles,
   useCreateSupportTicket,
 } from "@truckmoov/api/auth";
@@ -9,7 +11,7 @@ import {
   FileText, Image as ImageIcon, Ticket, UploadCloud, X,
 } from "lucide-react";
 import {
-  useRef, useState,
+  useEffect, useRef, useState,
 } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
@@ -33,59 +35,11 @@ import {
 import { Textarea } from "@/components/shadcn/textarea";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 
-type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
-
 type LogTicketDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 };
-
-const CHANNELS: {
-  value: ContextType; label: string;
-}[] = [
-  {
-    value: "device", label: "Device & Tracking",
-  },
-  {
-    value: "sim", label: "SIM & Connectivity",
-  },
-  {
-    value: "vehicle", label: "Vehicle",
-  },
-  {
-    value: "whatsapp", label: "Messaging (WhatsApp / SMS)",
-  },
-  {
-    value: "billing", label: "Billing & Wallet",
-  },
-  {
-    value: "none", label: "Other",
-  },
-];
-
-const CATEGORIES: {
-  value: SupportTicketCategory; label: string;
-}[] = [
-  {
-    value: "device_tracking", label: "Device & Tracking",
-  },
-  {
-    value: "sim_connectivity", label: "SIM & Connectivity",
-  },
-  {
-    value: "messaging", label: "Messaging",
-  },
-  {
-    value: "billing", label: "Billing",
-  },
-  {
-    value: "account_access", label: "Account / Access",
-  },
-  {
-    value: "other", label: "Other",
-  },
-];
 
 const ACCEPTED_TYPES = "image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls";
 const MAX_FILE_MB = 10;
@@ -96,6 +50,8 @@ export function LogTicketDialog({
   const { user } = useAuthStore();
   const createTicket = useCreateSupportTicket();
   const attachFiles = useAttachSupportTicketFiles();
+  const optionsQuery = useQuery(getSupportTicketOptionsQueryOptions());
+  const options = optionsQuery.data?.data;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [
@@ -109,7 +65,7 @@ export function LogTicketDialog({
   const [
     channel,
     setChannel,
-  ] = useState<ContextType>("device");
+  ] = useState<string>("");
   const [
     otherChannel,
     setOtherChannel,
@@ -117,11 +73,11 @@ export function LogTicketDialog({
   const [
     category,
     setCategory,
-  ] = useState<SupportTicketCategory>("device_tracking");
+  ] = useState<string>("");
   const [
     priority,
     setPriority,
-  ] = useState<SupportTicketPriority>("medium");
+  ] = useState<string>("");
   const [
     attachments,
     setAttachments,
@@ -135,13 +91,32 @@ export function LogTicketDialog({
     = user?.email || "Current user";
   const isSubmitting = createTicket.isPending || attachFiles.isPending;
 
+  useEffect(
+    () => {
+      if (!options)
+        return;
+      if (!channel && options.channels[0])
+        setChannel(options.channels[0].value);
+      if (!category && options.categories[0])
+        setCategory(options.categories[0].value);
+      if (!priority)
+        setPriority(options.priorities.find(p => p.value === "medium")?.value ?? options.priorities[0]?.value ?? "");
+    },
+    [
+      options,
+      channel,
+      category,
+      priority,
+    ],
+  );
+
   const reset = () => {
     setTitle("");
     setMessage("");
-    setChannel("device");
+    setChannel(options?.channels[0]?.value ?? "");
     setOtherChannel("");
-    setCategory("device_tracking");
-    setPriority("medium");
+    setCategory(options?.categories[0]?.value ?? "");
+    setPriority(options?.priorities.find(p => p.value === "medium")?.value ?? options?.priorities[0]?.value ?? "");
     setAttachments([]);
   };
 
@@ -174,7 +149,11 @@ export function LogTicketDialog({
       toast.error("Title and message are required");
       return;
     }
-    if (channel === "none" && !otherChannel.trim()) {
+    if (!category || !channel) {
+      toast.error("Please pick a channel and category");
+      return;
+    }
+    if (channel === "other" && !otherChannel.trim()) {
       toast.error("Please specify the other channel");
       return;
     }
@@ -182,16 +161,12 @@ export function LogTicketDialog({
     try {
       const response = await createTicket.mutateAsync({
         data: {
-          category,
+          category: category as SupportTicketCategory,
           subject: title.trim(),
           description: message.trim(),
-          priority,
-          channel: channel === "whatsapp"
-            ? "messaging"
-            : channel === "none"
-              ? "other"
-              : channel as SupportTicketChannel,
-          otherChannel: channel === "none" ? otherChannel.trim() : undefined,
+          priority: priority as SupportTicketPriority,
+          channel: channel as SupportTicketChannel,
+          otherChannel: channel === "other" ? otherChannel.trim() : undefined,
         },
       });
 
@@ -292,13 +267,14 @@ export function LogTicketDialog({
               <Label htmlFor="ticket-channel">Channel *</Label>
               <Select
                 value={channel}
-                onValueChange={v => setChannel(v as ContextType)}
+                onValueChange={setChannel}
+                disabled={optionsQuery.isLoading || !options}
               >
                 <SelectTrigger id="ticket-channel">
-                  <SelectValue />
+                  <SelectValue placeholder={optionsQuery.isLoading ? "Loading…" : "Select channel"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {CHANNELS.map(c => (
+                  {options?.channels.map(c => (
                     <SelectItem
                       key={c.value}
                       value={c.value}
@@ -308,7 +284,7 @@ export function LogTicketDialog({
                   ))}
                 </SelectContent>
               </Select>
-              {channel === "none" && (
+              {channel === "other" && (
                 <Input
                   placeholder="Specify other channel..."
                   value={otherChannel}
@@ -322,13 +298,14 @@ export function LogTicketDialog({
               <Label htmlFor="ticket-category">Category *</Label>
               <Select
                 value={category}
-                onValueChange={v => setCategory(v as SupportTicketCategory)}
+                onValueChange={setCategory}
+                disabled={optionsQuery.isLoading || !options}
               >
                 <SelectTrigger id="ticket-category">
-                  <SelectValue />
+                  <SelectValue placeholder={optionsQuery.isLoading ? "Loading…" : "Select category"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(c => (
+                  {options?.categories.map(c => (
                     <SelectItem
                       key={c.value}
                       value={c.value}
@@ -346,16 +323,21 @@ export function LogTicketDialog({
             <Label htmlFor="ticket-priority">Priority</Label>
             <Select
               value={priority}
-              onValueChange={v => setPriority(v as SupportTicketPriority)}
+              onValueChange={setPriority}
+              disabled={optionsQuery.isLoading || !options}
             >
               <SelectTrigger id="ticket-priority">
-                <SelectValue />
+                <SelectValue placeholder={optionsQuery.isLoading ? "Loading…" : "Select priority"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
+                {options?.priorities.map(p => (
+                  <SelectItem
+                    key={p.value}
+                    value={p.value}
+                  >
+                    {p.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

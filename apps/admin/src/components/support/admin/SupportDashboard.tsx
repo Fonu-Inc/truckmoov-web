@@ -1,25 +1,21 @@
+import type { SystemSupportTicket } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
-import {
-  getSystemSupportDashboardQueryOptions,
-  getSystemSupportTicketsQueryOptions,
-} from "@truckmoov/api/auth";
+import { getSystemSupportDashboardQueryOptions } from "@truckmoov/api/auth";
 import {
   AlertCircle,
   ArrowUpRight,
   CheckCircle2,
-  CircleDot,
   Clock,
+  Flame,
   Inbox,
   Loader2,
   TicketCheck,
+  Timer,
   TrendingUp,
   UserCheck,
   Users,
 } from "lucide-react";
-import {
-  useMemo,
-  useState,
-} from "react";
+import { useMemo } from "react";
 import { Badge } from "@/components/shadcn/badge";
 import {
   Card,
@@ -29,23 +25,6 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Progress } from "@/components/shadcn/progress";
-
-type SupportTicket = {
-  id: string;
-  tenantId: string;
-  category: string;
-  subject: string;
-  description: string;
-  status: string;
-  priority: string;
-  contextType: string;
-  escalatedTo?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  resolvedAt?: string;
-  contextSnapshot?: Record<string, unknown>;
-};
 
 const CATEGORY_LABELS: Record<string, string> = {
   device_tracking: "Device & Tracking",
@@ -57,164 +36,34 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
 function readString(source: Record<string, unknown> | null, key: string): string | undefined {
   const value = source?.[key];
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-function readNestedString(source: Record<string, unknown> | null, path: string[]): string | undefined {
-  let current: unknown = source;
-  for (const key of path) {
-    current = asRecord(current)?.[key];
-  }
-  return typeof current === "string" && current.trim() ? current : undefined;
-}
-
-function extractRawTickets(response: unknown): Record<string, unknown>[] {
-  const root = asRecord(response);
-  const data = root?.data;
-  if (Array.isArray(data))
-    return data.map(asRecord).filter(Boolean) as Record<string, unknown>[];
-
-  const dataRecord = asRecord(data);
-  const candidates = [
-    dataRecord?.tickets,
-    dataRecord?.items,
-    dataRecord?.rows,
-    dataRecord?.data,
-  ];
-  const match = candidates.find(Array.isArray);
-  return Array.isArray(match) ? (match.map(asRecord).filter(Boolean) as Record<string, unknown>[]) : [];
-}
-
-function normalizeTicket(raw: Record<string, unknown>): SupportTicket {
-  return {
-    id: readString(
-      raw,
-      "id",
-    ) ?? readString(
-      raw,
-      "ticketId",
-    ) ?? "",
-    tenantId: readString(
-      raw,
-      "tenantId",
-    ) ?? readNestedString(
-      raw,
-      [
-        "tenant",
-        "id",
-      ],
-    ) ?? "",
-    category: readString(
-      raw,
-      "category",
-    ) ?? "other",
-    subject: readString(
-      raw,
-      "subject",
-    ) ?? readString(
-      raw,
-      "title",
-    ) ?? "Untitled ticket",
-    description: readString(
-      raw,
-      "description",
-    ) ?? readString(
-      raw,
-      "content",
-    ) ?? "",
-    status: readString(
-      raw,
-      "status",
-    ) ?? "open",
-    priority: readString(
-      raw,
-      "priority",
-    ) ?? "medium",
-    contextType: readString(
-      raw,
-      "contextType",
-    ) ?? readString(
-      raw,
-      "channel",
-    ) ?? "none",
-    escalatedTo: readString(
-      raw,
-      "escalatedTo",
-    ),
-    createdBy: readString(
-      raw,
-      "createdBy",
-    ) ?? readNestedString(
-      raw,
-      [
-        "reporter",
-        "id",
-      ],
-    ) ?? "",
-    createdAt: readString(
-      raw,
-      "createdAt",
-    ) ?? new Date().toISOString(),
-    updatedAt: readString(
-      raw,
-      "updatedAt",
-    ) ?? new Date().toISOString(),
-    resolvedAt: readString(
-      raw,
-      "resolvedAt",
-    ),
-    contextSnapshot: asRecord(raw.contextSnapshot) ?? undefined,
-  };
+// TRU-FE-10 §F: `null` means nothing has resolved yet — don't show it as "0h"
+// (that reads as instant resolution). Zero is a legitimate value.
+function formatResolutionHours(hrs: number | null): string {
+  if (hrs === null || hrs === undefined)
+    return "—";
+  if (hrs < 24)
+    return `${hrs.toFixed(1)}h`;
+  return `${(hrs / 24).toFixed(1)}d`;
 }
 
 export function SupportDashboard() {
   const dashboardQuery = useQuery(getSystemSupportDashboardQueryOptions());
-  const ticketsQuery = useQuery(getSystemSupportTicketsQueryOptions());
-  const isLoading = dashboardQuery.isLoading || ticketsQuery.isLoading;
-
-  const [tenantNames] = useState<Record<string, string>>({});
-
-  const tickets = useMemo(
-    () => extractRawTickets(ticketsQuery.data).map(normalizeTicket).filter(ticket => ticket.id),
-    [ticketsQuery.data],
-  );
+  const isLoading = dashboardQuery.isLoading;
 
   const dashboard = dashboardQuery.data?.data;
 
-  const tenantName = (id: string) => tenantNames[id] || `${id.slice(
+  const needsAttention: SystemSupportTicket[] = dashboard?.needsAttention ?? [];
+  const recentlyResolved: SystemSupportTicket[] = dashboard?.recentlyResolved ?? [];
+
+  const tenantName = (id: string) => `${id.slice(
     0,
     8,
-  )}...`;
-
-  const stats = useMemo(
-    () => {
-      const open = dashboard?.open ?? 0;
-      const inProgress = dashboard?.inProgress ?? 0;
-      const escalated = dashboard?.escalated ?? 0;
-      const waitingOnTenant = dashboard?.waitingOnTenant ?? 0;
-      const resolved = dashboard?.resolved ?? 0;
-      const closed = dashboard?.closed ?? 0;
-      const resolvedToday = dashboard?.resolvedToday ?? 0;
-
-      return {
-        open,
-        inProgress,
-        escalated,
-        waitingOnTenant,
-        resolved,
-        closed,
-        resolvedToday,
-        activeWorkload: open + inProgress + escalated,
-      };
-    },
-    [dashboard],
-  );
+  )}…`;
 
   const byCategory = useMemo(
     () => dashboard?.byCategory ?? {},
@@ -249,45 +98,6 @@ export function SupportDashboard() {
     [dashboard],
   );
 
-  const needsAttention = useMemo(
-    () => {
-      return [...tickets]
-        .filter(t => [
-          "open",
-          "escalated",
-        ].includes(t.status))
-        .sort((a, b) => {
-          if (a.status === "escalated" && b.status !== "escalated")
-            return -1;
-          if (b.status === "escalated" && a.status !== "escalated")
-            return 1;
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        })
-        .slice(
-          0,
-          5,
-        );
-    },
-    [tickets],
-  );
-
-  const recentlyResolved = useMemo(
-    () => {
-      return [...tickets]
-        .filter(ticket => ticket.status === "resolved" || ticket.status === "closed")
-        .sort(
-          (a, b) =>
-            new Date(b.resolvedAt || b.updatedAt).getTime()
-              - new Date(a.resolvedAt || a.updatedAt).getTime(),
-        )
-        .slice(
-          0,
-          5,
-        );
-    },
-    [tickets],
-  );
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -312,7 +122,8 @@ export function SupportDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
+      {/* ponytail: 4-col at lg, 2 rows of 4 (mirrors fleetflow-pro reference). */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-4">
@@ -321,7 +132,7 @@ export function SupportDashboard() {
               </div>
               <div className="space-y-1 min-w-0 flex-1">
                 <p className="text-sm font-medium text-muted-foreground">Active Workload</p>
-                <p className="text-2xl font-bold tracking-tight">{stats.activeWorkload}</p>
+                <p className="text-2xl font-bold tracking-tight">{dashboard?.activeWorkload ?? 0}</p>
                 <p className="text-xs text-muted-foreground">Open + In Progress + Escalated</p>
               </div>
             </div>
@@ -332,12 +143,12 @@ export function SupportDashboard() {
           <CardContent className="p-4">
             <div className="flex items-start gap-4">
               <div className="rounded-lg p-2.5 bg-destructive/10 text-destructive shrink-0">
-                <CircleDot className="h-5 w-5" />
+                <Flame className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Open</p>
-                <p className="text-2xl font-bold tracking-tight">{stats.open}</p>
-                <p className="text-xs text-muted-foreground">New support requests</p>
+                <p className="text-sm font-medium text-muted-foreground">Critical / High Priority</p>
+                <p className="text-2xl font-bold tracking-tight">{dashboard?.criticalHigh ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Unresolved, top-priority tickets</p>
               </div>
             </div>
           </CardContent>
@@ -350,9 +161,9 @@ export function SupportDashboard() {
                 <AlertCircle className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold tracking-tight">{stats.inProgress}</p>
-                <p className="text-xs text-muted-foreground">Currently being handled</p>
+                <p className="text-sm font-medium text-muted-foreground">SLA Breaching</p>
+                <p className="text-2xl font-bold tracking-tight">{dashboard?.slaBreaching ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Unresolved &gt; 24 hours</p>
               </div>
             </div>
           </CardContent>
@@ -365,9 +176,9 @@ export function SupportDashboard() {
                 <Clock className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Escalated</p>
-                <p className="text-2xl font-bold tracking-tight">{stats.escalated}</p>
-                <p className="text-xs text-muted-foreground">Routed to vendor / engineering</p>
+                <p className="text-sm font-medium text-muted-foreground">First-Response Backlog</p>
+                <p className="text-2xl font-bold tracking-tight">{dashboard?.firstResponseBacklog ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Open with no reply &gt; 2h</p>
               </div>
             </div>
           </CardContent>
@@ -380,9 +191,9 @@ export function SupportDashboard() {
                 <ArrowUpRight className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Awaiting Tenant</p>
-                <p className="text-2xl font-bold tracking-tight">{stats.waitingOnTenant}</p>
-                <p className="text-xs text-muted-foreground">Pending customer info</p>
+                <p className="text-sm font-medium text-muted-foreground">Escalated</p>
+                <p className="text-2xl font-bold tracking-tight">{dashboard?.escalated ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Routed to vendor / engineering</p>
               </div>
             </div>
           </CardContent>
@@ -395,9 +206,26 @@ export function SupportDashboard() {
                 <UserCheck className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Resolved Today</p>
-                <p className="text-2xl font-bold tracking-tight">{stats.resolvedToday}</p>
-                <p className="text-xs text-muted-foreground">Tickets resolved today</p>
+                <p className="text-sm font-medium text-muted-foreground">Awaiting Tenant</p>
+                <p className="text-2xl font-bold tracking-tight">{dashboard?.awaitingTenant ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Pending customer info</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start gap-4">
+              <div className="rounded-lg p-2.5 bg-chart-2/10 text-chart-2 shrink-0">
+                <Timer className="h-5 w-5" />
+              </div>
+              <div className="space-y-1 min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Avg Resolution Time</p>
+                <p className="text-2xl font-bold tracking-tight">
+                  {formatResolutionHours(dashboard?.avgResolutionHours ?? null)}
+                </p>
+                <p className="text-xs text-muted-foreground">From open to resolved</p>
               </div>
             </div>
           </CardContent>
@@ -410,24 +238,9 @@ export function SupportDashboard() {
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Resolved</p>
-                <p className="text-2xl font-bold tracking-tight">{stats.resolved}</p>
-                <p className="text-xs text-muted-foreground">Resolved ticket total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-4">
-              <div className="rounded-lg p-2.5 bg-chart-2/10 text-chart-2 shrink-0">
-                <CheckCircle2 className="h-5 w-5" />
-              </div>
-              <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Closed</p>
-                <p className="text-2xl font-bold tracking-tight">{stats.closed}</p>
-                <p className="text-xs text-muted-foreground">Closed ticket total</p>
+                <p className="text-sm font-medium text-muted-foreground">Resolved (Last 7d)</p>
+                <p className="text-2xl font-bold tracking-tight">{dashboard?.resolvedLast7Days ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Throughput this week</p>
               </div>
             </div>
           </CardContent>
@@ -469,13 +282,9 @@ export function SupportDashboard() {
                               0,
                               8,
                             )}
-                            {" "}
-                            -
-                            {" "}
+                            {" • "}
                             {tenantName(ticket.tenantId)}
-                            {" "}
-                            -
-                            {" "}
+                            {" • "}
                             {CATEGORY_LABELS[ticket.category] || ticket.category}
                           </p>
                         </div>
@@ -609,13 +418,9 @@ export function SupportDashboard() {
                               0,
                               8,
                             )}
-                            {" "}
-                            -
-                            {" "}
+                            {" • "}
                             {tenantName(ticket.tenantId)}
-                            {" "}
-                            -
-                            {" "}
+                            {" • "}
                             {CATEGORY_LABELS[ticket.category] || ticket.category}
                           </p>
                         </div>

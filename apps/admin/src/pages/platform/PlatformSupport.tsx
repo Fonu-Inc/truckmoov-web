@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
 import {
   Tabs,
   TabsContent,
@@ -28,7 +27,6 @@ export default function PlatformSupport() {
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="all-tickets">All Tickets</TabsTrigger>
             <TabsTrigger value="escalated">Escalated</TabsTrigger>
-            <TabsTrigger value="device-setup">Device Setup</TabsTrigger>
           </TabsList>
         </div>
 
@@ -51,13 +49,6 @@ export default function PlatformSupport() {
           className="space-y-6"
         >
           <EscalatedTickets />
-        </TabsContent>
-
-        <TabsContent
-          value="device-setup"
-          className="space-y-6"
-        >
-          <DeviceSetupRequestsQueue />
         </TabsContent>
       </Tabs>
     </div>

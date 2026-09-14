@@ -687,6 +687,30 @@ export function AllTickets() {
                   className="h-10 border-border bg-transparent pl-10 font-semibold placeholder:font-normal hover:bg-secondary"
                 />
               </div>
+              {/* ponytail: inline All Statuses select mirrors the platform
+                  reference. Kept alongside the Filter popover — popover still
+                  owns category + any future fields, this is the one-click
+                  status swap. */}
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setPendingStatusFilter(value);
+                }}
+              >
+                <SelectTrigger className="h-10 w-[160px] border-border bg-transparent font-semibold">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="waiting_on_tenant">Awaiting Response</SelectItem>
+                  <SelectItem value="escalated">Escalated</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
               <Popover
                 open={filterOpen}
                 onOpenChange={setFilterOpen}

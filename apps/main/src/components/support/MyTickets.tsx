@@ -4,9 +4,15 @@ import type {
 import type {
   FilterField, FilterValues,
 } from "@/components/shadcn/table-toolbar";
-import type { ExportColumn } from "@/lib/exportTable";
-import { useQuery } from "@tanstack/react-query";
-import { getSupportTicketsQueryOptions } from "@truckmoov/api/auth";
+import {
+  useQuery, useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getSupportTicketOptionsQueryOptions,
+  getSupportTicketsExportQueryOptions,
+  getSupportTicketsQueryOptions,
+  getSupportTicketsSummaryQueryOptions,
+} from "@truckmoov/api/auth";
 import {
   debounce, getInitials,
 } from "@truckmoov/app-core/utils/general-utils";
@@ -14,6 +20,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   CircleDot,
+  Download,
   Eye,
   Loader2,
   MessageSquare,
@@ -22,12 +29,12 @@ import {
 import {
   useEffect, useMemo, useState,
 } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { ExportButton } from "@/components/shadcn/export-button";
 import {
   Table,
   TableBody,
@@ -86,58 +93,6 @@ const statusOptions = Object.entries(statusConfig).map(([
   value,
   label: config.label,
 }));
-
-const filterFields: FilterField[] = [
-  {
-    type: "select",
-    key: "category",
-    label: "Category",
-    options: [
-      {
-        value: "device_tracking", label: "Device & Tracking",
-      },
-      {
-        value: "sim_connectivity", label: "SIM & Connectivity",
-      },
-      {
-        value: "messaging", label: "Messaging",
-      },
-      {
-        value: "billing", label: "Billing",
-      },
-      {
-        value: "billing_subscription", label: "Billing & Subscription",
-      },
-      {
-        value: "account_access", label: "Account / Access",
-      },
-      {
-        value: "compliance", label: "Compliance",
-      },
-      {
-        value: "onboarding", label: "Onboarding",
-      },
-      {
-        value: "other", label: "Other",
-      },
-      {
-        value: "enterprise_enquiry", label: "Enterprise Enquiry",
-      },
-    ],
-  },
-  {
-    type: "select",
-    key: "priority",
-    label: "Priority",
-    options: Object.entries(priorityConfig).map(([
-      value,
-      config,
-    ]) => ({
-      value,
-      label: config.label,
-    })),
-  },
-];
 
 function formatCategory(category: string) {
   return category.replace(
@@ -221,62 +176,79 @@ export function MyTickets() {
     ],
   );
 
+  const queryClient = useQueryClient();
   const {
     data, error, isLoading, refetch,
   } = useQuery(getSupportTicketsQueryOptions(query));
   const tickets = data?.data.tickets ?? [];
-  const counts = data?.data.countsByStatus;
+  const summaryQuery = useQuery(getSupportTicketsSummaryQueryOptions());
+  const summary = summaryQuery.data?.data;
+  const optionsQuery = useQuery(getSupportTicketOptionsQueryOptions());
+  const options = optionsQuery.data?.data;
 
   const kpis = [
     {
-      label: "Total Tickets", value: data?.data.total ?? 0, icon: TicketIcon, accent: "text-foreground",
+      label: "Total Tickets", value: summary?.total ?? 0, icon: TicketIcon, accent: "text-foreground",
     },
     {
-      label: "Open", value: counts?.open ?? 0, icon: CircleDot, accent: "text-chart-5",
+      label: "Open", value: summary?.open ?? 0, icon: CircleDot, accent: "text-chart-5",
     },
     {
-      label: "In Progress", value: counts?.in_progress ?? 0, icon: Loader2, accent: "text-primary",
+      label: "In Progress", value: summary?.inProgress ?? 0, icon: Loader2, accent: "text-primary",
     },
     {
-      label: "Escalated", value: counts?.escalated ?? 0, icon: ArrowUpRight, accent: "text-destructive",
+      label: "Escalated", value: summary?.escalated ?? 0, icon: ArrowUpRight, accent: "text-destructive",
     },
     {
-      label: "Closed",
-      value: (counts?.resolved ?? 0) + (counts?.closed ?? 0),
-      icon: CheckCircle2,
-      accent: "text-muted-foreground",
+      label: "Closed", value: summary?.closed ?? 0, icon: CheckCircle2, accent: "text-muted-foreground",
     },
   ];
 
-  const exportColumns: ExportColumn<SupportTicket>[] = [
-    {
-      header: "Ticket ID", accessor: ticket => ticket.id,
-    },
-    {
-      header: "Title", accessor: ticket => ticket.subject,
-    },
-    {
-      header: "Description", accessor: ticket => ticket.description,
-    },
-    {
-      header: "Reporter", accessor: reporterName,
-    },
-    {
-      header: "Channel", accessor: channelName,
-    },
-    {
-      header: "Category", accessor: ticket => formatCategory(ticket.category),
-    },
-    {
-      header: "Status", accessor: ticket => statusConfig[ticket.status].label,
-    },
-    {
-      header: "Priority", accessor: ticket => priorityConfig[ticket.priority].label,
-    },
-    {
-      header: "Created", accessor: ticket => ticket.createdAt,
-    },
-  ];
+  const filterFields: FilterField[] = useMemo(
+    () => [
+      {
+        type: "select",
+        key: "category",
+        label: "Category",
+        options: options?.categories ?? [],
+      },
+      {
+        type: "select",
+        key: "priority",
+        label: "Priority",
+        options: options?.priorities ?? Object.entries(priorityConfig).map(([
+          value,
+          config,
+        ]) => ({
+          value, label: config.label,
+        })),
+      },
+    ],
+    [options],
+  );
+
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const blob = await queryClient.fetchQuery(getSupportTicketsExportQueryOptions(query));
+      const url = URL.createObjectURL(blob as Blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "support-tickets.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    catch {
+      toast.error("Export failed");
+    }
+    finally {
+      setIsExporting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -333,14 +305,18 @@ export function MyTickets() {
               <div>
                 <CardTitle>All Tickets</CardTitle>
                 <CardDescription>
-                  Browse and track every support ticket logged by your organization.
+                  Browse, filter, and manage every support ticket logged on the platform.
                 </CardDescription>
               </div>
-              <ExportButton
-                rows={tickets}
-                columns={exportColumns}
-                filename="support-tickets"
-              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={isExporting}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? "Exporting…" : "Export"}
+              </Button>
             </div>
             <div className="pt-4">
               <TableToolbar

@@ -622,6 +622,10 @@ export type CreateSupportTicketPayload = {
     channel?: SupportTicketChannel
     otherChannel?: string
     priority?: SupportTicketPriority
+    // TRU-FE-10 §D: server reads and stores the snapshot from these ids.
+    // Never send a client-supplied `contextSnapshot` — it is ignored.
+    contextType?: SupportTicketContextType
+    contextId?: string
   }
 }
 
@@ -698,6 +702,56 @@ export type SupportTicketDetail = {
 }
 
 export type SupportTicketDetailResponse = ServerResponse<SupportTicketDetail>
+
+// TRU-FE-10 §A — Tenant summary cards
+export type SupportTicketsSummary = {
+  total: number
+  open: number
+  inProgress: number
+  escalated: number
+  awaitingResponse: number   // waiting_on_tenant
+  closed: number             // resolved + closed
+}
+export type SupportTicketsSummaryResponse = ServerResponse<SupportTicketsSummary>
+
+// TRU-FE-10 §B — Server-driven dropdowns
+export type SupportTicketOption = { value: string; label: string }
+export type SupportTicketOptions = {
+  categories: SupportTicketOption[]
+  channels: SupportTicketOption[]
+  priorities: SupportTicketOption[]
+  contextTypes: SupportTicketOption[]
+}
+export type SupportTicketOptionsResponse = ServerResponse<SupportTicketOptions>
+
+// TRU-FE-10 §C — Context auto-attach
+export type SupportTicketContextType = 'device' | 'vehicle' | (string & {})
+
+export type SupportTicketContextDeviceSnapshot = {
+  imei: string | null
+  manufacturer: string | null
+  model: string | null
+  status: string | null
+  lifecycleStatus: string | null
+  healthStatus: 'online' | 'offline' | 'never_reported'
+  lastSeen: string | null
+}
+
+// ponytail: vehicle snapshot shape unknown from batch 9 doc — leave generic until
+// the field-by-field reference in new-endpoints.md is available.
+export type SupportTicketContext<TSnapshot = unknown> = {
+  available: boolean
+  contextType: SupportTicketContextType
+  contextId: string
+  snapshot: TSnapshot | null
+}
+export type SupportTicketContextResponse<TSnapshot = unknown> =
+  ServerResponse<SupportTicketContext<TSnapshot>>
+
+export type SupportTicketContextPayload = {
+  contextType: SupportTicketContextType
+  contextId: string
+}
 
 // ─── System admin — support tickets ──────────────────────────────────────────
 
@@ -1150,6 +1204,17 @@ export type SystemSupportDashboard = {
   resolvedToday: number
   byCategory: Record<string, number>
   topTenants: Record<string, unknown>[]
+  needsAttention: SystemSupportTicket[]
+  recentlyResolved: SystemSupportTicket[]
+  // TRU-FE-10 §F — rate cards
+  activeWorkload: number
+  criticalHigh: number
+  slaBreaching: number
+  firstResponseBacklog: number
+  awaitingTenant: number
+  // ⚠️ null (not zero) when nothing has resolved. Zero reads as instant.
+  avgResolutionHours: number | null
+  resolvedLast7Days: number
 }
 
 import type { ServerResponse } from '../lib/types'
