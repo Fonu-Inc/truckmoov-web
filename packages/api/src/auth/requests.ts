@@ -321,6 +321,9 @@ import type {
   UpdatePlatformIntegrationPayload,
   UpdateSubscriptionPlanEntitlementsPayload,
   UploadOnboardingApplicationDocumentPayload,
+  SuspendSystemDevicePayload,
+  ReinstateSystemDevicePayload,
+  SystemDeviceActionResponse,
 } from './types'
 
 // ─── Public auth ─────────────────────────────────────────────────────────────
@@ -645,6 +648,21 @@ export async function updateDeviceCatalogEntry({ id, data }: UpdateDeviceCatalog
 
 export async function deleteDeviceCatalogEntry({ id }: { id: string }) {
   await axiosInstance.delete<SystemDeviceCatalogDeleteResponse>(`/auth/system/devices/catalog/${id}`)
+}
+
+// TRU-FE-5 § 7 — Suspend a device platform-wide. Optional { reason }.
+// Returns 400 if already suspended/decommissioned, 404 if not found,
+// 503 if the device service is unreachable (do NOT optimistically update on 503).
+export async function suspendSystemDevice({ id, data: body }: SuspendSystemDevicePayload) {
+  const { data } = await axiosInstance.post<SystemDeviceActionResponse>(`/auth/system/devices/${id}/suspend`, body ?? {})
+  return data
+}
+
+// TRU-FE-5 § 7 — Reinstate a suspended device. No body.
+// ⚠️ Returns assignable, not assigned — vehicle link was released on suspension.
+export async function reinstateSystemDevice({ id }: ReinstateSystemDevicePayload) {
+  const { data } = await axiosInstance.post<SystemDeviceActionResponse>(`/auth/system/devices/${id}/reinstate`)
+  return data
 }
 
 // ─── System admin — SIMs ──────────────────────────────────────────────────────

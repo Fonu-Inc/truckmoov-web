@@ -1437,6 +1437,23 @@ export type SystemDevicesSummary = {
   generatedAt: string
 }
 
+// TRU-FE-5 § 7 — Suspend and reinstate a device.
+// POST /auth/system/devices/:deviceId/suspend  — optional { reason }
+// POST /auth/system/devices/:deviceId/reinstate — no body
+// ⚠️ On reinstate the device returns to the lifecycle state it was in before
+// suspension, EXCEPT it comes back assignable (not assigned) — the vehicle link
+// was released on suspension and may since have been taken by another device.
+export type SuspendSystemDevicePayload = {
+  id: string
+  data?: { reason?: string }
+}
+
+export type ReinstateSystemDevicePayload = {
+  id: string
+}
+
+export type SystemDeviceActionResponse = ServerResponse<{ id: string }>
+
 export type SystemSimsSummary = {
   total: number
   active: number

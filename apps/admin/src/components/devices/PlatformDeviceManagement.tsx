@@ -13,6 +13,8 @@ import {
   getSystemDevicesQueryOptions,
   getSystemDevicesSummaryQueryOptions,
   getSystemTenantsQueryOptions,
+  useSuspendSystemDevice,
+  useReinstateSystemDevice,
 } from "@truckmoov/api/auth";
 import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
@@ -24,6 +26,7 @@ import {
   Cpu,
   Download,
   Eye,
+  Loader2,
   MoreHorizontal,
   Navigation,
   Pencil,
@@ -86,6 +89,7 @@ import {
 } from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { Textarea } from "@/components/shadcn/textarea";
 
 const lifecycleStatuses = [
   {
@@ -222,6 +226,7 @@ function getStatusBadgeClass(status: string) {
 const NORMALIZED_STATUS_LABELS: Record<string, string> = {
   active: "Active",
   inactive: "Inactive",
+  suspended: "Suspended",
   assigned: "Assigned",
   unassigned: "Unassigned",
   configured: "Configured",
@@ -232,6 +237,8 @@ const NORMALIZED_STATUS_LABELS: Record<string, string> = {
 const NORMALIZED_STATUS_CLASSES: Record<string, string> = {
   active: "border-success/30 bg-success/10 text-success hover:bg-success/10",
   inactive: "border-border bg-muted text-muted-foreground hover:bg-muted",
+  // TRU-FE-5 § 7 — suspended is a real lifecycle state; render distinctly from inactive.
+  suspended: "border-warning/30 bg-warning/10 text-warning hover:bg-warning/10",
   assigned: "border-primary/30 bg-primary/10 text-primary hover:bg-primary/10",
   unassigned: "border-warning/30 bg-warning/10 text-warning hover:bg-warning/10",
   configured: "border-info/30 bg-info/10 text-info hover:bg-info/10",
@@ -242,6 +249,10 @@ const NORMALIZED_STATUS_CLASSES: Record<string, string> = {
 function normalizeDeviceStatus(device: SystemDeviceInventoryItem): string {
   const lifecycle = (device.lifecycleStatus ?? "").toString();
   const legacy = (device.operationalStatus ?? "").toString();
+  // TRU-FE-5 § 7 — suspended is now a real lifecycle state; check it before
+  // the generic active/inactive fallthrough so it renders as "Suspended" not "Inactive".
+  if (lifecycle === "suspended")
+    return "suspended";
   if (legacy === "active")
     return "active";
   if (legacy === "unregistered")
@@ -301,6 +312,22 @@ export function PlatformDeviceManagement() {
     isExporting,
     setIsExporting,
   ] = useState(false);
+  const [
+    suspendDevice,
+    setSuspendDevice,
+  ] = useState<SystemDeviceInventoryItem | null>(null);
+  const [
+    suspendReason,
+    setSuspendReason,
+  ] = useState("");
+  const [
+    reinstateDevice,
+    setReinstateDevice,
+  ] = useState<SystemDeviceInventoryItem | null>(null);
+
+  const suspendMutation = useSuspendSystemDevice();
+  const reinstateMutation = useReinstateSystemDevice();
+
   const summaryQuery = useQuery(getSystemDevicesSummaryQueryOptions());
   useEffect(
     () => {
@@ -490,7 +517,8 @@ export function PlatformDeviceManagement() {
         const device = row.original;
         const isAssigned = Boolean(device.tenantId);
         const isFaulty = device.lifecycleStatus === "faulty";
-        const isSuspended = device.operationalStatus === "decommissioned";
+        // TRU-FE-5 § 7 — suspended is a real lifecycle state (not operationalStatus).
+        const isSuspended = device.lifecycleStatus === "suspended";
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -524,21 +552,18 @@ export function PlatformDeviceManagement() {
                 ? (
                     <DropdownMenuItem
                       className="text-success"
-                      onClick={() => {
-                        // ponytail: wire useUpdateDeviceStatus when the API exposes it
-                        toast.info("Not yet implemented");
-                      }}
+                      onClick={() => setReinstateDevice(device)}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Reactivate
+                      Reinstate
                     </DropdownMenuItem>
                   )
                 : (
                     <DropdownMenuItem
                       className="text-warning"
                       onClick={() => {
-                        // ponytail: wire useUpdateDeviceStatus when the API exposes it
-                        toast.info("Not yet implemented");
+                        setSuspendDevice(device);
+                        setSuspendReason("");
                       }}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
@@ -1232,6 +1257,152 @@ export function PlatformDeviceManagement() {
               }}
             >
               {reassignDevice?.tenantId ? "Reassign" : "Assign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* TRU-FE-5 § 7 — Suspend device. Optional reason; 503 means the change did
+          not happen — do NOT optimistically update; let the invalidation on success
+          handle the refresh. */}
+      <Dialog
+        open={!!suspendDevice}
+        onOpenChange={(open) => {
+          if (!open && !suspendMutation.isPending) {
+            setSuspendDevice(null);
+            setSuspendReason("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Suspend Device</DialogTitle>
+            <DialogDescription>
+              This takes
+              {" "}
+              {suspendDevice?.manufacturer}
+              {" "}
+              {suspendDevice?.model}
+              {" "}
+              (IMEI
+              {" "}
+              {suspendDevice?.imei}
+              ) out of service platform-wide and releases its vehicle assignment. Add an optional reason for the audit log.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="suspend-reason">Reason (optional)</Label>
+            <Textarea
+              id="suspend-reason"
+              rows={3}
+              placeholder="Reason for suspension…"
+              className="resize-none"
+              value={suspendReason}
+              onChange={event => setSuspendReason(event.target.value)}
+              disabled={suspendMutation.isPending}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSuspendDevice(null);
+                setSuspendReason("");
+              }}
+              disabled={suspendMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={suspendMutation.isPending}
+              onClick={() => {
+                if (!suspendDevice)
+                  return;
+                suspendMutation.mutate(
+                  {
+                    id: suspendDevice.id,
+                    ...(suspendReason.trim() ? { data: { reason: suspendReason.trim() } } : {}),
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.success("Device suspended");
+                      setSuspendDevice(null);
+                      setSuspendReason("");
+                    },
+                    onError: error => toast.error(error.message),
+                  },
+                );
+              }}
+            >
+              {suspendMutation.isPending
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : null}
+              Suspend Device
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* TRU-FE-5 § 7 — Reinstate a suspended device. ⚠️ The device returns
+          assignable, NOT assigned — its vehicle link was released on suspension
+          and may since have been taken by another device. The copy below says so. */}
+      <Dialog
+        open={!!reinstateDevice}
+        onOpenChange={(open) => {
+          if (!open && !reinstateMutation.isPending)
+            setReinstateDevice(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reinstate Device</DialogTitle>
+            <DialogDescription>
+              This brings
+              {" "}
+              {reinstateDevice?.manufacturer}
+              {" "}
+              {reinstateDevice?.model}
+              {" "}
+              (IMEI
+              {" "}
+              {reinstateDevice?.imei}
+              ) back into service. Note: the device returns as
+              {" "}
+              <strong>assignable</strong>
+              {" "}
+              — its previous vehicle assignment was released when it was suspended and is not automatically restored.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReinstateDevice(null)}
+              disabled={reinstateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={reinstateMutation.isPending}
+              onClick={() => {
+                if (!reinstateDevice)
+                  return;
+                reinstateMutation.mutate(
+                  { id: reinstateDevice.id },
+                  {
+                    onSuccess: () => {
+                      toast.success("Device reinstated");
+                      setReinstateDevice(null);
+                    },
+                    onError: error => toast.error(error.message),
+                  },
+                );
+              }}
+            >
+              {reinstateMutation.isPending
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : null}
+              Reinstate Device
             </Button>
           </DialogFooter>
         </DialogContent>

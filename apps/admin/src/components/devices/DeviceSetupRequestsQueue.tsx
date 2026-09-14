@@ -1118,7 +1118,10 @@ export function DeviceSetupRequestsQueue() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Reject Device Setup Request</DialogTitle>
-            <DialogDescription>Provide a reason before rejecting this device setup request.</DialogDescription>
+            {/* TRU-FE-5 § 5 — reason is required and non-blank; it is what the tenant sees. */}
+            <DialogDescription>
+              This reason will be sent to the tenant — write something they can act on. A blank reason will be rejected by the server.
+            </DialogDescription>
           </DialogHeader>
 
           <Form {...rejectForm}>

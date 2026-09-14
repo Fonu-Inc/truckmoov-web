@@ -19,6 +19,8 @@ import {
   createTenant,
   deleteOnboardingKycDocument,
   deleteDeviceCatalogEntry,
+  suspendSystemDevice,
+  reinstateSystemDevice,
   deleteOrganizationUser,
   deleteSystemAdmin,
   deleteSystemAdminInvite,
@@ -983,6 +985,30 @@ export function useDeleteDeviceCatalogEntry() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+    },
+  })
+}
+
+// TRU-FE-5 § 7 — Suspend and reinstate a device.
+// Do NOT optimistically update on 503 — the change did not happen and can be retried.
+export function useSuspendSystemDevice() {
+  return useMutation({
+    mutationFn: suspendSystemDevice,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevice(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
+    },
+  })
+}
+
+export function useReinstateSystemDevice() {
+  return useMutation({
+    mutationFn: reinstateSystemDevice,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevice(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
     },
   })
 }
