@@ -132,6 +132,16 @@ export const router = createBrowserRouter([
             path: "/messaging",
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformMessagingCenter")).default }),
           },
+          // Communications group. `/messaging` above is the separate email
+          // surface and stays off the nav.
+          {
+            path: "/whatsapp",
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformWhatsAppSetup")).default }),
+          },
+          {
+            path: "/inbox",
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformInbox")).default }),
+          },
           {
             path: "/subscription",
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformBilling")).default }),

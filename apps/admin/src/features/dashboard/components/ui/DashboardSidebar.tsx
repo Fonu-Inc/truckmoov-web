@@ -1,17 +1,25 @@
-import type { SidebarNavItem } from "@/features/dashboard/utils/sidebarNav";
+import type {
+  SidebarEntry, SidebarNavGroup, SidebarNavItem,
+} from "@/features/dashboard/utils/sidebarNav";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
   Building2,
+  ChevronDown,
   Headphones,
   LogOut,
   Truck,
 } from "lucide-react";
 import {
-  memo, useEffect,
+  memo, useEffect, useState,
 } from "react";
 import {
   NavLink, useLocation,
 } from "react-router";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/shadcn/collapsible";
 import {
   Sheet,
   SheetContent,
@@ -24,7 +32,9 @@ import {
   TooltipTrigger,
 } from "@/components/shadcn/tooltip";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
-import { getEntriesForRole } from "@/features/dashboard/utils/sidebarNav";
+import {
+  getEntriesForRole, isNavGroup,
+} from "@/features/dashboard/utils/sidebarNav";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/shared/hooks/useIsMobile";
 import { useAuthStore } from "@/stores/authStore";
@@ -42,17 +52,22 @@ import { useAuthStore } from "@/stores/authStore";
 const ROW = "flex items-center gap-3 rounded-md border-l-2 border-transparent py-2.5 pl-[10px] pr-3 text-sm font-medium transition-colors";
 const ROW_ACTIVE = "border-primary bg-primary/10 text-primary";
 const ROW_IDLE = "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
+/** Indents a group child so it reads as belonging to the row above it. */
+const ROW_NESTED = "pl-[38px]";
+/** A group's trigger is a `<button>`, which needs the width/alignment a link gets for free. */
+const ROW_GROUP = "w-full text-left";
 const ICON = "h-[18px] w-[18px] shrink-0";
 const FOOTER_ROW = "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors";
 
 /** Stable empty array for the pre-auth render, so `navItems` never changes identity. */
-const NO_ENTRIES: SidebarNavItem[] = [];
+const NO_ENTRIES: SidebarEntry[] = [];
 
 function NavRowBase({
-  item, collapsed,
+  item, collapsed, nested = false,
 }: {
   item: SidebarNavItem;
   collapsed: boolean;
+  nested?: boolean;
 }) {
   const Icon = item.icon;
 
@@ -64,6 +79,7 @@ function NavRowBase({
       end={item.href === "/"}
       className={({ isActive }) => cn(
         ROW,
+        nested && ROW_NESTED,
         isActive ? ROW_ACTIVE : ROW_IDLE,
       )}
     >
@@ -90,6 +106,93 @@ function NavRowBase({
 const NavRow = memo(NavRowBase);
 
 /**
+ * A collapsible parent row. Copied from `apps/main` when the Communications
+ * group landed.
+ *
+ * Open state is derived, not stored: `manual ?? childActive` means the group
+ * follows the route until you toggle it by hand, after which your choice wins.
+ * No effect, so there is no render-then-correct flash on navigation.
+ */
+function NavGroupBase({
+  group, collapsed,
+}: {
+  group: SidebarNavGroup;
+  collapsed: boolean;
+}) {
+  const { pathname } = useLocation();
+  const [
+    manual,
+    setManual,
+  ] = useState<boolean | null>(null);
+  const Icon = group.icon;
+
+  const childActive = group.items.some(
+    item => pathname === item.href || pathname.startsWith(`${item.href}/`),
+  );
+
+  // Collapsed rail has no room to expand into, so the group stands in for its
+  // first child rather than rendering a trigger that opens nothing visible.
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <NavLink
+            to={group.items[0]?.href ?? "#"}
+            className={cn(
+              ROW,
+              childActive ? ROW_ACTIVE : ROW_IDLE,
+            )}
+          >
+            <Icon className={ICON} />
+          </NavLink>
+        </TooltipTrigger>
+        <TooltipContent side="right">{group.label}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  const open = manual ?? childActive;
+
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={setManual}
+    >
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            ROW,
+            ROW_GROUP,
+            childActive ? "bg-primary/10 text-primary" : ROW_IDLE,
+          )}
+        >
+          <Icon className={ICON} />
+          <span className="flex-1 truncate">{group.label}</span>
+          <ChevronDown className={cn(
+            "h-4 w-4 shrink-0 transition-transform duration-200",
+            open && "rotate-180",
+          )}
+          />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-0.5 pt-1">
+        {group.items.map(item => (
+          <NavRow
+            key={item.href}
+            item={item}
+            collapsed={false}
+            nested
+          />
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+const NavGroup = memo(NavGroupBase);
+
+/**
  * The nav content itself — logo, identity, entries, footer. Rendered inside
  * either the desktop fixed `<aside>` or the mobile `Sheet`. Kept as one
  * function so both paths render identical markup and adding a nav item is
@@ -102,7 +205,7 @@ function SidebarBody({
   onLogout,
 }: {
   collapsed: boolean;
-  navItems: SidebarNavItem[];
+  navItems: SidebarEntry[];
   role: string | undefined;
   onLogout: () => void;
 }) {
@@ -155,13 +258,21 @@ function SidebarBody({
       )}
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        {navItems.map(item => (
-          <NavRow
-            key={item.href}
-            item={item}
-            collapsed={collapsed}
-          />
-        ))}
+        {navItems.map(entry => (isNavGroup(entry)
+          ? (
+              <NavGroup
+                key={entry.label}
+                group={entry}
+                collapsed={collapsed}
+              />
+            )
+          : (
+              <NavRow
+                key={entry.href}
+                item={entry}
+                collapsed={collapsed}
+              />
+            )))}
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
@@ -230,7 +341,6 @@ function DashboardSidebarBase() {
     () => {
       if (isMobile && mobileOpen)
         closeMobile();
-    // eslint-disable-next-line react/exhaustive-deps
     },
     [pathname],
   );

@@ -31,7 +31,7 @@ export default function ProductLayout({ data }: ProductLayoutProps) {
           </div>
           <h1 className="font-bold text-[60px]">{data.title}</h1>
         </section>
-        <p className="w-full max-w-[538px] text-base">{data.description}</p>
+        <p className="w-full max-w-134.5 text-base">{data.description}</p>
       </SectionContainerTwo>
       <SectionContainer
         rootClassName="bg-background rounded-tl-[50px] rounded-tr-[50px] border-b border-border"
@@ -60,7 +60,7 @@ export default function ProductLayout({ data }: ProductLayoutProps) {
         rootClassName="bg-background"
       >
         <article className="rounded-[25px] border border-border-100 px-8 py-7 bg-[#FAFAFA]">
-          <h2 className="mb-[10px] text-[18px] font-medium">How it fits in your operations</h2>
+          <h2 className="mb-2.5 text-[18px] font-medium">How it fits in your operations</h2>
           <p className="text-base">{data.fit}</p>
         </article>
       </SectionContainer>

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizationSettingsQueryOptions } from "@truckmoov/api/auth";
+import { useAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
 import {
@@ -7,8 +8,15 @@ import {
 } from "./tokens";
 
 export function BrandingProvider({ children }: { children: React.ReactNode }) {
+  // Branding is tenant data behind a bearer token. This provider sits above the
+  // whole router, so on a public route (/auth, /apply) there is no session and
+  // the request 401s — which the axios interceptor answers by hard-redirecting
+  // to /auth, making those routes unreachable. Only ask once signed in.
+  const accessToken = useAuthStore(state => state.accessToken);
+
   const { data } = useQuery({
     ...getOrganizationSettingsQueryOptions(),
+    enabled: Boolean(accessToken),
     retry: false,
     staleTime: 5 * 60_000,
   });

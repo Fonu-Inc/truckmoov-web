@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 import { SignInForm } from "@/features/auth/components/forms/SignInForm";
 
 /** Rendered inside AuthLayout, which supplies the branding panel and mobile logo. */
@@ -10,6 +12,17 @@ export default function AuthPage() {
       </div>
 
       <SignInForm />
+
+      <p className="text-center text-sm text-muted-foreground">
+        Don't have an account?
+        {" "}
+        <Link
+          to="/apply"
+          className="font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Apply for one
+        </Link>
+      </p>
     </div>
   );
 }

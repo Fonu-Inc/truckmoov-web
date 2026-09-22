@@ -425,7 +425,7 @@ export default function PlatformTenants() {
     {
       id: "orgType",
       accessorFn: row => (tenantOrgTypesState[row.id] || []).join(","),
-      header: "Org Type",
+      header: "Tenant Type",
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
           {(tenantOrgTypesState[row.original.id] || []).length > 0
@@ -618,7 +618,7 @@ export default function PlatformTenants() {
       >
         <TabsList>
           <TabsTrigger value="all-tenants">All Tenants</TabsTrigger>
-          <TabsTrigger value="kyc-review">Applications by Organizations</TabsTrigger>
+          <TabsTrigger value="kyc-review">Onboarding</TabsTrigger>
         </TabsList>
 
         <TabsContent

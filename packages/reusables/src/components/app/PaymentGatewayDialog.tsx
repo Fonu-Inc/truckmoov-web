@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 export type PaymentContext =
   | { type: "subscription"; planName: string; billingCycle: "monthly" | "yearly" }
   | { type: "invoice"; invoiceRef: string }
+  /** An approved account application paying for its M2M package up front. */
+  | { type: "application"; planName: string; deviceCount: number }
 
 // ─── Callback types ───────────────────────────────────────────────────────────
 
@@ -77,6 +79,12 @@ function contextText(ctx: PaymentContext): { title: string; description: string 
     return {
       title: `Pay for ${ctx.planName}`,
       description: `Choose how you'd like to pay for your ${ctx.billingCycle} subscription.`,
+    }
+  }
+  if (ctx.type === "application") {
+    return {
+      title: `Pay for ${ctx.planName}`,
+      description: `Choose how you'd like to pay for your ${ctx.deviceCount} device${ctx.deviceCount === 1 ? "" : "s"} and installation.`,
     }
   }
   return {

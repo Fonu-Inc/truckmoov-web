@@ -1,0 +1,338 @@
+import type { WhatsAppTemplate } from "@truckmoov/api/notification";
+import {
+  useDisconnectWhatsAppAccount,
+  useWhatsAppAccount,
+  useWhatsAppTemplates,
+} from "@truckmoov/api/notification";
+import { formatDateTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  CheckCircle2,
+  Info,
+  Link2Off,
+  Loader2,
+  Phone,
+  ShieldCheck,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import {
+  Alert, AlertDescription,
+} from "@/components/shadcn/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+
+/**
+ * Meta's template review states. Anything unrecognised falls through to the
+ * neutral outline badge rather than being mapped to a guess.
+ */
+const TEMPLATE_STATUS_TONE: Record<string, string> = {
+  APPROVED: "bg-success/10 text-success border-success/30",
+  PENDING: "bg-warning/10 text-warning border-warning/30",
+  REJECTED: "bg-destructive/10 text-destructive border-destructive/30",
+  PAUSED: "bg-muted text-muted-foreground",
+  DISABLED: "bg-muted text-muted-foreground",
+};
+
+function ConnectionDetail({
+  label, value,
+}: {
+  label: string;
+  value: string | undefined;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="truncate text-sm font-medium text-foreground">{value || "—"}</p>
+    </div>
+  );
+}
+
+export default function PlatformWhatsAppSetup() {
+  const accountQuery = useWhatsAppAccount();
+  const templatesQuery = useWhatsAppTemplates();
+  const disconnect = useDisconnectWhatsAppAccount();
+
+  const [
+    confirmOpen,
+    setConfirmOpen,
+  ] = useState(false);
+
+  const account = accountQuery.data?.data;
+  // The server answers 200 with an empty object when nothing is linked, so the
+  // phone number id — not the response itself — is what says "connected".
+  const isConnected = Boolean(account?.phone_number_id);
+
+  const templates = templatesQuery.data?.data?.data ?? [];
+
+  const handleDisconnect = () => {
+    if (!account?.phone_number_id)
+      return;
+
+    disconnect.mutate(
+      { phoneNumberId: account.phone_number_id },
+      {
+        onSuccess: () => {
+          toast.success("WhatsApp account disconnected");
+          setConfirmOpen(false);
+        },
+        onError: () => toast.error("Could not disconnect. Try again."),
+      },
+    );
+  };
+
+  return (
+    <Tabs
+      defaultValue="connection"
+      className="space-y-4"
+    >
+      <TabsList>
+        <TabsTrigger value="connection">Connection</TabsTrigger>
+        <TabsTrigger value="templates">Templates</TabsTrigger>
+      </TabsList>
+
+      <TabsContent
+        value="connection"
+        className="space-y-4"
+      >
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            The connected WhatsApp Business number is what drivers receive job
+            instructions and messages on. Replies land in the Messaging Center.
+          </AlertDescription>
+        </Alert>
+
+        <Card className="bg-card/50 border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <WhatsAppIcon className="h-5 w-5 text-primary" />
+              WhatsApp Business Account
+            </CardTitle>
+            <CardDescription>
+              The Meta-registered number this platform sends from.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {accountQuery.isLoading
+              ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-4 w-64" />
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                )
+              : accountQuery.isError
+                ? (
+                    <div className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
+                      Could not load the account.
+                      <Button
+                        variant="link"
+                        onClick={() => accountQuery.refetch()}
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  )
+                : !isConnected
+                    ? (
+                        <div className="flex flex-col items-center gap-3 py-10 text-center">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                            <WhatsAppIcon className="h-7 w-7 text-primary" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-base font-semibold text-foreground">
+                              No WhatsApp number connected
+                            </p>
+                            <p className="mx-auto max-w-md text-sm text-muted-foreground">
+                              Linking a number requires Meta&apos;s embedded signup,
+                              which runs outside this dashboard. Once a number is
+                              linked to the platform, its status and templates
+                              appear here.
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    : (
+                        <div className="space-y-6">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge className="bg-success/10 text-success border-success/30">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              Connected
+                            </Badge>
+                            {account?.webhook_subscribed_at && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                <ShieldCheck className="mr-1 h-3 w-3" />
+                                Webhook active
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            <ConnectionDetail
+                              label="Display number"
+                              value={account?.display_phone_number}
+                            />
+                            <ConnectionDetail
+                              label="Verified name"
+                              value={account?.verified_name}
+                            />
+                            <ConnectionDetail
+                              label="Business name"
+                              value={account?.business_name}
+                            />
+                            <ConnectionDetail
+                              label="Phone number ID"
+                              value={account?.phone_number_id}
+                            />
+                            <ConnectionDetail
+                              label="Business account ID"
+                              value={account?.business_account_id}
+                            />
+                            <ConnectionDetail
+                              label="Connected"
+                              value={account?.connected_at ? formatDateTime(account.connected_at) : undefined}
+                            />
+                          </div>
+
+                          <div className="flex justify-end border-t border-border/50 pt-4">
+                            <Button
+                              variant="outline"
+                              className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                              onClick={() => setConfirmOpen(true)}
+                            >
+                              <Link2Off className="mr-2 h-4 w-4" />
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="templates">
+        <Card className="bg-card/50 border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5 text-primary" />
+              Message Templates
+            </CardTitle>
+            <CardDescription>
+              Templates approved by Meta. A template is required to open a
+              conversation outside the 24-hour session window.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DataTable
+              columns={[
+                {
+                  id: "name",
+                  accessorKey: "name",
+                  header: "Template",
+                  cell: ({ row }) => (
+                    <span className="font-medium">{row.original.name || "—"}</span>
+                  ),
+                },
+                {
+                  id: "category",
+                  accessorKey: "category",
+                  header: "Category",
+                  cell: ({ row }) => (
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
+                      {row.original.category || "—"}
+                    </Badge>
+                  ),
+                },
+                {
+                  id: "language",
+                  accessorKey: "language",
+                  header: "Language",
+                  cell: ({ row }) => row.original.language || "—",
+                },
+                {
+                  id: "status",
+                  accessorKey: "status",
+                  header: "Status",
+                  cell: ({ row }) => {
+                    const status = row.original.status || "";
+                    return (
+                      <Badge
+                        variant="outline"
+                        className={TEMPLATE_STATUS_TONE[status] ?? "text-xs"}
+                      >
+                        {status || "—"}
+                      </Badge>
+                    );
+                  },
+                },
+              ]}
+              data={templates as WhatsAppTemplate[]}
+              isLoading={templatesQuery.isLoading}
+              isError={templatesQuery.isError}
+              errorMessage="Could not load templates."
+              onRetry={() => templatesQuery.refetch()}
+              emptyState="No templates yet. Templates are created and approved in Meta Business Manager."
+            />
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect this WhatsApp number?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Drivers will stop receiving WhatsApp messages from
+              {" "}
+              {account?.display_phone_number || "this number"}
+              , and replies will no longer reach the Messaging Center.
+              Reconnecting requires Meta&apos;s embedded signup again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDisconnect();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {disconnect.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Disconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Tabs>
+  );
+}

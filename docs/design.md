@@ -189,14 +189,20 @@ markup. Roles:
 | `DISPATCHER` | see config | Dispatch subset |
 | `FINANCE_VIEWER` | see config | Read-only financial subset |
 
-In `apps/main`, entries are either a flat `SidebarNavItem` or a
+In both apps, entries are either a flat `SidebarNavItem` or a
 `SidebarNavGroup` (collapsible, e.g. "Communications" → Messaging Center /
 Omnichannel Inbox). A group auto-expands when a child route is active and closes
 again when you navigate away — unless you toggled it by hand, which takes over
-from then on. `apps/admin` has no groups, and its `sidebarNav.ts` deliberately
-does not define the type: a stray `items` array there fails to compile rather
-than rendering nothing. Adding a group to admin means copying the machinery
-across from main.
+from then on.
+
+`apps/admin` grew its first group ("Communications" → WhatsApp Setup /
+Messaging Center) when those pages landed, and the machinery —
+`SidebarNavGroup` / `SidebarEntry` / `isNavGroup` in `sidebarNav.ts`, `NavGroup`
+in `DashboardSidebar.tsx` — was copied across from main then. Only the group
+branch came: main also carries `labelByRole` / `resolveLabel` for per-role
+naming, which admin has no use for. Note the two lists still differ in what a
+group may say — main's groups take `disabled: true` for a coming-soon section,
+admin's have no such field.
 
 There are **no nav badges**. `badgeKey` / `badge` and the `useRealtimeMessages`
 hook behind them are gone — the counts were a stubbed `useState(0)`, so every
@@ -234,8 +240,9 @@ navigates and highlights, the body reads "Coming soon" (`/analytics` and
 `/subscription` today). A whole section gets `disabled: true` on its group
 instead: the row greys out, stops being a link, and carries a "Coming soon"
 tooltip ("Communications"). Both are one-line reversals when the feature ships.
-`apps/admin`'s flat nav has no `disabled` field — it never needed one, and
-adding it means adding the branch to its `NavRowBase` too.
+`apps/admin` has no `disabled` field on either its items or its group — it has
+never needed one (its Communications pages shipped working), and adding it means
+porting the greyed-out branch from main's `NavGroupBase` too.
 
 The settings tab bar has its own list with its own field: `SETTINGS_TABS` in
 `features/settings/utils/settingsNav.ts` carries `hasPermissions: UserRole[]`,

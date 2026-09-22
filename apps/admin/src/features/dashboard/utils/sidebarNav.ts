@@ -1,11 +1,14 @@
 import type { UserRole } from "@truckmoov/api/auth";
 import type { ElementType } from "react";
 import {
+  Bell,
   Building2,
   Cpu,
   CreditCard,
   Database,
+  Inbox,
   LayoutDashboard,
+  Send,
   Settings,
   ShieldCheck,
   ShieldHalf,
@@ -13,11 +16,13 @@ import {
 } from "lucide-react";
 
 /**
- * ponytail: the admin nav is flat. `apps/main` has collapsible groups and the
- * `SidebarNavGroup` / `isNavGroup` machinery to render them; this app has never
- * used one, so the type does not permit one. Adding a group here means copying
- * that machinery back from main — and until then, a stray `items` array fails to
- * compile instead of silently rendering nothing.
+ * The nav is mostly flat, with one collapsible group ("Communications"). The
+ * group machinery — `SidebarNavGroup` / `isNavGroup` here, `NavGroup` in
+ * `DashboardSidebar` — was copied from `apps/main` when that group landed.
+ *
+ * ponytail: only the group branch came across. Main also carries
+ * `labelByRole` / `resolveLabel` for per-role naming; admin has no per-role
+ * labels, so that stayed behind rather than arriving with no caller.
  */
 export type SidebarNavItem = {
   /** Nav link text. Doubles as the top-bar title — a route is called one thing. */
@@ -29,6 +34,21 @@ export type SidebarNavItem = {
   /** Roles allowed to see this entry. */
   hasPermission?: UserRole[];
 };
+
+/** A collapsible parent row. Has no href of its own — it opens onto `items`. */
+export type SidebarNavGroup = {
+  label: string;
+  icon: ElementType;
+  items: SidebarNavItem[];
+  /** Roles allowed to see this group. A child may omit its own and inherit. */
+  hasPermission?: UserRole[];
+};
+
+export type SidebarEntry = SidebarNavItem | SidebarNavGroup;
+
+export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
+  return "items" in entry;
+}
 
 /**
  * The three roles that can sign in to the admin app. Exported so route.tsx
@@ -57,7 +77,7 @@ export const ADMIN_ROLES: UserRole[] = [
  * children can inherit) — a new entry that forgets it fails to compile instead
  * of silently showing up for every role.
  */
-export const SIDEBAR_ENTRIES: (SidebarNavItem & { hasPermission: UserRole[] })[] = [
+export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   {
     label: "Dashboard", href: "/", icon: LayoutDashboard, hasPermission: ADMIN_ROLES,
   },
@@ -74,6 +94,19 @@ export const SIDEBAR_ENTRIES: (SidebarNavItem & { hasPermission: UserRole[] })[]
     label: "M2M IoT Bundles", href: "/data-bundles", icon: Database, hasPermission: ADMIN_ROLES,
   },
   {
+    label: "Communications",
+    icon: Bell,
+    items: [
+      {
+        label: "WhatsApp Setup", href: "/whatsapp", icon: Send,
+      },
+      {
+        label: "Messaging Center", href: "/inbox", icon: Inbox,
+      },
+    ],
+    hasPermission: ADMIN_ROLES,
+  },
+  {
     label: "Billing", href: "/subscription", icon: CreditCard, hasPermission: ADMIN_ROLES,
   },
   {
@@ -87,7 +120,7 @@ export const SIDEBAR_ENTRIES: (SidebarNavItem & { hasPermission: UserRole[] })[]
   },
 ];
 
-const entriesByRole = new Map<UserRole, SidebarNavItem[]>();
+const entriesByRole = new Map<UserRole, SidebarEntry[]>();
 
 /**
  * The entries this role may see, in `SIDEBAR_ENTRIES` order.
@@ -97,12 +130,33 @@ const entriesByRole = new Map<UserRole, SidebarNavItem[]>();
  * open. The payoff is referential stability: the sidebar's `memo`'d rows never
  * see a new prop object, so navigating re-renders no part of the nav tree.
  */
-export function getEntriesForRole(role: UserRole): SidebarNavItem[] {
+export function getEntriesForRole(role: UserRole): SidebarEntry[] {
   const cached = entriesByRole.get(role);
   if (cached)
     return cached;
 
-  const visible = SIDEBAR_ENTRIES.filter(entry => entry.hasPermission.includes(role));
+  const visible: SidebarEntry[] = [];
+  for (const entry of SIDEBAR_ENTRIES) {
+    if (!entry.hasPermission.includes(role))
+      continue;
+
+    if (isNavGroup(entry)) {
+      // A child omitting `hasPermission` inherits the group's, which already
+      // passed above. A group whose children all filter out is dropped.
+      const items = entry.items.filter(i => i.hasPermission?.includes(role) ?? true);
+      if (items.length) {
+        visible.push(items.length === entry.items.length
+          ? entry
+          : {
+              ...entry, items,
+            });
+      }
+      continue;
+    }
+
+    visible.push(entry);
+  }
+
   entriesByRole.set(
     role,
     visible,
@@ -119,11 +173,20 @@ export function getEntriesForRole(role: UserRole): SidebarNavItem[] {
  */
 export function matchNavEntry(pathname: string): SidebarNavItem | undefined {
   let best: SidebarNavItem | undefined;
-  for (const item of SIDEBAR_ENTRIES) {
+
+  // Only leaves carry an href, so a group contributes its children, not itself.
+  const consider = (item: SidebarNavItem) => {
     if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
       if (!best || item.href.length > best.href.length)
         best = item;
     }
+  };
+
+  for (const entry of SIDEBAR_ENTRIES) {
+    if (isNavGroup(entry))
+      entry.items.forEach(consider);
+    else
+      consider(entry);
   }
   return best;
 }
