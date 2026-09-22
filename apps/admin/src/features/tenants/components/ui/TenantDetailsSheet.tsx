@@ -9,6 +9,7 @@ import type {
   SystemTenantSimRow,
   SystemTenantVehicleRow,
 } from "@truckmoov/api/auth";
+import type { ReactNode } from "react";
 import {
   useQuery,
   useQueryClient,
@@ -51,6 +52,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DataExportPanel } from "@/components/platform/DataExportPanel";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
@@ -63,8 +65,8 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Progress } from "@/components/shadcn/progress";
 
+import { Progress } from "@/components/shadcn/progress";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
 import {
@@ -74,13 +76,18 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { DataExportPanel } from "./DataExportPanel";
 import { TerminateTenantDialog } from "./TerminateTenantDialog";
 
 type TenantDetailsSheetProps = {
   tenant: SystemTenant | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Render inline as a full page instead of a dialog. The header, tabs and every
+   * tab body are shared with the dialog form — only the surrounding chrome differs,
+   * so the two can never drift apart.
+   */
+  asPage?: boolean;
 };
 
 const planDetails = {
@@ -184,10 +191,39 @@ function ResourceState({
   return null;
 }
 
+// Page-mode chrome. Declared at module scope so the tab tree is never remounted
+// by a component identity that changes on every render (react/static-components).
+type ShellSlotProps = {
+  children?: ReactNode;
+  className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+function PageShell({ children }: ShellSlotProps) {
+  return <>{children}</>;
+}
+function PageShellContent({ children }: ShellSlotProps) {
+  return <div className="space-y-6">{children}</div>;
+}
+function PageShellHeader({ children }: ShellSlotProps) {
+  return <div className="space-y-2">{children}</div>;
+}
+function PageShellTitle({
+  children, className,
+}: ShellSlotProps) {
+  return <h1 className={className}>{children}</h1>;
+}
+function PageShellDescription({
+  children, className,
+}: ShellSlotProps) {
+  return <p className={`text-sm text-muted-foreground ${className ?? ""}`}>{children}</p>;
+}
+
 export function TenantDetailsSheet({
   tenant,
   open,
   onOpenChange,
+  asPage = false,
 }: TenantDetailsSheetProps) {
   const { currency } = useCurrency();
   const queryClient = useQueryClient();
@@ -204,7 +240,7 @@ export function TenantDetailsSheet({
   // Fetch fresh tenant detail when the sheet opens
   const detailQuery = useQuery({
     ...getSystemTenantQueryOptions(tenant?.id ?? ""),
-    enabled: open && !!tenant?.id,
+    enabled: (open || asPage) && !!tenant?.id,
   });
   const detail = detailQuery.data?.data as Record<string, unknown> | undefined;
 
@@ -313,7 +349,7 @@ export function TenantDetailsSheet({
       ...getSystemTenantResourcesQueryOptions({
         id: tenantId, tab, planCode,
       }),
-      enabled: open && !!tenantId && activeTab === tab,
+      enabled: (open || asPage) && !!tenantId && activeTab === tab,
     });
     return {
       payload: query.data?.data as SystemTenantResourcesResponse<TItem>["data"] | undefined,
@@ -330,14 +366,14 @@ export function TenantDetailsSheet({
   // Documents
   const documentsQuery = useQuery({
     ...getSystemTenantDocumentsQueryOptions(tenantId),
-    enabled: open && !!tenantId && activeTab === "kyc",
+    enabled: (open || asPage) && !!tenantId && activeTab === "kyc",
   });
   const documents = documentsQuery.data?.data?.items ?? [];
 
   // Audit log — fixed 10 entries server-side, no pagination.
   const auditQuery = useQuery({
     ...getSystemTenantAuditLogQueryOptions(tenantId),
-    enabled: open && !!tenantId && activeTab === "audit",
+    enabled: (open || asPage) && !!tenantId && activeTab === "audit",
   });
   const auditEntries: SystemTenantAuditLogEntry[] = auditQuery.data?.data?.items ?? [];
   const loadingAudit = auditQuery.isLoading;
@@ -385,6 +421,14 @@ export function TenantDetailsSheet({
 
   if (!tenant)
     return null;
+
+  // Page mode swaps the dialog chrome for plain elements so the header, tabs and
+  // every tab body below are rendered from one source in both forms.
+  const Shell = asPage ? PageShell : Sheet;
+  const ShellContent = asPage ? PageShellContent : SheetContent;
+  const ShellHeader = asPage ? PageShellHeader : SheetHeader;
+  const ShellTitle = asPage ? PageShellTitle : SheetTitle;
+  const ShellDescription = asPage ? PageShellDescription : SheetDescription;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -458,13 +502,13 @@ export function TenantDetailsSheet({
     : tenant.address;
 
   return (
-    <Sheet
+    <Shell
       open={open}
       onOpenChange={onOpenChange}
     >
-      <SheetContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-3">
+      <ShellContent className={asPage ? undefined : "max-w-2xl max-h-[85vh] overflow-y-auto"}>
+        <ShellHeader>
+          <ShellTitle className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-lg">
               {getInitials(tenant.name)}
             </div>
@@ -517,8 +561,8 @@ export function TenantDetailsSheet({
                 </Button>
               )}
             </div>
-          </SheetTitle>
-          <SheetDescription className="flex items-center gap-2">
+          </ShellTitle>
+          <ShellDescription className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Member since
             {" "}
@@ -526,8 +570,8 @@ export function TenantDetailsSheet({
               tenant.createdAt,
               "MMMM yyyy",
             )}
-          </SheetDescription>
-        </SheetHeader>
+          </ShellDescription>
+        </ShellHeader>
 
         <Tabs
           value={activeTab}
@@ -1724,7 +1768,7 @@ export function TenantDetailsSheet({
             </ScrollArea>
           </TabsContent>
         </Tabs>
-      </SheetContent>
+      </ShellContent>
       <TerminateTenantDialog
         tenant={tenant}
         open={terminateOpen}
@@ -1734,6 +1778,6 @@ export function TenantDetailsSheet({
           onOpenChange(false);
         }}
       />
-    </Sheet>
+    </Shell>
   );
 }

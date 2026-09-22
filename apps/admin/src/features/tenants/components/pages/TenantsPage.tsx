@@ -9,14 +9,11 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
-  getSystemSubscriptionPlansQueryOptions,
   getSystemTenantsExportQueryOptions,
   getSystemTenantsQueryOptions,
   getSystemTenantsSummaryQueryOptions,
   useUpdateTenantStatus,
 } from "@truckmoov/api/auth";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
-import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
   Ban,
@@ -38,12 +35,9 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { KYCReviewPanel } from "@/components/platform/KYCReviewPanel";
-import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
-import { TenantEditDialog } from "@/components/platform/TenantEditDialog";
-import { TerminateTenantDialog } from "@/components/platform/TerminateTenantDialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -81,6 +75,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { TenantDetailsSheet } from "@/features/tenants/components/ui/TenantDetailsSheet";
+import { TenantOnboardingPanel } from "@/features/tenants/components/ui/TenantOnboardingPanel";
+import { TerminateTenantDialog } from "@/features/tenants/components/ui/TerminateTenantDialog";
 
 const ORG_TYPE_LABELS: Record<string, string> = {
   enterprise: "Enterprise",
@@ -194,8 +191,13 @@ const tenantFilterFields: FilterField[] = [
   },
 ];
 
-export default function PlatformTenants() {
+export default function TenantsPage() {
   const queryClient = useQueryClient();
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
+  const activeTab = searchParams.get("tab") === "kyc-review" ? "kyc-review" : "all-tenants";
   const updateTenantStatusMutation = useUpdateTenantStatus();
   const [
     isExporting,
@@ -270,8 +272,6 @@ export default function PlatformTenants() {
   }));
   const summaryQuery = useQuery(getSystemTenantsSummaryQueryOptions());
 
-  const plansQuery = useQuery(getSystemSubscriptionPlansQueryOptions());
-
   const tenantsPayload = tenantsQuery.data?.data;
   const summaryPayload = summaryQuery.data?.data;
 
@@ -290,10 +290,7 @@ export default function PlatformTenants() {
     isDbDetailsSheetOpen,
     setIsDbDetailsSheetOpen,
   ] = useState(false);
-  const [
-    isDbEditDialogOpen,
-    setIsDbEditDialogOpen,
-  ] = useState(false);
+
   const [
     deleteConfirmDbTenant,
     setDeleteConfirmDbTenant,
@@ -312,19 +309,6 @@ export default function PlatformTenants() {
     },
     [refetchDbTenants],
   );
-
-  // Quota fraction for a resource. limit === null means unlimited — plain count.
-  const renderQuota = (used: number, limit: number | null) => {
-    if (limit === null || limit === undefined) return <span>{used}</span>;
-    const over = used > limit;
-    return (
-      <span className={over ? "text-destructive font-medium" : ""}>
-        {used}
-        /
-        {limit}
-      </span>
-    );
-  };
 
   // Org types per tenant — derived from API response
   const tenantOrgTypesState = useMemo<Record<string, string[]>>(
@@ -400,7 +384,7 @@ export default function PlatformTenants() {
         return (
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-              {getInitials(tenant.name)}
+              {tenant.name.charAt(0)}
             </div>
             <div>
               <p className="font-medium">{tenant.name}</p>
@@ -441,7 +425,12 @@ export default function PlatformTenants() {
                 ))
               )
             : (
-                <span className="text-xs text-muted-foreground">—</span>
+                <Badge
+                  variant="outline"
+                  className="text-xs whitespace-nowrap"
+                >
+                  Enterprise
+                </Badge>
               )}
         </div>
       ),
@@ -459,7 +448,7 @@ export default function PlatformTenants() {
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
           <Truck className="h-4 w-4 text-muted-foreground" />
-          {renderQuota(row.original.vehicleCount, row.original.quotas?.vehicles ?? null)}
+          <span>{row.original.vehicleCount}</span>
         </div>
       ),
     },
@@ -470,7 +459,7 @@ export default function PlatformTenants() {
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
           <Users className="h-4 w-4 text-muted-foreground" />
-          {renderQuota(row.original.driverCount, row.original.quotas?.drivers ?? null)}
+          <span>{row.original.driverCount}</span>
         </div>
       ),
     },
@@ -481,7 +470,7 @@ export default function PlatformTenants() {
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
           <Cpu className="h-4 w-4 text-muted-foreground" />
-          {renderQuota(row.original.deviceCount, row.original.quotas?.devices ?? null)}
+          <span>{row.original.deviceCount}</span>
         </div>
       ),
     },
@@ -492,7 +481,7 @@ export default function PlatformTenants() {
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
           <Smartphone className="h-4 w-4 text-muted-foreground" />
-          {renderQuota(row.original.simCount, row.original.quotas?.sims ?? null)}
+          <span>{row.original.simCount}</span>
         </div>
       ),
     },
@@ -502,7 +491,9 @@ export default function PlatformTenants() {
       header: "Last Active",
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground">
-          {row.original.lastActiveAt ? formatDate(row.original.lastActiveAt) : "Never"}
+          {row.original.lastActiveAt
+            ? new Date(row.original.lastActiveAt).toLocaleDateString()
+            : "Never"}
         </span>
       ),
     },
@@ -525,10 +516,11 @@ export default function PlatformTenants() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => {
-                setSelectedDbTenant(tenant);
-                setIsDbDetailsSheetOpen(true);
-              }}
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedDbTenant(tenant);
+                  setIsDbDetailsSheetOpen(true);
+                }}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
@@ -613,7 +605,8 @@ export default function PlatformTenants() {
           reference at :8080/platform/tenants). Tab-scoped context sits under
           its tab, not floating above the tab bar. */}
       <Tabs
-        defaultValue="all-tenants"
+        value={activeTab}
+        onValueChange={v => setSearchParams(v === "kyc-review" ? { tab: "kyc-review" } : {})}
         className="space-y-4"
       >
         <TabsList>
@@ -664,139 +657,130 @@ export default function PlatformTenants() {
           </div>
 
           <Card>
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      All Tenants
-                    </CardTitle>
-                    <CardDescription>
-                      Complete directory of tenant organizations with plan, lifecycle status, and quota usage.
-                    </CardDescription>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExport}
-                    disabled={isExporting}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {isExporting ? "Exporting…" : "Export Data"}
-                  </Button>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    All Tenants
+                  </CardTitle>
+                  <CardDescription>
+                    Complete directory of tenant organizations with plan, lifecycle status, and quota usage.
+                  </CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      name="tenants-search"
-                      autoComplete="off"
-                      placeholder="Search by name or email..."
-                      className="pl-10"
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <Select
-                    value={apiStatus ?? "all"}
-                    onValueChange={(v) => {
-                      setAdvancedFilters(prev => ({
-                        ...prev,
-                        status: v === "all"
-                          ? {
-                              enabled: false, value: "",
-                            }
-                          : {
-                              enabled: true, value: v,
-                            },
-                      }));
-                    }}
-                  >
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="All Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                      <SelectItem value="terminated">Terminated</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <PlatformFilterPopover
-                    entity="tenants"
-                    fields={tenantFilterFields}
-                    value={advancedFilters}
-                    onApply={setAdvancedFilters}
-                    onReset={() => setAdvancedFilters(buildEmptyDraft(tenantFilterFields))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting…" : "Export Data"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    name="tenants-search"
+                    autoComplete="off"
+                    placeholder="Search by name or email..."
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
                   />
                 </div>
+                <Select
+                  value={apiStatus ?? "all"}
+                  onValueChange={(v) => {
+                    setAdvancedFilters(prev => ({
+                      ...prev,
+                      status: v === "all"
+                        ? {
+                            enabled: false, value: "",
+                          }
+                        : {
+                            enabled: true, value: v,
+                          },
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="terminated">Terminated</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                <PlatformFilterPopover
+                  entity="tenants"
+                  fields={tenantFilterFields}
+                  value={advancedFilters}
+                  onApply={setAdvancedFilters}
+                  onReset={() => setAdvancedFilters(buildEmptyDraft(tenantFilterFields))}
+                />
+              </div>
 
-                {isLoadingDbTenants
-                  ? (
-                      <div className="space-y-4">
-                        {[
-                          1,
-                          2,
-                          3,
-                        ].map(i => (
-                          <div
-                            key={i}
-                            className="flex items-center gap-4"
-                          >
-                            <Skeleton className="h-10 w-10 rounded-lg" />
-                            <div className="space-y-2 flex-1">
-                              <Skeleton className="h-4 w-[200px]" />
-                              <Skeleton className="h-3 w-[150px]" />
-                            </div>
+              {isLoadingDbTenants
+                ? (
+                    <div className="space-y-4">
+                      {[
+                        1,
+                        2,
+                        3,
+                      ].map(i => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-4"
+                        >
+                          <Skeleton className="h-10 w-10 rounded-lg" />
+                          <div className="space-y-2 flex-1">
+                            <Skeleton className="h-4 w-[200px]" />
+                            <Skeleton className="h-3 w-[150px]" />
                           </div>
-                        ))}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                : dbTenants.length === 0
+                  ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No tenants found
                       </div>
                     )
-                  : dbTenants.length === 0
-                    ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No tenants found
-                        </div>
-                      )
-                    : (
-                        <div className="rounded-lg border overflow-x-auto">
-                          <DataTable
-                            columns={tenantColumns}
-                            data={dbTenants}
-                            isError={tenantsQuery.isError}
-                            errorMessage="Unable to load tenants."
-                            onRetry={() => tenantsQuery.refetch()}
-                            className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap"
-                          />
-                        </div>
-                      )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  : (
+                      <div className="rounded-lg border overflow-x-auto">
+                        <DataTable
+                          columns={tenantColumns}
+                          data={dbTenants}
+                          isError={tenantsQuery.isError}
+                          errorMessage="Unable to load tenants."
+                          onRetry={() => tenantsQuery.refetch()}
+                          className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap"
+                        />
+                      </div>
+                    )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="kyc-review">
-          <KYCReviewPanel />
+          <TenantOnboardingPanel />
         </TabsContent>
       </Tabs>
 
-      {/* Database Tenant Details Sheet */}
+      {/* Tenant Details — opens over the list, matching the platform reference */}
       <TenantDetailsSheet
         tenant={selectedDbTenant}
         open={isDbDetailsSheetOpen}
         onOpenChange={setIsDbDetailsSheetOpen}
-      />
-
-      {/* Edit DB Tenant Dialog */}
-      <TenantEditDialog
-        tenant={selectedDbTenant}
-        open={isDbEditDialogOpen}
-        onOpenChange={setIsDbEditDialogOpen}
-        subscriptionPlans={plansQuery.data?.data?.plans ?? []}
-        isSubscriptionPlansLoading={plansQuery.isLoading}
       />
 
       {/* Terminate DB Tenant Confirmation */}
