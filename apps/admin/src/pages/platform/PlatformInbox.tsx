@@ -1,9 +1,6 @@
-import type { WhatsAppConversation } from "@truckmoov/api/notification";
-import {
-  useSendWhatsAppTextMessage,
-  useWhatsAppConversationMessages,
-  useWhatsAppConversations,
-} from "@truckmoov/api/notification";
+import type {
+  DemoConversation, DemoMessage,
+} from "@/features/communications/demoData";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDayMonthTime, formatRelative,
@@ -12,7 +9,6 @@ import {
   Check,
   CheckCheck,
   Clock,
-  Loader2,
   Lock,
   MessageSquare,
   Search,
@@ -22,7 +18,6 @@ import {
 import {
   useEffect, useMemo, useRef, useState,
 } from "react";
-import { toast } from "sonner";
 import {
   Avatar, AvatarFallback,
 } from "@/components/shadcn/avatar";
@@ -33,11 +28,10 @@ import {
 } from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  DEMO_CONVERSATIONS, DEMO_MESSAGES,
+} from "@/features/communications/demoData";
 import { cn } from "@/lib/utils";
-
-/** Poll cadence. The notify API is request/response — there is no socket here. */
-const REFETCH_MS = 30_000;
 
 function statusIcon(status: string | undefined) {
   switch (status) {
@@ -54,7 +48,7 @@ function statusIcon(status: string | undefined) {
   }
 }
 
-function conversationName(c: WhatsAppConversation) {
+function conversationName(c: DemoConversation) {
   return c.driver_name || c.driver_phone || "Unknown";
 }
 
@@ -63,28 +57,28 @@ export default function PlatformInbox() {
     search,
     setSearch,
   ] = useState("");
+  // Open the first thread on arrival rather than the "select a conversation"
+  // prompt — with demo data there is always something to show.
   const [
     selectedId,
     setSelectedId,
-  ] = useState<string | null>(null);
+  ] = useState<string | null>(DEMO_CONVERSATIONS[0]?.id ?? null);
   const [
     draft,
     setDraft,
   ] = useState("");
 
+  // Demo data — see features/communications/demoData.ts for why there is no
+  // request here. Threads are state because the composer appends to them.
+  const [
+    threads,
+    setThreads,
+  ] = useState<Record<string, DemoMessage[]>>(DEMO_MESSAGES);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const conversationsQuery = useWhatsAppConversations();
-  const messagesQuery = useWhatsAppConversationMessages(selectedId ?? "");
-  const sendMessage = useSendWhatsAppTextMessage();
+  const conversations = DEMO_CONVERSATIONS;
 
-  const conversations = useMemo(
-    () => conversationsQuery.data?.data ?? [],
-    [conversationsQuery.data],
-  );
-
-  // Search is client-side over the loaded list. The endpoint takes a `query`
-  // param, but filtering here keeps typing instant and the list is small.
   const filtered = useMemo(
     () => {
       const q = search.trim().toLowerCase();
@@ -92,7 +86,7 @@ export default function PlatformInbox() {
         return conversations;
       return conversations.filter(c =>
         conversationName(c).toLowerCase().includes(q)
-        || (c.driver_phone ?? "").toLowerCase().includes(q));
+        || c.driver_phone.toLowerCase().includes(q));
     },
     [
       conversations,
@@ -108,27 +102,7 @@ export default function PlatformInbox() {
     ],
   );
 
-  const messages = messagesQuery.data?.data?.messages ?? [];
-
-  // Poll both the list and the open thread; neither endpoint pushes.
-  useEffect(
-    () => {
-      const id = setInterval(
-        () => {
-          void conversationsQuery.refetch();
-          if (selectedId)
-            void messagesQuery.refetch();
-        },
-        REFETCH_MS,
-      );
-      return () => clearInterval(id);
-    },
-    [
-      conversationsQuery,
-      messagesQuery,
-      selectedId,
-    ],
-  );
+  const messages = selectedId ? threads[selectedId] ?? [] : [];
 
   // Pin to the newest message whenever the open thread changes.
   useEffect(
@@ -145,26 +119,26 @@ export default function PlatformInbox() {
    */
   const isLocked = Boolean(selected?.is_locked);
 
+  /** Appends locally. Nothing is sent — there is no endpoint this app may call. */
   const handleSend = () => {
     const text = draft.trim();
-    if (!text || !selected?.driver_phone)
+    if (!text || !selectedId)
       return;
 
-    sendMessage.mutate(
-      {
-        data: {
-          to: selected.driver_phone, message: text,
+    setThreads(prev => ({
+      ...prev,
+      [selectedId]: [
+        ...prev[selectedId] ?? [],
+        {
+          id: `local-${Date.now()}`,
+          direction: "outbound",
+          status: "sent",
+          text,
+          created_at: new Date().toISOString(),
         },
-      },
-      {
-        onSuccess: () => {
-          setDraft("");
-          void messagesQuery.refetch();
-          void conversationsQuery.refetch();
-        },
-        onError: () => toast.error("Message not sent. Try again."),
-      },
-    );
+      ],
+    }));
+    setDraft("");
   };
 
   return (
@@ -184,94 +158,58 @@ export default function PlatformInbox() {
         </div>
 
         <ScrollArea className="flex-1">
-          {conversationsQuery.isLoading
+          {filtered.length === 0
             ? (
-                <div className="space-y-3 p-3">
-                  {[
-                    1,
-                    2,
-                    3,
-                    4,
-                  ].map(i => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3"
-                    >
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-3 w-44" />
-                      </div>
-                    </div>
-                  ))}
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No conversations match your search.
                 </div>
               )
-            : conversationsQuery.isError
-              ? (
-                  <div className="p-6 text-center text-sm text-muted-foreground">
-                    Could not load conversations.
-                    <Button
-                      variant="link"
-                      onClick={() => conversationsQuery.refetch()}
-                    >
-                      Retry
-                    </Button>
-                  </div>
-                )
-              : filtered.length === 0
-                ? (
-                    <div className="p-6 text-center text-sm text-muted-foreground">
-                      {conversations.length === 0
-                        ? "No conversations yet. They appear here once a driver messages the connected WhatsApp number."
-                        : "No conversations match your search."}
-                    </div>
-                  )
-                : (
-                    <div className="divide-y divide-border/50">
-                      {filtered.map((c) => {
-                        const active = c.id === selectedId;
-                        return (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setSelectedId(c.id ?? null)}
-                            className={cn(
-                              "flex w-full items-start gap-3 p-3 text-left transition-colors",
-                              active ? "bg-primary/10" : "hover:bg-muted/50",
-                            )}
-                          >
-                            <Avatar className="h-10 w-10 shrink-0">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                                {getInitials(conversationName(c))}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="truncate text-sm font-medium text-foreground">
-                                  {conversationName(c)}
-                                </span>
-                                <span className="shrink-0 text-[10px] text-muted-foreground">
-                                  {c.last_message_at ? formatRelative(c.last_message_at) : ""}
-                                </span>
-                              </div>
-                              <p className="truncate text-xs text-muted-foreground">
-                                {c.last_message_preview || "—"}
-                              </p>
-                              {c.is_locked && (
-                                <Badge
-                                  variant="outline"
-                                  className="mt-1 text-[10px]"
-                                >
-                                  <Lock className="mr-1 h-2.5 w-2.5" />
-                                  Window closed
-                                </Badge>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+            : (
+                <div className="divide-y divide-border/50">
+                  {filtered.map((c) => {
+                    const active = c.id === selectedId;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setSelectedId(c.id ?? null)}
+                        className={cn(
+                          "flex w-full items-start gap-3 p-3 text-left transition-colors",
+                          active ? "bg-primary/10" : "hover:bg-muted/50",
+                        )}
+                      >
+                        <Avatar className="h-10 w-10 shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                            {getInitials(conversationName(c))}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate text-sm font-medium text-foreground">
+                              {conversationName(c)}
+                            </span>
+                            <span className="shrink-0 text-[10px] text-muted-foreground">
+                              {c.last_message_at ? formatRelative(c.last_message_at) : ""}
+                            </span>
+                          </div>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {c.last_message_preview || "—"}
+                          </p>
+                          {c.is_locked && (
+                            <Badge
+                              variant="outline"
+                              className="mt-1 text-[10px]"
+                            >
+                              <Lock className="mr-1 h-2.5 w-2.5" />
+                              Window closed
+                            </Badge>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
         </ScrollArea>
       </Card>
 
@@ -312,67 +250,53 @@ export default function PlatformInbox() {
                       h left
                     </Badge>
                   )}
+                  <Badge
+                    variant="outline"
+                    className="text-[10px]"
+                  >
+                    Demo data
+                  </Badge>
                 </div>
 
                 <div
                   ref={scrollRef}
                   className="flex-1 space-y-3 overflow-y-auto p-4"
                 >
-                  {messagesQuery.isLoading
+                  {messages.length === 0
                     ? (
-                        <div className="space-y-3">
-                          <Skeleton className="h-12 w-2/3" />
-                          <Skeleton className="ml-auto h-12 w-2/3" />
-                          <Skeleton className="h-12 w-1/2" />
-                        </div>
+                        <p className="py-8 text-center text-sm text-muted-foreground">
+                          No messages in this conversation yet.
+                        </p>
                       )
-                    : messagesQuery.isError
-                      ? (
-                          <div className="py-8 text-center text-sm text-muted-foreground">
-                            Could not load messages.
-                            <Button
-                              variant="link"
-                              onClick={() => messagesQuery.refetch()}
+                    : messages.map((m) => {
+                        const outbound = m.direction === "outbound";
+                        return (
+                          <div
+                            key={m.id}
+                            className={cn(
+                              "flex",
+                              outbound ? "justify-end" : "justify-start",
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "max-w-[75%] rounded-lg px-3 py-2 text-sm",
+                                outbound
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-foreground",
+                              )}
                             >
-                              Retry
-                            </Button>
-                          </div>
-                        )
-                      : messages.length === 0
-                        ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                              No messages in this conversation yet.
-                            </p>
-                          )
-                        : messages.map((m) => {
-                            const outbound = m.direction === "outbound";
-                            return (
-                              <div
-                                key={m.id}
-                                className={cn(
-                                  "flex",
-                                  outbound ? "justify-end" : "justify-start",
-                                )}
-                              >
-                                <div
-                                  className={cn(
-                                    "max-w-[75%] rounded-lg px-3 py-2 text-sm",
-                                    outbound
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-muted text-foreground",
-                                  )}
-                                >
-                                  <p className="whitespace-pre-wrap break-words">
-                                    {m.text || m.caption || `[${m.message_type || "media"}]`}
-                                  </p>
-                                  <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80">
-                                    {m.created_at ? formatDayMonthTime(m.created_at) : ""}
-                                    {outbound && statusIcon(m.status)}
-                                  </div>
-                                </div>
+                              <p className="whitespace-pre-wrap break-words">
+                                {m.text}
+                              </p>
+                              <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80">
+                                {m.created_at ? formatDayMonthTime(m.created_at) : ""}
+                                {outbound && statusIcon(m.status)}
                               </div>
-                            );
-                          })}
+                            </div>
+                          </div>
+                        );
+                      })}
                 </div>
 
                 <div className="border-t border-border/50 p-3">
@@ -400,11 +324,9 @@ export default function PlatformInbox() {
                           <Button
                             size="icon"
                             onClick={handleSend}
-                            disabled={!draft.trim() || sendMessage.isPending}
+                            disabled={!draft.trim()}
                           >
-                            {sendMessage.isPending
-                              ? <Loader2 className="h-4 w-4 animate-spin" />
-                              : <Send className="h-4 w-4" />}
+                            <Send className="h-4 w-4" />
                           </Button>
                         </div>
                       )}

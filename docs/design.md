@@ -190,8 +190,8 @@ markup. Roles:
 | `FINANCE_VIEWER` | see config | Read-only financial subset |
 
 In both apps, entries are either a flat `SidebarNavItem` or a
-`SidebarNavGroup` (collapsible, e.g. "Communications" → Messaging Center /
-Omnichannel Inbox). A group auto-expands when a child route is active and closes
+`SidebarNavGroup` (collapsible, e.g. "Communications" → WhatsApp Setup /
+Messaging Center). A group auto-expands when a child route is active and closes
 again when you navigate away — unless you toggled it by hand, which takes over
 from then on.
 
@@ -203,6 +203,15 @@ branch came: main also carries `labelByRole` / `resolveLabel` for per-role
 naming, which admin has no use for. Note the two lists still differ in what a
 group may say — main's groups take `disabled: true` for a coming-soon section,
 admin's have no such field.
+
+Both apps' Communications groups now point at the same two surfaces: WhatsApp
+Setup on a flat `/whatsapp`, Messaging Center on `/inbox`. In `apps/main`
+`/whatsapp` is deliberately **not** a child of the `/messages` tab layout — it
+renders `WhatsAppBusinessSetup` alone, without the outer tab bar. The rest of
+that layout (Campaigns, Email, Templates, Voice & IVR, Recordings, IVR
+Dashboard) is built and stays reachable by URL, just off the nav until it
+ships; `/messages` therefore takes `guardedBy` with the `/whatsapp` role list
+rather than `guarded`, since it no longer has a sidebar entry of its own.
 
 There are **no nav badges**. `badgeKey` / `badge` and the `useRealtimeMessages`
 hook behind them are gone — the counts were a stubbed `useState(0)`, so every
@@ -240,9 +249,15 @@ navigates and highlights, the body reads "Coming soon" (`/analytics` and
 `/subscription` today). A whole section gets `disabled: true` on its group
 instead: the row greys out, stops being a link, and carries a "Coming soon"
 tooltip ("Communications"). Both are one-line reversals when the feature ships.
-`apps/admin` has no `disabled` field on either its items or its group — it has
-never needed one (its Communications pages shipped working), and adding it means
-porting the greyed-out branch from main's `NavGroupBase` too.
+`apps/admin` has no `disabled` field on either its items or its group; adding
+one means porting the greyed-out branch from main's `NavGroupBase` too. Its
+Communications pages take a third route instead: they render **demo data** from
+`features/communications/demoData.ts` and make no requests at all. The
+`/notify/whatsapp/*` endpoints exist but are scoped to tenant-side roles — a
+platform admin gets 403 `"dispatcher role required"` /
+`"administrator role required"` — so no admin user can load them. Both pages
+carry a `Demo data` badge so nothing reads as live. Delete that module and wire
+the real hooks when admin-scoped endpoints exist.
 
 The settings tab bar has its own list with its own field: `SETTINGS_TABS` in
 `features/settings/utils/settingsNav.ts` carries `hasPermissions: UserRole[]`,
@@ -358,8 +373,9 @@ Three consequences worth copying:
   mini layout with Plan (`index`) and Invoices (`/settings/subscription/invoices`)
   sub-tabs. Copy the pattern when the parent tab needs its own bar.
 
-`?tab=` survives on `/fleet`, `/messages` and `/integrations`. Those are the
-next ones to convert; nothing new should use a query param for a tab.
+`?tab=` survives on `/fleet` and `/integrations`. Those are the next ones to
+convert; nothing new should use a query param for a tab. `/messages` is already
+converted — its `/ivr-dashboard` alias now redirects to the real child path.
 
 ```tsx
 <Card className="bg-card/50 border-border/50">

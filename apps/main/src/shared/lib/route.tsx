@@ -302,7 +302,7 @@ export const router = createBrowserRouter([
       // redirect resolves before render, unlike the <Navigate> these replaced.
       {
         path: "/ivr-dashboard",
-        loader: () => redirect("/messages?tab=ivr-dashboard"),
+        loader: () => redirect("/messages/ivr-dashboard"),
       },
       {
         path: "/maintenance",
@@ -506,13 +506,28 @@ export const router = createBrowserRouter([
             ),
           },
           // Messages is a pathful layout route: CommunicationsLayout owns the
+          // Bare WhatsApp Setup page — the Communications sidebar entry.
+          // Flat `/whatsapp`, mirroring apps/admin's Communications group
+          // (WhatsApp Setup → /whatsapp, Messaging Center → /inbox): it renders
+          // the panel alone, without the /messages tab bar.
+          {
+            path: "/whatsapp",
+            lazy: guardedByNamed(
+              getRolesForHref("/whatsapp") ?? [],
+              () => import("@/features/communications/components/ui/WhatsAppBusinessSetup"),
+              "WhatsAppBusinessSetup",
+            ),
+          },
+          // Messages is a pathful layout route: CommunicationsLayout owns the
           // outer tab bar, each tab is a child route (see design.md "Tabs are
           // routes, not query params"). Email nests one more layout for its
           // Inbox / Provider Settings sub-tabs. Outer guard covers the subtree.
+          // Off the nav now, so its roles come from the WhatsApp entry that
+          // replaced it; the tab subtree stays reachable by URL.
           {
             path: "/messages",
-            lazy: guarded(
-              "/messages",
+            lazy: guardedBy(
+              getRolesForHref("/whatsapp") ?? [],
               () => import("@/features/communications/components/layout/CommunicationsLayout"),
             ),
             children: [

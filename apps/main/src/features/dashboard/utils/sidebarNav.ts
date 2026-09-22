@@ -207,10 +207,10 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     icon: Bell,
     items: [
       {
-        label: "Messaging Center", href: "/messages", icon: Send,
+        label: "WhatsApp Setup", href: "/whatsapp", icon: Send,
       },
       {
-        label: "Omnichannel Inbox", href: "/inbox", icon: Inbox,
+        label: "Messaging Center", href: "/inbox", icon: Inbox,
       },
     ],
     hasPermission: [
@@ -220,7 +220,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
     ],
-    disabled: true,
   },
   {
     label: "Communications",
@@ -234,7 +233,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       },
     ],
     hasPermission: ["DISPATCHER"],
-    disabled: true,
   },
 
   // ─── Money ─────────────────────────────────────────────────────
