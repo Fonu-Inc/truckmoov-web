@@ -163,6 +163,13 @@ The attachment endpoint accepts images, PDF, DOC/DOCX, TXT, CSV, XLS/XLSX up to 
 
 ## Public onboarding-applications flow
 
+> **No consumer today.** The `/apply` page in `apps/main` used to drive this
+> flow, but the endpoints are not available yet, so it was reduced to a UI-only
+> walkthrough — it advances on local state and makes no network calls. The
+> package code below is kept and still typed against the spec; re-wire `/apply`
+> to it (see `ApplyForAccount.tsx`, and `useApplyApplication.ts` in git history)
+> once the endpoints land.
+
 The tenant-onboarding landing page uses a separate axios instance, `onboardingInstance`, defined in `packages/api/src/lib/onboarding-instance.ts`. It has its own auth model and does not read the auth store:
 
 - No JWT. `POST /auth/onboarding/applications` returns an `applicationToken` once. Every subsequent call carries it as `X-Application-Token`.

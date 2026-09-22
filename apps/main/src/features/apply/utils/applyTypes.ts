@@ -1,30 +1,36 @@
 /**
  * Shared types + reference data for the public "Apply for Account Creation" flow.
  *
- * The visible design comes from the FleetPro design app; the wire format comes
- * from `@truckmoov/api/auth`. Where the two disagree, DOC_TYPE_MAP below is the
- * seam between them.
+ * The visible design comes from the FleetPro design app. This flow is UI-only
+ * today — see the ponytail note in ApplyForAccount.tsx.
  */
-
-import type { OnboardingApplicationDocumentType } from "@truckmoov/api/auth";
 
 /** The choice the applicant makes on the first screen. */
 export type ApplicantCustomerType = "enterprise" | "owner_operator";
 
-/**
- * The server enum uses `fleet_provider` where the UI says "Enterprise Customer".
- * Mapped at the API boundary only — the UI keeps the design app's vocabulary.
- */
-export const CUSTOMER_TYPE_TO_APPLICANT_TYPE = {
-  enterprise: "fleet_provider",
-  owner_operator: "owner_operator",
-} as const;
+/** Remembers the customer type across reloads so step 1 is not re-asked. */
+export const CUSTOMER_TYPE_STORAGE_KEY = "truckmoov_apply_customer_type";
 
-/** contactRole is required by the server but never typed by the applicant. */
-export const CUSTOMER_TYPE_TO_ROLE: Record<ApplicantCustomerType, string> = {
-  enterprise: "Enterprise Admin",
-  owner_operator: "Owner Operator",
-};
+export function readStoredCustomerType(): ApplicantCustomerType | null {
+  if (typeof window === "undefined")
+    return null;
+  const stored = window.sessionStorage.getItem(CUSTOMER_TYPE_STORAGE_KEY);
+  return stored === "enterprise" || stored === "owner_operator" ? stored : null;
+}
+
+export function writeStoredCustomerType(type: ApplicantCustomerType | null) {
+  if (typeof window === "undefined")
+    return;
+  if (type) {
+    window.sessionStorage.setItem(
+      CUSTOMER_TYPE_STORAGE_KEY,
+      type,
+    );
+  }
+  else {
+    window.sessionStorage.removeItem(CUSTOMER_TYPE_STORAGE_KEY);
+  }
+}
 
 export type RequiredDocument = {
   /** The design app's identifier. Not necessarily a server document type. */
@@ -33,50 +39,6 @@ export type RequiredDocument = {
   requirement?: string;
   /** The design app demands PDF for every document in this flow. */
   pdfOnly?: boolean;
-};
-
-/**
- * Design-app document id -> server document type.
- *
- * ponytail: `proof_of_ownership` and `vehicle_license` have no counterpart in
- * `OnboardingApplicationDocumentType`, so they are absent here. Anything absent
- * is collected and held locally rather than uploaded — see `isUploadable`.
- * Delete this table once the server enum covers the full design list.
- */
-export const DOC_TYPE_MAP: Record<string, OnboardingApplicationDocumentType> = {
-  customer_request_letter: "customer_request_letter",
-  letter_of_authorization: "letter_of_authorization",
-  signed_indemnity_form: "signed_indemnity_form",
-  cac_document: "cac_document",
-  tax_certificate: "tax_certificate_or_tin",
-  signature_card: "signature_card",
-  utility_bill: "utility_bill",
-  identification_card: "identification_card",
-  form_c02_c07: "form_c02_c07",
-  agreement_form: "agreement_form",
-};
-
-/** Whether this document can actually reach the server today. */
-export function isUploadable(type: string): boolean {
-  return type in DOC_TYPE_MAP;
-}
-
-export function toServerDocumentType(type: string): OnboardingApplicationDocumentType | null {
-  return DOC_TYPE_MAP[type] ?? null;
-}
-
-/** Human labels for server document types the local list does not name. */
-export const SERVER_DOCUMENT_LABELS: Record<OnboardingApplicationDocumentType, string> = {
-  customer_request_letter: "Customer Request Letter",
-  letter_of_authorization: "Letter of Authorization",
-  signed_indemnity_form: "Signed Indemnity Form",
-  cac_document: "CAC Document",
-  tax_certificate_or_tin: "Tax Certificate or TIN",
-  signature_card: "Signature Card",
-  utility_bill: "Utility Bill",
-  identification_card: "Identification Card",
-  form_c02_c07: "Form C02 / C07",
-  agreement_form: "Agreement Form",
 };
 
 /** Documents required from Enterprise customers. */

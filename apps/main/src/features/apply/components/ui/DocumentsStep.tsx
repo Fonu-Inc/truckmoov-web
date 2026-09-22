@@ -1,6 +1,3 @@
-import type {
-  OnboardingApplication, OnboardingApplicationDocumentType,
-} from "@truckmoov/api/auth";
 import type { RequiredDocument } from "@/features/apply/utils/applyTypes";
 
 import {
@@ -9,7 +6,6 @@ import {
   CheckCircle2,
   Clock,
   FileText,
-  Loader2,
   Upload,
   X,
 } from "lucide-react";
@@ -22,20 +18,10 @@ import { Button } from "@/components/shadcn/button";
 import { Progress } from "@/components/shadcn/progress";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import { checkFile } from "@/features/apply/utils/applySchemas";
-import {
-  isUploadable,
-  SERVER_DOCUMENT_LABELS,
-  toServerDocumentType,
-} from "@/features/apply/utils/applyTypes";
 import { cn } from "@/lib/utils";
 
 type DocumentsStepProps = {
   required: RequiredDocument[];
-  application: OnboardingApplication | undefined;
-  /** Server-required types the local list does not name. */
-  extraMissing: OnboardingApplicationDocumentType[];
-  onUpload: (type: string, file: File) => Promise<void>;
-  onRemove: (type: string) => Promise<void>;
   onBack: () => void;
   onNext: () => void;
   nextLabel?: string;
@@ -43,10 +29,6 @@ type DocumentsStepProps = {
 
 export function DocumentsStep({
   required,
-  application,
-  extraMissing,
-  onUpload,
-  onRemove,
   onBack,
   onNext,
   nextLabel,
@@ -55,39 +37,18 @@ export function DocumentsStep({
     errors,
     setErrors,
   ] = useState<Record<string, string>>({});
-  const [
-    busy,
-    setBusy,
-  ] = useState<Record<string, boolean>>({});
   const heldDocuments = useApplyDraftStore(state => state.heldDocuments);
   const setHeldDocument = useApplyDraftStore(state => state.setHeldDocument);
 
-  // Anything the server still wants that our own list does not name, shown so the
-  // applicant is never blocked by a requirement they were never offered.
-  const extraRows: RequiredDocument[] = extraMissing.map(type => ({
-    type,
-    label: SERVER_DOCUMENT_LABELS[type] ?? type,
-    requirement: "Required by the review team.",
-  }));
-
-  const rows = [
-    ...required,
-    ...extraRows,
-  ];
-
   function isPresent(row: RequiredDocument) {
-    if (isUploadable(row.type)) {
-      const serverType = toServerDocumentType(row.type);
-      return Boolean(application?.documents.some(doc => doc.documentType === serverType));
-    }
     return Boolean(heldDocuments[row.type]);
   }
 
-  const uploadedCount = rows.filter(isPresent).length;
-  const total = rows.length;
+  const uploadedCount = required.filter(isPresent).length;
+  const total = required.length;
   const allPresent = total > 0 && uploadedCount === total;
 
-  async function handleFile(row: RequiredDocument, file: File) {
+  function handleFile(row: RequiredDocument, file: File) {
     const localError = checkFile(
       file,
       row.pdfOnly,
@@ -105,62 +66,21 @@ export function DocumentsStep({
       return next;
     });
 
-    // ponytail: no server document type for this one yet — hold the metadata so
-    // the applicant can keep going, and mark it clearly as not yet uploaded.
-    if (!isUploadable(row.type)) {
-      setHeldDocument(
-        row.type,
-        {
-          type: row.type,
-          fileName: file.name,
-          size: file.size,
-        },
-      );
-      return;
-    }
-
-    setBusy(previous => ({
-      ...previous, [row.type]: true,
-    }));
-    try {
-      await onUpload(
-        row.type,
-        file,
-      );
-    }
-    catch (error) {
-      setErrors(previous => ({
-        ...previous,
-        [row.type]: (error as { message?: string }).message ?? "Upload failed. Please try again.",
-      }));
-    }
-    finally {
-      setBusy(previous => ({
-        ...previous, [row.type]: false,
-      }));
-    }
+    setHeldDocument(
+      row.type,
+      {
+        type: row.type,
+        fileName: file.name,
+        size: file.size,
+      },
+    );
   }
 
-  async function handleRemove(row: RequiredDocument) {
-    if (!isUploadable(row.type)) {
-      setHeldDocument(
-        row.type,
-        null,
-      );
-      return;
-    }
-
-    setBusy(previous => ({
-      ...previous, [row.type]: true,
-    }));
-    try {
-      await onRemove(row.type);
-    }
-    finally {
-      setBusy(previous => ({
-        ...previous, [row.type]: false,
-      }));
-    }
+  function handleRemove(row: RequiredDocument) {
+    setHeldDocument(
+      row.type,
+      null,
+    );
   }
 
   return (
@@ -194,27 +114,13 @@ export function DocumentsStep({
       </div>
 
       <div className="space-y-3">
-        {rows.map((row, index) => (
+        {required.map((row, index) => (
           <DocumentRow
             key={row.type}
             index={index + 1}
             row={row}
-            fileName={
-              isUploadable(row.type)
-                ? application?.documents.find(
-                  doc => doc.documentType === toServerDocumentType(row.type),
-                )?.fileName
-                : heldDocuments[row.type]?.fileName
-            }
-            sizeBytes={
-              isUploadable(row.type)
-                ? application?.documents.find(
-                  doc => doc.documentType === toServerDocumentType(row.type),
-                )?.sizeBytes
-                : heldDocuments[row.type]?.size
-            }
-            pending={!isUploadable(row.type)}
-            busy={Boolean(busy[row.type])}
+            fileName={heldDocuments[row.type]?.fileName}
+            sizeBytes={heldDocuments[row.type]?.size}
             error={errors[row.type]}
             onFile={file => handleFile(
               row,
@@ -256,8 +162,6 @@ function DocumentRow({
   row,
   fileName,
   sizeBytes,
-  pending,
-  busy,
   error,
   onFile,
   onRemove,
@@ -266,8 +170,6 @@ function DocumentRow({
   row: RequiredDocument;
   fileName?: string;
   sizeBytes?: number;
-  pending: boolean;
-  busy: boolean;
   error?: string;
   onFile: (file: File) => void;
   onRemove: () => void;
@@ -326,21 +228,13 @@ function DocumentRow({
                     {`· ${(sizeBytes / 1024 / 1024).toFixed(2)} MB`}
                   </span>
                 )}
-                {pending && (
-                  <Badge
-                    variant="secondary"
-                    className="gap-1 rounded-full text-[10px]"
-                  >
-                    <Clock className="h-3 w-3" />
-                    Saved on this device
-                  </Badge>
-                )}
-              </p>
-            )}
-            {present && pending && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                This document type is not accepted by the review system yet, so it stays on this
-                device until we can send it.
+                <Badge
+                  variant="secondary"
+                  className="gap-1 rounded-full text-[10px]"
+                >
+                  <Clock className="h-3 w-3" />
+                  Saved on this device
+                </Badge>
               </p>
             )}
             {error && (
@@ -368,19 +262,15 @@ function DocumentRow({
           <Button
             variant="outline"
             size="sm"
-            disabled={busy}
             onClick={() => inputRef.current?.click()}
           >
-            {busy
-              ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-              : <Upload className="mr-2 h-3.5 w-3.5" />}
+            <Upload className="mr-2 h-3.5 w-3.5" />
             {present ? "Replace" : "Upload"}
           </Button>
           {present && (
             <Button
               variant="ghost"
               size="icon-sm"
-              disabled={busy}
               aria-label={`Remove ${row.label}`}
               onClick={onRemove}
             >

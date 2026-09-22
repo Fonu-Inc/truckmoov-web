@@ -1,4 +1,3 @@
-import type { OnboardingApplication } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas";
 import type {
@@ -15,16 +14,13 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
-import {
-  isUploadable,
-  toServerDocumentType,
-} from "@/features/apply/utils/applyTypes";
 import { findM2MPlan } from "@/features/apply/utils/m2mLicense";
 
 type ReviewStepProps = {
   customerType: ApplicantCustomerType;
   details: BusinessDetailsValues;
-  application: OnboardingApplication | undefined;
+  emailVerified: boolean;
+  phoneVerified: boolean;
   requiredDocuments: RequiredDocument[];
   submitting: boolean;
   submitLabel?: string;
@@ -38,7 +34,8 @@ type ReviewStepProps = {
 export function ReviewStep({
   customerType,
   details,
-  application,
+  emailVerified,
+  phoneVerified,
   requiredDocuments,
   submitting,
   submitLabel,
@@ -99,12 +96,12 @@ export function ReviewStep({
           <Field
             label="Business Email"
             value={details.businessEmail}
-            badge={application?.emailVerified ? "Verified" : undefined}
+            badge={emailVerified ? "Verified" : undefined}
           />
           <Field
             label="Phone Number"
             value={details.phoneNumber}
-            badge={application?.phoneVerified ? "Verified" : undefined}
+            badge={phoneVerified ? "Verified" : undefined}
           />
           {isEnterprise && (
             <Field
@@ -204,13 +201,7 @@ export function ReviewStep({
       >
         <div className="space-y-2">
           {requiredDocuments.map((document) => {
-            const serverDocument = isUploadable(document.type)
-              ? application?.documents.find(
-                  item => item.documentType === toServerDocumentType(document.type),
-                )
-              : undefined;
-            const held = !isUploadable(document.type) ? heldDocuments[document.type] : undefined;
-            const fileName = serverDocument?.fileName ?? held?.fileName;
+            const fileName = heldDocuments[document.type]?.fileName;
 
             return (
               <div

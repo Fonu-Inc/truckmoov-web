@@ -1,5 +1,3 @@
-import type { OnboardingApplicationStatus } from "@truckmoov/api/auth";
-
 import {
   ArrowRight,
   CheckCircle2,
@@ -9,17 +7,21 @@ import {
 
 import { Button } from "@/components/shadcn/button";
 
+/** Mirrors the review outcomes the onboarding team can return. */
+export type ApplyReviewStatus = "pending" | "approved" | "rejected";
+
 type ApplicationStatusScreenProps = {
-  status: OnboardingApplicationStatus | undefined;
+  status: ApplyReviewStatus | undefined;
   decisionReason?: string;
   /** Only offered once the review team has approved the application. */
   onContinue: () => void;
 };
 
 /**
- * Post-submission view. The state comes from
- * `/auth/onboarding/applications/:id/status`, polled every 5s — there is no
- * client-side approval timer.
+ * Post-submission view.
+ *
+ * ponytail: with no review endpoint yet the page passes "approved" straight in,
+ * so the applicant can reach payment. Poll the real status here once it exists.
  */
 export function ApplicationStatusScreen({
   status,

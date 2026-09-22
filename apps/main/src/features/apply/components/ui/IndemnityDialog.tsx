@@ -175,17 +175,9 @@ export function IndemnityDialog({
       toast.error("Enter your full legal name to sign the form.");
       return;
     }
-    if (signatureMode === "draw" && !hasDrawn) {
-      toast.error("Draw your signature to sign the form.");
-      return;
-    }
-    if (signatureMode === "upload" && !uploadedSignature) {
-      toast.error("Upload an image of your signature to sign the form.");
-      return;
-    }
 
     const image = signatureMode === "draw"
-      ? (canvasRef.current?.toDataURL("image/png") ?? null)
+      ? (hasDrawn ? (canvasRef.current?.toDataURL("image/png") ?? null) : null)
       : uploadedSignature;
 
     onSigned({
@@ -282,7 +274,6 @@ export function IndemnityDialog({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Label>
                   Signature
-                  <span className="ml-0.5 text-destructive">*</span>
                 </Label>
                 <div className="inline-flex rounded-lg border border-border p-0.5">
                   {([
