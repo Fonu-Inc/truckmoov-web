@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   ShieldHalf,
   Wifi,
+  Wrench,
 } from "lucide-react";
 
 /**
@@ -83,6 +84,9 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
   {
     label: "Tenants", href: "/tenants", icon: Building2, hasPermission: ADMIN_ROLES,
+  },
+  {
+    label: "Installers", href: "/installers", icon: Wrench, hasPermission: ADMIN_ROLES,
   },
   {
     label: "Devices", href: "/devices", icon: Cpu, hasPermission: ADMIN_ROLES,

@@ -117,6 +117,10 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/features/tenants/components/pages/TenantDetailPage")).default }),
           },
           {
+            path: "/installers",
+            lazy: async () => ({ Component: (await import("@/features/installers/components/pages/InstallersPage")).default }),
+          },
+          {
             path: "/devices",
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformDevices")).default }),
           },
