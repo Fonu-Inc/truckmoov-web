@@ -7,13 +7,13 @@ import {
 import { toast } from "sonner";
 import {
   Alert, AlertDescription, AlertTitle,
-} from "@/components/shadcn/alert";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
+} from "../shadcn/alert";
+import { Badge } from "../shadcn/badge";
+import { Button } from "../shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { Progress } from "@/components/shadcn/progress";
+} from "../shadcn/card";
+import { Progress } from "../shadcn/progress";
 
 import {
   Table,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/shadcn/table";
+} from "../shadcn/table";
 
 type BulkDeviceImportProps = {
   catalog: any[];

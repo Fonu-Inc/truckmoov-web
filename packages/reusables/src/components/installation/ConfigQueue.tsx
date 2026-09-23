@@ -3,33 +3,33 @@ import {
   AlertTriangle, ArrowRight, CheckCircle2, Cpu, Download, SlidersHorizontal as Filter, MoreHorizontal, Radio, Search, Settings,
 } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
+import { Badge } from "../shadcn/badge";
+import { Button } from "../shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { Checkbox } from "@/components/shadcn/checkbox";
+} from "../shadcn/card";
+import { Checkbox } from "../shadcn/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
-import { Input } from "@/components/shadcn/input";
+} from "../shadcn/dropdown-menu";
+import { Input } from "../shadcn/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/shadcn/popover";
+} from "../shadcn/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/shadcn/select";
-import { Skeleton } from "@/components/shadcn/skeleton";
+} from "../shadcn/select";
+import { Skeleton } from "../shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -37,9 +37,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/shadcn/table";
-import { DeviceLifecycleBadge } from "@/features/device/components/ui/DeviceLifecycleBadge";
-import { cn } from "@/lib/utils";
+} from "../shadcn/table";
+import { DeviceLifecycleBadge } from "../device/DeviceLifecycleBadge";
+import { cn } from "../../lib/utils";
 import { DeviceSetupWizard } from "./DeviceSetupWizard";
 
 type ConfigQueueDevice = any;

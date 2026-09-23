@@ -1009,7 +1009,7 @@ export const UserRole = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   SYSTEM_ADMIN: 'SYSTEM_ADMIN',
   PLATFORM_ADMIN: 'PLATFORM_ADMIN',
-  
+
   // Main roles
   ENTERPRISE_ADMIN: 'ENTERPRISE_ADMIN',
   AGGREGATOR_ADMIN: 'AGGREGATOR_ADMIN',
@@ -1018,6 +1018,7 @@ export const UserRole = {
   OPERATIONS_MANAGER: 'OPERATIONS_MANAGER',
   DISPATCHER: 'DISPATCHER',
   FINANCE_VIEWER: 'FINANCE_VIEWER',
+  INSTALLER: 'INSTALLER',
 } as const
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]

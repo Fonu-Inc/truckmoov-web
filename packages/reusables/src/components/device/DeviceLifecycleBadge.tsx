@@ -1,5 +1,5 @@
-import { Badge } from "@/components/shadcn/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "../shadcn/badge";
+import { cn } from "../../lib/utils";
 
 type DeviceLifecycleStatus = string;
 

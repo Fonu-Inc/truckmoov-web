@@ -4,6 +4,7 @@ import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
 import {
   formatCompactRelative, formatRelative,
 } from "@truckmoov/app-core/utils/time-utils";
+import { DeviceLifecycleBadge } from "@truckmoov/reusables/components/device/DeviceLifecycleBadge";
 import {
   Activity, AlertTriangle,
   ArrowUpDown,
@@ -72,7 +73,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { DeviceLifecycleBadge } from "./DeviceLifecycleBadge";
 
 type DeviceLifecycleStatus = string;
 

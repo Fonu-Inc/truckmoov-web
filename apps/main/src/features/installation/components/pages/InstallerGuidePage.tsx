@@ -1,6 +1,6 @@
 import type { InstallationLayoutContext } from "@/features/installation/components/layout/InstallationLayout";
+import { InstallerGuide } from "@truckmoov/reusables/components/installation/InstallerGuide";
 import { useOutletContext } from "react-router";
-import { InstallerGuide } from "@/features/installation/components/ui/InstallerGuide";
 
 export default function InstallerGuidePage() {
   const {

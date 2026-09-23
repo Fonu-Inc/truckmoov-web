@@ -1,6 +1,6 @@
 import type { InstallationLayoutContext } from "@/features/installation/components/layout/InstallationLayout";
+import { VerificationMonitor } from "@truckmoov/reusables/components/installation/VerificationMonitor";
 import { useOutletContext } from "react-router";
-import { VerificationMonitor } from "@/features/installation/components/ui/VerificationMonitor";
 
 export default function VerificationPage() {
   const {

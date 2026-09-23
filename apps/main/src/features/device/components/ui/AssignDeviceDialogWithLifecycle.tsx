@@ -1,3 +1,4 @@
+import { DeviceLifecycleBadge } from "@truckmoov/reusables/components/device/DeviceLifecycleBadge";
 import {
   AlertTriangle, CheckCircle2, Cpu, Loader2, Search, Truck,
 } from "lucide-react";
@@ -18,7 +19,6 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { cn } from "@/lib/utils";
-import { DeviceLifecycleBadge } from "./DeviceLifecycleBadge";
 
 type DeviceLifecycleStatus = string;
 

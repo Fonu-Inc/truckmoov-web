@@ -12,6 +12,7 @@
     "dev:landing": "turbo dev --filter landing-page",
     "dev:main": "turbo dev --filter main",
     "dev:admin": "turbo dev --filter admin",
+    "dev:installer": "turbo dev --filter installer",
     "prepare": "husky"
   },
   "devDependencies": {

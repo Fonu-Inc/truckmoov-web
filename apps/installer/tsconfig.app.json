@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "jsx": "react-jsx",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "moduleDetection": "force",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/components/shadcn/*": [
+        "../../packages/reusables/src/components/shadcn/*"
+      ],
+      "@/lib/utils": [
+        "../../packages/reusables/src/lib/utils"
+      ],
+      "@truckmoov/reusables/components/*": [
+        "../../packages/reusables/src/components/*"
+      ],
+      "@truckmoov/reusables/hooks/*": [
+        "../../packages/reusables/src/hooks/*"
+      ],
+      "@/*": [
+        "./src/*"
+      ],
+      "@truckmoov/api/lib/*": [
+        "../../packages/api/src/lib/*.ts"
+      ],
+      "@truckmoov/api/*": [
+        "../../packages/api/src/*/index.ts"
+      ]
+    },
+    "types": [
+      "vitest/globals"
+    ],
+    "allowImportingTsExtensions": true,
+    "strict": false,
+    "noFallthroughCasesInSwitch": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src"
+  ]
+}

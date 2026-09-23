@@ -16,10 +16,10 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/shadcn/accordion";
+} from "../shadcn/accordion";
 import {
   Alert, AlertDescription, AlertTitle,
-} from "@/components/shadcn/alert";
+} from "../shadcn/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,19 +29,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/shadcn/alert-dialog";
-import { Button } from "@/components/shadcn/button";
+} from "../shadcn/alert-dialog";
+import { Button } from "../shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
+} from "../shadcn/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/shadcn/select";
-import { DeviceLifecycleBadge } from "@/features/device/components/ui/DeviceLifecycleBadge";
+} from "../shadcn/select";
+import { DeviceLifecycleBadge } from "../device/DeviceLifecycleBadge";
 
 type ConfigQueueDevice = any;
 type DeviceLifecycleStatus = string;

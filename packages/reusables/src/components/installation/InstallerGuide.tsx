@@ -12,13 +12,13 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/shadcn/accordion";
-import { Badge } from "@/components/shadcn/badge";
+} from "../shadcn/accordion";
+import { Badge } from "../shadcn/badge";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
-import { Skeleton } from "@/components/shadcn/skeleton";
+} from "../shadcn/card";
+import { Input } from "../shadcn/input";
+import { Skeleton } from "../shadcn/skeleton";
 
 type DeviceCatalogEntry = any;
 
@@ -41,7 +41,7 @@ export function InstallerGuide({
     entry.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
     || entry.model.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const groupedByManufacturer = filteredCatalog.reduce(
+  const groupedByManufacturer: Record<string, DeviceCatalogEntry[]> = filteredCatalog.reduce(
     (acc, entry) => {
       if (!acc[entry.manufacturer]) {
         acc[entry.manufacturer] = [];

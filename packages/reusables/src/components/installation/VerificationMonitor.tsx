@@ -3,26 +3,26 @@ import {
   AlertTriangle, Check, Download, SlidersHorizontal as Filter, Hourglass, Radio, Search, ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
+import { Badge } from "../shadcn/badge";
+import { Button } from "../shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Input } from "@/components/shadcn/input";
+} from "../shadcn/card";
+import { Checkbox } from "../shadcn/checkbox";
+import { Input } from "../shadcn/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/shadcn/popover";
+} from "../shadcn/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/shadcn/select";
-import { Skeleton } from "@/components/shadcn/skeleton";
+} from "../shadcn/select";
+import { Skeleton } from "../shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -30,8 +30,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/shadcn/table";
-import { cn } from "@/lib/utils";
+} from "../shadcn/table";
+import { cn } from "../../lib/utils";
 
 type ConfigQueueDevice = any;
 

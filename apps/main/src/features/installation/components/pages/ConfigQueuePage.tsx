@@ -1,6 +1,6 @@
 import type { InstallationLayoutContext } from "@/features/installation/components/layout/InstallationLayout";
+import { ConfigQueue } from "@truckmoov/reusables/components/installation/ConfigQueue";
 import { useOutletContext } from "react-router";
-import { ConfigQueue } from "@/features/installation/components/ui/ConfigQueue";
 
 export default function ConfigQueuePage() {
   const {

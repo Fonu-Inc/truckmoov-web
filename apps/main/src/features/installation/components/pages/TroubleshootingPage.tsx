@@ -1,6 +1,6 @@
 import type { InstallationLayoutContext } from "@/features/installation/components/layout/InstallationLayout";
+import { DeviceTroubleshooting } from "@truckmoov/reusables/components/installation/DeviceTroubleshooting";
 import { useOutletContext } from "react-router";
-import { DeviceTroubleshooting } from "@/features/installation/components/ui/DeviceTroubleshooting";
 
 export default function TroubleshootingPage() {
   const {

@@ -13,21 +13,21 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
+import { Badge } from "../shadcn/badge";
+import { Button } from "../shadcn/button";
 import {
   Card, CardContent,
-} from "@/components/shadcn/card";
+} from "../shadcn/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/shadcn/dialog";
-import { Separator } from "@/components/shadcn/separator";
-import { Textarea } from "@/components/shadcn/textarea";
-import { DeviceLifecycleBadge } from "@/features/device/components/ui/DeviceLifecycleBadge";
+} from "../shadcn/dialog";
+import { Separator } from "../shadcn/separator";
+import { Textarea } from "../shadcn/textarea";
+import { DeviceLifecycleBadge } from "../device/DeviceLifecycleBadge";
 
 type ConfigQueueDevice = any;
 type DeviceCatalogEntry = any;
