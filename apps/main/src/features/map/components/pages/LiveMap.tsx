@@ -1,12 +1,31 @@
-import type L from "leaflet";
-import { useJobs } from "@truckmoov/api/dispatch";
-import {
-  useAlerts, useDrivers, useVehicles,
+import type {
+  TrackingAlert,
+  TrackingCounts,
+  TrackingGeofenceEvent,
+  TrackingPositionsFrame,
+  TrackingSnapshotResponse,
+  TrackingStatus,
+  TrackingVehicle,
 } from "@truckmoov/api/fleet";
+import type L from "leaflet";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  FLEET_QUERY_KEY,
+  useGeofences,
+  useShareVehicleLocation,
+  useTrackingAlerts,
+  useTrackingLive,
+  useTrackingVehicles,
+} from "@truckmoov/api/fleet";
+import { debounce } from "@truckmoov/app-core/utils/general-utils";
+import {
+  formatDateTime,
+  formatRelative,
+} from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, Clock, Crosshair, ExternalLink, Eye, Fuel, LayoutGrid,
   Loader2, Map as MapIcon, MapPin, Maximize2, MessageSquare, Minimize2, Minus, Navigation,
-  Package, Plus, Route, Search, Settings, Shield, X,
+  Package, Plus, Search, Settings, Shield, Wifi, WifiOff, X,
 } from "lucide-react";
 import {
   useEffect, useMemo, useRef, useState,
@@ -24,13 +43,15 @@ import { Switch } from "@/components/shadcn/switch";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/shadcn/tooltip";
-import { FleetMap } from "@/features/fleet/components/ui/FleetMap";
 import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
+import { LiveTrackingMap } from "@/features/map/components/ui/LiveTrackingMap";
+import {
+  useRealtimeEvent, useRealtimeStatus,
+} from "@/features/map/hooks/useRealtime";
 
-type PanelKey = "settings" | "geofences" | "vehicles" | "alerts" | "streetview" | null;
-type LiveStatus = "active" | "in_progress" | "idle" | "offline";
+type PanelKey = "settings" | "vehicles" | "alerts" | null;
 
-const STATUS_META: Record<LiveStatus, {
+const STATUS_META: Record<TrackingStatus, {
   label: string; dot: string; text: string;
 }> = {
   active: {
@@ -47,108 +68,69 @@ const STATUS_META: Record<LiveStatus, {
   },
 };
 
-// ponytail: demo fallback rendered when the API returns zero vehicles, so the
-// page still shows the full design (KPI pills, rail, list). Real telemetry
-// replaces it once at least one vehicle exists.
-const DEMO_VEHICLES = [
-  {
-    id: "LAG-234-XY", vehicleId: "LAG-234-XY", model: "Mercedes Actros 2545", driver: "Chukwuemeka Okafor", driverId: "", phone: "+234 801 234 5678", status: "moving", onJob: true, speed: 45, fuel: 72, destination: "Victoria Island",
-  },
-  {
-    id: "LAG-567-AB", vehicleId: "LAG-567-AB", model: "MAN TGS 33.480", driver: "Adebayo Johnson", driverId: "", phone: "+234 802 345 6789", status: "moving", onJob: false, speed: 62, fuel: 45, destination: "Lekki Phase 1",
-  },
-  {
-    id: "LAG-890-CD", vehicleId: "LAG-890-CD", model: "Volvo FH16 750", driver: "Unassigned", driverId: "", phone: "", status: "stopped", onJob: false, speed: 0, fuel: 30, destination: "Maintenance Bay",
-  },
-  {
-    id: "LAG-112-EF", vehicleId: "LAG-112-EF", model: "Scania R500 6x4", driver: "Ngozi Obi", driverId: "", phone: "+234 804 567 8901", status: "moving", onJob: true, speed: 28, fuel: 92, destination: "Ajah",
-  },
-  {
-    id: "LAG-445-GH", vehicleId: "LAG-445-GH", model: "DAF XF 480 FT", driver: "Tunde Bakare", driverId: "", phone: "+234 805 678 9012", status: "idle", onJob: true, speed: 0, fuel: 65, destination: "Agege",
-  },
-];
+const ALERT_LIMIT = 50;
 
-const DEMO_POSITIONS: Record<string, [number, number]> = {
-  "LAG-234-XY": [
-    6.5244,
-    3.3792,
-  ],
-  "LAG-567-AB": [
-    6.4550,
-    3.3941,
-  ],
-  "LAG-890-CD": [
-    6.5833,
-    3.3500,
-  ],
-  "LAG-112-EF": [
-    6.4698,
-    3.5852,
-  ],
-  "LAG-445-GH": [
-    6.6018,
-    3.3515,
-  ],
+const REFUSED_COPY: Record<string, string> = {
+  origin_not_allowed: "Live updates blocked for this origin",
+  capacity_reached: "Live updates are at capacity — try again shortly",
+  unauthenticated: "Live updates need you to sign in again",
 };
 
-const DEMO_JOBS: Record<string, {
-  reference: string; from: string; to: string; eta: string;
-}> = {
-  "LAG-234-XY": {
-    reference: "JOB-2481", from: "Apapa Port", to: "Victoria Island", eta: "14 min",
-  },
-  "LAG-112-EF": {
-    reference: "JOB-2493", from: "Ikeja Depot", to: "Ajah", eta: "38 min",
-  },
-  "LAG-445-GH": {
-    reference: "JOB-2502", from: "Agege Hub", to: "Ogba", eta: "9 min",
-  },
-};
+function vehicleLabel(v: TrackingVehicle) {
+  return v.plateNumber || v.registrationNumber || v.vehicleId.slice(
+    0,
+    8,
+  );
+}
+
+function isNewer(next: string, current?: string | null) {
+  return !current || Date.parse(next) > Date.parse(current);
+}
 
 export default function LiveMap() {
-  const {
-    data: vehiclesResponse, isLoading: vehiclesLoading,
-  } = useVehicles();
-  const { data: driversResponse } = useDrivers();
-  const { data: alertsResponse } = useAlerts();
-  const { data: jobsResponse } = useJobs();
-  const vehicles = vehiclesResponse?.data ?? [];
-  const drivers = driversResponse?.data ?? [];
-  const alerts = alertsResponse?.data ?? [];
-  const jobs = jobsResponse?.data ?? [];
+  const queryClient = useQueryClient();
+  const liveQuery = useTrackingLive();
+  const snapshot = liveQuery.data?.data;
+  const vehicles = useMemo(
+    () => snapshot?.vehicles ?? [],
+    [snapshot],
+  );
+  const counts = snapshot?.counts;
 
   const [
     selectedVehicle,
     setSelectedVehicle,
   ] = useState<string | null>(null);
   const [
+    trackedVehicle,
+    setTrackedVehicle,
+  ] = useState<string | null>(null);
+  const [
     showGeofences,
     setShowGeofences,
-  ] = useState(true);
-  const [
-    showRoutes,
-    setShowRoutes,
-  ] = useState(true);
-  const [
-    showAlerts,
-    setShowAlerts,
   ] = useState(true);
   const [
     showLegend,
     setShowLegend,
   ] = useState(true);
   const [
-    searchQuery,
-    setSearchQuery,
+    searchInput,
+    setSearchInput,
+  ] = useState("");
+  const [
+    search,
+    setSearch,
   ] = useState("");
   const [
     geofenceDialogOpen,
     setGeofenceDialogOpen,
   ] = useState(false);
   const [
-    streetViewCoords,
-    setStreetViewCoords,
-  ] = useState<[number, number] | null>(null);
+    streetView,
+    setStreetView,
+  ] = useState<{
+    lat: number; lng: number; heading: number;
+  } | null>(null);
   const [
     panel,
     setPanel,
@@ -158,155 +140,175 @@ export default function LiveMap() {
     setIsFullscreen,
   ] = useState(false);
   const [
-    trackedVehicle,
-    setTrackedVehicle,
+    lastFrameAt,
+    setLastFrameAt,
   ] = useState<string | null>(null);
   const mapInstance = useRef<L.Map | null>(null);
 
-  const realVehicles = vehicles.map((v) => {
-    const driver = v.assignedDriverId ? drivers.find(d => d.id === v.assignedDriverId) : null;
-    const modelParts = [
-      v.make,
-      v.model,
-      v.year ? `(${v.year})` : null,
-    ].filter(Boolean).join(" ");
-    return {
-      id: v.registrationNumber || v.id,
-      vehicleId: v.id,
-      model: modelParts || "—",
-      driver: v.assignedDriverName || driver?.name || "Unassigned",
-      driverId: v.assignedDriverId || "",
-      phone: (driver as any)?.phone || "",
-      status: v.status === "active" ? "moving" : v.status === "maintenance" ? "stopped" : "idle",
-      onJob: Boolean(v.assignedDriverId),
-      speed: 0,
-      fuel: v.fuelLevelPercent ?? 0,
-      destination: "—",
-    };
-  });
-
-  // ponytail: real vehicles don't carry live positions yet, so we always
-  // render the demo fleet for now — it's what makes /map look like fleetflow.
-  // Switch to `realVehicles.length ? realVehicles : DEMO_VEHICLES` once the
-  // vehicle API returns telemetry positions.
-  const usingDemo = true;
-  const baseVehicles = DEMO_VEHICLES;
-  void realVehicles;
-
-  const vehiclesWithDrivers = useMemo(
-    () => baseVehicles.map((v) => {
-      const liveStatus: LiveStatus
-        = v.status === "stopped"
-          ? "offline"
-          : v.status === "idle"
-            ? "idle"
-            : v.onJob
-              ? "in_progress"
-              : "active";
-      return {
-        ...v, liveStatus,
-      };
-    }),
-    // eslint-disable-next-line react/exhaustive-deps
-    [JSON.stringify(baseVehicles)],
+  const debouncedSetSearch = useMemo(
+    () => debounce(
+      (v: string) => setSearch(v.trim()),
+      300,
+    ),
+    [],
   );
-
-  const filteredVehicles = vehiclesWithDrivers.filter(v =>
-    v.id.toLowerCase().includes(searchQuery.toLowerCase())
-    || v.driver.toLowerCase().includes(searchQuery.toLowerCase()));
-
-  const counts: Record<LiveStatus, number> = {
-    active: vehiclesWithDrivers.filter(v => v.liveStatus === "active").length,
-    in_progress: vehiclesWithDrivers.filter(v => v.liveStatus === "in_progress").length,
-    idle: vehiclesWithDrivers.filter(v => v.liveStatus === "idle").length,
-    offline: vehiclesWithDrivers.filter(v => v.liveStatus === "offline").length,
-  };
-
-  const recentAlerts = alerts.slice(
-    0,
-    8,
-  ).map((a: any) => ({
-    id: a.id,
-    type: a.type,
-    message: a.message,
-    time: a.createdAt ? new Date(a.createdAt).toLocaleTimeString() : "—",
-    severity: a.severity === "high" ? "error" : a.severity === "medium" ? "warning" : "info",
-  }));
-
-  const jobForVehicle = (v: {
-    id: string; vehicleId: string;
-  }) => {
-    if (usingDemo)
-      return DEMO_JOBS[v.id] ?? null;
-    const job = jobs.find(
-      (j: any) => j.vehicleId === v.vehicleId && (j.status === "in_progress" || j.status === "assigned"),
-    );
-    if (!job)
-      return null;
-    return {
-      reference: (job as any).reference,
-      from: (job as any).pickupAddress || "—",
-      to: (job as any).deliveryAddress || "—",
-      eta: "—",
-    };
-  };
-
-  const positionFor = (id: string): [number, number] => DEMO_POSITIONS[id] ?? [
-    6.5244,
-    3.3792,
-  ];
-
   useEffect(
-    () => {
-      if (!trackedVehicle)
-        return;
-      const follow = () => {
-        const map = mapInstance.current;
-        if (!map)
-          return;
-        const [
-          lat,
-          lng,
-        ] = positionFor(trackedVehicle);
-        map.setView(
-          [
-            lat,
-            lng,
-          ],
-          Math.max(
-            map.getZoom() ?? 13,
-            15,
-          ),
-          { animate: true },
-        );
-      };
-      follow();
-      const timer = window.setInterval(
-        follow,
-        5000,
-      );
-      return () => window.clearInterval(timer);
-    },
-    [trackedVehicle],
+    () => () => debouncedSetSearch.cancel(),
+    [debouncedSetSearch],
   );
+
+  // Search goes to the server as typed (it ignores plate punctuation). Its counts are
+  // fleet-wide too, but the status bar keeps reading the live snapshot either way.
+  const searchQuery = useTrackingVehicles(search ? { params: { query: search } } : undefined);
+  const searchIds = useMemo(
+    () => (search ? new Set((searchQuery.data?.data?.vehicles ?? []).map(v => v.vehicleId)) : null),
+    [
+      search,
+      searchQuery.data,
+    ],
+  );
+  // List the live rows (current positions) for whichever ids the search matched.
+  const listedVehicles = searchIds ? vehicles.filter(v => searchIds.has(v.vehicleId)) : vehicles;
+
+  const alertsQuery = useTrackingAlerts(
+    { params: { limit: ALERT_LIMIT } },
+    panel === "alerts",
+  );
+  const alerts = alertsQuery.data?.data ?? [];
+  const geofencesQuery = useGeofences({ params: { status: "ACTIVE" } });
+  const geofences = geofencesQuery.data?.data ?? [];
+
+  const share = useShareVehicleLocation();
+  const realtime = useRealtimeStatus();
+
+  // ─── Socket → cache. REST painted once; these move it. Nothing polls. ─────────
+  const patchSnapshot = (fn: (s: NonNullable<typeof snapshot>) => NonNullable<typeof snapshot>) =>
+    queryClient.setQueryData<TrackingSnapshotResponse>(
+      FLEET_QUERY_KEY.trackingLive,
+      old =>
+        old?.data ? {
+          ...old, data: fn(old.data),
+        } : old,
+    );
+
+  useRealtimeEvent<TrackingPositionsFrame>(
+    "tracking.positions",
+    (frame) => {
+      const byId = new Map(frame.positions.map(p => [
+        p.vehicleId,
+        p,
+      ]));
+      // A vehicle absent from the frame had no new fix — leave it exactly where it is.
+      // fixedAt is authoritative, so an older fix never overwrites a newer one.
+      patchSnapshot(s => ({
+        ...s,
+        vehicles: s.vehicles.map((v) => {
+          const p = byId.get(v.vehicleId);
+          if (!p || !isNewer(
+            p.fixedAt,
+            v.position?.fixedAt,
+          )) {
+            return v;
+          }
+          const {
+            vehicleId: _id, ...position
+          } = p;
+          return {
+            ...v, position,
+          };
+        }),
+      }));
+      setLastFrameAt(new Date().toISOString());
+    },
+  );
+
+  useRealtimeEvent<TrackingCounts>(
+    "tracking.counts",
+    (next) => {
+      patchSnapshot(s => ({
+        ...s, counts: next,
+      }));
+    },
+  );
+
+  useRealtimeEvent<TrackingAlert>(
+    "alert.triggered",
+    (alert) => {
+      queryClient.setQueryData<{ data: TrackingAlert[] }>(
+        FLEET_QUERY_KEY.trackingAlerts({ params: { limit: ALERT_LIMIT } }),
+        old => (old ? {
+          ...old, data: [
+            alert,
+            ...old.data,
+          ].slice(
+            0,
+            ALERT_LIMIT,
+          ),
+        } : old),
+      );
+      toast.warning(alert.title || alert.message || alert.type);
+    },
+  );
+
+  const onGeofenceEvent = (verb: string) => (e: TrackingGeofenceEvent) => {
+    const v = vehicles.find(x => x.vehicleId === e.vehicleId);
+    toast.info(`${v ? vehicleLabel(v) : "A vehicle"} ${verb} ${e.geofenceName ?? "a geofence"}`);
+    // vehiclesInside changed — refresh that one list, on the event, not on a timer.
+    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.geofencesRoot });
+  };
+  useRealtimeEvent<TrackingGeofenceEvent>(
+    "vehicle.geofence.entered",
+    onGeofenceEvent("entered"),
+  );
+  useRealtimeEvent<TrackingGeofenceEvent>(
+    "vehicle.geofence.exited",
+    onGeofenceEvent("left"),
+  );
+  useRealtimeEvent<TrackingGeofenceEvent>(
+    "vehicle.geofence.dwelled",
+    onGeofenceEvent("is dwelling in"),
+  );
+
+  const selected = vehicles.find(v => v.vehicleId === selectedVehicle) ?? null;
 
   const togglePanel = (key: Exclude<PanelKey, null>) => setPanel(p => (p === key ? null : key));
 
-  const openStreetView = () => {
-    const coords = selectedVehicle ? DEMO_POSITIONS[selectedVehicle] ?? [
-      6.5244,
-      3.3792,
-    ] : [
-      6.5244,
-      3.3792,
-    ];
-    setStreetViewCoords([
-      coords[0],
-      coords[1],
-    ]);
+  const handleShare = (v: TrackingVehicle) => {
+    share.mutate(
+      { id: v.vehicleId },
+      {
+        onSuccess: async ({ data }) => {
+          if (data.alreadyShared || !data.url) {
+          // One live link per vehicle; its URL was shown once to whoever minted it.
+            toast.info(
+              `A live link is already out for ${vehicleLabel(v)}`,
+              { description: `It expires ${formatDateTime(data.expiresAt)}. The link itself can't be shown again.` },
+            );
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(data.url);
+          }
+          catch {}
+          const text = `Track ${data.jobReference ? `delivery ${data.jobReference}` : "your delivery"} live: ${data.url}`;
+          window.open(
+            `https://wa.me/?text=${encodeURIComponent(text)}`,
+            "_blank",
+            "noopener",
+          );
+          toast.success(
+            "Tracking link copied and WhatsApp opened",
+            { description: `This is the only time the link is shown. Expires ${formatDateTime(data.expiresAt)}.` },
+          );
+        },
+        onError: (error) => {
+          toast.error(error.statusCode === 404 ? "This vehicle can't be shared" : error.message);
+        },
+      },
+    );
   };
 
-  if (vehiclesLoading) {
+  if (liveQuery.isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -315,7 +317,7 @@ export default function LiveMap() {
   }
 
   const railItems: {
-    key: Exclude<PanelKey, null> | "viewall"; icon: typeof Settings; label: string; onClick: () => void;
+    key: Exclude<PanelKey, null> | "geofences" | "streetview" | "viewall"; icon: typeof Settings; label: string; onClick: () => void;
   }[] = [
     {
       key: "settings", icon: Settings, label: "Map settings", onClick: () => togglePanel("settings"),
@@ -330,27 +332,70 @@ export default function LiveMap() {
       key: "alerts", icon: AlertTriangle, label: "Alerts", onClick: () => togglePanel("alerts"),
     },
     {
-      key: "streetview", icon: Eye, label: "Street view", onClick: openStreetView,
+      key: "streetview",
+      icon: Eye,
+      label: selected?.position ? "Street view" : "Street view (select a vehicle with a position)",
+      onClick: () => selected?.position && setStreetView({
+        lat: selected.position.lat, lng: selected.position.lng, heading: selected.position.heading ?? 0,
+      }),
     },
     {
       key: "viewall", icon: LayoutGrid, label: "View all vehicles", onClick: () => setSelectedVehicle(null),
     },
   ];
 
+  const liveBadge = realtime.state === "connected"
+    ? {
+        icon: Wifi, text: lastFrameAt ? `Live · ${formatRelative(lastFrameAt)}` : "Live", className: "text-success",
+      }
+    : realtime.state === "refused"
+      ? {
+          icon: WifiOff, text: REFUSED_COPY[realtime.reason] ?? `Live updates refused (${realtime.reason})`, className: "text-destructive",
+        }
+      : {
+          icon: WifiOff, text: "Reconnecting…", className: "text-muted-foreground",
+        };
+  const LiveIcon = liveBadge.icon;
+
   const mapSurface = (
     <div className={isFullscreen ? "fixed inset-0 z-40 bg-background" : "absolute inset-0"}>
-      <FleetMap
-        selectedVehicle={selectedVehicle}
-        onVehicleSelect={setSelectedVehicle}
-        showGeofences={showGeofences}
-        showRoutes={showRoutes}
-        showAlerts={showAlerts}
-        showLegend={showLegend}
-        externalVehicles={undefined}
-        showRealtimeBadge={false}
-        showZoomControl={false}
-        onMapReady={(m) => { mapInstance.current = m; }}
-      />
+      {liveQuery.isError
+        ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+              <p>Unable to load live tracking.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => liveQuery.refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          )
+        : (
+            <LiveTrackingMap
+              vehicles={vehicles}
+              geofences={geofences}
+              showGeofences={showGeofences}
+              selectedVehicleId={selectedVehicle}
+              followVehicleId={trackedVehicle}
+              onVehicleSelect={(id) => {
+                setSelectedVehicle(id);
+                setPanel("vehicles");
+              }}
+              onMapReady={(m) => {
+                mapInstance.current = m;
+              }}
+            />
+          )}
+
+      <div
+        className={`absolute top-3 left-3 z-[1000] flex items-center gap-1.5 rounded-full border bg-card/95 px-3 py-1 text-xs shadow backdrop-blur-md ${liveBadge.className}`}
+        title={snapshot ? `Frames every ${Math.round(snapshot.frameIntervalMs / 1000)}s · offline after ${snapshot.offlineAfterMinutes} min without a fix` : undefined}
+      >
+        <LiveIcon className="h-3.5 w-3.5" />
+        {liveBadge.text}
+      </div>
 
       {trackedVehicle && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 rounded-full border border-primary/30 bg-card/95 px-3 py-1.5 shadow-lg backdrop-blur-md">
@@ -359,9 +404,10 @@ export default function LiveMap() {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
           </span>
           <span className="text-xs font-medium">
-            Tracking
-            {" "}
-            {trackedVehicle}
+            {`Tracking ${(() => {
+              const v = vehicles.find(x => x.vehicleId === trackedVehicle);
+              return v ? vehicleLabel(v) : trackedVehicle;
+            })()}`}
           </span>
           <Button
             variant="ghost"
@@ -379,9 +425,8 @@ export default function LiveMap() {
           <div className="flex items-center justify-between p-3 border-b border-border">
             <p className="text-sm font-semibold">
               {panel === "settings" && "Map layers"}
-              {panel === "vehicles" && `Vehicles (${filteredVehicles.length})`}
+              {panel === "vehicles" && `Vehicles (${listedVehicles.length})`}
               {panel === "alerts" && "Alerts"}
-              {panel === "geofences" && "Geofences"}
             </p>
             <Button
               variant="ghost"
@@ -402,7 +447,6 @@ export default function LiveMap() {
                     className="text-sm flex items-center gap-2"
                   >
                     <Shield className="h-4 w-4 text-muted-foreground" />
-                    {" "}
                     Geofences
                   </Label>
                   <Switch
@@ -413,42 +457,11 @@ export default function LiveMap() {
                 </div>
                 <div className="flex items-center justify-between">
                   <Label
-                    htmlFor="routes"
-                    className="text-sm flex items-center gap-2"
-                  >
-                    <Route className="h-4 w-4 text-muted-foreground" />
-                    {" "}
-                    Routes
-                  </Label>
-                  <Switch
-                    id="routes"
-                    checked={showRoutes}
-                    onCheckedChange={setShowRoutes}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="alerts"
-                    className="text-sm flex items-center gap-2"
-                  >
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                    {" "}
-                    Alerts
-                  </Label>
-                  <Switch
-                    id="alerts"
-                    checked={showAlerts}
-                    onCheckedChange={setShowAlerts}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label
                     htmlFor="legend"
                     className="text-sm flex items-center gap-2"
                   >
                     <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                    {" "}
-                    Legend
+                    Status bar
                   </Label>
                   <Switch
                     id="legend"
@@ -464,193 +477,172 @@ export default function LiveMap() {
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search vehicles..."
+                    placeholder="Plate, make, model or driver…"
                     className="pl-8 h-9"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => {
+                      setSearchInput(e.target.value);
+                      debouncedSetSearch(e.target.value);
+                    }}
                   />
+                  {search && searchQuery.isFetching && (
+                    <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
                 </div>
                 <div className="space-y-1.5">
-                  {filteredVehicles.map(vehicle => (
-                    <div
-                      key={vehicle.vehicleId}
-                      className={`p-2.5 rounded-xl cursor-pointer transition-all ${
-                        selectedVehicle === vehicle.id
-                          ? "bg-primary/10 border border-primary/30"
-                          : "bg-muted/30 hover:bg-muted/50 border border-transparent"
-                      }`}
-                      onClick={() => setSelectedVehicle(vehicle.id)}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`h-2 w-2 rounded-full shrink-0 ${STATUS_META[vehicle.liveStatus].dot}`} />
-                          <div className="min-w-0">
-                            <span className="font-medium text-sm block truncate">{vehicle.id}</span>
-                            <span className="text-[10px] text-muted-foreground block truncate">{vehicle.model}</span>
+                  {listedVehicles.map((vehicle) => {
+                    const meta = STATUS_META[vehicle.status];
+                    const isSelected = selectedVehicle === vehicle.vehicleId;
+                    return (
+                      <div
+                        key={vehicle.vehicleId}
+                        className={`p-2.5 rounded-xl cursor-pointer transition-all ${isSelected ? "bg-primary/10 border border-primary/30" : "bg-muted/30 hover:bg-muted/50 border border-transparent"}`}
+                        onClick={() => setSelectedVehicle(vehicle.vehicleId)}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className={`h-2 w-2 rounded-full shrink-0 ${meta.dot}`} />
+                            <div className="min-w-0">
+                              <span className="font-medium text-sm block truncate">{vehicleLabel(vehicle)}</span>
+                              <span className="text-[10px] text-muted-foreground block truncate">
+                                {[
+                                  vehicle.make,
+                                  vehicle.model,
+                                ].filter(Boolean).join(" ") || "-"}
+                              </span>
+                            </div>
                           </div>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] shrink-0 ${meta.text}`}
+                          >
+                            {meta.label}
+                          </Badge>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] shrink-0 ${STATUS_META[vehicle.liveStatus].text}`}
-                        >
-                          {STATUS_META[vehicle.liveStatus].label}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-1.5 truncate">{vehicle.driver}</p>
-                      {vehicle.liveStatus === "in_progress" && (() => {
-                        const job = jobForVehicle(vehicle);
-                        return job
-                          ? (
-                              <div className="mb-1.5 rounded-lg bg-primary/5 border border-primary/20 px-2 py-1.5">
-                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
-                                  <Package className="h-3 w-3" />
-                                  {" "}
-                                  {job.reference}
-                                  {job.eta !== "—" && (
-                                    <span className="ml-auto text-[10px] text-muted-foreground">
-                                      ETA
-                                      {" "}
-                                      {job.eta}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                                  {job.from}
-                                  {" → "}
-                                  {job.to}
-                                </p>
-                              </div>
-                            )
-                          : null;
-                      })()}
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Navigation className="h-3 w-3" />
-                          {vehicle.speed}
-                          {" km/h"}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Fuel className="h-3 w-3" />
-                          {vehicle.fuel}
-                          %
-                        </span>
-                        <span className="flex items-center gap-1 truncate">
-                          <MapPin className="h-3 w-3" />
-                          {vehicle.destination}
-                        </span>
-                      </div>
-
-                      {selectedVehicle === vehicle.id && (
-                        <div className="mt-2 pt-2 border-t border-border/30 space-y-2">
-                          {vehicle.driverId && (
-                            <DriverCommunicationActions
-                              driverId={vehicle.driverId}
-                              driverName={vehicle.driver}
-                              driverPhone={vehicle.phone}
-                              variant="inline"
-                              size="sm"
-                            />
+                        <p className="text-xs text-muted-foreground mb-1.5 truncate">{vehicle.driverName || "Unassigned"}</p>
+                        {vehicle.job && (
+                          <div className="mb-1.5 rounded-lg bg-primary/5 border border-primary/20 px-2 py-1.5">
+                            <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
+                              <Package className="h-3 w-3" />
+                              {vehicle.job.reference}
+                            </div>
+                            {(vehicle.job.pickupAddress || vehicle.job.deliveryAddress) && (
+                              <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                                {`${vehicle.job.pickupAddress ?? "-"} → ${vehicle.job.deliveryAddress ?? "-"}`}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Navigation className="h-3 w-3" />
+                            {vehicle.position?.speedKph != null ? `${Math.round(vehicle.position.speedKph)} km/h` : "-"}
+                          </span>
+                          {vehicle.fuelLevelPercent != null && (
+                            <span className="flex items-center gap-1">
+                              <Fuel className="h-3 w-3" />
+                              {`${vehicle.fuelLevelPercent}%`}
+                            </span>
                           )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs gap-1.5"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const coords = DEMO_POSITIONS[vehicle.id] ?? [
-                                6.5244,
-                                3.3792,
-                              ];
-                              window.open(
-                                `https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}`,
-                                "_blank",
-                              );
-                            }}
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            {" "}
-                            Navigate to Vehicle
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs gap-1.5"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const trackingId = `trk_${vehicle.id.toLowerCase().replace(
-                                /-/g,
-                                "",
-                              )}_${Date.now().toString(36)}`;
-                              const link = `${window.location.origin}/track/${trackingId}`;
-                              navigator.clipboard?.writeText(link).catch(() => {});
-                              window.open(
-                                `https://wa.me/?text=${encodeURIComponent(`Track your delivery (${vehicle.id}) live: ${link} — link expires in 24h.`)}`,
-                                "_blank",
-                              );
-                              toast.success("Tracking link copied & WhatsApp opened (valid 24h)");
-                            }}
-                          >
-                            <MessageSquare className="h-3.5 w-3.5" />
-                            {" "}
-                            Share location via WhatsApp
-                          </Button>
-                          <Button
-                            variant={trackedVehicle === vehicle.id ? "default" : "outline"}
-                            size="sm"
-                            className="w-full text-xs gap-1.5"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (trackedVehicle === vehicle.id) {
-                                setTrackedVehicle(null);
-                                toast.info(`Stopped tracking ${vehicle.id}`);
-                              }
-                              else {
-                                setTrackedVehicle(vehicle.id);
-                                setSelectedVehicle(vehicle.id);
-                                toast.success(`Now following ${vehicle.id} on the map`);
-                              }
-                            }}
-                          >
-                            <Crosshair className="h-3.5 w-3.5" />
-                            {trackedVehicle === vehicle.id ? "Stop tracking" : "Track vehicle"}
-                          </Button>
+                          <span className="flex items-center gap-1 truncate">
+                            <MapPin className="h-3 w-3" />
+                            {vehicle.position ? formatRelative(vehicle.position.fixedAt) : "Never reported"}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                  {filteredVehicles.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-6">No vehicles match your search</p>
+
+                        {isSelected && (
+                          <div className="mt-2 pt-2 border-t border-border/30 space-y-2">
+                            {vehicle.driverId && (
+                              <DriverCommunicationActions
+                                driverId={vehicle.driverId}
+                                driverName={vehicle.driverName ?? ""}
+                                driverPhone={vehicle.driverPhone ?? ""}
+                                variant="inline"
+                                size="sm"
+                              />
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5"
+                              disabled={!vehicle.position}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (vehicle.position) {
+                                  window.open(
+                                    `https://www.google.com/maps/dir/?api=1&destination=${vehicle.position.lat},${vehicle.position.lng}`,
+                                    "_blank",
+                                    "noopener",
+                                  );
+                                }
+                              }}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Navigate to Vehicle
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5"
+                              disabled={share.isPending}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShare(vehicle);
+                              }}
+                            >
+                              {share.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />}
+                              Share location via WhatsApp
+                            </Button>
+                            <Button
+                              variant={trackedVehicle === vehicle.vehicleId ? "default" : "outline"}
+                              size="sm"
+                              className="w-full text-xs gap-1.5"
+                              disabled={!vehicle.position}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTrackedVehicle(t => (t === vehicle.vehicleId ? null : vehicle.vehicleId));
+                              }}
+                            >
+                              <Crosshair className="h-3.5 w-3.5" />
+                              {trackedVehicle === vehicle.vehicleId ? "Stop tracking" : "Track vehicle"}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {listedVehicles.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">
+                      {search ? "No vehicles match your search" : "No vehicles yet"}
+                    </p>
                   )}
                 </div>
               </>
             )}
 
             {panel === "alerts" && (
-              recentAlerts.length === 0
-                ? (
-                    <p className="text-xs text-muted-foreground text-center py-6">No recent alerts</p>
-                  )
-                : (
-                    <div className="space-y-1.5">
-                      {recentAlerts.map(alert => (
-                        <div
-                          key={alert.id}
-                          className={`p-2.5 rounded-xl text-xs ${
-                            alert.severity === "error"
-                              ? "bg-destructive/10"
-                              : alert.severity === "warning" ? "bg-warning/10" : "bg-muted/30"
-                          }`}
-                        >
-                          <p className="font-medium">{alert.message}</p>
-                          <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {" "}
-                            {alert.time}
-                          </p>
+              alertsQuery.isLoading
+                ? <Loader2 className="mx-auto my-6 h-5 w-5 animate-spin text-muted-foreground" />
+                : alertsQuery.isError
+                  ? <p className="text-xs text-destructive text-center py-6">Unable to load alerts.</p>
+                  : alerts.length === 0
+                    ? <p className="text-xs text-muted-foreground text-center py-6">No recent alerts</p>
+                    : (
+                        <div className="space-y-1.5">
+                          {alerts.map(alert => (
+                            <div
+                              key={alert.id}
+                              className={`p-2.5 rounded-xl text-xs ${alert.severity === "critical" || alert.severity === "high" ? "bg-destructive/10" : alert.severity === "medium" ? "bg-warning/10" : "bg-muted/30"}`}
+                            >
+                              <p className="font-medium">{alert.title || alert.message || alert.type}</p>
+                              <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatRelative(alert.createdAt)}
+                              </p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )
+                      )
             )}
           </div>
         </div>
@@ -700,18 +692,21 @@ export default function LiveMap() {
         </div>
       </TooltipProvider>
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md px-3 py-2 shadow-lg">
-        {(Object.keys(STATUS_META) as LiveStatus[]).map(key => (
-          <div
-            key={key}
-            className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-muted/40"
-          >
-            <span className={`h-2 w-2 rounded-full ${STATUS_META[key].dot}`} />
-            <span className={`text-sm font-semibold ${STATUS_META[key].text}`}>{counts[key]}</span>
-            <span className="text-[11px] text-muted-foreground whitespace-nowrap">{STATUS_META[key].label}</span>
-          </div>
-        ))}
-      </div>
+      {/* Fleet-wide counts from the server (snapshot, then tracking.counts) — never from the list or the search. */}
+      {showLegend && counts && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md px-3 py-2 shadow-lg">
+          {(Object.keys(STATUS_META) as TrackingStatus[]).map(key => (
+            <div
+              key={key}
+              className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-muted/40"
+            >
+              <span className={`h-2 w-2 rounded-full ${STATUS_META[key].dot}`} />
+              <span className={`text-sm font-semibold ${STATUS_META[key].text}`}>{counts[key] ?? 0}</span>
+              <span className="text-[11px] text-muted-foreground whitespace-nowrap">{STATUS_META[key].label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="absolute bottom-4 right-4 z-[1000]">
         <Button
@@ -744,26 +739,25 @@ export default function LiveMap() {
         onOpenChange={setGeofenceDialogOpen}
       />
 
+      {/* ponytail: street view is client-side per spec §8 — Google's keyless embed, pointed with the fix's heading. */}
       <Dialog
-        open={!!streetViewCoords}
-        onOpenChange={o => !o && setStreetViewCoords(null)}
+        open={!!streetView}
+        onOpenChange={o => !o && setStreetView(null)}
       >
         <DialogContent className="max-w-4xl p-0 overflow-hidden">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle>Street View</DialogTitle>
             <DialogDescription>
-              {streetViewCoords
-                ? `${streetViewCoords[0].toFixed(5)}, ${streetViewCoords[1].toFixed(5)}`
-                : ""}
+              {streetView ? `${streetView.lat.toFixed(5)}, ${streetView.lng.toFixed(5)}` : ""}
             </DialogDescription>
           </DialogHeader>
-          {streetViewCoords && (
+          {streetView && (
             <iframe
               title="Street view"
               className="h-[60vh] w-full border-0"
               loading="lazy"
               allowFullScreen
-              src={`https://maps.google.com/maps?q=&layer=c&cbll=${streetViewCoords[0]},${streetViewCoords[1]}&cbp=11,0,0,0,0&output=svembed`}
+              src={`https://maps.google.com/maps?q=&layer=c&cbll=${streetView.lat},${streetView.lng}&cbp=11,${Math.round(streetView.heading)},0,0,0&output=svembed`}
             />
           )}
         </DialogContent>

@@ -288,6 +288,10 @@ export type Geofence = {
   assignedVehicleIds: string[]
   createdAt: string
   updatedAt: string
+  /** TRU-FE-6 §7: vehicles inside the zone right now (not the assigned ones). */
+  vehiclesInside?: number
+  /** Detail only. */
+  occupants?: { vehicleId: string, enteredAt: string }[]
 }
 
 export type GeofenceStatus = 'ACTIVE' | 'ARCHIVED'
@@ -2046,3 +2050,95 @@ export type FleetOverview = {
 }
 
 export type FleetOverviewResponse = ServerResponse<FleetOverview>
+
+// ─── Live tracking (TRU-FE-6) ─────────────────────────────────────────────────
+// ponytail: typed from the ticket spec — every /fleet/tracking/* route 404s on dev-api
+// (probed 2026-09-23). Re-check field names once it deploys.
+
+export type TrackingStatus = 'offline' | 'in_progress' | 'active' | 'idle'
+
+export type TrackingCounts = Record<TrackingStatus, number>
+
+export type TrackingPosition = {
+  lat: number
+  lng: number
+  speedKph: number | null
+  heading: number | null
+  fixedAt: string
+}
+
+export type TrackingVehicle = {
+  vehicleId: string
+  plateNumber?: string | null
+  registrationNumber?: string | null
+  make?: string | null
+  model?: string | null
+  driverId?: string | null
+  driverName?: string | null
+  driverPhone?: string | null
+  fuelLevelPercent?: number | null
+  status: TrackingStatus
+  /** Null until the vehicle has ever reported. */
+  position: TrackingPosition | null
+  /** Null when it isn't carrying an active job. */
+  job: {
+    id: string
+    reference: string
+    status: string
+    pickupAddress?: string | null
+    deliveryAddress?: string | null
+    deadline?: string | null
+  } | null
+}
+
+export type TrackingSnapshot = {
+  vehicles: TrackingVehicle[]
+  /** Fleet-wide, computed before any search filter. */
+  counts: TrackingCounts
+  activeJobStatuses: string[]
+  offlineAfterMinutes: number
+  frameIntervalMs: number
+  generatedAt: string
+}
+
+export type TrackingSnapshotResponse = ServerResponse<TrackingSnapshot>
+
+export type TrackingVehiclesQuery = { params?: { query?: string } }
+
+export type TrackingAlertsQuery = { params?: { limit?: number } }
+
+export type TrackingAlert = {
+  id: string
+  type: string
+  severity: string
+  vehicleId?: string | null
+  geofenceId?: string | null
+  message?: string | null
+  title?: string | null
+  createdAt: string
+}
+
+export type TrackingAlertsResponse = ServerResponse<TrackingAlert[]>
+
+export type ShareVehicleLocationPayload = { id: string }
+
+export type VehicleLocationShare = {
+  /** Returned once, never again — copy it on receipt. Null when alreadyShared. */
+  url: string | null
+  alreadyShared: boolean
+  expiresAt: string
+  jobReference: string | null
+}
+
+export type VehicleLocationShareResponse = ServerResponse<VehicleLocationShare>
+
+/** GET /track/:token (public). No driver, plate or tenant — by design. */
+export type PublicTrack = {
+  position: TrackingPosition | null
+  job: { reference?: string | null, status?: string | null, deliveryAddress?: string | null, deadline?: string | null } | null
+  expiresAt: string
+}
+
+// Socket frames (realtime gateway)
+export type TrackingPositionsFrame = { positions: ({ vehicleId: string } & TrackingPosition)[] }
+export type TrackingGeofenceEvent = { vehicleId: string, geofenceId: string, geofenceName?: string, at?: string }

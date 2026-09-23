@@ -162,6 +162,11 @@ import {
   exportComplianceDocs,
   verifyAuditChain,
   getFleetOverview,
+  getPublicTrack,
+  getTrackingAlerts,
+  getTrackingLive,
+  getTrackingVehicles,
+  shareVehicleLocation,
 } from './requests'
 
 export type * from './types'
@@ -203,9 +208,15 @@ import type {
   VehiclesTab,
   ComplianceDocumentsQuery,
   GeofencesQuery,
+  TrackingAlertsQuery,
+  TrackingVehiclesQuery,
 } from './types'
 
 export const FLEET_QUERY_KEY = {
+  trackingLive: ['fleet', 'tracking', 'live'] as const,
+  trackingVehicles: (payload?: TrackingVehiclesQuery) => ['fleet', 'tracking', 'vehicles', payload],
+  trackingAlerts: (payload?: TrackingAlertsQuery) => ['fleet', 'tracking', 'alerts', payload],
+  publicTrack: (token: string) => ['track', token],
   overview: ['fleet', 'overview'] as const,
   vehiclesRoot: ['fleet', 'vehicles'],
   vehicles: (payload?: VehiclesQuery) => ['fleet', 'vehicles', payload],
@@ -216,6 +227,7 @@ export const FLEET_QUERY_KEY = {
   vehicleHealth: (vehicleId: string) => ['fleet', 'vehicleHealth', vehicleId],
   nearestVehicles: (payload: NearestVehiclesQuery) => ['fleet', 'nearestVehicles', payload],
   geofence: (vehicleId: string) => ['fleet', 'geofence', vehicleId],
+  geofencesRoot: ['fleet', 'geofences'] as const,
   geofences: (payload?: GeofencesQuery) => ['fleet', 'geofences', payload],
   geofenceZone: (id: string) => ['fleet', 'geofences', id],
   devices: (payload?: DevicesQuery) => ['fleet', 'devices', payload],
@@ -1862,4 +1874,59 @@ export {
   exportVehicles,
   getDocumentDownloadUrl,
   uploadDocument,
+}
+
+// ─── Live tracking (TRU-FE-6) ─────────────────────────────────────────────────
+// Socket-driven: REST paints once, the realtime socket moves it. Never poll these.
+
+export function getTrackingLiveQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.trackingLive,
+    queryFn: getTrackingLive,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  })
+}
+
+export function useTrackingLive() {
+  return useQuery(getTrackingLiveQueryOptions())
+}
+
+export function getTrackingVehiclesQueryOptions(payload?: TrackingVehiclesQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.trackingVehicles(payload),
+    queryFn: () => getTrackingVehicles(payload),
+    enabled: Boolean(payload?.params?.query),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useTrackingVehicles(payload?: TrackingVehiclesQuery) {
+  return useQuery(getTrackingVehiclesQueryOptions(payload))
+}
+
+export function getTrackingAlertsQueryOptions(payload?: TrackingAlertsQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.trackingAlerts(payload),
+    queryFn: () => getTrackingAlerts(payload),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  })
+}
+
+export function useTrackingAlerts(payload?: TrackingAlertsQuery, enabled = true) {
+  return useQuery({ ...getTrackingAlertsQueryOptions(payload), enabled })
+}
+
+export function useShareVehicleLocation() {
+  return useMutation({ mutationFn: shareVehicleLocation })
+}
+
+export function usePublicTrack(token: string) {
+  return useQuery({
+    queryKey: FLEET_QUERY_KEY.publicTrack(token),
+    queryFn: () => getPublicTrack(token),
+    enabled: Boolean(token),
+    retry: false,
+  })
 }

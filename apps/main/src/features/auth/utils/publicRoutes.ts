@@ -14,3 +14,9 @@ export const PUBLIC_ROUTES: readonly string[] = [
   "/auth/complete-profile",
   "/apply",
 ];
+
+/**
+ * Open to everyone, signed in or not, and never redirected — e.g. the customer-facing
+ * live tracking link (TRU-FE-6 §6). Matched by prefix because the token is in the path.
+ */
+export const OPEN_ROUTE_PREFIXES: readonly string[] = ["/track/"];

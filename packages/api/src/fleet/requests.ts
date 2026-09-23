@@ -183,6 +183,13 @@ import type {
   CreateMaintenanceProfilePayload,
   FleetOverviewResponse,
   UpdateComplianceDocumentPayload,
+  PublicTrack,
+  ShareVehicleLocationPayload,
+  TrackingAlertsQuery,
+  TrackingAlertsResponse,
+  TrackingSnapshotResponse,
+  TrackingVehiclesQuery,
+  VehicleLocationShareResponse,
 } from './types'
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -1168,4 +1175,40 @@ export async function verifyAuditChain() {
 export async function getFleetOverview() {
   const { data } = await axiosInstance.get<FleetOverviewResponse>('/fleet/overview')
   return data
+}
+
+// ─── Live tracking (TRU-FE-6) ─────────────────────────────────────────────────
+
+export async function getTrackingLive() {
+  const { data } = await axiosInstance.get<TrackingSnapshotResponse>('/fleet/tracking/live')
+  return data
+}
+
+export async function getTrackingVehicles(payload?: TrackingVehiclesQuery) {
+  const { data } = await axiosInstance.get<TrackingSnapshotResponse>('/fleet/tracking/vehicles', { params: payload?.params })
+  return data
+}
+
+export async function getTrackingAlerts(payload?: TrackingAlertsQuery) {
+  const { data } = await axiosInstance.get<TrackingAlertsResponse>('/fleet/tracking/alerts', { params: payload?.params })
+  return data
+}
+
+export async function shareVehicleLocation({ id }: ShareVehicleLocationPayload) {
+  const { data } = await axiosInstance.post<VehicleLocationShareResponse>(`/fleet/tracking/vehicles/${id}/share`)
+  return data
+}
+
+/**
+ * Public, unauthenticated: no bearer, no 401-refresh redirect (the recipient isn't a user).
+ * 410 = expired, revoked or never existed — deliberately indistinguishable.
+ */
+export async function getPublicTrack(token: string): Promise<PublicTrack | 'gone'> {
+  const res = await fetch(new URL(`/track/${encodeURIComponent(token)}`, import.meta.env.VITE_BACKEND_URL))
+  if (res.status === 410 || res.status === 404)
+    return 'gone'
+  if (!res.ok)
+    throw new Error(`Tracking link failed (${res.status})`)
+  const body = await res.json() as { data?: PublicTrack } & PublicTrack
+  return body.data ?? body
 }

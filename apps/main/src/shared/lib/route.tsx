@@ -261,6 +261,12 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import("@/features/apply/components/pages/ApplyForAccount")).default }),
       },
 
+      // Customer-facing live tracking link — no auth, no app chrome (OPEN_ROUTE_PREFIXES).
+      {
+        path: "/track/:token",
+        lazy: async () => ({ Component: (await import("@/features/tracking/components/pages/PublicTrackPage")).default }),
+      },
+
       {
         path: "/not-authorized",
         Component: NotAuthorized,

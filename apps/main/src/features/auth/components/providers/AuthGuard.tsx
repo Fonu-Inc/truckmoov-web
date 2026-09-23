@@ -3,7 +3,9 @@ import {
   Navigate, useLocation,
 } from "react-router";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-import { PUBLIC_ROUTES } from "@/features/auth/utils/publicRoutes";
+import {
+  OPEN_ROUTE_PREFIXES, PUBLIC_ROUTES,
+} from "@/features/auth/utils/publicRoutes";
 
 /**
  * Logged out -> public routes only. Logged in -> everything.
@@ -16,6 +18,10 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   const {
     isAuthenticated, isAuthReady,
   } = useAuthStore();
+
+  // Open pages don't depend on a session at all — don't even wait for bootstrap.
+  if (OPEN_ROUTE_PREFIXES.some(prefix => location.pathname.startsWith(prefix)))
+    return <>{children}</>;
 
   // Session bootstrap is still in flight — render nothing rather than
   // flashing a redirect we may be about to reverse.

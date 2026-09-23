@@ -101,13 +101,34 @@ Three conventions fall out of those documents:
 Endpoints deliberately left out of this package, because a browser client is not
 the caller: liveness/readiness probes (`/health`, `/ready`, `/metrics`,
 `/test-sentry`), device-side telemetry ingest (`/tracking/ingest*`), provider
-webhooks (Paystack, Meta/WhatsApp), the SSE and WebSocket bridges
-(`/onboarding/payment/events`, `/tracking/ws` — neither is an Axios call),
-and pure aliases of routes already covered (`GET /fuel/transactions`,
+webhooks (Paystack, Meta/WhatsApp), the SSE bridge
+(`/onboarding/payment/events` — not an Axios call), and pure aliases of routes already covered (`GET /fuel/transactions`,
 `PUT /dispatch/jobs/{jobId}`).
 
 Deliberate simplifications and fields kept despite being absent from the current
 spec are marked with a `ponytail:` comment naming what to do about them.
+
+## Realtime socket
+
+`packages/api/src/lib/realtime-socket.ts` (`@truckmoov/api/lib/realtime-socket`) owns the one
+socket.io connection to the realtime gateway (`/realtime/socket.io` on the
+`VITE_BACKEND_URL` origin). It is server-to-client only: the room comes from the token's
+verified claim, so there is nothing to join or emit.
+
+- **Auth** goes in the handshake `auth: { token }` frame, never the query string (query strings
+  land in proxy logs). It is a callback, so each (re)connect sends the current token.
+- **Shared and reference-counted.** `acquireRealtimeSocket()` opens it on first use and returns
+  `{ socket, release }`; the last `release()` removes every listener, disconnects and drops the
+  auth-store subscription. Never call `io()` anywhere else.
+- **Token changes** reconnect with the new token; **logout** disconnects.
+- **`refused`** (`origin_not_allowed` | `capacity_reached` | `unauthenticated`) is followed by a
+  server disconnect, which socket.io does not retry. On `unauthenticated` the module makes one
+  authed request so the axios 401 → `/auth/refresh` flow runs; the new token reconnects.
+
+In components use the app hooks (`apps/main/src/features/map/hooks/useRealtime.ts`):
+`useRealtimeEvent(event, handler)` — one listener per mount, removed with `socket.off` and a
+`release()` on unmount — and `useRealtimeStatus()` for the indicator. In dev,
+`window.__realtimeDebug(event)` reports `{ refCount, connected, listeners }` for checking cleanup.
 
 ## Auth session
 
