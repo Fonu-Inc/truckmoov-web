@@ -5,7 +5,12 @@ import type {
   SupportTicketStatus,
 } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
-import { getSupportTicketQueryOptions } from "@truckmoov/api/auth";
+import {
+  getSupportTicketQueryOptions,
+  useCloseSupportTicket,
+  useReopenSupportTicket,
+  useReplySupportTicket,
+} from "@truckmoov/api/auth";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatRelative, formatWithPattern,
@@ -18,6 +23,8 @@ import {
   MessageSquare,
   Paperclip,
 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -29,6 +36,7 @@ import {
 } from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
+import { Textarea } from "@/components/shadcn/textarea";
 import { TicketCsatPanel } from "./TicketCsatPanel";
 
 type TicketDetailSheetProps = {
@@ -257,7 +265,7 @@ function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
       <div className="flex flex-col gap-2 p-4 rounded-lg border bg-muted/40 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-0.5">
           <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Current Status</Label>
-          <p className="text-xs text-muted-foreground">Only the platform support team can change ticket status.</p>
+          <p className="text-xs text-muted-foreground">Support moves the status; you can close or reopen once it's resolved.</p>
         </div>
         <Badge
           variant="outline"
@@ -273,6 +281,7 @@ function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
             <ArrowUpRight className="h-4 w-4" />
             <span className="font-medium">
               Escalated to
+              {" "}
               {ticket.escalatedTo.replace(
                 /_/g,
                 " ",
@@ -289,16 +298,157 @@ function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
           {ticket.escalatedAt && (
             <p className="text-xs text-muted-foreground">
               Escalated
+              {" "}
               {formatRelative(ticket.escalatedAt)}
             </p>
           )}
         </div>
       )}
 
+      {ticket.contextSnapshot && Object.keys(ticket.contextSnapshot).length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            {`${ticket.contextType} at the time of reporting`}
+          </Label>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg border bg-muted/40 p-3 text-xs">
+            {Object.entries(ticket.contextSnapshot).map(([
+              key,
+              value,
+            ]) => (
+              <div
+                key={key}
+                className="contents"
+              >
+                <dt className="text-muted-foreground">{key}</dt>
+                <dd className="font-mono">{value == null ? "-" : String(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      <TicketActions
+        ticketId={ticket.id}
+        status={ticket.status}
+      />
+
       <TicketCsatPanel
         ticketId={ticket.id}
         ticketStatus={ticket.status}
       />
+    </div>
+  );
+}
+
+// Reply is open until the ticket is closed; close/reopen are only valid on a resolved ticket (server 400s otherwise).
+function TicketActions({
+  ticketId, status,
+}: {
+  ticketId: string; status: string;
+}) {
+  const [
+    message,
+    setMessage,
+  ] = useState("");
+  const [
+    reopenReason,
+    setReopenReason,
+  ] = useState("");
+  const reply = useReplySupportTicket();
+  const close = useCloseSupportTicket();
+  const reopen = useReopenSupportTicket();
+  const busy = reply.isPending || close.isPending || reopen.isPending;
+
+  if (status === "closed")
+    return null;
+
+  return (
+    <div className="space-y-3 rounded-lg border p-4">
+      <Label
+        htmlFor="ticket-reply"
+        className="text-[11px] uppercase tracking-wide text-muted-foreground"
+      >
+        Reply
+      </Label>
+      <Textarea
+        id="ticket-reply"
+        rows={3}
+        value={message}
+        onChange={e => setMessage(e.target.value)}
+        placeholder="Add detail or answer the support team"
+      />
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          disabled={busy || !message.trim()}
+          onClick={() => reply.mutate(
+            {
+              id: ticketId, data: { message: message.trim() },
+            },
+            {
+              onSuccess: () => {
+                setMessage("");
+                toast.success("Reply sent");
+              },
+              onError: error => toast.error(error.message),
+            },
+          )}
+        >
+          Send reply
+        </Button>
+      </div>
+
+      {status === "resolved" && (
+        <div className="space-y-2 border-t pt-3">
+          <Label
+            htmlFor="ticket-reopen"
+            className="text-[11px] uppercase tracking-wide text-muted-foreground"
+          >
+            Still not fixed?
+          </Label>
+          <Textarea
+            id="ticket-reopen"
+            rows={2}
+            value={reopenReason}
+            onChange={e => setReopenReason(e.target.value)}
+            placeholder="Why are you reopening it? (at least 3 characters)"
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy || reopenReason.trim().length < 3}
+              onClick={() => reopen.mutate(
+                {
+                  id: ticketId, data: { reason: reopenReason.trim() },
+                },
+                {
+                  onSuccess: () => {
+                    setReopenReason("");
+                    toast.success("Ticket reopened");
+                  },
+                  onError: error => toast.error(error.message),
+                },
+              )}
+            >
+              Reopen
+            </Button>
+            <Button
+              size="sm"
+              disabled={busy}
+              onClick={() => close.mutate(
+                { id: ticketId },
+                {
+                  onSuccess: () => toast.success("Ticket closed"),
+                  onError: error => toast.error(error.message),
+                },
+              )}
+            >
+              Close ticket
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -322,7 +472,7 @@ export function TicketDetailSheet({
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="text-lg leading-tight">View Ticket</DialogTitle>
           <DialogDescription className="text-xs mt-1">
-            Read-only view of your support ticket. Updates and replies are managed by the platform support team.
+            Your support ticket, its conversation and attachments.
           </DialogDescription>
         </DialogHeader>
 

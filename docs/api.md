@@ -90,8 +90,8 @@ Three conventions fall out of those documents:
 - **Route groups and service prefixes.** `auth` is split into groups that are
   *not* all mounted under the service name. In `auth`
   only the `Auth` group keeps it (`/auth/login`, `/auth/me`, `/auth/invite`,
-  …) — the rest sit at the root: `/profile`, `/organization`, `/system`,
-  `/onboarding`, `/sims`, `/data-bundles`. Every fleet route remains under
+  …) and the platform-admin group (`/auth/system/...`) keep it — the rest sit
+  at the root: `/profile`, `/organization`, `/onboarding`, `/sims`, `/data-bundles`. Every fleet route remains under
   `/fleet`, including `/fleet/vehicles`, `/fleet/devices`, `/fleet/drivers`,
   and `/fleet/webhooks/health`.
   `dispatch`, `notification` and `tracking` still prefix everything. Keep

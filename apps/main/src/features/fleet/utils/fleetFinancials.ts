@@ -77,7 +77,11 @@ export function periodToMonths(period: PeriodValue) {
 }
 
 export function normalizeTier(tier: string | undefined): ProfitabilityTierKey {
-  const normalized = tier?.toLowerCase().trim();
+  // API sends `loss_making`; the UI keys use `loss-making`.
+  const normalized = tier?.toLowerCase().trim().replace(
+    "_",
+    "-",
+  );
   if (normalized === "excellent" || normalized === "good" || normalized === "marginal" || normalized === "loss-making") {
     return normalized;
   }
@@ -175,7 +179,7 @@ export function normalizeProfitabilityRow(row: FleetProfitabilityVehicle): Profi
       net_profit: row.profit ?? 0,
       margin_percent: row.marginPercent ?? 0,
       score: row.score ?? 0,
-      tier: row.tier ?? "marginal",
+      tier: normalizeTier(row.tier),
     },
   };
 }

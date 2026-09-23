@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { AdminTicketSheet } from "./AdminTicketSheet";
+import { toSheetTicket } from "./toSheetTicket";
 
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
 
@@ -56,23 +57,6 @@ const priorityStyles: Record<string, string> = {
   critical: "bg-destructive/10 text-destructive",
 };
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
-function readString(source: Record<string, unknown> | null, key: string): string | undefined {
-  const value = source?.[key];
-  return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function readNestedString(source: Record<string, unknown> | null, path: string[]): string | undefined {
-  let current: unknown = source;
-  for (const key of path) {
-    current = asRecord(current)?.[key];
-  }
-  return typeof current === "string" && current.trim() ? current : undefined;
-}
-
 function titleCase(value: string) {
   return value
     .replace(
@@ -97,271 +81,6 @@ function shortId(id: string) {
   );
 }
 
-function normalizeTicket(raw: Record<string, unknown>, fallbackTarget?: string): SupportTicket {
-  return {
-    id: readString(
-      raw,
-      "id",
-    ) ?? readString(
-      raw,
-      "ticketId",
-    ) ?? "",
-    tenantId: readString(
-      raw,
-      "tenantId",
-    ) ?? readNestedString(
-      raw,
-      [
-        "tenant",
-        "id",
-      ],
-    ) ?? "",
-    tenantName: readString(
-      raw,
-      "tenantName",
-    ) ?? readNestedString(
-      raw,
-      [
-        "tenant",
-        "name",
-      ],
-    ),
-    category: readString(
-      raw,
-      "category",
-    ) ?? "other",
-    subject: readString(
-      raw,
-      "subject",
-    ) ?? readString(
-      raw,
-      "title",
-    ) ?? "Untitled ticket",
-    description: readString(
-      raw,
-      "description",
-    ) ?? readString(
-      raw,
-      "content",
-    ) ?? "",
-    status: "escalated",
-    priority: readString(
-      raw,
-      "priority",
-    ) ?? "medium",
-    contextType: readString(
-      raw,
-      "contextType",
-    ) ?? readString(
-      raw,
-      "channel",
-    ) ?? "none",
-    escalatedTo:
-    readString(
-      raw,
-      "escalatedTo",
-    )
-    ?? readString(
-      raw,
-      "target",
-    )
-    ?? readString(
-      raw,
-      "escalationParty",
-    )
-    ?? fallbackTarget,
-    escalatedReferenceId: readString(
-      raw,
-      "escalatedReferenceId",
-    ) ?? readString(
-      raw,
-      "referenceId",
-    ),
-    escalationNotes: readString(
-      raw,
-      "escalationNotes",
-    ) ?? readString(
-      raw,
-      "notes",
-    ),
-    escalatedAt: readString(
-      raw,
-      "escalatedAt",
-    ),
-    createdBy: readString(
-      raw,
-      "createdBy",
-    ) ?? readNestedString(
-      raw,
-      [
-        "reporter",
-        "id",
-      ],
-    ) ?? "",
-    createdAt: readString(
-      raw,
-      "createdAt",
-    ) ?? new Date().toISOString(),
-    updatedAt: readString(
-      raw,
-      "updatedAt",
-    ) ?? new Date().toISOString(),
-    resolvedAt: readString(
-      raw,
-      "resolvedAt",
-    ),
-    contextSnapshot: asRecord(raw.contextSnapshot) ?? undefined,
-    reporterName: readString(
-      raw,
-      "reporterName",
-    ) ?? readNestedString(
-      raw,
-      [
-        "reporter",
-        "fullName",
-      ],
-    ),
-  };
-}
-
-function addTicket(groups: Record<string, SupportTicket[]>, ticket: SupportTicket, fallbackTarget?: string) {
-  if (!ticket.id)
-    return;
-  const target = ticket.escalatedTo || fallbackTarget || "unknown";
-  groups[target] = [
-    ...(groups[target] ?? []),
-    ticket,
-  ];
-}
-
-function normalizeEscalatedResponse(response: unknown): Record<string, SupportTicket[]> {
-  const root = asRecord(response);
-  const data = root?.data ?? response;
-  const dataRecord = asRecord(data);
-  const groups: Record<string, SupportTicket[]> = {};
-
-  if (Array.isArray(data)) {
-    data.map(asRecord).filter(Boolean).forEach(raw => addTicket(
-      groups,
-      normalizeTicket(raw),
-    ));
-    return groups;
-  }
-
-  if (!dataRecord)
-    return groups;
-
-  const flatCandidates = [
-    dataRecord.tickets,
-    dataRecord.items,
-    dataRecord.rows,
-    dataRecord.data,
-  ];
-  const flat = flatCandidates.find(Array.isArray);
-  if (Array.isArray(flat)) {
-    flat.map(asRecord).filter(Boolean).forEach(raw => addTicket(
-      groups,
-      normalizeTicket(raw),
-    ));
-  }
-
-  const groupedCandidates = [
-    dataRecord.grouped,
-    dataRecord.groups,
-    dataRecord.byTarget,
-    dataRecord.byEscalationParty,
-  ];
-  groupedCandidates.forEach((candidate) => {
-    if (Array.isArray(candidate)) {
-      candidate.map(asRecord).filter(Boolean).forEach((group) => {
-        const target
-          = readString(
-            group,
-            "escalatedTo",
-          )
-          ?? readString(
-            group,
-            "target",
-          )
-          ?? readString(
-            group,
-            "party",
-          )
-          ?? readString(
-            group,
-            "key",
-          )
-          ?? "unknown";
-        const tickets = [
-          group.tickets,
-          group.items,
-          group.rows,
-          group.data,
-        ].find(Array.isArray);
-        if (Array.isArray(tickets)) {
-          tickets
-            .map(asRecord)
-            .filter(Boolean)
-            .forEach(raw => addTicket(
-              groups,
-              normalizeTicket(
-                raw,
-                target,
-              ),
-              target,
-            ));
-        }
-      });
-      return;
-    }
-
-    const groupedRecord = asRecord(candidate);
-    if (groupedRecord) {
-      Object.entries(groupedRecord).forEach(([
-        target,
-        value,
-      ]) => {
-        if (Array.isArray(value)) {
-          value
-            .map(asRecord)
-            .filter(Boolean)
-            .forEach(raw => addTicket(
-              groups,
-              normalizeTicket(
-                raw,
-                target,
-              ),
-              target,
-            ));
-        }
-      });
-    }
-  });
-
-  if (Object.keys(groups).length === 0) {
-    Object.entries(dataRecord).forEach(([
-      target,
-      value,
-    ]) => {
-      if (Array.isArray(value)) {
-        value
-          .map(asRecord)
-          .filter(Boolean)
-          .forEach(raw => addTicket(
-            groups,
-            normalizeTicket(
-              raw,
-              target,
-            ),
-            target,
-          ));
-      }
-    });
-  }
-
-  return groups;
-}
-
 export function EscalatedTickets() {
   const escalatedQuery = useQuery(getSystemEscalatedSupportTicketsQueryOptions());
   const [
@@ -369,14 +88,20 @@ export function EscalatedTickets() {
     setSelectedTicket,
   ] = useState<SupportTicket | null>(null);
 
-  const byTarget = useMemo(
-    () => normalizeEscalatedResponse(escalatedQuery.data),
+  // Server groups by party and counts each group — use both as sent.
+  const parties = useMemo(
+    () => (escalatedQuery.data?.data?.parties ?? []).map(p => ({
+      party: p.party,
+      count: p.count,
+      tickets: p.tickets.map(toSheetTicket),
+    })),
     [escalatedQuery.data],
   );
-  const escalatedTickets = useMemo(
-    () => Object.values(byTarget).flat(),
-    [byTarget],
-  );
+  const countByParty = Object.fromEntries(parties.map(p => [
+    p.party,
+    p.count,
+  ]));
+  const total = escalatedQuery.data?.data?.total ?? 0;
 
   const tenantLabel = (ticket: SupportTicket) =>
     ticket.tenantName || `Tenant #${shortId(ticket.tenantId || ticket.id)}`;
@@ -403,7 +128,7 @@ export function EscalatedTickets() {
     );
   }
 
-  if (escalatedTickets.length === 0) {
+  if (total === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
@@ -424,7 +149,7 @@ export function EscalatedTickets() {
           key,
           config,
         ]) => {
-          const count = byTarget[key]?.length || 0;
+          const count = countByParty[key] ?? 0;
           const Icon = config.icon;
           return (
             <Card key={key}>
@@ -445,10 +170,11 @@ export function EscalatedTickets() {
         })}
       </div>
 
-      {Object.entries(byTarget).map(([
-        target,
-        targetTickets,
-      ]) => {
+      {parties.filter(p => p.count > 0).map(({
+        party: target,
+        count,
+        tickets: targetTickets,
+      }) => {
         const config = escalationConfig[target as EscalationType] || {
           label: titleCase(target),
           icon: ArrowUpRight,
@@ -464,10 +190,10 @@ export function EscalatedTickets() {
                 {config.label}
               </CardTitle>
               <CardDescription>
-                {targetTickets.length}
+                {count}
                 {" "}
                 escalated ticket
-                {targetTickets.length > 1 ? "s" : ""}
+                {count > 1 ? "s" : ""}
                 {" "}
                 awaiting action from this party
               </CardDescription>

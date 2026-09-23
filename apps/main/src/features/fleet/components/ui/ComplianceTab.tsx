@@ -70,8 +70,8 @@ import {
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
 
-import { cn } from "@/lib/utils";
 import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
+import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
   valid: "bg-success/20 text-success border-success/30",
@@ -133,15 +133,18 @@ export function ComplianceTab() {
     setExpiryTo,
   ] = useState<Date | undefined>(undefined);
 
-  const docsQuery = useComplianceDocs({
+  // Calendar dates, not toISOString() — local midnight in UTC+1 is the previous day in UTC.
+  const docsParams = {
     search: debouncedSearch || undefined,
     status: statusFilter !== "all" ? (statusFilter as ComplianceDocumentStatus) : undefined,
     documentType: docTypeFilter !== "all" ? docTypeFilter : undefined,
-    issuedFrom: issueFrom ? issueFrom.toISOString() : undefined,
-    issuedTo: issueTo ? issueTo.toISOString() : undefined,
-    expiringFrom: expiryFrom ? expiryFrom.toISOString() : undefined,
-    expiringTo: expiryTo ? expiryTo.toISOString() : undefined,
-  });
+    issuedFrom: issueFrom ? toDateParam(issueFrom) : undefined,
+    issuedTo: issueTo ? toDateParam(issueTo) : undefined,
+    expiringFrom: expiryFrom ? toDateParam(expiryFrom) : undefined,
+    expiringTo: expiryTo ? toDateParam(expiryTo) : undefined,
+  };
+  const hasDateFilter = !!(issueFrom || issueTo || expiryFrom || expiryTo);
+  const docsQuery = useComplianceDocs(docsParams);
   const summaryQuery = useComplianceSummary();
   const documents = docsQuery.data?.data ?? [];
   const isLoading = docsQuery.isLoading && !docsQuery.data;
@@ -387,7 +390,7 @@ export function ComplianceTab() {
 
   const handleExportData = async () => {
     try {
-      const blob = await exportComplianceDocs();
+      const blob = await exportComplianceDocs({ params: docsParams });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -1042,7 +1045,7 @@ export function ComplianceTab() {
             hasActiveFilters={hasActiveComplianceFilters}
             emptyState="No documents found. Add your first compliance document."
             filteredEmptyState={
-              (issueFrom || issueTo || expiryFrom || expiryTo)
+              hasDateFilter
                 ? "No documents match. Note: documents with no date in the filtered field are excluded — an unknown date can't be placed inside a date window."
                 : "No compliance documents match your filters."
             }

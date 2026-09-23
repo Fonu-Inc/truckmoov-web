@@ -77,8 +77,8 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { cn } from "@/lib/utils";
 import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
+import { cn } from "@/lib/utils";
 import { PeriodFilter } from "./PeriodFilter";
 
 type FuelTransaction = FuelRecord;
@@ -343,7 +343,7 @@ export function FuelTab() {
   const efficiencyQuery = useFuelEfficiency();
   const vehiclesQuery = useVehicles();
   // ponytail: page-shell tabbed summary — rendered via TabSummaryStrip, empty until BE ships.
-  const tabSummaryQuery = useVehiclesByTab('fuel');
+  const tabSummaryQuery = useVehiclesByTab("fuel");
   const driversQuery = useDrivers();
   const fuelMetricsQuery = useFuelMetrics({ params: { period: metricsPeriod } });
   const budgetRange = useMemo(
@@ -408,6 +408,11 @@ export function FuelTab() {
     odometer: "",
     station: "",
   });
+  // Server 400s an unknown registration with field=vehicleRegistration — shown under the select.
+  const [
+    vehicleRegError,
+    setVehicleRegError,
+  ] = useState<string | null>(null);
 
   // ponytail: server-side filtering via useFuelTransactionsList — no local pass
   const filteredTransactions = transactions;
@@ -624,6 +629,7 @@ export function FuelTab() {
       odometer: "",
       station: "",
     });
+    setVehicleRegError(null);
   };
 
   const handleAddTransaction = async () => {
@@ -658,10 +664,7 @@ export function FuelTab() {
         field?: string; message?: string;
       };
       if (err?.field === "vehicleRegistration") {
-        toast.error(
-          err.message ?? "Unknown vehicle registration",
-          { description: "Check the Vehicle Registration field" },
-        );
+        setVehicleRegError(err.message ?? "Unknown vehicle registration");
       }
       else {
         toast.error(err?.message ?? "Failed to record transaction");
@@ -710,8 +713,14 @@ export function FuelTab() {
       setSelectedTransaction(null);
       resetNewTransaction();
     }
-    catch {
-      toast.error("Failed to update transaction");
+    catch (error) {
+      const err = error as {
+        field?: string; message?: string;
+      };
+      if (err?.field === "vehicleRegistration")
+        setVehicleRegError(err.message ?? "Unknown vehicle registration");
+      else
+        toast.error(err?.message ?? "Failed to update transaction");
     }
   };
 
@@ -728,11 +737,7 @@ export function FuelTab() {
 
   const handleExport = async () => {
     try {
-      const csv = await exportFuelTransactions();
-      const blob = new Blob(
-        [csv],
-        { type: "text/csv" },
-      );
+      const blob = await exportFuelTransactions(queryParams);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -1541,12 +1546,15 @@ export function FuelTab() {
                 <Label>Vehicle Registration</Label>
                 <Select
                   value={newTransaction.vehicleReg}
-                  onValueChange={value => setNewTransaction({
-                    ...newTransaction, vehicleReg: value,
-                  })}
+                  onValueChange={(value) => {
+                    setVehicleRegError(null);
+                    setNewTransaction({
+                      ...newTransaction, vehicleReg: value,
+                    });
+                  }}
                   disabled={vehiclesQuery.isLoading || vehicleOptions.length === 0}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-invalid={!!vehicleRegError}>
                     <SelectValue placeholder={vehiclesQuery.isLoading ? "Loading vehicles..." : "Select vehicle"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1563,6 +1571,7 @@ export function FuelTab() {
                     )}
                   </SelectContent>
                 </Select>
+                {vehicleRegError && <p className="text-sm font-medium text-destructive">{vehicleRegError}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Driver Name</Label>
@@ -1753,12 +1762,15 @@ export function FuelTab() {
                 <Label>Vehicle Registration</Label>
                 <Select
                   value={newTransaction.vehicleReg}
-                  onValueChange={value => setNewTransaction({
-                    ...newTransaction, vehicleReg: value,
-                  })}
+                  onValueChange={(value) => {
+                    setVehicleRegError(null);
+                    setNewTransaction({
+                      ...newTransaction, vehicleReg: value,
+                    });
+                  }}
                   disabled={vehiclesQuery.isLoading || vehicleOptions.length === 0}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-invalid={!!vehicleRegError}>
                     <SelectValue placeholder={vehiclesQuery.isLoading ? "Loading vehicles..." : "Select vehicle"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1775,6 +1787,7 @@ export function FuelTab() {
                     )}
                   </SelectContent>
                 </Select>
+                {vehicleRegError && <p className="text-sm font-medium text-destructive">{vehicleRegError}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Driver Name</Label>

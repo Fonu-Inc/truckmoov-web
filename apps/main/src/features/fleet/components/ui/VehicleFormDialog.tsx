@@ -29,6 +29,15 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 
+// Server rejects capacity above these per unit (TRU-FE-2 § 4) — mirror them so the error is inline.
+const CAPACITY_MAX = {
+  tons: 100,
+  kg: 100000,
+  lb: 220000,
+  m3: 200,
+  pallets: 100,
+} as const;
+
 const vehicleSchema = z.object({
   plateNumber: z.string().min(
     1,
@@ -88,6 +97,15 @@ const vehicleSchema = z.object({
     "m3",
     "pallets",
   ]).default("tons"),
+}).superRefine((v, ctx) => {
+  const max = CAPACITY_MAX[v.capacityUnit];
+  if (v.capacity > max) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["capacity"],
+      message: `Max ${max.toLocaleString()} ${v.capacityUnit}`,
+    });
+  }
 });
 
 // ponytail: server-truthful fallback if /capacity-units hasn't loaded yet
@@ -131,6 +149,7 @@ export function VehicleFormDialog({
   isSubmitting = false,
 }: VehicleFormDialogProps) {
   const { data: capacityUnitsResp } = useCapacityUnits();
+  const defaultUnit = capacityUnitsResp?.data?.default ?? "tons";
   const form = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
@@ -158,7 +177,7 @@ export function VehicleFormDialog({
           year: vehicle.year,
           type: vehicle.type,
           capacity: vehicle.capacity,
-          capacityUnit: vehicle.capacityUnit ?? "tons",
+          capacityUnit: vehicle.capacityUnit ?? defaultUnit,
         });
       }
       else {
@@ -171,6 +190,7 @@ export function VehicleFormDialog({
           year: new Date().getFullYear(),
           type: "truck",
           capacity: 0,
+          capacityUnit: defaultUnit,
         });
       }
     },
@@ -178,6 +198,7 @@ export function VehicleFormDialog({
       vehicle,
       form,
       open,
+      defaultUnit,
     ],
   );
 

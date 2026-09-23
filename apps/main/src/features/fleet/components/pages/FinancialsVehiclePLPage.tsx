@@ -175,7 +175,6 @@ export default function FinancialsVehiclePLPage() {
       data: {
         periodMonths: periodToMonths(profitabilityPeriod),
         search: debouncedVehicleSearch || undefined,
-        status: debouncedVehicleFilters.status === "all" ? undefined : debouncedVehicleFilters.status,
         marginFrom: debouncedVehicleFilters.marginFilterEnabled ? optionalNumber(debouncedVehicleFilters.marginMin) : undefined,
         marginTo: debouncedVehicleFilters.marginFilterEnabled ? optionalNumber(debouncedVehicleFilters.marginMax) : undefined,
         revenueFrom: debouncedVehicleFilters.revenueFilterEnabled ? optionalNumber(debouncedVehicleFilters.revenueMin) : undefined,
@@ -201,7 +200,11 @@ export default function FinancialsVehiclePLPage() {
     [vehicleProfitabilityResp?.data],
   );
 
-  const vehicleTableData = vehicleProfitabilityData;
+  // ponytail: profitability DTO rejects `status` (400), so the tier filter runs client-side.
+  const tierFilter = debouncedVehicleFilters.status;
+  const vehicleTableData = tierFilter === "all"
+    ? vehicleProfitabilityData
+    : vehicleProfitabilityData.filter(v => v.profitability?.tier === tierFilter);
   const getVehicleName = useMemo(
     () => buildVehicleNameLookup(vehicleProfitabilityData),
     [

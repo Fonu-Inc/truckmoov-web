@@ -24,6 +24,12 @@ import {
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { optionalNumber } from "@/features/fleet/utils/fleetFinancials";
+
+// Blank → null (cleared); "0" stays 0. The old `parseFloat(x) || null` dropped zeros.
+const toNullableNumber = (value: string) => optionalNumber(value.trim()) ?? null;
+// GET returns decimals as strings ("5000.00") — show them as plain numbers.
+const toInputValue = (value: number | string | null | undefined) => (value == null ? "" : String(Number(value)));
 
 type Vehicle = {
   id: string;
@@ -147,17 +153,17 @@ export function VehicleFinancialConfigDialog({
   };
 
   const populateForm = (config: FleetFinancialConfig) => {
-    setFuelEstimate(config.fuelEstimateNgnPerMonth?.toString() || "");
-    setMaintenanceEstimate(config.maintenanceEstimateNgnPerMonth?.toString() || "");
-    setMonthlyInsurance(config.monthlyInsuranceNgn?.toString() || "");
-    setMonthlyWage(config.monthlyDriverWageNgn?.toString() || config.monthlyWagesNgn?.toString() || "");
-    setMonthlyDepreciation(config.monthlyDepreciationNgn?.toString() || "");
-    setMonthlyParking("");
-    setMonthlyOther(config.monthlyOtherNgn?.toString() || "");
-    setPurchasePrice(config.assetPurchasePriceNgn?.toString() || "");
+    setFuelEstimate(toInputValue(config.fuelEstimateNgnPerMonth));
+    setMaintenanceEstimate(toInputValue(config.maintenanceEstimateNgnPerMonth));
+    setMonthlyInsurance(toInputValue(config.monthlyInsuranceNgn));
+    setMonthlyWage(toInputValue(config.monthlyDriverWageNgn ?? config.monthlyWagesNgn));
+    setMonthlyDepreciation(toInputValue(config.monthlyDepreciationNgn));
+    setMonthlyParking(toInputValue(config.monthlyParkingNgn));
+    setMonthlyOther(toInputValue(config.monthlyOtherNgn));
+    setPurchasePrice(toInputValue(config.assetPurchasePriceNgn));
     setPurchaseDate(config.assetPurchaseDate || "");
-    setUsefulLife(config.assetUsefulLifeMonths?.toString() || "60");
-    setSalvageValue(config.assetSalvageValueNgn?.toString() || "");
+    setUsefulLife(toInputValue(config.assetUsefulLifeMonths) || "60");
+    setSalvageValue(toInputValue(config.assetSalvageValueNgn));
     setDepreciationMethod(config.depreciationMethod || "straight_line");
     setPerTripWage("");
     setPerKmWage("");
@@ -188,17 +194,18 @@ export function VehicleFinancialConfigDialog({
       await updateConfigMutation.mutateAsync({
         vehicleId: selectedVehicleId,
         data: {
-          fuelEstimateNgnPerMonth: Number.parseFloat(fuelEstimate) || null,
-          maintenanceEstimateNgnPerMonth: Number.parseFloat(maintenanceEstimate) || null,
-          monthlyDriverWageNgn: Number.parseFloat(monthlyWage) || null,
-          monthlyInsuranceNgn: Number.parseFloat(monthlyInsurance) || null,
-          monthlyDepreciationNgn: Number.parseFloat(monthlyDepreciation) || null,
-          monthlyOtherNgn: (Number.parseFloat(monthlyParking) || 0) + (Number.parseFloat(monthlyOther) || 0) || null,
+          fuelEstimateNgnPerMonth: toNullableNumber(fuelEstimate),
+          maintenanceEstimateNgnPerMonth: toNullableNumber(maintenanceEstimate),
+          monthlyDriverWageNgn: toNullableNumber(monthlyWage),
+          monthlyInsuranceNgn: toNullableNumber(monthlyInsurance),
+          monthlyDepreciationNgn: toNullableNumber(monthlyDepreciation),
+          monthlyParkingNgn: toNullableNumber(monthlyParking),
+          monthlyOtherNgn: toNullableNumber(monthlyOther),
           driverWageAllocationMethod: wageMethod,
-          assetPurchasePriceNgn: Number.parseFloat(purchasePrice) || null,
+          assetPurchasePriceNgn: toNullableNumber(purchasePrice),
           assetPurchaseDate: purchaseDate || null,
-          assetUsefulLifeMonths: Number.parseInt(usefulLife) || null,
-          assetSalvageValueNgn: Number.parseFloat(salvageValue) || null,
+          assetUsefulLifeMonths: toNullableNumber(usefulLife),
+          assetSalvageValueNgn: toNullableNumber(salvageValue),
           depreciationMethod,
         },
       });

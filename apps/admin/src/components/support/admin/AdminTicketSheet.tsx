@@ -2,19 +2,18 @@ import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSupportTicketMessagesQueryOptions,
+  useAssignSystemSupportTicket,
   useCreateSupportTicketMessage,
   useEscalateSupportTicket,
   useUpdateSupportTicketStatus,
 } from "@truckmoov/api/auth";
+import { useAuthStore } from "@truckmoov/api/lib/auth-store";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowUpRight,
-  FileText,
-  ImageIcon,
   Loader2,
   Lock,
-  Paperclip,
   Send,
 } from "lucide-react";
 import {
@@ -52,7 +51,7 @@ import {
 } from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
 
-type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
+export type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
 type TicketMessage = {
   id: string;
@@ -71,10 +70,12 @@ export type SupportTicket = {
   status: TicketStatus;
   priority: string;
   contextType: string;
+  channel?: string;
   escalatedTo?: EscalationType | string;
   escalatedReferenceId?: string;
   escalationNotes?: string;
   escalatedAt?: string;
+  assignedTo?: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -311,6 +312,8 @@ export function AdminTicketSheet({
   const statusMutation = useUpdateSupportTicketStatus();
   const messageMutation = useCreateSupportTicketMessage();
   const escalateMutation = useEscalateSupportTicket();
+  const assignMutation = useAssignSystemSupportTicket();
+  const myId = useAuthStore(state => state.user?.id);
 
   useEffect(
     () => {
@@ -372,6 +375,21 @@ export function AdminTicketSheet({
     );
   }
 
+  function handleAssignToMe() {
+    if (!ticket || !myId)
+      return;
+    assignMutation.mutate(
+      {
+        id: ticket.id,
+        data: { assigneeId: myId },
+      },
+      {
+        onSuccess: () => toast.success("Ticket assigned to you"),
+        onError: error => toast.error(error.message),
+      },
+    );
+  }
+
   function handleEscalate() {
     if (!ticket || !escalateTo)
       return;
@@ -396,18 +414,6 @@ export function AdminTicketSheet({
 
   const reporterName = ticket.reporterName || `User ${shortId(ticket.createdBy || ticket.id)}`;
   const priority = priorityStyles[ticket.priority] ?? priorityStyles.medium;
-  const attachments = [
-    {
-      name: "screenshot-error.png",
-      type: "image" as const,
-      size: "248 KB",
-    },
-    {
-      name: "device-log.txt",
-      type: "document" as const,
-      size: "12 KB",
-    },
-  ];
 
   return (
     <Dialog
@@ -508,41 +514,52 @@ export function AdminTicketSheet({
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Paperclip className="h-4 w-4 text-muted-foreground" />
-                  <FieldLabel>
-                    Attachments (
-                    {attachments.length}
-                    )
-                  </FieldLabel>
-                </div>
+              {ticket.contextSnapshot && Object.keys(ticket.contextSnapshot).length > 0 && (
                 <div className="space-y-2">
-                  <div className="relative h-28 w-48 overflow-hidden rounded-md border bg-secondary">
-                    <div className="flex h-full items-center justify-center">
-                      <ImageIcon className="h-7 w-7 text-muted-foreground" />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-background/60 px-3 py-2 text-xs font-semibold">
-                      {attachments[0].name}
-                    </div>
-                  </div>
-                  <div className="flex w-72 items-center gap-3 rounded-md border bg-secondary/60 p-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background/60">
-                      <FileText className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{attachments[1].name}</p>
-                      <p className="text-xs text-muted-foreground">{attachments[1].size}</p>
-                    </div>
-                  </div>
+                  <FieldLabel>
+                    {`${ticket.contextType} snapshot (read server-side at creation)`}
+                  </FieldLabel>
+                  <dl className="grid grid-cols-2 gap-x-6 gap-y-1 rounded-md border bg-secondary/40 p-3 text-xs">
+                    {Object.entries(ticket.contextSnapshot).map(([
+                      key,
+                      value,
+                    ]) => (
+                      <div
+                        key={key}
+                        className="contents"
+                      >
+                        <dt className="text-muted-foreground">{key}</dt>
+                        <dd className="font-mono">{value == null ? "-" : String(value)}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
+              )}
+
+              <div className="flex items-center justify-between rounded-md border bg-background/40 p-4">
+                <div>
+                  <FieldLabel>Assignee</FieldLabel>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {ticket.assignedTo ? (ticket.assignedTo === myId ? "You" : shortId(ticket.assignedTo)) : "Unassigned"}
+                  </p>
+                </div>
+                {ticket.assignedTo !== myId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={assignMutation.isPending || !myId}
+                    onClick={handleAssignToMe}
+                  >
+                    Assign to me
+                  </Button>
+                )}
               </div>
 
               <div className="rounded-md border bg-background/40 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <FieldLabel>Update Ticket Status</FieldLabel>
-                    <p className="mt-1 text-sm text-muted-foreground">Change the workflow stage of this ticket.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Change the workflow stage of this ticket. To escalate, use the Escalate tab.</p>
                   </div>
                   <Select
                     value={status}
@@ -555,7 +572,7 @@ export function AdminTicketSheet({
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {statusOptions.map(option => (
+                      {statusOptions.filter(option => option.value !== "escalated" || status === "escalated").map(option => (
                         <SelectItem
                           key={option.value}
                           value={option.value}

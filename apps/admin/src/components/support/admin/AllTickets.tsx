@@ -57,10 +57,11 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { AdminTicketSheet } from "./AdminTicketSheet";
+import { toSheetTicket } from "./toSheetTicket";
 
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type TicketPriority = "low" | "medium" | "high" | "critical";
-type TicketCategory = "device_tracking" | "billing" | "sim_connectivity" | "messaging" | "compliance" | "onboarding" | "other";
+type TicketCategory = SystemSupportTicketCategory;
 type TicketRow = SupportTicket & {
   tenantName?: string;
   reporterName?: string;
@@ -147,44 +148,22 @@ const categoryOptions: {
     label: "Onboarding",
   },
   {
+    value: "billing_subscription",
+    label: "Billing & Subscription",
+  },
+  {
+    value: "account_access",
+    label: "Account / Access",
+  },
+  {
+    value: "enterprise_enquiry",
+    label: "Enterprise Enquiry",
+  },
+  {
     value: "other",
     label: "Other",
   },
 ];
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
-function readString(source: Record<string, unknown> | null, key: string): string | undefined {
-  const value = source?.[key];
-  return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function readNestedString(source: Record<string, unknown> | null, path: string[]): string | undefined {
-  let current: unknown = source;
-  for (const key of path) {
-    current = asRecord(current)?.[key];
-  }
-  return typeof current === "string" && current.trim() ? current : undefined;
-}
-
-function extractRawTickets(response: unknown): Record<string, unknown>[] {
-  const root = asRecord(response);
-  const data = root?.data;
-  if (Array.isArray(data))
-    return data.map(asRecord).filter(Boolean) as Record<string, unknown>[];
-
-  const dataRecord = asRecord(data);
-  const candidates = [
-    dataRecord?.tickets,
-    dataRecord?.items,
-    dataRecord?.rows,
-    dataRecord?.data,
-  ];
-  const match = candidates.find(Array.isArray);
-  return Array.isArray(match) ? (match.map(asRecord).filter(Boolean) as Record<string, unknown>[]) : [];
-}
 
 function titleCase(value: string) {
   return value
@@ -210,14 +189,6 @@ function shortId(id: string) {
   );
 }
 
-function normalizeStatus(value?: string): TicketStatus {
-  return value && value in statusConfig ? (value as TicketStatus) : "open";
-}
-
-function normalizePriority(value?: string): TicketPriority {
-  return value && value in priorityConfig ? (value as TicketPriority) : "medium";
-}
-
 function channelFromContext(value?: string) {
   switch (value) {
     case "device":
@@ -233,144 +204,6 @@ function channelFromContext(value?: string) {
     default:
       return "Web";
   }
-}
-
-function normalizeTicket(raw: Record<string, unknown>): TicketRow {
-  const id = readString(
-    raw,
-    "id",
-  ) ?? readString(
-    raw,
-    "ticketId",
-  ) ?? "";
-  const reporter = asRecord(raw.reporter) ?? asRecord(raw.createdByUser) ?? asRecord(raw.createdByProfile);
-  const reporterProfile = asRecord(reporter?.profile);
-  const firstName = readString(
-    reporterProfile,
-    "firstName",
-  ) ?? readString(
-    reporter,
-    "firstName",
-  );
-  const lastName = readString(
-    reporterProfile,
-    "lastName",
-  ) ?? readString(
-    reporter,
-    "lastName",
-  );
-  const fullName = readString(
-    reporterProfile,
-    "fullName",
-  ) ?? readString(
-    reporter,
-    "fullName",
-  );
-  const joinedName = [
-    firstName,
-    lastName,
-  ].filter(Boolean).join(" ");
-  const reporterName = fullName ?? (joinedName || readString(
-    raw,
-    "reporterName",
-  ));
-
-  return {
-    id,
-    tenantId: readString(
-      raw,
-      "tenantId",
-    ) ?? readNestedString(
-      raw,
-      [
-        "tenant",
-        "id",
-      ],
-    ) ?? "",
-    tenantName: readString(
-      raw,
-      "tenantName",
-    ) ?? readNestedString(
-      raw,
-      [
-        "tenant",
-        "name",
-      ],
-    ),
-    category: readString(
-      raw,
-      "category",
-    ) ?? "other",
-    subject: readString(
-      raw,
-      "subject",
-    ) ?? readString(
-      raw,
-      "title",
-    ) ?? "Untitled ticket",
-    description: readString(
-      raw,
-      "description",
-    ) ?? readString(
-      raw,
-      "content",
-    ) ?? "",
-    status: normalizeStatus(readString(
-      raw,
-      "status",
-    )),
-    priority: normalizePriority(readString(
-      raw,
-      "priority",
-    )),
-    contextType: readString(
-      raw,
-      "contextType",
-    ) ?? readString(
-      raw,
-      "channel",
-    ) ?? "none",
-    createdBy: readString(
-      raw,
-      "createdBy",
-    ) ?? readNestedString(
-      raw,
-      [
-        "reporter",
-        "id",
-      ],
-    ) ?? "",
-    createdAt: readString(
-      raw,
-      "createdAt",
-    ) ?? new Date().toISOString(),
-    updatedAt: readString(
-      raw,
-      "updatedAt",
-    ) ?? new Date().toISOString(),
-    resolvedAt: readString(
-      raw,
-      "resolvedAt",
-    ),
-    escalatedTo: readString(
-      raw,
-      "escalatedTo",
-    ),
-    escalatedReferenceId: readString(
-      raw,
-      "escalatedReferenceId",
-    ),
-    escalationNotes: readString(
-      raw,
-      "escalationNotes",
-    ),
-    escalatedAt: readString(
-      raw,
-      "escalatedAt",
-    ),
-    contextSnapshot: asRecord(raw.contextSnapshot) ?? undefined,
-    reporterName: reporterName || undefined,
-  };
 }
 
 const tenantLabel = (ticket: TicketRow) => ticket.tenantName || `Tenant ${shortId(ticket.tenantId || ticket.id)}`;
@@ -472,7 +305,7 @@ export function AllTickets() {
   const ticketsQuery = useQuery(getSystemSupportTicketsQueryOptions(queryPayload));
 
   const tickets = useMemo(
-    () => extractRawTickets(ticketsQuery.data).map(normalizeTicket).filter(ticket => ticket.id),
+    () => (ticketsQuery.data?.data?.tickets ?? []).map(toSheetTicket),
     [ticketsQuery.data],
   );
 
@@ -538,7 +371,7 @@ export function AllTickets() {
       {
         id: "channel",
         header: "Channel",
-        cell: ({ row }) => <span className="font-semibold">{channelFromContext(row.original.contextType)}</span>,
+        cell: ({ row }) => <span className="font-semibold">{row.original.channel ? titleCase(row.original.channel) : channelFromContext(row.original.contextType)}</span>,
       },
       {
         id: "category",

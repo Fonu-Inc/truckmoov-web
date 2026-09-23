@@ -92,9 +92,9 @@ import {
 import { Skeleton } from "@/components/shadcn/skeleton";
 
 import { Textarea } from "@/components/shadcn/textarea";
+import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { cn } from "@/lib/utils";
-import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 
 type MaintenanceFormState = {
   vehicleId: string;
@@ -315,7 +315,7 @@ export function MaintenanceTab() {
   const vehiclesQuery = useVehicles();
   // ponytail: page-shell tabbed summary — rendered via TabSummaryStrip; filtering
   // stays on useMaintenanceRecords above.
-  const tabSummaryQuery = useVehiclesByTab('maintenance');
+  const tabSummaryQuery = useVehiclesByTab("maintenance");
   const createRecordMutation = useCreateMaintenanceRecord();
   const updateRecordMutation = useUpdateMaintenanceRecord();
   const deleteRecordMutation = useDeleteMaintenanceRecord();
@@ -749,7 +749,7 @@ export function MaintenanceTab() {
   const handleExportRecords = async () => {
     setIsExporting(true);
     try {
-      const data = await exportMaintenanceRecords();
+      const data = await exportMaintenanceRecords(recordsQueryParams);
       downloadBlob(
         data,
         "maintenance_records.csv",
@@ -784,12 +784,16 @@ export function MaintenanceTab() {
     }
     const leadDays = Number(reminderDaysBefore) as MaintenanceReminderLeadDays;
     try {
-      await upsertScheduleMutation.mutateAsync({
+      const res = await upsertScheduleMutation.mutateAsync({
         data: {
           recipientEmail, leadDays, enabled: true,
         },
       });
-      toast.success("Reminder schedule saved");
+      const due = res.data?.dueInWindow;
+      toast.success(
+        "Reminder schedule saved",
+        due === undefined ? undefined : { description: `${due} vehicle${due === 1 ? "" : "s"} due in the next ${leadDays} days` },
+      );
     }
     catch (error) {
       const err = error as { message?: string };

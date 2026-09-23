@@ -20,6 +20,7 @@ import {
   differenceInCalendarDays,
   differenceInMinutes,
   differenceInSeconds,
+  endOfDay as dfEndOfDay,
   endOfMonth as dfEndOfMonth,
   format,
   formatDistanceToNow,
@@ -342,6 +343,12 @@ export function subMonths(value: DateInput, months: number): Date | null {
 export function startOfDay(value: DateInput): Date | null {
   const date = toDate(value)
   return date ? dfStartOfDay(date) : null
+}
+
+/** Last millisecond of `value`'s day. For an inclusive "to" bound on a date filter. */
+export function endOfDay(value: DateInput): Date | null {
+  const date = toDate(value)
+  return date ? dfEndOfDay(date) : null
 }
 
 /** First moment of `value`'s month. For billing periods and monthly rollups. */

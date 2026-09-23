@@ -8,7 +8,7 @@ import {
   AlertCircle, CheckCircle, Download, FileText, Upload, X,
 } from "lucide-react";
 import {
-  useCallback, useState,
+  useCallback, useRef, useState,
 } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
@@ -50,6 +50,8 @@ export function BulkUploadDialog({
     outcome,
     setOutcome,
   ] = useState<ImportOutcome | null>(null);
+  // One key per selected file: retrying the same file reuses it, a new file rotates it.
+  const idempotencyKey = useRef("");
   const importMutation = useImportVehicles();
   const { data: columnsResp } = useVehicleImportColumns();
 
@@ -63,6 +65,7 @@ export function BulkUploadDialog({
         toast.error("File exceeds 10 MB limit");
         return;
       }
+      idempotencyKey.current = crypto.randomUUID();
       setFile(selectedFile);
       setOutcome(null);
     },
@@ -100,7 +103,10 @@ export function BulkUploadDialog({
     if (!file)
       return;
     try {
-      const res = await importMutation.mutateAsync({ file });
+      const res = await importMutation.mutateAsync({
+        file,
+        idempotencyKey: idempotencyKey.current,
+      });
       const data = res.data;
       const skipped = data.skipped ?? [];
       setOutcome({
@@ -184,6 +190,7 @@ export function BulkUploadDialog({
                         <th className="p-2 text-left">Column</th>
                         <th className="p-2 text-left">Required</th>
                         <th className="p-2 text-left">Example</th>
+                        <th className="p-2 text-left">Note</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -192,6 +199,7 @@ export function BulkUploadDialog({
                           <td className="p-2 font-medium">{col.header}</td>
                           <td className="p-2">{col.required ? "yes" : "no"}</td>
                           <td className="p-2 font-mono text-muted-foreground">{col.example}</td>
+                          <td className="p-2 text-muted-foreground">{col.note}</td>
                         </tr>
                       ))}
                     </tbody>

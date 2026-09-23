@@ -20,8 +20,8 @@ import {
 } from "@truckmoov/api/auth";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Calendar,
   Boxes,
+  Calendar,
   CheckCircle2,
   Clock,
   Cpu,
@@ -44,6 +44,7 @@ import { useForm } from "react-hook-form";
 
 import { toast } from "sonner";
 import * as z from "zod";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -92,7 +93,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { StatCard } from "@/components/dashboard/StatCard";
 import { Textarea } from "@/components/shadcn/textarea";
 
 // TRU-FE-5 § 2 — reshaped per spec. `SystemDeviceSetupRequest` now carries all
@@ -106,10 +106,18 @@ const TRACKER_TYPE_LABELS: Record<string, string> = {
   asset: "Battery / Portable",
 };
 
-const KYC_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  verified: { label: "Verified", className: "border-transparent bg-success/15 text-success" },
-  pending: { label: "KYC Pending", className: "border-transparent bg-warning/15 text-warning" },
-  rejected: { label: "KYC Rejected", className: "border-transparent bg-destructive/15 text-destructive" },
+const KYC_STATUS_CONFIG: Record<string, {
+  label: string; className: string;
+}> = {
+  verified: {
+    label: "Verified", className: "border-transparent bg-success/15 text-success",
+  },
+  pending: {
+    label: "KYC Pending", className: "border-transparent bg-warning/15 text-warning",
+  },
+  rejected: {
+    label: "KYC Rejected", className: "border-transparent bg-destructive/15 text-destructive",
+  },
 };
 
 type DeviceSetupFilterDraft = {
@@ -193,28 +201,28 @@ const statusOptions: {
   value: SystemDeviceSetupStatus;
   label: string;
 }[] = [
-  { value: "pending_review", label: "Pending Review" },
-  { value: "approved", label: "Approved" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "provisioned", label: "Provisioned" },
-  { value: "assigned", label: "Assigned" },
-  { value: "rejected", label: "Rejected" },
-  { value: "cancelled", label: "Cancelled" },
+  {
+    value: "pending_review", label: "Pending Review",
+  },
+  {
+    value: "approved", label: "Approved",
+  },
+  {
+    value: "in_progress", label: "In Progress",
+  },
+  {
+    value: "provisioned", label: "Provisioned",
+  },
+  {
+    value: "assigned", label: "Assigned",
+  },
+  {
+    value: "rejected", label: "Rejected",
+  },
+  {
+    value: "cancelled", label: "Cancelled",
+  },
 ];
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
-function readString(source: Record<string, unknown> | null, key: string): string | undefined {
-  const value = source?.[key];
-  return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function readBoolean(source: Record<string, unknown> | null, key: string): boolean {
-  const value = source?.[key];
-  return typeof value === "boolean" ? value : false;
-}
 
 function cloneFilters(filters: DeviceSetupFilterDraft): DeviceSetupFilterDraft {
   return {
@@ -257,92 +265,6 @@ function downloadBlob(blob: Blob, filename: string) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-}
-
-// TRU-FE-5 § 2 — new payload shape. `?? null` on the string fields so the UI
-// falls back to `tenantId` for organisation/email per spec.
-function readOptionalString(source: Record<string, unknown> | null, key: string): string | null {
-  const value = source?.[key];
-  return typeof value === "string" && value.trim() ? value : null;
-}
-function readNumber(source: Record<string, unknown> | null, key: string): number {
-  const value = source?.[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-function readTimeline(raw: Record<string, unknown>): SystemDeviceSetupRequest["timeline"] {
-  const value = raw.timeline;
-  if (!Array.isArray(value))
-    return [];
-  return value
-    .map(asRecord)
-    .filter((entry): entry is Record<string, unknown> => Boolean(entry))
-    .map(entry => ({
-      status: (readString(entry, "status") ?? "pending_review") as SystemDeviceSetupStatus,
-      at: readString(entry, "at") ?? new Date().toISOString(),
-      note: readOptionalString(entry, "note"),
-    }));
-}
-function readKycStatus(raw: Record<string, unknown>): SystemDeviceSetupRequest["kycStatus"] {
-  const value = raw.kycStatus;
-  if (value === "verified" || value === "pending" || value === "rejected")
-    return value;
-  return null;
-}
-
-function normalizeRequest(raw: Record<string, unknown>): DeviceSetupRow {
-  return {
-    id: readString(raw, "id") ?? "",
-    tenantId: readString(raw, "tenantId") ?? readString(raw, "tenant_id") ?? "",
-    organisationName: readOptionalString(raw, "organisationName"),
-    requestingEmail: readOptionalString(raw, "requestingEmail"),
-    manufacturer: readString(raw, "manufacturer") ?? "",
-    model: readString(raw, "model") ?? "",
-    // Fall back to legacy `connectionType` so a mid-migration row doesn't render blank.
-    trackerType: readString(raw, "trackerType") ?? readString(raw, "connectionType") ?? "",
-    quantity: readNumber(raw, "quantity") || 1,
-    simRequired: readBoolean(raw, "simRequired") || readBoolean(raw, "needsSim"),
-    vehicleId: readOptionalString(raw, "vehicleId"),
-    state: readOptionalString(raw, "state"),
-    city: readOptionalString(raw, "city"),
-    preferredInstallDate:
-      readOptionalString(raw, "preferredInstallDate")
-      ?? readOptionalString(raw, "preferred_install_date")
-      ?? readOptionalString(raw, "preferredDate"),
-    useCase: readOptionalString(raw, "useCase"),
-    notes: readOptionalString(raw, "notes"),
-    status: (readString(raw, "status") ?? "pending_review") as SystemDeviceSetupStatus,
-    kycStatus: readKycStatus(raw),
-    assignedTo: readOptionalString(raw, "assignedTo") ?? readOptionalString(raw, "assigned_to"),
-    decidedBy: readOptionalString(raw, "decidedBy"),
-    decidedAt: readOptionalString(raw, "decidedAt"),
-    // decisionReason replaces rejectedReason (§ 2). Read the legacy key too.
-    decisionReason: readOptionalString(raw, "decisionReason") ?? readOptionalString(raw, "rejectedReason"),
-    timeline: readTimeline(raw),
-    createdAt: readString(raw, "createdAt") ?? readString(raw, "created_at") ?? new Date().toISOString(),
-    updatedAt: readString(raw, "updatedAt") ?? readString(raw, "updated_at") ?? new Date().toISOString(),
-  };
-}
-
-function extractRequests(response: unknown): DeviceSetupRow[] {
-  const root = asRecord(response);
-  const data = root?.data;
-  const dataRecord = asRecord(data);
-  const candidates = Array.isArray(data)
-    ? data
-    : dataRecord
-      ? [
-          dataRecord.requests,
-          dataRecord.items,
-          dataRecord.rows,
-          dataRecord.data,
-        ].find(Array.isArray)
-      : [];
-
-  return (Array.isArray(candidates) ? candidates : [])
-    .map(asRecord)
-    .filter(Boolean)
-    .map(normalizeRequest)
-    .filter(request => request.id);
 }
 
 function formatStatusLabel(status: string) {
@@ -394,7 +316,14 @@ export function DeviceSetupRequestsQueue() {
   const assignRequest = useAssignSystemDeviceSetupRequest();
   const rejectRequest = useRejectSystemDeviceSetupRequest();
   const approveRequest = useApproveSystemDeviceSetupRequest();
-  const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
+  const [
+    approvingRequestId,
+    setApprovingRequestId,
+  ] = useState<string | null>(null);
+  const [
+    approveNote,
+    setApproveNote,
+  ] = useState("");
   // TRU-FE-5 § 3 — Approval Queue cards.
   const summaryQuery = useSystemDeviceSetupSummary();
   const summary = summaryQuery.data?.data;
@@ -433,20 +362,9 @@ export function DeviceSetupRequestsQueue() {
     enabled: Boolean(selectedRequest?.id),
   });
 
-  const requests = useMemo(
-    () => extractRequests(requestsQuery.data),
-    [requestsQuery.data],
-  );
-  const detailRequest = useMemo(
-    () => {
-      const detailRecord = asRecord(selectedRequestDetailQuery.data?.data);
-      return detailRecord ? normalizeRequest(detailRecord) : selectedRequest;
-    },
-    [
-      selectedRequest,
-      selectedRequestDetailQuery.data,
-    ],
-  );
+  // Response matches SystemDeviceSetupRequest exactly (probed 2026-09-23) — no re-parsing.
+  const requests: DeviceSetupRow[] = requestsQuery.data?.data?.requests ?? [];
+  const detailRequest = selectedRequestDetailQuery.data?.data ?? selectedRequest;
 
   const activeFilterCount = useMemo(
     () => {
@@ -481,10 +399,13 @@ export function DeviceSetupRequestsQueue() {
 
   // TRU-FE-5 § 4 — Approve. Must precede Assign per § 6. Buttons disable on
   // decided requests, per the "don't rely on the 400" note in the spec.
-  function handleApprove(request: DeviceSetupRow) {
+  function handleApprove(request: DeviceSetupRow, note?: string) {
     setApprovingRequestId(request.id);
     approveRequest.mutate(
-      { id: request.id },
+      {
+        id: request.id,
+        data: note?.trim() ? { note: note.trim() } : undefined,
+      },
       {
         onSuccess: () => toast.success("Device setup request approved"),
         onError: error => toast.error(error.message),
@@ -540,19 +461,30 @@ export function DeviceSetupRequestsQueue() {
         return (
           <div className="space-y-1">
             <p className="font-semibold">
-              {[request.manufacturer, request.model].filter(Boolean).join(" ")}
+              {[
+                request.manufacturer,
+                request.model,
+              ].filter(Boolean).join(" ")}
             </p>
             <div className="flex items-center gap-1.5">
               {trackerLabel && (
-                <Badge variant="outline" className="text-xs">
+                <Badge
+                  variant="outline"
+                  className="text-xs"
+                >
                   {trackerLabel}
                 </Badge>
               )}
               <span className="text-xs text-muted-foreground">
-                × {request.quantity}
+                ×
+                {" "}
+                {request.quantity}
               </span>
               {request.simRequired && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge
+                  variant="secondary"
+                  className="text-xs"
+                >
                   SIM
                 </Badge>
               )}
@@ -566,8 +498,8 @@ export function DeviceSetupRequestsQueue() {
       header: "Organisation",
       cell: ({ row }) => {
         const request = row.original;
-        // TRU-FE-5 § 2 — fall back to tenantId when organisation isn't populated.
-        const primary = request.organisationName ?? request.tenantId;
+        // Null organisation shows "-", not the tenant id — a raw UUID reads like a real name.
+        const primary = request.organisationName ?? "-";
         return (
           <div className="space-y-1">
             <p className="font-semibold">{primary}</p>
@@ -587,14 +519,24 @@ export function DeviceSetupRequestsQueue() {
         if (!kyc)
           return <span className="text-xs text-muted-foreground">Unknown</span>;
         const config = KYC_STATUS_CONFIG[kyc];
-        return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className={config.className}
+          >
+            {config.label}
+          </Badge>
+        );
       },
     },
     {
       id: "location",
       header: "Location",
       cell: ({ row }) => {
-        const parts = [row.original.city, row.original.state].filter(Boolean);
+        const parts = [
+          row.original.city,
+          row.original.state,
+        ].filter(Boolean);
         return (
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
@@ -997,7 +939,12 @@ export function DeviceSetupRequestsQueue() {
 
       <Dialog
         open={!!selectedRequest}
-        onOpenChange={open => !open && setSelectedRequest(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedRequest(null);
+            setApproveNote("");
+          }
+        }}
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -1024,7 +971,7 @@ export function DeviceSetupRequestsQueue() {
               <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-sm">
                 <DetailItem
                   label="Organisation"
-                  value={detailRequest.organisationName ?? detailRequest.tenantId}
+                  value={detailRequest.organisationName ?? "-"}
                 />
                 <DetailItem
                   label="Request Email"
@@ -1054,17 +1001,42 @@ export function DeviceSetupRequestsQueue() {
                   label="SIM Required"
                   value={detailRequest.simRequired ? "Yes" : "No"}
                 />
+                <DetailItem
+                  label="Vehicle"
+                  value={detailRequest.vehicleId ?? "-"}
+                />
+                <DetailItem
+                  label="Decided"
+                  value={detailRequest.decidedAt ? formatWithPattern(
+                    detailRequest.decidedAt,
+                    "dd MMM yyyy HH:mm",
+                  ) : "-"}
+                />
+                <DetailItem
+                  label="Decided By"
+                  value={detailRequest.decidedBy ?? "-"}
+                />
+                <DetailItem
+                  label="Assigned To"
+                  value={detailRequest.assignedTo ?? "-"}
+                />
               </div>
               <div className="border-t pt-4">
                 <DetailItem
                   label="Installation Location"
-                  value={[detailRequest.city, detailRequest.state].filter(Boolean).join(", ") || "-"}
+                  value={[
+                    detailRequest.city,
+                    detailRequest.state,
+                  ].filter(Boolean).join(", ") || "-"}
                 />
               </div>
               <DetailItem
                 label="Preferred Date"
                 value={detailRequest.preferredInstallDate
-                  ? formatWithPattern(detailRequest.preferredInstallDate, "dd MMMM yyyy")
+                  ? formatWithPattern(
+                      detailRequest.preferredInstallDate,
+                      "dd MMMM yyyy",
+                    )
                   : "-"}
               />
               <DetailItem
@@ -1087,20 +1059,59 @@ export function DeviceSetupRequestsQueue() {
                   <p className="mb-2 text-xs font-semibold text-muted-foreground">Timeline</p>
                   <ol className="space-y-2">
                     {detailRequest.timeline.map((entry, idx) => (
-                      <li key={`${entry.status}-${entry.at}-${idx}`} className="flex items-start gap-2 text-xs">
+                      <li
+                        key={`${entry.status}-${entry.at}-${idx}`}
+                        className="flex items-start gap-2 text-xs"
+                      >
                         <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
                         <div className="flex-1">
                           <p className="font-medium capitalize">
-                            {entry.status.replace(/_/g, " ")}
+                            {entry.status.replace(
+                              /_/g,
+                              " ",
+                            )}
                           </p>
                           {entry.note && <p className="text-muted-foreground">{entry.note}</p>}
                         </div>
                         <span className="text-muted-foreground">
-                          {formatWithPattern(entry.at, "dd MMM yyyy HH:mm")}
+                          {formatWithPattern(
+                            entry.at,
+                            "dd MMM yyyy HH:mm",
+                          )}
                         </span>
                       </li>
                     ))}
                   </ol>
+                </div>
+              )}
+              {/* § 4/5 — decide from the drawer too; only while pending_review. */}
+              {detailRequest.status === "pending_review" && (
+                <div className="space-y-2 border-t pt-4">
+                  <Label htmlFor="approve-note">Approval note (optional)</Label>
+                  <Textarea
+                    id="approve-note"
+                    value={approveNote}
+                    onChange={e => setApproveNote(e.target.value)}
+                    placeholder="Shared with the tenant as the decision note"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={approveRequest.isPending || rejectRequest.isPending}
+                      onClick={() => setSelectedRejectRequest(detailRequest)}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      disabled={approveRequest.isPending || rejectRequest.isPending}
+                      onClick={() => handleApprove(
+                        detailRequest,
+                        approveNote,
+                      )}
+                    >
+                      Approve
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

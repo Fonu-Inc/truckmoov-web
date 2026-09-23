@@ -144,6 +144,8 @@ export type UpdateVehiclePayload = {
 
 export type ImportVehiclesPayload = {
   file: File
+  // Reuse the same key when retrying the same file so the server can dedupe.
+  idempotencyKey: string
 }
 
 export type VehicleImportColumn = {
@@ -1767,6 +1769,14 @@ export type MaintenanceReminderSchedule = {
 export type MaintenanceReminderScheduleResponse = ServerResponse<{
   schedule: MaintenanceReminderSchedule | null
   leadDayOptions: MaintenanceReminderLeadDays[]
+}>
+
+// ponytail: dueInWindow placement is from the TRU-FE-2 § 6 prose — POST /schedule 404s on
+// dev-api (2026-09-23), so re-check the envelope once it deploys.
+export type UpsertMaintenanceReminderScheduleResponse = ServerResponse<{
+  schedule: MaintenanceReminderSchedule
+  /** What the next run would cover right now (overdue work always included). */
+  dueInWindow?: number
 }>
 
 export type UpsertMaintenanceReminderSchedulePayload = {

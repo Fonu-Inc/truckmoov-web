@@ -13,6 +13,7 @@ import {
   useMemo, useState,
 } from "react";
 import { useOutletContext } from "react-router";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -167,7 +168,7 @@ export default function FinancialsCostBreakdownPage() {
   const handleExportCostBreakdown = async () => {
     setIsExportingCostBreakdown(true);
     try {
-      const result = await exportFleetCostBreakdown();
+      const result = await exportFleetCostBreakdown({ params: { periodMonths: periodToMonths(costBreakdownPeriod) } });
       const filename = getFilenameFromDisposition(
         result.contentDisposition,
         "vehicle-cost-analysis.csv",
@@ -179,6 +180,9 @@ export default function FinancialsCostBreakdownPage() {
         ),
         filename,
       );
+    }
+    catch {
+      toast.error("Failed to export cost breakdown");
     }
     finally {
       setIsExportingCostBreakdown(false);

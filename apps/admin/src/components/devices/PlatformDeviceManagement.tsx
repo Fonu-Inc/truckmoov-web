@@ -9,17 +9,14 @@ import {
 } from "@tanstack/react-query";
 import {
   getSystemDeviceQueryOptions,
-  getSystemDevicesCatalogExportQueryOptions,
+  getSystemDevicesExportQueryOptions,
   getSystemDevicesQueryOptions,
   getSystemDevicesSummaryQueryOptions,
-  getSystemTenantsQueryOptions,
-  useSuspendSystemDevice,
   useReinstateSystemDevice,
+  useSuspendSystemDevice,
 } from "@truckmoov/api/auth";
 import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle,
-  ArrowUpDown,
   Battery,
   Building2,
   CheckCircle,
@@ -29,11 +26,9 @@ import {
   Loader2,
   MoreHorizontal,
   Navigation,
-  Pencil,
   Search,
   Signal,
   SlidersHorizontal,
-  Trash2,
   XCircle,
 } from "lucide-react";
 import {
@@ -54,6 +49,19 @@ import {
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { DataTable } from "@/components/shadcn/data-table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Dialog as Sheet,
+  DialogContent as SheetContent,
+  DialogDescription as SheetDescription,
+  DialogHeader as SheetHeader,
+  DialogTitle as SheetTitle,
+} from "@/components/shadcn/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -61,6 +69,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
   Popover,
   PopoverContent,
@@ -74,20 +83,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Dialog as Sheet,
-  DialogContent as SheetContent,
-  DialogDescription as SheetDescription,
-  DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle,
-} from "@/components/shadcn/dialog";
-import { Label } from "@/components/shadcn/label";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
 
@@ -121,6 +116,10 @@ const lifecycleStatuses = [
     label: "Assigned",
   },
   {
+    value: "suspended",
+    label: "Suspended",
+  },
+  {
     value: "faulty",
     label: "Faulty",
   },
@@ -146,6 +145,10 @@ const operationalStatuses = [
   {
     value: "active",
     label: "Active",
+  },
+  {
+    value: "suspended",
+    label: "Suspended",
   },
   {
     value: "faulty",
@@ -211,6 +214,8 @@ function getStatusBadgeClass(status: string) {
     case "assigned":
     case "active":
       return "border-success/30 bg-success/10 text-success hover:bg-success/10";
+    case "suspended":
+      return "border-warning/30 bg-warning/10 text-warning hover:bg-warning/10";
     case "faulty":
       return "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/10";
     default:
@@ -265,9 +270,17 @@ function normalizeDeviceStatus(device: SystemDeviceInventoryItem): string {
     return "configured";
   if (lifecycle === "registered" || legacy === "registered")
     return "registered";
-  if (legacy === "inactive" || lifecycle === "inactive")
+  // § 8 — inactive = out of service for any reason (faulty, decommissioned; suspended handled above).
+  if (legacy === "inactive" || lifecycle === "inactive" || lifecycle === "faulty" || lifecycle === "decommissioned")
     return "inactive";
   return "unregistered";
+}
+
+// § 7 — a 503 means the device service was unreachable and nothing changed; say so.
+function deviceActionError(error: {
+  statusCode?: number; message: string;
+}) {
+  toast.error(error.statusCode === 503 ? "Device service unreachable — nothing changed. Try again." : error.message);
 }
 
 export function PlatformDeviceManagement() {
@@ -276,18 +289,6 @@ export function PlatformDeviceManagement() {
     selectedDevice,
     setSelectedDevice,
   ] = useState<SystemDeviceInventoryItem | null>(null);
-  const [
-    editDevice,
-    setEditDevice,
-  ] = useState<SystemDeviceInventoryItem | null>(null);
-  const [
-    reassignDevice,
-    setReassignDevice,
-  ] = useState<SystemDeviceInventoryItem | null>(null);
-  const [
-    reassignTenantId,
-    setReassignTenantId,
-  ] = useState("");
   const [
     searchQuery,
     setSearchQuery,
@@ -367,11 +368,6 @@ export function PlatformDeviceManagement() {
     ...getSystemDeviceQueryOptions(selectedDevice?.id ?? ""),
     enabled: Boolean(selectedDevice?.id),
   });
-  const tenantsQuery = useQuery({
-    ...getSystemTenantsQueryOptions(),
-    enabled: Boolean(reassignDevice),
-  });
-  const tenants = tenantsQuery.data?.data?.tenants ?? [];
   const summary = summaryQuery.data?.data;
   const devices = useMemo<SystemDeviceInventoryItem[]>(
     () => devicesQuery.data?.data?.devices ?? [],
@@ -421,6 +417,11 @@ export function PlatformDeviceManagement() {
         label: "Suspended",
         value: summary?.suspendedDevices ?? "N/A",
         className: "text-warning",
+      },
+      {
+        label: "Faulty",
+        value: summary?.faultyDevices ?? "N/A",
+        className: "text-destructive",
       },
       {
         label: "Inactive",
@@ -515,8 +516,6 @@ export function PlatformDeviceManagement() {
       meta: { className: "w-[50px]" },
       cell: ({ row }) => {
         const device = row.original;
-        const isAssigned = Boolean(device.tenantId);
-        const isFaulty = device.lifecycleStatus === "faulty";
         // TRU-FE-5 § 7 — suspended is a real lifecycle state (not operationalStatus).
         const isSuspended = device.lifecycleStatus === "suspended";
         return (
@@ -535,18 +534,6 @@ export function PlatformDeviceManagement() {
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setEditDevice(device)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit Details
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setReassignDevice(device);
-                setReassignTenantId(device.tenantId ?? "");
-              }}
-              >
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                {isAssigned ? "Reassign" : "Assign to Tenant"}
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               {isSuspended
                 ? (
@@ -558,45 +545,18 @@ export function PlatformDeviceManagement() {
                       Reinstate
                     </DropdownMenuItem>
                   )
-                : (
-                    <DropdownMenuItem
-                      className="text-warning"
-                      onClick={() => {
-                        setSuspendDevice(device);
-                        setSuspendReason("");
-                      }}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Suspend
-                    </DropdownMenuItem>
-                  )}
-              {!isAssigned && (
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => {
-                    // ponytail: wire useDeleteDevice when the API exposes it
-                    toast.info("Not yet implemented");
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              )}
-              {isFaulty && (
-                <>
-                  <DropdownMenuSeparator />
+                : device.lifecycleStatus !== "decommissioned" && (
                   <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
+                    className="text-warning"
                     onClick={() => {
-                      // ponytail: wire fault details view when the API exposes it
-                      toast.info("Not yet implemented");
+                      setSuspendDevice(device);
+                      setSuspendReason("");
                     }}
                   >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    View Fault Details
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Suspend
                   </DropdownMenuItem>
-                </>
-              )}
+                )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -607,11 +567,11 @@ export function PlatformDeviceManagement() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const blob = await queryClient.fetchQuery(getSystemDevicesCatalogExportQueryOptions());
+      const blob = await queryClient.fetchQuery(getSystemDevicesExportQueryOptions(devicesQueryPayload));
       const url = URL.createObjectURL(blob as Blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "device-catalog.csv";
+      link.download = "devices.csv";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -634,7 +594,7 @@ export function PlatformDeviceManagement() {
               <Cpu className="h-5 w-5 text-primary" />
               Device Inventory
             </CardTitle>
-            <CardDescription>Platform-wide device overview (read-only)</CardDescription>
+            <CardDescription>Platform-wide device overview</CardDescription>
           </div>
           <Button
             variant="outline"
@@ -661,7 +621,7 @@ export function PlatformDeviceManagement() {
               </div>
             )
           : (
-              <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-8">
+              <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
                 {summaryCards.map(stat => (
                   <div
                     key={stat.label}
@@ -1104,164 +1064,6 @@ export function PlatformDeviceManagement() {
         </SheetContent>
       </Sheet>
 
-      {/* Edit Device Dialog — ponytail: form-only for now. Wire submit when
-          `PATCH /system/devices/:id` ships. */}
-      <Dialog
-        open={!!editDevice}
-        onOpenChange={open => !open && setEditDevice(null)}
-      >
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Device Details</DialogTitle>
-            <DialogDescription>
-              Update the record for
-              {" "}
-              {editDevice?.manufacturer}
-              {" "}
-              {editDevice?.model}
-              .
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="edit-imei">IMEI</Label>
-              <Input
-                id="edit-imei"
-                defaultValue={editDevice?.imei ?? ""}
-                maxLength={15}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-manufacturer">Manufacturer</Label>
-              <Input
-                id="edit-manufacturer"
-                defaultValue={editDevice?.manufacturer ?? ""}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-model">Model</Label>
-              <Input
-                id="edit-model"
-                defaultValue={editDevice?.model ?? ""}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-firmware">Firmware Version</Label>
-              <Input
-                id="edit-firmware"
-                defaultValue={editDevice?.firmwareVersion ?? ""}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-protocol">Protocol</Label>
-                <Input
-                  id="edit-protocol"
-                  defaultValue={editDevice?.protocol ?? ""}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
-                <Input
-                  id="edit-status"
-                  defaultValue={editDevice?.operationalStatus ?? ""}
-                  disabled
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditDevice(null)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              toast.info("Backend endpoint pending — form values not saved");
-              setEditDevice(null);
-            }}
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Reassign Device Dialog — ponytail: tenant list is real, submit is a
-          stub until `POST /system/devices/:id/assign` ships. */}
-      <Dialog
-        open={!!reassignDevice}
-        onOpenChange={(open) => {
-          if (!open) {
-            setReassignDevice(null);
-            setReassignTenantId("");
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {reassignDevice?.tenantId ? "Reassign Device" : "Assign Device to Tenant"}
-            </DialogTitle>
-            <DialogDescription>
-              Allocate
-              {" "}
-              {reassignDevice?.manufacturer}
-              {" "}
-              {reassignDevice?.model}
-              {" "}
-              (IMEI
-              {" "}
-              {reassignDevice?.imei}
-              ) to a tenant.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label>Tenant</Label>
-            <Select
-              value={reassignTenantId}
-              onValueChange={setReassignTenantId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={tenantsQuery.isLoading ? "Loading tenants…" : "Select tenant"} />
-              </SelectTrigger>
-              <SelectContent>
-                {tenants.map(t => (
-                  <SelectItem
-                    key={t.id}
-                    value={t.id}
-                  >
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setReassignDevice(null);
-                setReassignTenantId("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={!reassignTenantId}
-              onClick={() => {
-                toast.info("Backend endpoint pending — assignment not persisted");
-                setReassignDevice(null);
-                setReassignTenantId("");
-              }}
-            >
-              {reassignDevice?.tenantId ? "Reassign" : "Assign"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* TRU-FE-5 § 7 — Suspend device. Optional reason; 503 means the change did
           not happen — do NOT optimistically update; let the invalidation on success
           handle the refresh. */}
@@ -1330,7 +1132,7 @@ export function PlatformDeviceManagement() {
                       setSuspendDevice(null);
                       setSuspendReason("");
                     },
-                    onError: error => toast.error(error.message),
+                    onError: deviceActionError,
                   },
                 );
               }}
@@ -1394,7 +1196,7 @@ export function PlatformDeviceManagement() {
                       toast.success("Device reinstated");
                       setReinstateDevice(null);
                     },
-                    onError: error => toast.error(error.message),
+                    onError: deviceActionError,
                   },
                 );
               }}

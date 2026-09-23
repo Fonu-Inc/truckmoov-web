@@ -289,7 +289,7 @@ export default function VehiclesPage() {
   const handleExportVehicles = async () => {
     setIsExporting(true);
     try {
-      const data = await exportVehicles();
+      const data = await exportVehicles({ params: vehicleQueryParams });
       const blob = data instanceof Blob
         ? data
         : new Blob(
@@ -517,22 +517,13 @@ export default function VehiclesPage() {
                     allowance.unlimited || allowance.limit === null
                       ? (
                           <p className="text-[11px] text-muted-foreground mt-1">
-                            {allowance.used}
-                            {" "}
-                            / Unlimited
+                            {`${allowance.used} used`}
                           </p>
                         )
                       : (
                           <div className="mt-1 space-y-1">
                             <p className="text-[11px] text-muted-foreground">
-                              {allowance.used}
-                              {" "}
-                              /
-                              {allowance.limit}
-                              {" "}
-                              used ·
-                              {allowance.usedPercent ?? 0}
-                              %
+                              {`${allowance.used} / ${allowance.limit} used · ${allowance.usedPercent ?? 0}%`}
                             </p>
                             <div className="h-1.5 w-full rounded-full bg-secondary">
                               <div

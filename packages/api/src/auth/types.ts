@@ -250,8 +250,8 @@ export type SystemDevicesQuery = {
   params?: {
     search?: string
     manufacturer?: string
-    status?: 'registered' | 'configured' | 'assigned' | 'active' | 'faulty' | 'decommissioned'
-    lifecycleStatus?: 'registered' | 'config_pending' | 'configured' | 'verified_online' | 'assignable' | 'assigned' | 'faulty' | 'decommissioned'
+    status?: 'registered' | 'configured' | 'assigned' | 'active' | 'suspended' | 'faulty' | 'decommissioned'
+    lifecycleStatus?: 'registered' | 'config_pending' | 'configured' | 'verified_online' | 'assignable' | 'assigned' | 'suspended' | 'faulty' | 'decommissioned'
   }
 }
 
@@ -382,14 +382,21 @@ export type UpdateTenantStatusPayload = {
 
 // ─── System admin — devices ───────────────────────────────────────────────────
 
+// Server enums (validated, 2026-09-23).
+export const DEVICE_CATALOG_PROTOCOLS = ['TCP', 'HTTP', 'MQTT', 'UDP', 'WEBSOCKET', 'SDK'] as const
+export type DeviceCatalogProtocol = typeof DEVICE_CATALOG_PROTOCOLS[number]
+export type DeviceCatalogFeature = 'obd2' | 'fuel' | 'sos'
+export type DeviceCatalogStatus = 'supported' | 'deprecated' | 'blocked'
+
 export type CreateDeviceCatalogPayload = {
   data: {
     manufacturer: string
     model: string
-    protocolType: string
+    protocolType: DeviceCatalogProtocol
     defaultPort?: number
-    supportedFeatures: string[]
-    status: string
+    supportedFeatures: DeviceCatalogFeature[]
+    status: DeviceCatalogStatus
+    /** "" clears it (server stores null). */
     configurationInstructions?: string
   }
 }
@@ -779,14 +786,8 @@ export type CreateTicketMessagePayload = {
   }
 }
 
-export type SystemSupportTicketCategory =
-  | 'device_tracking'
-  | 'billing'
-  | 'sim_connectivity'
-  | 'messaging'
-  | 'compliance'
-  | 'onboarding'
-  | 'other'
+// Tenant categories (from /auth/support-tickets/options) plus the admin-only enquiry type seen in byCategory.
+export type SystemSupportTicketCategory = SupportTicketCategory | 'enterprise_enquiry'
 
 export type SystemSupportTicketStatus =
   | 'open'
@@ -809,6 +810,9 @@ export type SystemSupportTicketsQuery = {
   }
 }
 
+// Full ticket row — list, detail, escalated and the dashboard lists all return it (probed 2026-09-23).
+// The dashboard's needsAttention/recentlyResolved carry the id/subject/tenant/category/status/priority
+// core plus the timestamps only, so the rest is optional.
 export type SystemSupportTicket = {
   id: string
   tenantId: string
@@ -821,6 +825,18 @@ export type SystemSupportTicket = {
   closedAt: string | null
   createdAt: string
   updatedAt: string
+  description?: string
+  channel?: string | null
+  otherChannel?: string | null
+  contextType?: string | null
+  contextId?: string | null
+  contextSnapshot?: Record<string, unknown> | null
+  escalatedTo?: string | null
+  escalatedReferenceId?: string | null
+  escalationNotes?: string | null
+  escalatedBy?: string | null
+  assignedTo?: string | null
+  createdBy?: string
 }
 
 export type SystemSupportTicketMessage = {
@@ -1101,11 +1117,11 @@ export type SystemDeviceCatalogModel = {
   id: string
   manufacturer: string
   model: string
-  protocolType: string
+  protocolType: DeviceCatalogProtocol
   defaultPort: number
-  supportedFeatures: string[]
-  status: string
-  configurationInstructions?: string
+  supportedFeatures: DeviceCatalogFeature[]
+  status: DeviceCatalogStatus
+  configurationInstructions?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -1204,7 +1220,8 @@ export type SystemSupportDashboard = {
   closed: number
   resolvedToday: number
   byCategory: Record<string, number>
-  topTenants: Record<string, unknown>[]
+  // Probed 2026-09-23: { tenantId, count } — no name.
+  topTenants: Array<{ tenantId: string, count: number }>
   needsAttention: SystemSupportTicket[]
   recentlyResolved: SystemSupportTicket[]
   // TRU-FE-10 §F — rate cards
@@ -3140,9 +3157,8 @@ export type SystemAuditLogQuery = {
     source?: string
     from?: string
     to?: string
+    /** Default 100, capped at 500. The server has no offset — page client-side. */
     limit?: number
-    // ponytail: server ignores offset until backend adds it; hook already sends it.
-    offset?: number
   }
 }
 

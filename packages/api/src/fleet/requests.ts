@@ -120,6 +120,7 @@ import type {
   LegacyGpsDevicesQuery,
   MaintenanceRecordActionPayload,
   MaintenanceReminderScheduleResponse,
+  UpsertMaintenanceReminderScheduleResponse,
   MaintenanceRecordListResponse,
   MaintenanceRecordResponse,
   MaintenanceRecordsQuery,
@@ -252,13 +253,13 @@ export async function deleteVehicle({ id }: { id: string }) {
   return data
 }
 
-export async function importVehicles({ file }: ImportVehiclesPayload) {
+export async function importVehicles({ file, idempotencyKey }: ImportVehiclesPayload) {
   const form = new FormData()
   form.append('file', file)
   const { data: res } = await axiosInstance.post<BulkVehicleImportResponse>(
     '/fleet/vehicles/import',
     form,
-    { headers: { 'Content-Type': 'multipart/form-data' } },
+    { headers: { 'Content-Type': 'multipart/form-data', 'Idempotency-Key': idempotencyKey } },
   )
   return res
 }
@@ -793,8 +794,9 @@ export async function exportFleetFinancialStatement(payload?: FleetFinancialStat
   }
 }
 
-export async function exportFleetCostBreakdown() {
+export async function exportFleetCostBreakdown(payload?: FleetFinancialSummaryQuery) {
   const response = await axiosInstance.get<Blob>('/fleet/financials/cost-breakdown/export', {
+    params: payload?.params,
     responseType: 'blob',
   })
   return {
@@ -816,8 +818,9 @@ export async function getFleetFinancialConfigs() {
   return data
 }
 
-export async function exportVehiclePL() {
+export async function exportVehiclePL(payload?: FleetFinancialSummaryQuery) {
   const response = await axiosInstance.get<Blob>('/fleet/financials/vehicle-pl/export', {
+    params: payload?.params,
     responseType: 'blob',
   })
   return {
@@ -882,8 +885,11 @@ export async function getFuelSummary() {
   return data
 }
 
-export async function exportFuelTransactions() {
-  const { data } = await axiosInstance.get<string>('/fleet/fuel/export')
+export async function exportFuelTransactions(payload?: FuelTransactionsQuery) {
+  const { data } = await axiosInstance.get<Blob>('/fleet/fuel/export', {
+    params: payload?.params,
+    responseType: 'blob',
+  })
   return data
 }
 
@@ -938,8 +944,9 @@ export async function getMaintenanceRecordsSummary() {
   return data
 }
 
-export async function exportMaintenanceRecords() {
+export async function exportMaintenanceRecords(payload?: MaintenanceRecordsQuery) {
   const { data } = await axiosInstance.get<Blob>('/fleet/maintenance/records/export', {
+    params: payload?.params,
     responseType: 'blob',
   })
   return data
@@ -986,7 +993,7 @@ export async function getMaintenanceReminderSchedule() {
 }
 
 export async function upsertMaintenanceReminderSchedule({ data }: UpsertMaintenanceReminderSchedulePayload) {
-  const { data: res } = await axiosInstance.post<MaintenanceReminderScheduleResponse>(
+  const { data: res } = await axiosInstance.post<UpsertMaintenanceReminderScheduleResponse>(
     '/fleet/maintenance/reminders/schedule',
     data,
   )
@@ -1030,8 +1037,9 @@ export async function getMaintenanceServiceCategories() {
   return data
 }
 
-export async function exportMaintenanceProfiles() {
+export async function exportMaintenanceProfiles(payload?: MaintenanceProfilesQuery) {
   const { data } = await axiosInstance.get<Blob>('/fleet/maintenance/profiles/export', {
+    params: payload?.params,
     responseType: 'blob',
   })
   return data
@@ -1128,8 +1136,11 @@ export async function sendComplianceReminders() {
   return data
 }
 
-export async function exportComplianceDocs() {
-  const { data } = await axiosInstance.get<Blob>('/fleet/compliance/documents/export', { responseType: 'blob' })
+export async function exportComplianceDocs(payload?: ComplianceDocumentsQuery) {
+  const { data } = await axiosInstance.get<Blob>('/fleet/compliance/documents/export', {
+    params: payload?.params,
+    responseType: 'blob',
+  })
   return data
 }
 

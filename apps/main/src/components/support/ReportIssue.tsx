@@ -2,6 +2,7 @@ import type {
   SupportTicketCategory,
   SupportTicketChannel,
   SupportTicketContextDeviceSnapshot,
+  SupportTicketContextType,
   SupportTicketPriority,
 } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
@@ -54,11 +55,34 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   other: HelpCircle,
 };
 
-// Category → context type. Only device/vehicle return a real snapshot today
-// (per spec §C); anything else skips the context step entirely.
-const CATEGORY_CONTEXT: Record<string, "device" | "vehicle" | null> = {
+// Pre-selects the "what is this about" picker; the reporter can change it. The picker's
+// choices come from options.contextTypes. Only device/vehicle return a snapshot (§C).
+const DEFAULT_CONTEXT: Record<string, string> = {
   device_tracking: "device",
-  sim_connectivity: "device",
+  sim_connectivity: "sim",
+  messaging: "whatsapp",
+  billing: "billing",
+  billing_subscription: "billing",
+};
+const SNAPSHOT_CONTEXTS = new Set([
+  "device",
+  "vehicle",
+]);
+
+// Context type → ticket channel (values from options.channels).
+const CONTEXT_CHANNEL: Record<string, SupportTicketChannel> = {
+  device: "device",
+  vehicle: "vehicle",
+  sim: "sim",
+  whatsapp: "messaging",
+  billing: "billing",
+  none: "other",
+};
+
+const HEALTH_LABELS: Record<string, string> = {
+  online: "Online",
+  offline: "Offline",
+  never_reported: "Never reported",
 };
 
 // ponytail: spec's security guard. Anything else returns available:false and
@@ -79,6 +103,10 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
     category,
     setCategory,
   ] = useState<string>("");
+  const [
+    contextType,
+    setContextType,
+  ] = useState<string>("none");
   const [
     contextId,
     setContextId,
@@ -112,17 +140,24 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
     [contextId],
   );
 
-  const contextType = CATEGORY_CONTEXT[category] ?? null;
+  const hasContext = contextType !== "none";
+  const takesSnapshot = SNAPSHOT_CONTEXTS.has(contextType);
+  // Submit uses what's typed now; only the lookup is debounced.
+  const typedIdIsValid = contextId.length > 0 && CONTEXT_ID_PATTERN.test(contextId);
   const contextIdIsValid = debouncedContextId.length > 0 && CONTEXT_ID_PATTERN.test(debouncedContextId);
 
   const contextQuery = useQuery({
     ...getSupportTicketContextQueryOptions({
-      contextType: contextType ?? "device",
+      contextType: contextType as "device" | "vehicle",
       contextId: debouncedContextId,
     }),
-    enabled: !!contextType && contextIdIsValid,
+    enabled: takesSnapshot && contextIdIsValid,
   });
   const contextPayload = contextQuery.data?.data;
+  // available:true without a snapshot is still "couldn't read it", never "healthy".
+  const snapshot = contextPayload?.available ? contextPayload.snapshot : null;
+  const lookupFailed = takesSnapshot && contextIdIsValid && !contextQuery.isLoading && !!contextPayload && !snapshot;
+  const contextTypeLabel = options?.contextTypes.find(c => c.value === contextType)?.label ?? contextType;
 
   const selectedCategoryLabel = useMemo(
     () => options?.categories.find(c => c.value === category)?.label ?? category,
@@ -142,13 +177,12 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
           subject: subject.trim(),
           description: description.trim(),
           priority: priority as SupportTicketPriority,
-          // Send channel from the category's context type when known so the
-          // ticket lists channel = "device" / "vehicle"; else omit.
-          channel: contextType ? (contextType as SupportTicketChannel) : undefined,
-          // ⚠️ Never send contextSnapshot. Server reads and stores it — spec §D.
-          ...(contextType && contextIdIsValid
+          channel: CONTEXT_CHANNEL[contextType] ?? "other",
+          // ⚠️ Never send contextSnapshot — the server reads and stores it, and 400s a client copy (§D).
+          ...(hasContext
             ? {
-                contextType, contextId: debouncedContextId,
+                contextType: contextType as SupportTicketContextType,
+                ...(typedIdIsValid ? { contextId } : {}),
               }
             : {}),
         },
@@ -201,8 +235,8 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
                             setCategory(cat.value);
                             setContextId("");
                             setDebouncedContextId("");
-                            const nextContext = CATEGORY_CONTEXT[cat.value] ?? null;
-                            setStep(nextContext ? 2 : 3);
+                            setContextType(DEFAULT_CONTEXT[cat.value] ?? "none");
+                            setStep(2);
                           }}
                           className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors hover:border-primary/50 ${
                             category === cat.value ? "border-primary bg-primary/5" : ""
@@ -219,60 +253,88 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
         )}
       </Card>
 
-      {/* Step 2: Context (only device/vehicle) */}
-      {step >= 2 && contextType && (
+      {/* Step 2: What the issue is about — types from options.contextTypes */}
+      {step >= 2 && (
         <Card className={step !== 2 ? "opacity-60" : ""}>
           <CardHeader
             className="cursor-pointer"
             onClick={() => step > 2 && setStep(2)}
           >
-            <div className="flex items-center gap-2">
-              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium ${step > 2 ? "bg-chart-2 text-white" : "bg-primary text-primary-foreground"}`}>
-                {step > 2 ? <CheckCircle2 className="h-4 w-4" /> : "2"}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium ${step > 2 ? "bg-chart-2 text-white" : "bg-primary text-primary-foreground"}`}>
+                  {step > 2 ? <CheckCircle2 className="h-4 w-4" /> : "2"}
+                </div>
+                <CardTitle className="text-lg">What is this about?</CardTitle>
               </div>
-              <CardTitle className="text-lg">
-                {contextType === "device" ? "Device details" : "Vehicle details"}
-              </CardTitle>
+              {step > 2 && hasContext && <Badge variant="outline">{contextTypeLabel}</Badge>}
             </div>
             {step === 2 && (
               <CardDescription>
-                Enter the
-                {" "}
-                {contextType === "device" ? "IMEI or device id" : "registration number"}
-                . We'll attach a snapshot to the ticket — leave blank if unknown.
+                Pick what the issue relates to. For a device or vehicle we attach its current state to the ticket.
               </CardDescription>
             )}
           </CardHeader>
           {step === 2 && (
             <CardContent className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="context-id">
-                  {contextType === "device" ? "Device IMEI or id" : "Vehicle registration"}
-                </Label>
-                <Input
-                  id="context-id"
-                  value={contextId}
-                  onChange={e => setContextId(e.target.value)}
-                  placeholder={contextType === "device" ? "e.g. 862176050123456" : "e.g. LSR-482-XK"}
-                  maxLength={64}
-                  autoComplete="off"
-                />
-                {debouncedContextId && !contextIdIsValid && (
-                  <p className="text-xs text-destructive">
-                    Only letters, numbers, hyphens and underscores are allowed (max 64 characters).
-                  </p>
-                )}
+                <Label>Related to</Label>
+                <Select
+                  value={contextType}
+                  onValueChange={(value) => {
+                    setContextType(value);
+                    setContextId("");
+                    setDebouncedContextId("");
+                  }}
+                  disabled={!options}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={optionsQuery.isLoading ? "Loading…" : "Select"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {options?.contextTypes.map(c => (
+                      <SelectItem
+                        key={c.value}
+                        value={c.value}
+                      >
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {contextType && contextIdIsValid && contextQuery.isLoading && (
+              {hasContext && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="context-id">
+                    {contextType === "device" ? "Device IMEI or id" : contextType === "vehicle" ? "Vehicle id or registration" : `${contextTypeLabel} reference`}
+                    {" (optional)"}
+                  </Label>
+                  <Input
+                    id="context-id"
+                    value={contextId}
+                    onChange={e => setContextId(e.target.value)}
+                    placeholder={contextType === "device" ? "e.g. 862176050123456" : contextType === "vehicle" ? "e.g. LSR-482-XK" : ""}
+                    maxLength={64}
+                    autoComplete="off"
+                  />
+                  {contextId && !typedIdIsValid && (
+                    <p className="text-xs text-destructive">
+                      Only letters, numbers, hyphens and underscores are allowed (max 64 characters).
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {takesSnapshot && contextIdIsValid && contextQuery.isLoading && (
                 <p className="text-xs text-muted-foreground flex items-center gap-2">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Looking up…
                 </p>
               )}
 
-              {contextType === "device" && contextPayload?.available && contextPayload.snapshot && (() => {
-                const snap = contextPayload.snapshot as SupportTicketContextDeviceSnapshot;
+              {contextType === "device" && snapshot && (() => {
+                const snap = snapshot as SupportTicketContextDeviceSnapshot;
                 return (
                   <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
                     <p className="font-medium text-sm">
@@ -283,14 +345,17 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
                     </p>
                     <p>
                       <span className="text-muted-foreground">IMEI: </span>
-                      {snap.imei ?? "—"}
+                      {snap.imei ?? "-"}
                     </p>
                     <p>
                       <span className="text-muted-foreground">Status: </span>
-                      {snap.status ?? "—"}
+                      {snap.status ?? "-"}
+                      {" · "}
+                      <span className="text-muted-foreground">Lifecycle: </span>
+                      {snap.lifecycleStatus ?? "-"}
                       {" · "}
                       <span className="text-muted-foreground">Health: </span>
-                      {snap.healthStatus}
+                      {HEALTH_LABELS[snap.healthStatus] ?? snap.healthStatus}
                     </p>
                     <p>
                       <span className="text-muted-foreground">Last seen: </span>
@@ -300,36 +365,36 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
                 );
               })()}
 
-              {contextType === "vehicle" && contextPayload?.available && contextPayload.snapshot && (
-                <div className="rounded-md border bg-muted/30 p-3 text-xs">
+              {contextType === "vehicle" && snapshot && (
+                <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
                   <p className="font-medium text-sm flex items-center gap-2">
                     <Truck className="h-4 w-4" />
-                    Vehicle snapshot attached
+                    Vehicle
                   </p>
+                  {/* ponytail: vehicle snapshot fields aren't specified; render what the server sends. */}
+                  {Object.entries(snapshot as Record<string, unknown>).map(([
+                    key,
+                    value,
+                  ]) => (
+                    <p key={key}>
+                      <span className="text-muted-foreground">{`${key}: `}</span>
+                      {value == null ? "-" : String(value)}
+                    </p>
+                  ))}
                 </div>
               )}
 
-              {debouncedContextId && contextIdIsValid && !contextQuery.isLoading && contextPayload && !contextPayload.available && (
+              {lookupFailed && (
                 <p className="text-xs text-muted-foreground">
-                  We couldn't read that record right now. You can still submit the ticket — the fault will be reviewed manually.
+                  We couldn't read that record right now. You can still submit the ticket — it will be reviewed manually.
                 </p>
               )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setContextId("");
-                    setDebouncedContextId("");
-                    setStep(3);
-                  }}
-                >
-                  Skip
-                </Button>
-                <Button
                   size="sm"
                   onClick={() => setStep(3)}
+                  disabled={!!contextId && !typedIdIsValid}
                 >
                   Continue
                 </Button>
@@ -345,7 +410,7 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
           <CardHeader>
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                {contextType ? "3" : "2"}
+                3
               </div>
               <CardTitle className="text-lg">Ticket Details</CardTitle>
             </div>
@@ -397,7 +462,7 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
               </Select>
             </div>
 
-            {contextType && contextIdIsValid && contextPayload && !contextPayload.available && (
+            {lookupFailed && (
               <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 p-3 text-xs">
                 <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                 <p>

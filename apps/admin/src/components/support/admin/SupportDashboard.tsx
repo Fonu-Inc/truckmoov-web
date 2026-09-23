@@ -1,6 +1,7 @@
 import type { SystemSupportTicket } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import { getSystemSupportDashboardQueryOptions } from "@truckmoov/api/auth";
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertCircle,
   ArrowUpRight,
@@ -33,13 +34,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   billing: "Billing & Subscription",
   billing_subscription: "Billing & Subscription",
   account_access: "Account Access",
+  compliance: "Compliance",
+  onboarding: "Onboarding",
+  enterprise_enquiry: "Enterprise Enquiry",
   other: "Other",
 };
-
-function readString(source: Record<string, unknown> | null, key: string): string | undefined {
-  const value = source?.[key];
-  return typeof value === "string" && value.trim() ? value : undefined;
-}
 
 // TRU-FE-10 §F: `null` means nothing has resolved yet — don't show it as "0h"
 // (that reads as instant resolution). Zero is a legitimate value.
@@ -74,29 +73,7 @@ export function SupportDashboard() {
     ...Object.values(byCategory),
   );
 
-  const topTenants = useMemo(
-    () =>
-      (dashboard?.topTenants ?? [])
-        .map(tenant => ({
-          tenantId: readString(
-            tenant,
-            "tenantId",
-          ) ?? readString(
-            tenant,
-            "id",
-          ) ?? "",
-          tenantName: readString(
-            tenant,
-            "tenantName",
-          ) ?? readString(
-            tenant,
-            "name",
-          ),
-          count: Number(tenant.count ?? 0),
-        }))
-        .filter(tenant => tenant.tenantId || tenant.tenantName),
-    [dashboard],
-  );
+  const topTenants = dashboard?.topTenants ?? [];
 
   if (isLoading) {
     return (
@@ -286,6 +263,8 @@ export function SupportDashboard() {
                             {tenantName(ticket.tenantId)}
                             {" • "}
                             {CATEGORY_LABELS[ticket.category] || ticket.category}
+                            {" • opened "}
+                            {formatRelative(ticket.createdAt)}
                           </p>
                         </div>
                         <Badge
@@ -363,14 +342,18 @@ export function SupportDashboard() {
                 8,
               ).map(({
                 tenantId,
-                tenantName: name,
                 count,
               }) => (
                 <div
-                  key={tenantId || name}
+                  key={tenantId}
                   className="flex items-center justify-between p-3 rounded-lg border bg-card"
                 >
-                  <span className="text-sm truncate pr-2">{name || tenantName(tenantId)}</span>
+                  <span
+                    className="text-sm truncate pr-2"
+                    title={tenantId}
+                  >
+                    {tenantName(tenantId)}
+                  </span>
                   <Badge
                     variant="outline"
                     className="shrink-0"
@@ -422,13 +405,15 @@ export function SupportDashboard() {
                             {tenantName(ticket.tenantId)}
                             {" • "}
                             {CATEGORY_LABELS[ticket.category] || ticket.category}
+                            {" • "}
+                            {formatRelative(ticket.closedAt ?? ticket.resolvedAt)}
                           </p>
                         </div>
                         <Badge
                           variant="secondary"
                           className="shrink-0"
                         >
-                          Resolved
+                          {ticket.status === "closed" ? "Closed" : "Resolved"}
                         </Badge>
                       </div>
                     ))}

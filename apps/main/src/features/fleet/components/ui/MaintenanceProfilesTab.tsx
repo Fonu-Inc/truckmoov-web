@@ -392,7 +392,7 @@ export function MaintenanceProfilesTab() {
   const handleExportProfiles = async () => {
     setIsExporting(true);
     try {
-      const data = await exportMaintenanceProfiles();
+      const data = await exportMaintenanceProfiles(profileQueryParams);
       downloadBlob(
         data,
         "maintenance_profiles.csv",

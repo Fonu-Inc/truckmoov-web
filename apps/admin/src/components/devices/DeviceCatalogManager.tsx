@@ -9,8 +9,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  DEVICE_CATALOG_PROTOCOLS,
   getSystemDevicesCatalogExportQueryOptions,
   getSystemDevicesCatalogQueryOptions,
+  getSystemDevicesSummaryQueryOptions,
   useCreateDeviceCatalogEntry,
   useDeleteDeviceCatalogEntry,
   useUpdateDeviceCatalogEntry,
@@ -36,6 +38,16 @@ import {
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -137,12 +149,7 @@ const deviceCatalogFormSchema = z.object({
     1,
     "Model is required.",
   ),
-  protocolType: z.enum([
-    "TCP",
-    "HTTP",
-    "MQTT",
-    "UDP",
-  ]),
+  protocolType: z.enum(DEVICE_CATALOG_PROTOCOLS),
   defaultPort: z.number().int().positive("Default port must be positive.").optional(),
   supportedFeatures: z.array(z.enum([
     "obd2",
@@ -181,14 +188,7 @@ const defaultEditCatalogFormValues: EditDeviceCatalogFormValues = {
 };
 
 function getCatalogFormValues(model: SystemDeviceCatalogModel): EditDeviceCatalogFormValues {
-  const protocolType = [
-    "TCP",
-    "HTTP",
-    "MQTT",
-    "UDP",
-  ].includes(model.protocolType)
-    ? model.protocolType as EditDeviceCatalogFormValues["protocolType"]
-    : "TCP";
+  const protocolType = model.protocolType;
   const supportedFeatures = model.supportedFeatures.filter(
     (feature): feature is DeviceFeature => [
       "obd2",
@@ -238,6 +238,10 @@ export function DeviceCatalogManager() {
     setStatusDialogModel,
   ] = useState<SystemDeviceCatalogModel | null>(null);
   const [
+    modelPendingDelete,
+    setModelPendingDelete,
+  ] = useState<SystemDeviceCatalogModel | null>(null);
+  const [
     pendingStatus,
     setPendingStatus,
   ] = useState<"supported" | "deprecated" | "blocked">("supported");
@@ -277,6 +281,21 @@ export function DeviceCatalogManager() {
       : undefined;
   const catalogQuery = useQuery(getSystemDevicesCatalogQueryOptions(catalogQueryPayload));
   const models = catalogQuery.data?.data.models ?? [];
+  const summary = useQuery(getSystemDevicesSummaryQueryOptions()).data?.data;
+  const catalogCounters = [
+    {
+      label: "Total", value: summary?.totalCatalogModels, className: "",
+    },
+    {
+      label: "Supported", value: summary?.supportedCatalogModels, className: "text-success",
+    },
+    {
+      label: "Deprecated", value: summary?.deprecatedCatalogModels, className: "text-warning",
+    },
+    {
+      label: "Blocked", value: summary?.blockedCatalogModels, className: "text-destructive",
+    },
+  ];
 
   async function handleExport() {
     setIsExporting(true);
@@ -314,6 +333,7 @@ export function DeviceCatalogManager() {
       },
       {
         onSuccess: () => {
+          toast.success("Device model added");
           form.reset(defaultCatalogFormValues);
           setCreateDialogOpen(false);
         },
@@ -348,11 +368,12 @@ export function DeviceCatalogManager() {
           protocolType: values.protocolType,
           defaultPort: values.defaultPort,
           supportedFeatures: values.supportedFeatures,
-          configurationInstructions: values.configurationInstructions?.trim() || undefined,
+          configurationInstructions: values.configurationInstructions?.trim() ?? "",
         },
       },
       {
         onSuccess: () => {
+          toast.success("Device model updated");
           setEditingModel(null);
           editForm.reset(defaultEditCatalogFormValues);
         },
@@ -376,7 +397,10 @@ export function DeviceCatalogManager() {
         data: { status: pendingStatus },
       },
       {
-        onSuccess: () => setStatusDialogModel(null),
+        onSuccess: () => {
+          toast.success(`Marked ${statusLabel[pendingStatus]}`);
+          setStatusDialogModel(null);
+        },
         onError: error => toast.error(error.message),
       },
     );
@@ -385,7 +409,10 @@ export function DeviceCatalogManager() {
   function handleDeleteModel(model: SystemDeviceCatalogModel) {
     deleteCatalogEntry.mutate(
       { id: model.id },
-      { onError: error => toast.error(error.message) },
+      {
+        onSuccess: () => toast.success("Device model deleted"),
+        onError: error => toast.error(error.message),
+      },
     );
   }
 
@@ -438,7 +465,7 @@ export function DeviceCatalogManager() {
                 row.original.supportedFeatures.map(feature => (
                   <span
                     key={feature}
-                    title={feature}
+                    title={DEVICE_FEATURE_OPTIONS.find(o => o.value === feature)?.label ?? feature}
                   >
                     {feature === "obd2"
                       ? (
@@ -513,7 +540,7 @@ export function DeviceCatalogManager() {
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 disabled={deleteCatalogEntry.isPending}
-                onClick={() => handleDeleteModel(model)}
+                onClick={() => setModelPendingDelete(model)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
@@ -554,6 +581,17 @@ export function DeviceCatalogManager() {
               <Download className="h-4 w-4 mr-2" />
               {isExporting ? "Exporting..." : "Export Data"}
             </Button>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+            {catalogCounters.map(stat => (
+              <div
+                key={stat.label}
+                className="rounded-lg border bg-card p-3"
+              >
+                <p className={`text-2xl font-bold ${stat.className}`}>{stat.value ?? "N/A"}</p>
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </CardHeader>
         <CardContent>
@@ -670,10 +708,14 @@ export function DeviceCatalogManager() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="TCP">TCP</SelectItem>
-                          <SelectItem value="HTTP">HTTP</SelectItem>
-                          <SelectItem value="MQTT">MQTT</SelectItem>
-                          <SelectItem value="UDP">UDP</SelectItem>
+                          {DEVICE_CATALOG_PROTOCOLS.map(protocol => (
+                            <SelectItem
+                              key={protocol}
+                              value={protocol}
+                            >
+                              {protocol}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -883,10 +925,14 @@ export function DeviceCatalogManager() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="TCP">TCP</SelectItem>
-                          <SelectItem value="HTTP">HTTP</SelectItem>
-                          <SelectItem value="MQTT">MQTT</SelectItem>
-                          <SelectItem value="UDP">UDP</SelectItem>
+                          {DEVICE_CATALOG_PROTOCOLS.map(protocol => (
+                            <SelectItem
+                              key={protocol}
+                              value={protocol}
+                            >
+                              {protocol}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -1051,6 +1097,33 @@ export function DeviceCatalogManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!modelPendingDelete}
+        onOpenChange={() => setModelPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete device model?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {modelPendingDelete?.manufacturer}
+              {" "}
+              {modelPendingDelete?.model}
+              {" "}
+              will be removed from the catalog. Devices already registered against it are not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Model</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => modelPendingDelete && handleDeleteModel(modelPendingDelete)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

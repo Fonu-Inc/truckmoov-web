@@ -22,6 +22,7 @@ import {
   Card, CardContent,
 } from "@/components/shadcn/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 import { VehicleFinancialConfigDialog } from "@/features/fleet/components/ui/VehicleFinancialConfigDialog";
 import { VehiclePLStatementBuilder } from "@/features/fleet/components/ui/VehiclePLStatementBuilder";
 import {
@@ -29,7 +30,6 @@ import {
 } from "@/features/fleet/utils/fleetFinancials";
 import { FINANCIALS_TABS } from "@/features/fleet/utils/fleetFinancialsNav";
 import { cn } from "@/lib/utils";
-import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 
 export type FleetFinancialsLayoutContext = {
   openConfigDialog: () => void;
@@ -57,12 +57,12 @@ export function FleetFinancialsLayout() {
     [],
   );
   const { format } = useCurrency();
-  const { data: financialSummaryResp } = useFleetFinancialSummary();
-
   const [
     profitabilityPeriod,
     setProfitabilityPeriod,
   ] = useState<PeriodValue>("30");
+  // KPI cards follow the same period picker as the profitability table.
+  const { data: financialSummaryResp } = useFleetFinancialSummary({ params: { periodMonths: periodToMonths(profitabilityPeriod) } });
   const profitabilityPayload = useMemo(
     () => ({ data: { periodMonths: periodToMonths(profitabilityPeriod) } }),
     [profitabilityPeriod],

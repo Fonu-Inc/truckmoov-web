@@ -14,6 +14,7 @@ import {
   useFleetAnalyticsFuelLevels,
   useFleetAnalyticsJobPipeline,
   useFleetAnalyticsSummary,
+  useVehicleSafetyRadar,
   useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
@@ -65,8 +66,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { cn } from "@/lib/utils";
 import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
+import { cn } from "@/lib/utils";
 import { PeriodFilter } from "./PeriodFilter";
 
 const CHART_TOOLTIP_STYLE = {
@@ -95,7 +96,7 @@ const ANALYTICS_PERIOD_OPTIONS: {
     value: "1", label: "Today",
   },
   {
-    value: "2", label: "Yesterday",
+    value: "2", label: "Last 2 Days",
   },
   {
     value: "7", label: "Last 7 Days",
@@ -410,6 +411,7 @@ export function FleetAnalyticsTab() {
   const jobPipelineQuery = useFleetAnalyticsJobPipeline({ params: { period_days: toPeriodDays(jobPipelinePeriod) } });
   const fuelLevelsQuery = useFleetAnalyticsFuelLevels({ params: { period_days: toShortPeriodDays(fuelLevelsPeriod) } });
   const safetyScoresQuery = useFleetAnalyticsDriverScores({ params: { period_days: toPeriodDays(safetyRadarPeriod) } });
+  const safetyRadarQuery = useVehicleSafetyRadar({ params: { period_days: toShortPeriodDays(safetyRadarPeriod) } });
   const driverScoresQuery = useFleetAnalyticsDriverScores({
     params: {
       period_days: toPeriodDays(driverScoresPeriod),
@@ -430,6 +432,7 @@ export function FleetAnalyticsTab() {
     jobPipelineQuery,
     fuelLevelsQuery,
     safetyScoresQuery,
+    safetyRadarQuery,
     driverScoresQuery,
     eventsQuery,
   ];
@@ -517,37 +520,23 @@ export function FleetAnalyticsTab() {
     }))
     .sort((a, b) => a.level - b.level);
 
-  const radarChart = useMemo(
-    () => {
-      if (safetyScores.length === 0)
-        return [];
-
-      const avgHarshBraking = safetyScores.reduce(
-        (sum, driver) => sum + driver.harshBraking,
-        0,
-      ) / safetyScores.length;
-      const avgOverspeeding = safetyScores.reduce(
-        (sum, driver) => sum + driver.overspeeding,
-        0,
-      ) / safetyScores.length;
-
-      return [
+  const safetyRadar = safetyRadarQuery.data?.data;
+  const radarChart = safetyRadar
+    ? [
         {
-          metric: "Braking", score: clampScore(100 - avgHarshBraking), fullMark: 100,
+          metric: "Braking", score: clampScore(safetyRadar.braking), fullMark: 100,
         },
         {
-          metric: "Speed Control", score: clampScore(100 - avgOverspeeding), fullMark: 100,
+          metric: "Acceleration", score: clampScore(safetyRadar.acceleration), fullMark: 100,
         },
         {
-          metric: "Overall Safety", score: averageSafetyScore, fullMark: 100,
+          metric: "Speed Control", score: clampScore(safetyRadar.speedControl), fullMark: 100,
         },
-      ];
-    },
-    [
-      averageSafetyScore,
-      safetyScores,
-    ],
-  );
+        {
+          metric: "Cornering", score: clampScore(safetyRadar.cornering), fullMark: 100,
+        },
+      ]
+    : [];
 
   const driverScoresChart = [...driverScores].sort((a, b) => b.safetyScore - a.safetyScore);
   const recentEvents = events.map((event) => {
@@ -911,17 +900,17 @@ export function FleetAnalyticsTab() {
             />
           </CardHeader>
           <CardContent>
-            {safetyScoresQuery.isError
+            {safetyRadarQuery.isError
               ? (
-                  <CardError onRetry={() => safetyScoresQuery.refetch()} />
+                  <CardError onRetry={() => safetyRadarQuery.refetch()} />
                 )
-              : safetyScoresQuery.isPending
+              : safetyRadarQuery.isPending
                 ? (
                     <CardLoading />
                   )
                 : radarChart.length === 0
                   ? (
-                      <EmptyState message="No driver safety score data available." />
+                      <EmptyState message="No safety radar data available." />
                     )
                   : (
                       <ResponsiveContainer

@@ -5,6 +5,7 @@ import {
   Download, Eye, FileText,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -193,6 +194,10 @@ export function VehiclePLStatementBuilder({
         ),
         filename,
       );
+    }
+    catch (error) {
+      const err = error as { message?: string };
+      toast.error(err?.message ?? "Failed to export statement");
     }
     finally {
       setDownloadingFormat(null);

@@ -319,7 +319,7 @@ import type {
 export type * from './types'
 
 // Value + type export: UserRole is a const object, so it must not be type-only.
-export { UserRole } from './types'
+export { DEVICE_CATALOG_PROTOCOLS, UserRole } from './types'
 
 export const AUTH_QUERY_KEY = {
   me: ['me'],
@@ -966,6 +966,7 @@ export function useCreateDeviceCatalogEntry() {
     mutationFn: createDeviceCatalogEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
     },
   })
 }
@@ -975,6 +976,7 @@ export function useUpdateDeviceCatalogEntry() {
     mutationFn: updateDeviceCatalogEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
     },
   })
 }
@@ -985,6 +987,7 @@ export function useDeleteDeviceCatalogEntry() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
     },
   })
 }
@@ -1915,6 +1918,7 @@ export function useUpdateSupportTicketStatus() {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicketSummary })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemEscalatedSupportTickets })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicket(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportDashboard })
     },
   })
 }
@@ -1927,6 +1931,7 @@ export function useEscalateSupportTicket() {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicketSummary })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemEscalatedSupportTickets })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicket(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportDashboard })
     },
   })
 }
@@ -2114,6 +2119,8 @@ export function useAssignSystemSupportTicket() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTickets() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicket(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicketSummary })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportDashboard })
     },
   })
 }
@@ -2422,6 +2429,7 @@ export function useUpdateMailboxMessageFlags() {
 function invalidateSupportTicket(id: string) {
   queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.supportTicket(id) })
   queryClient.invalidateQueries({ queryKey: ['supportTickets'] })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.supportTicketsSummary })
 }
 
 export function useReplySupportTicket() {
@@ -2477,6 +2485,9 @@ export function getSystemAuditLogVerifyQueryOptions() {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemAuditLogVerify,
     queryFn: verifySystemAuditLog,
+    // Reads whole hash chains — run on load and on the re-verify button only.
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   })
 }
 

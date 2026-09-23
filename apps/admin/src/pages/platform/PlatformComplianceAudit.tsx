@@ -1,14 +1,21 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import type {
+  SystemAuditLogEntry, SystemAuditLogQuery, SystemAuditLogVerification,
+} from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
 import {
   exportSystemAuditLog,
   getSystemAuditLogFiltersQueryOptions,
   getSystemAuditLogQueryOptions,
   getSystemAuditLogVerifyQueryOptions,
-  type SystemAuditLogEntry,
-  type SystemAuditLogQuery,
+
 } from "@truckmoov/api/auth";
-import { useQuery } from "@tanstack/react-query";
-import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
+import { debounce } from "@truckmoov/app-core/utils/general-utils";
+import {
+  endOfDay,
+  formatWithPattern,
+  startOfDay,
+} from "@truckmoov/app-core/utils/time-utils";
 import {
   Download,
   Lock,
@@ -19,12 +26,10 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import {
-  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { useBatchedQuery } from "@truckmoov/reusables/hooks/useBatchedQuery";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -51,6 +56,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+
+const AUDIT_LIST_CAP = 500;
+const EXPORT_CAP = 5000;
+
+// "system" is the platform's own id; the filters endpoint names it, rows don't.
+function tenantLabel(t: {
+  tenantId: string; tenantName: string | null;
+}) {
+  return t.tenantName || (t.tenantId === "system" ? "System / Platform" : t.tenantId);
+}
+
+// A failed blob request carries its JSON error as a Blob — read the server's message out of it.
+async function blobErrorMessage(err: unknown, fallback: string) {
+  const data = (err as { response?: { data?: unknown } })?.response?.data ?? err;
+  if (data instanceof Blob) {
+    try {
+      return (JSON.parse(await data.text()) as { message?: string }).message ?? fallback;
+    }
+    catch {
+      return fallback;
+    }
+  }
+  return (err as { message?: string })?.message ?? fallback;
+}
 
 type DraftFilters = {
   enableDate: boolean;
@@ -85,36 +114,89 @@ const emptyDraft: DraftFilters = {
 };
 
 export default function PlatformComplianceAudit() {
-  const [search, setSearch] = useState("");
-  const [draft, setDraft] = useState<DraftFilters>(emptyDraft);
-  const [applied, setApplied] = useState<SystemAuditLogQuery["params"]>({});
-  const [exporting, setExporting] = useState(false);
+  const [
+    searchInput,
+    setSearchInput,
+  ] = useState("");
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    draft,
+    setDraft,
+  ] = useState<DraftFilters>(emptyDraft);
+  const [
+    applied,
+    setApplied,
+  ] = useState<SystemAuditLogQuery["params"]>({});
+  const [
+    exporting,
+    setExporting,
+  ] = useState(false);
+  const [
+    page,
+    setPage,
+  ] = useState(1);
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(25);
+
+  // One request per settled search, not per keystroke.
+  const debouncedSetSearch = useMemo(
+    () => debounce(
+      (v: string) => setSearch(v.trim()),
+      350,
+    ),
+    [],
+  );
+  useEffect(
+    () => () => debouncedSetSearch.cancel(),
+    [debouncedSetSearch],
+  );
 
   const filterParams: SystemAuditLogQuery["params"] = {
     ...applied,
     ...(search ? { search } : {}),
   };
 
-  const listQueryOptions = useCallback(
-    ({ offset, limit }: { offset: number; limit: number }) =>
-      getSystemAuditLogQueryOptions({ params: { ...filterParams, offset, limit } }),
-    // filterParams is a fresh object each render; depend on its stable inputs instead.
-    [applied, search],
+  // ponytail: the endpoint has no offset, so fetch the 500-row cap once and page it here.
+  // Narrow with filters to reach older entries; add server paging when the API grows an offset.
+  const listQuery = useQuery(getSystemAuditLogQueryOptions({
+    params: {
+      ...filterParams, limit: AUDIT_LIST_CAP,
+    },
+  }));
+  const allEntries = listQuery.data?.data?.items ?? [];
+  const total = listQuery.data?.data?.total ?? 0;
+  const listLoading = listQuery.isLoading;
+  const listError = listQuery.isError;
+  const listErrorObj = listQuery.error;
+  const entries = allEntries.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
   );
+  const pagination = {
+    page,
+    pageSize,
+    total: allEntries.length,
+    onPageChange: setPage,
+    onPageSizeChange: (n: number) => {
+      setPageSize(n);
+      setPage(1);
+    },
+  };
 
-  const {
-    items: entries,
-    total,
-    isLoading: listLoading,
-    isError: listError,
-    error: listErrorObj,
-    pagination,
-    setPage,
-  } = useBatchedQuery<SystemAuditLogEntry>({ queryOptions: listQueryOptions });
-
-  useEffect(() => {
-    setPage(1);
-  }, [applied, search, setPage]);
+  useEffect(
+    () => {
+      setPage(1);
+    },
+    [
+      applied,
+      search,
+    ],
+  );
 
   const filtersQuery = useQuery(getSystemAuditLogFiltersQueryOptions());
   const verifyQuery = useQuery(getSystemAuditLogVerifyQueryOptions());
@@ -124,25 +206,41 @@ export default function PlatformComplianceAudit() {
 
   const applyFilters = () => {
     const next: SystemAuditLogQuery["params"] = {};
-    if (draft.enableDate && draft.startDate) next.from = new Date(draft.startDate).toISOString();
-    if (draft.enableDate && draft.endDate) next.to = new Date(draft.endDate).toISOString();
-    if (draft.enableTenant && draft.tenantId) next.tenantId = draft.tenantId;
-    if (draft.enableActor && draft.actor) next.actor = draft.actor;
-    if (draft.enableAction && draft.action) next.action = draft.action;
-    if (draft.enableResource && draft.resourceType) next.resourceType = draft.resourceType;
-    if (draft.enableSource && draft.source) next.source = draft.source;
+    // Local calendar days, inclusive: "T00:00" parses as local time, unlike a bare yyyy-MM-dd.
+    if (draft.enableDate && draft.startDate)
+      next.from = startOfDay(`${draft.startDate}T00:00`)?.toISOString();
+    if (draft.enableDate && draft.endDate)
+      next.to = endOfDay(`${draft.endDate}T00:00`)?.toISOString();
+    if (draft.enableTenant && draft.tenantId)
+      next.tenantId = draft.tenantId;
+    if (draft.enableActor && draft.actor)
+      next.actor = draft.actor;
+    if (draft.enableAction && draft.action)
+      next.action = draft.action;
+    if (draft.enableResource && draft.resourceType)
+      next.resourceType = draft.resourceType;
+    if (draft.enableSource && draft.source)
+      next.source = draft.source;
     setApplied(next);
   };
 
+  // "Show All" = the list with no query string, search included.
   const clearFilters = () => {
     setDraft(emptyDraft);
     setApplied({});
+    setSearchInput("");
+    debouncedSetSearch.cancel();
+    setSearch("");
   };
 
   const handleExport = async () => {
     setExporting(true);
     try {
-      const blob = await exportSystemAuditLog({ params: { ...applied, ...(search ? { search } : {}) } });
+      const blob = await exportSystemAuditLog({
+        params: {
+          ...applied, ...(search ? { search } : {}),
+        },
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -151,15 +249,17 @@ export default function PlatformComplianceAudit() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to export audit log");
-    } finally {
+    }
+    catch (err) {
+      toast.error(await blobErrorMessage(
+        err,
+        "Failed to export audit log",
+      ));
+    }
+    finally {
       setExporting(false);
     }
   };
-
-  const tenantLabel = (t: { tenantId: string; tenantName: string | null }) =>
-    t.tenantName || t.tenantId;
 
   const columns = useMemo<ColumnDef<SystemAuditLogEntry>[]>(
     () => [
@@ -168,7 +268,10 @@ export default function PlatformComplianceAudit() {
         header: "Timestamp",
         cell: ({ row }) => (
           <span className="font-mono text-xs whitespace-nowrap">
-            {formatWithPattern(row.original.occurredAt, "yyyy-MM-dd HH:mm:ss")}
+            {formatWithPattern(
+              row.original.occurredAt,
+              "yyyy-MM-dd HH:mm:ss",
+            )}
           </span>
         ),
       },
@@ -179,10 +282,17 @@ export default function PlatformComplianceAudit() {
           const e = row.original;
           return (
             <>
-              <div className="text-sm font-medium">{e.actorName || "—"}</div>
-              <div className="text-xs text-muted-foreground font-mono">
-                {e.actorEmail || e.actorId?.slice(0, 8) || "—"}
+              <div className="text-sm font-medium">{e.actorName || "-"}</div>
+              <div
+                className="text-xs text-muted-foreground font-mono"
+                title={e.actorId ?? undefined}
+              >
+                {e.actorEmail || e.actorId?.slice(
+                  0,
+                  8,
+                ) || "-"}
               </div>
+              {e.actorRole && <div className="text-xs text-muted-foreground">{e.actorRole}</div>}
             </>
           );
         },
@@ -191,7 +301,10 @@ export default function PlatformComplianceAudit() {
         id: "action",
         header: "Action",
         cell: ({ row }) => (
-          <Badge variant="outline" className="text-xs">
+          <Badge
+            variant="outline"
+            className="text-xs"
+          >
             {row.original.action}
           </Badge>
         ),
@@ -205,8 +318,14 @@ export default function PlatformComplianceAudit() {
             <>
               <div className="text-sm">{e.resourceType}</div>
               {e.resourceId && (
-                <div className="text-xs text-muted-foreground font-mono">
-                  {e.resourceId.slice(0, 8)}
+                <div
+                  className="text-xs text-muted-foreground font-mono"
+                  title={e.resourceId}
+                >
+                  {e.resourceId.slice(
+                    0,
+                    8,
+                  )}
                 </div>
               )}
             </>
@@ -218,7 +337,7 @@ export default function PlatformComplianceAudit() {
         header: "Tenant",
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.tenantName || row.original.tenantId || "—"}
+            {tenantLabel(row.original)}
           </span>
         ),
       },
@@ -226,7 +345,19 @@ export default function PlatformComplianceAudit() {
         id: "ip",
         header: "IP Address",
         cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.ipAddress || "—"}</span>
+          <span className="font-mono text-xs">{row.original.ipAddress || "-"}</span>
+        ),
+      },
+      {
+        id: "summary",
+        header: "Summary",
+        cell: ({ row }) => (
+          <span
+            className="block max-w-[16rem] truncate text-xs"
+            title={row.original.summary ?? undefined}
+          >
+            {row.original.summary || "-"}
+          </span>
         ),
       },
       {
@@ -234,7 +365,10 @@ export default function PlatformComplianceAudit() {
         header: "Source",
         cell: ({ row }) => (
           // ponytail: source is which service recorded the entry, not a severity — plain tag.
-          <Badge variant="outline" className="text-xs">
+          <Badge
+            variant="outline"
+            className="text-xs"
+          >
             {row.original.source}
           </Badge>
         ),
@@ -264,8 +398,13 @@ export default function PlatformComplianceAudit() {
               <ShieldCheck className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">Total Entries</div>
-              <div className="text-xl font-bold break-words">{total.toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground">Entries loaded</div>
+              <div className="text-xl font-bold break-words">
+                {allEntries.length.toLocaleString()}
+                {total > allEntries.length && (
+                  <span className="text-sm font-normal text-muted-foreground">{` of ${total.toLocaleString()}`}</span>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -275,8 +414,10 @@ export default function PlatformComplianceAudit() {
               <Lock className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">Immutability</div>
-              <div className="text-xl font-bold break-words">Enforced</div>
+              <div className="text-xs text-muted-foreground">Hash chain</div>
+              <div className="text-xl font-bold break-words">
+                {verification ? (verification.intact ? "Intact" : "Broken") : verifyQuery.isError ? "Unverified" : "Checking…"}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -290,10 +431,31 @@ export default function PlatformComplianceAudit() {
               <VerifyBadge
                 verification={verification}
                 isLoading={verifyQuery.isFetching}
+                isError={verifyQuery.isError}
                 onRefresh={() => verifyQuery.refetch()}
               />
             </CardTitle>
-            <CardDescription>Immutable cross-tenant audit trail.</CardDescription>
+            <CardDescription>
+              Immutable cross-tenant audit trail.
+              {verification && ` Verified ${verification.entriesChecked.toLocaleString()} entries across ${verification.chainsChecked} chains at ${formatWithPattern(
+                verification.verifiedAt,
+                "yyyy-MM-dd HH:mm",
+              )}.`}
+            </CardDescription>
+            {verification && !verification.intact && (
+              <ul className="text-xs text-destructive space-y-0.5">
+                {verification.brokenChains.map(c => (
+                  <li
+                    key={c.tenantId}
+                    className="font-mono"
+                  >
+                    {`${tenantLabel({
+                      tenantId: c.tenantId, tenantName: null,
+                    })}: first break at seq ${c.firstBreak.seq} (${c.firstBreak.reason === "hash_mismatch" ? "row edited" : "row removed or inserted"}) · ${c.firstBreak.id}`}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <Button
             variant="outline"
@@ -302,7 +464,7 @@ export default function PlatformComplianceAudit() {
             disabled={exporting || listLoading}
           >
             <Download className="h-4 w-4 mr-2" />
-            {exporting ? "Exporting…" : "Export CSV"}
+            {exporting ? "Exporting…" : `Export CSV (max ${EXPORT_CAP.toLocaleString()})`}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -311,40 +473,55 @@ export default function PlatformComplianceAudit() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search any field…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  debouncedSetSearch(e.target.value);
+                }}
                 className="pl-9"
               />
             </div>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                >
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filter
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-4 space-y-4" align="end">
+              <PopoverContent
+                className="w-80 p-4 space-y-4"
+                align="end"
+              >
                 <div className="font-medium text-sm">Show Audit Entries</div>
 
                 <FilterRow
                   id="f-date"
                   label="By date range"
                   checked={draft.enableDate}
-                  onCheckedChange={v => setDraft({ ...draft, enableDate: v })}
+                  onCheckedChange={v => setDraft({
+                    ...draft, enableDate: v,
+                  })}
                 >
                   <div className="flex items-center gap-2">
                     <Input
                       type="date"
                       disabled={!draft.enableDate}
                       value={draft.startDate}
-                      onChange={e => setDraft({ ...draft, startDate: e.target.value })}
+                      onChange={e => setDraft({
+                        ...draft, startDate: e.target.value,
+                      })}
                       className="flex-1 min-w-0"
                     />
                     <Input
                       type="date"
                       disabled={!draft.enableDate}
                       value={draft.endDate}
-                      onChange={e => setDraft({ ...draft, endDate: e.target.value })}
+                      onChange={e => setDraft({
+                        ...draft, endDate: e.target.value,
+                      })}
                       className="flex-1 min-w-0"
                     />
                   </div>
@@ -354,17 +531,24 @@ export default function PlatformComplianceAudit() {
                   id="f-tenant"
                   label="By tenant"
                   checked={draft.enableTenant}
-                  onCheckedChange={v => setDraft({ ...draft, enableTenant: v })}
+                  onCheckedChange={v => setDraft({
+                    ...draft, enableTenant: v,
+                  })}
                 >
                   <Select
                     disabled={!draft.enableTenant}
                     value={draft.tenantId}
-                    onValueChange={v => setDraft({ ...draft, tenantId: v })}
+                    onValueChange={v => setDraft({
+                      ...draft, tenantId: v,
+                    })}
                   >
                     <SelectTrigger><SelectValue placeholder="Select tenant" /></SelectTrigger>
                     <SelectContent>
                       {availableFilters?.tenants.map(t => (
-                        <SelectItem key={t.tenantId} value={t.tenantId}>
+                        <SelectItem
+                          key={t.tenantId}
+                          value={t.tenantId}
+                        >
                           {tenantLabel(t)}
                         </SelectItem>
                       ))}
@@ -376,13 +560,17 @@ export default function PlatformComplianceAudit() {
                   id="f-actor"
                   label="By actor (name / email / ID)"
                   checked={draft.enableActor}
-                  onCheckedChange={v => setDraft({ ...draft, enableActor: v })}
+                  onCheckedChange={v => setDraft({
+                    ...draft, enableActor: v,
+                  })}
                 >
                   <Input
                     disabled={!draft.enableActor}
                     placeholder="e.g. jane@…"
                     value={draft.actor}
-                    onChange={e => setDraft({ ...draft, actor: e.target.value })}
+                    onChange={e => setDraft({
+                      ...draft, actor: e.target.value,
+                    })}
                   />
                 </FilterRow>
 
@@ -390,17 +578,26 @@ export default function PlatformComplianceAudit() {
                   id="f-action"
                   label="By action type"
                   checked={draft.enableAction}
-                  onCheckedChange={v => setDraft({ ...draft, enableAction: v })}
+                  onCheckedChange={v => setDraft({
+                    ...draft, enableAction: v,
+                  })}
                 >
                   <Select
                     disabled={!draft.enableAction}
                     value={draft.action}
-                    onValueChange={v => setDraft({ ...draft, action: v })}
+                    onValueChange={v => setDraft({
+                      ...draft, action: v,
+                    })}
                   >
                     <SelectTrigger><SelectValue placeholder="Select action" /></SelectTrigger>
                     <SelectContent>
                       {availableFilters?.actions.map(a => (
-                        <SelectItem key={a} value={a}>{a}</SelectItem>
+                        <SelectItem
+                          key={a}
+                          value={a}
+                        >
+                          {a}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -410,17 +607,26 @@ export default function PlatformComplianceAudit() {
                   id="f-resource"
                   label="By resource type"
                   checked={draft.enableResource}
-                  onCheckedChange={v => setDraft({ ...draft, enableResource: v })}
+                  onCheckedChange={v => setDraft({
+                    ...draft, enableResource: v,
+                  })}
                 >
                   <Select
                     disabled={!draft.enableResource}
                     value={draft.resourceType}
-                    onValueChange={v => setDraft({ ...draft, resourceType: v })}
+                    onValueChange={v => setDraft({
+                      ...draft, resourceType: v,
+                    })}
                   >
                     <SelectTrigger><SelectValue placeholder="Select resource" /></SelectTrigger>
                     <SelectContent>
                       {availableFilters?.resourceTypes.map(r => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                        <SelectItem
+                          key={r}
+                          value={r}
+                        >
+                          {r}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -430,27 +636,45 @@ export default function PlatformComplianceAudit() {
                   id="f-source"
                   label="By service (source)"
                   checked={draft.enableSource}
-                  onCheckedChange={v => setDraft({ ...draft, enableSource: v })}
+                  onCheckedChange={v => setDraft({
+                    ...draft, enableSource: v,
+                  })}
                 >
                   <Select
                     disabled={!draft.enableSource}
                     value={draft.source}
-                    onValueChange={v => setDraft({ ...draft, source: v })}
+                    onValueChange={v => setDraft({
+                      ...draft, source: v,
+                    })}
                   >
                     <SelectTrigger><SelectValue placeholder="Select service" /></SelectTrigger>
                     <SelectContent>
                       {availableFilters?.services.map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                        <SelectItem
+                          key={s}
+                          value={s}
+                        >
+                          {s}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </FilterRow>
 
                 <div className="flex gap-2 pt-2">
-                  <Button size="sm" className="flex-1" onClick={applyFilters}>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    onClick={applyFilters}
+                  >
                     Apply
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1" onClick={clearFilters}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={clearFilters}
+                  >
                     Show All
                   </Button>
                 </div>
@@ -460,7 +684,9 @@ export default function PlatformComplianceAudit() {
 
           {listError && (
             <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              Failed to load audit entries: {(listErrorObj as any)?.message ?? "unknown error"}
+              Failed to load audit entries:
+              {" "}
+              {(listErrorObj as any)?.message ?? "unknown error"}
             </div>
           )}
 
@@ -507,7 +733,12 @@ function FilterRow({
           checked={checked}
           onCheckedChange={v => onCheckedChange(!!v)}
         />
-        <Label htmlFor={id} className="text-xs">{label}</Label>
+        <Label
+          htmlFor={id}
+          className="text-xs"
+        >
+          {label}
+        </Label>
       </div>
       {children}
     </div>
@@ -517,21 +748,35 @@ function FilterRow({
 function VerifyBadge({
   verification,
   isLoading,
+  isError,
   onRefresh,
 }: {
-  verification?: {
-    intact: boolean;
-    chainsChecked: number;
-    brokenChains: { tenantId: string; firstBreak: { seq: number; reason: string } }[];
-  };
+  verification?: SystemAuditLogVerification;
   isLoading: boolean;
+  isError: boolean;
   onRefresh: () => void;
 }) {
   if (!verification) {
     return (
-      <Badge variant="outline" className="text-xs font-normal">
-        {isLoading ? "Verifying…" : "Not verified"}
-      </Badge>
+      <span className="inline-flex items-center gap-1">
+        <Badge
+          variant={isError ? "destructive" : "outline"}
+          className="text-xs font-normal"
+        >
+          {isLoading ? "Verifying…" : isError ? "Verification failed" : "Not verified"}
+        </Badge>
+        {isError && !isLoading && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1.5"
+            onClick={onRefresh}
+            title="Retry verification"
+          >
+            <RefreshCw className="h-3 w-3" />
+          </Button>
+        )}
+      </span>
     );
   }
   const label = verification.intact
