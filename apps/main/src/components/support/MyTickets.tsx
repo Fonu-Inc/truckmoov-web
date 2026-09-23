@@ -20,6 +20,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   CircleDot,
+  Clock,
   Download,
   Eye,
   Loader2,
@@ -198,6 +199,9 @@ export function MyTickets() {
     },
     {
       label: "Escalated", value: summary?.escalated ?? 0, icon: ArrowUpRight, accent: "text-destructive",
+    },
+    {
+      label: "Awaiting Response", value: summary?.awaitingResponse ?? 0, icon: Clock, accent: "text-muted-foreground",
     },
     {
       label: "Closed", value: summary?.closed ?? 0, icon: CheckCircle2, accent: "text-muted-foreground",
