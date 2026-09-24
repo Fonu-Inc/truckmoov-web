@@ -156,7 +156,8 @@ them immediately:
 - Production env comes from the base64 GitHub secrets `MAIN_ENV`,
   `ADMIN_ENV`, `INSTALLER_ENV`, and `LANDING_ENV`. If a commit adds an env var
   and the secret isn't updated, CI silently falls back to `.env.example` and
-  the deployed app runs without it.
+  the deployed app runs without it. PR builds never receive these secrets and
+  always build from `.env.example`.
   Always name new env vars in the body.
 
 ## Example

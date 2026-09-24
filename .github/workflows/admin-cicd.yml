@@ -55,7 +55,7 @@ jobs:
             cp apps/admin/.env.example apps/admin/.env.production
           fi
         env:
-          ADMIN_ENV: ${{ secrets.ADMIN_ENV }}
+          ADMIN_ENV: ${{ github.event_name != 'pull_request' && secrets.ADMIN_ENV || '' }}
 
       - name: Build admin
         run: pnpm turbo build --filter admin

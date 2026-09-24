@@ -55,7 +55,7 @@ jobs:
             cp apps/main/.env.example apps/main/.env.production
           fi
         env:
-          MAIN_ENV: ${{ secrets.MAIN_ENV }}
+          MAIN_ENV: ${{ github.event_name != 'pull_request' && secrets.MAIN_ENV || '' }}
 
       - name: Build
         run: pnpm build

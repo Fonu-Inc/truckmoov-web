@@ -55,7 +55,7 @@ jobs:
             cp apps/installer/.env.example apps/installer/.env.production
           fi
         env:
-          INSTALLER_ENV: ${{ secrets.INSTALLER_ENV }}
+          INSTALLER_ENV: ${{ github.event_name != 'pull_request' && secrets.INSTALLER_ENV || '' }}
 
       - name: Build installer
         run: pnpm turbo build --filter installer

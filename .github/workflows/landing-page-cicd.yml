@@ -55,7 +55,7 @@ jobs:
             cp apps/landing-page/.env.example apps/landing-page/.env.production
           fi
         env:
-          LANDING_ENV: ${{ secrets.LANDING_ENV }}
+          LANDING_ENV: ${{ github.event_name != 'pull_request' && secrets.LANDING_ENV || '' }}
 
       - name: Build landing page
         run: pnpm turbo build --filter landing-page
