@@ -39,8 +39,8 @@ folder beside it is a **different** repo — never run git commands there.
    ```
 
 5. If the diff spans an app **and** a shared package, say so explicitly. A
-   change under `packages/**` rebuilds and redeploys both `main` and `admin`
-   (see Deploy consequences).
+   change under `packages/**` rebuilds and redeploys every app (see Deploy
+   consequences).
 
 6. If the diff contains something that looks wrong — a leftover debug line, an
    off-by-one, a hardcoded value — mention it in one line after the message.
@@ -146,16 +146,17 @@ Rules for the body:
 Worth a line in the message when they apply, because pushing `main` acts on
 them immediately:
 
-- Push to `main` runs `.github/workflows/frontend-cicd.yml` (deploys
-  `apps/main`) and `admin-cicd.yml` (deploys `apps/admin`).
-- Both are path-filtered on their own app **plus** `packages/**`,
+- Push to `main` runs one workflow per app in `.github/workflows/`:
+  `frontend-cicd.yml` (`apps/main`), `admin-cicd.yml` (`apps/admin`),
+  `installer-cicd.yml` (`apps/installer`), `landing-page-cicd.yml`
+  (`apps/landing-page`).
+- Each is path-filtered on its own app **plus** `packages/**`,
   `package.json`, and `pnpm-lock.yaml` — so any shared-package change deploys
-  **both** apps.
-- `apps/landing-page/**` has no workflow. Changes there never build or deploy
-  in CI.
-- Production env comes from the base64 GitHub secrets `MAIN_ENV` and
-  `ADMIN_ENV`. If a commit adds an env var and the secret isn't updated, CI
-  silently falls back to `.env.example` and the deployed app runs without it.
+  **every** app.
+- Production env comes from the base64 GitHub secrets `MAIN_ENV`,
+  `ADMIN_ENV`, `INSTALLER_ENV`, and `LANDING_ENV`. If a commit adds an env var
+  and the secret isn't updated, CI silently falls back to `.env.example` and
+  the deployed app runs without it.
   Always name new env vars in the body.
 
 ## Example

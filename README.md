@@ -29,6 +29,7 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 - `apps/landing-page` - Vite React public landing page. Runs on `http://localhost:3000`.
 - `apps/main` - Vite React tenant app for Truckmoov product workflows. Runs on `http://localhost:3001`.
 - `apps/admin` - Vite React admin/platform app for operational and platform management workflows. Runs on `http://localhost:3002`.
+- `apps/installer` - Vite React installer portal. Runs on `http://localhost:3003`.
 
 ## Packages
 
