@@ -9,7 +9,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { useAuthStore } from "./stores/authStore";
 
 /**
- * Root layout route (pathless). Owns the provider tower and the auth gate;
+ * Root layout route (pathless). Owns the installer provider tower and auth gate;
  * the route table lives in shared/lib/route.tsx.
  *
  * ponytail: a slimmer tower than apps/admin — no Currency, Preferences, Fonu
