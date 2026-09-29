@@ -498,8 +498,8 @@ export function DeviceSetupRequestsQueue() {
       header: "Organisation",
       cell: ({ row }) => {
         const request = row.original;
-        // Null organisation shows "-", not the tenant id — a raw UUID reads like a real name.
-        const primary = request.organisationName ?? "-";
+        // TRU-FE-5 § 2 — organisationName is null on older rows; fall back to tenantId.
+        const primary = request.organisationName ?? request.tenantId;
         return (
           <div className="space-y-1">
             <p className="font-semibold">{primary}</p>
@@ -519,6 +519,8 @@ export function DeviceSetupRequestsQueue() {
         if (!kyc)
           return <span className="text-xs text-muted-foreground">Unknown</span>;
         const config = KYC_STATUS_CONFIG[kyc];
+        if (!config)
+          return <span className="text-xs text-muted-foreground">Unknown</span>;
         return (
           <Badge
             variant="outline"
@@ -971,7 +973,7 @@ export function DeviceSetupRequestsQueue() {
               <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-sm">
                 <DetailItem
                   label="Organisation"
-                  value={detailRequest.organisationName ?? "-"}
+                  value={detailRequest.organisationName ?? detailRequest.tenantId}
                 />
                 <DetailItem
                   label="Request Email"
@@ -995,7 +997,7 @@ export function DeviceSetupRequestsQueue() {
                 />
                 <DetailItem
                   label="KYC"
-                  value={detailRequest.kycStatus ? KYC_STATUS_CONFIG[detailRequest.kycStatus].label : "Unknown"}
+                  value={(detailRequest.kycStatus && KYC_STATUS_CONFIG[detailRequest.kycStatus]?.label) || "Unknown"}
                 />
                 <DetailItem
                   label="SIM Required"
@@ -1054,11 +1056,11 @@ export function DeviceSetupRequestsQueue() {
                 />
               )}
               {/* TRU-FE-5 § 2 — timeline drives the audit trail below the details. */}
-              {detailRequest.timeline.length > 0 && (
+              {(detailRequest.timeline ?? []).length > 0 && (
                 <div className="border-t pt-4">
                   <p className="mb-2 text-xs font-semibold text-muted-foreground">Timeline</p>
                   <ol className="space-y-2">
-                    {detailRequest.timeline.map((entry, idx) => (
+                    {(detailRequest.timeline ?? []).map((entry, idx) => (
                       <li
                         key={`${entry.status}-${entry.at}-${idx}`}
                         className="flex items-start gap-2 text-xs"

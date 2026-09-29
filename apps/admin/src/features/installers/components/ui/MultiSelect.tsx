@@ -34,7 +34,8 @@ export function MultiSelect({
     ]);
 
   return (
-    <Popover>
+    // modal: own scroll lock, else the parent Dialog's lock eats wheel events on the portaled list
+    <Popover modal>
       <PopoverTrigger asChild>
         <Button
           type="button"

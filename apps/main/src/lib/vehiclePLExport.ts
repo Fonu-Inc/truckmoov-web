@@ -14,6 +14,7 @@ export type StatementOptions = {
   includeCover: boolean;
   includeSummary: boolean;
   includePerVehicle: boolean;
+  includeCostBreakdown: boolean;
   accent: "blue" | "green" | "amber" | "slate";
 };
 

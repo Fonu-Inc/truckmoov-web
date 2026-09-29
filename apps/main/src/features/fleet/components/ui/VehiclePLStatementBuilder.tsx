@@ -126,6 +126,7 @@ export function VehiclePLStatementBuilder({
     includeCover,
     includeSummary,
     includePerVehicle,
+    includeCostBreakdown,
     accent,
   });
 

@@ -1,7 +1,7 @@
 import type { UserRole } from "@truckmoov/api/auth";
 import type { ElementType } from "react";
 import {
-  DollarSign, Fuel, Shield, Truck,
+  CalendarDays, CalendarRange, Route,
 } from "lucide-react";
 
 export type ReportsTab = {
@@ -16,24 +16,20 @@ export type ReportsTab = {
 
 /**
  * The reports tab bar, in order. One entry per child route of `/reports` —
- * add a route here and in `shared/lib/route.tsx`, same as `settingsNav.ts`.
+ * add a route here and in `shared/lib/route.tsx`, same as `analyticsNav.ts`.
  *
  * Empty `hasPermissions` means every role that can already reach `/reports`
- * (the sidebar entry's list is the outer gate), matching how Settings tabs
- * default to "all of Settings' roles".
+ * (the sidebar entry's list is the outer gate).
  */
 export const REPORTS_TABS: ReportsTab[] = [
   {
-    to: "/reports", label: "Profit & Loss", icon: DollarSign, hasPermissions: [],
+    to: "/reports", label: "Daily Summary", icon: CalendarDays, hasPermissions: [],
   },
   {
-    to: "/reports/compliance-audit", label: "Compliance Audit", icon: Shield, hasPermissions: [],
+    to: "/reports/weekly", label: "Weekly Summary", icon: CalendarRange, hasPermissions: [],
   },
   {
-    to: "/reports/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: [],
-  },
-  {
-    to: "/reports/fleet-utilization", label: "Fleet Utilization", icon: Truck, hasPermissions: [],
+    to: "/reports/vehicle-activity", label: "Vehicle Activity", icon: Route, hasPermissions: [],
   },
 ];
 

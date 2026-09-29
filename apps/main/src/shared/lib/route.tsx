@@ -7,6 +7,7 @@ import {
   createBrowserRouter, redirect,
 } from "react-router";
 import App from "@/App";
+import { AnalyticsLayout } from "@/features/analytics/components/layout/AnalyticsLayout";
 import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
 import AuthPage from "@/features/auth/components/pages/AuthPage";
 import CompleteProfilePage from "@/features/auth/components/pages/CompleteProfilePage";
@@ -15,6 +16,7 @@ import InvitePage from "@/features/auth/components/pages/InvitePage";
 import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPage";
 import VerifyEmailPage from "@/features/auth/components/pages/VerifyEmailPage";
 import { useAuthStore } from "@/features/auth/stores/authStore";
+import { BillingLayout } from "@/features/billing/components/layout/BillingLayout";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
 import { DataBundlesLayout } from "@/features/data-bundle/components/layout/DataBundlesLayout";
@@ -167,10 +169,25 @@ const GuardedDataBundlesLayout = withGuard(
 );
 
 /**
- * ReportsLayout wrapped in the sidebar's `/reports` role list. Pathful layout:
- * the tab bar lives here, `/reports` renders Profit & Loss, and each other
- * tab (`compliance-audit`, `fuel-consumption`, `fleet-utilization`) is its
- * own child route with its own lazy chunk.
+ * AnalyticsLayout wrapped in the sidebar's `/analytics` role list. Pathful
+ * layout: the tab bar lives here, `/analytics` renders Profit & Loss, and each
+ * other tab (`compliance-audit`, `fuel-consumption`, `fleet-utilization`) is
+ * its own child route with its own lazy chunk.
+ */
+const GuardedAnalyticsLayout = withGuard(
+  getRolesForHref("/analytics") ?? [],
+  AnalyticsLayout,
+);
+
+const GuardedBillingLayout = withGuard(
+  getRolesForHref("/subscription") ?? [],
+  BillingLayout,
+);
+
+/**
+ * ReportsLayout wrapped in the sidebar's `/reports` role list. Same pattern:
+ * `/reports` renders the Daily Summary, `weekly` and `vehicle-activity` are
+ * child routes (fleetflow parity port of `pages/admin/Reports.tsx`).
  */
 const GuardedReportsLayout = withGuard(
   getRolesForHref("/reports") ?? [],
@@ -481,21 +498,45 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          // Nav entries whose page isn't built yet — the sidebar row works, the
-          // body says "Coming soon". Swap the importer when the page lands.
           {
             path: "/analytics",
-            lazy: guarded(
-              "/analytics",
-              () => import("@/features/dashboard/components/pages/ComingSoon"),
-            ),
+            Component: GuardedAnalyticsLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/analytics/components/pages/ProfitLossPage")).default }),
+              },
+              {
+                path: "compliance-audit",
+                lazy: async () => ({ Component: (await import("@/features/analytics/components/pages/ComplianceAuditPage")).default }),
+              },
+              {
+                path: "fuel-consumption",
+                lazy: async () => ({ Component: (await import("@/features/analytics/components/pages/FuelConsumptionPage")).default }),
+              },
+              {
+                path: "fleet-utilization",
+                lazy: async () => ({ Component: (await import("@/features/analytics/components/pages/FleetUtilizationPage")).default }),
+              },
+            ],
           },
           {
             path: "/subscription",
-            lazy: guarded(
-              "/subscription",
-              () => import("@/features/dashboard/components/pages/ComingSoon"),
-            ),
+            Component: GuardedBillingLayout,
+            children: [
+              {
+                index: true, lazy: async () => ({ Component: (await import("@/features/billing/components/ui/BillingOverviewTab")).BillingOverviewTab }),
+              },
+              {
+                path: "quotations", lazy: async () => ({ Component: (await import("@/features/billing/components/ui/BillingQuotationsTab")).BillingQuotationsTab }),
+              },
+              {
+                path: "invoices", lazy: async () => ({ Component: (await import("@/features/billing/components/ui/BillingInvoicesTab")).BillingInvoicesTab }),
+              },
+              {
+                path: "payments", lazy: async () => ({ Component: (await import("@/features/billing/components/ui/BillingPaymentsTab")).BillingPaymentsTab }),
+              },
+            ],
           },
           {
             path: "/jobs",
@@ -681,20 +722,13 @@ export const router = createBrowserRouter([
             Component: GuardedReportsLayout,
             children: [
               {
-                index: true,
-                lazy: async () => ({ Component: (await import("@/features/reports/components/pages/ProfitLossPage")).default }),
+                index: true, lazy: async () => ({ Component: (await import("@/features/reports/components/pages/DailySummaryPage")).default }),
               },
               {
-                path: "compliance-audit",
-                lazy: async () => ({ Component: (await import("@/features/reports/components/pages/ComplianceAuditPage")).default }),
+                path: "weekly", lazy: async () => ({ Component: (await import("@/features/reports/components/pages/WeeklySummaryPage")).default }),
               },
               {
-                path: "fuel-consumption",
-                lazy: async () => ({ Component: (await import("@/features/reports/components/pages/FuelConsumptionPage")).default }),
-              },
-              {
-                path: "fleet-utilization",
-                lazy: async () => ({ Component: (await import("@/features/reports/components/pages/FleetUtilizationPage")).default }),
+                path: "vehicle-activity", lazy: async () => ({ Component: (await import("@/features/reports/components/pages/VehicleActivityPage")).default }),
               },
             ],
           },

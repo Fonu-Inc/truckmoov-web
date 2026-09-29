@@ -886,17 +886,6 @@ export function PlatformDeviceManagement() {
             filteredEmptyState="No devices match your filters."
           />
         </div>
-
-        <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3">
-          <p className="text-xs text-muted-foreground">
-            <strong>Platform Admin View:</strong>
-            {" "}
-            This is a read-only overview. Device
-            registration, configuration, and vehicle assignment are managed by tenant
-            administrators. Use the Device Catalog tab to manage supported manufacturers
-            and models.
-          </p>
-        </div>
       </CardContent>
 
       <Sheet

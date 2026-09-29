@@ -26,7 +26,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { ReportsGate } from "@/features/reports/components/ui/ReportsGate";
+import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 
 export default function ProfitLossPage() {
   const { format: formatCurrency } = useCurrency();
@@ -39,7 +39,7 @@ export default function ProfitLossPage() {
   const hasData = vehicles.length > 0 || jobs.length > 0;
 
   return (
-    <ReportsGate
+    <AnalyticsGate
       isPending={isPending}
       hasData={hasData}
     >
@@ -49,7 +49,7 @@ export default function ProfitLossPage() {
         dateRange={dateRange}
         formatCurrency={formatCurrency}
       />
-    </ReportsGate>
+    </AnalyticsGate>
   );
 }
 

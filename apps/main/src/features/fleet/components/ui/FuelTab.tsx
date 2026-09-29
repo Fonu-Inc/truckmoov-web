@@ -1193,7 +1193,10 @@ export function FuelTab() {
                   Consumption
                 </CardTitle>
                 <CardDescription>
-                  Diesel vs Petrol usage by
+                  {chartFuelTypes.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(" vs ")}
+                  {" "}
+                  usage by
+                  {" "}
                   {metricsPeriod === "weekly" ? "week" : "month"}
                 </CardDescription>
               </div>

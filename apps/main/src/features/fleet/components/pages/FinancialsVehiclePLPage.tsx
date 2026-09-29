@@ -1,14 +1,18 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { FleetFinancialsLayoutContext } from "@/features/fleet/components/layout/FleetFinancialsLayout";
 import type { ProfitabilityAnalysisRow } from "@/features/fleet/utils/fleetFinancials";
-import { useFleetProfitability } from "@truckmoov/api/fleet";
 import {
-  FileText, Search, SlidersHorizontal,
+  exportVehiclePL,
+  useFleetProfitability,
+} from "@truckmoov/api/fleet";
+import {
+  Download, FileText, Search, SlidersHorizontal,
 } from "lucide-react";
 import {
   useMemo, useState,
 } from "react";
 import { useOutletContext } from "react-router";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -16,7 +20,6 @@ import {
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { DataTable } from "@/components/shadcn/data-table";
-import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
@@ -29,6 +32,8 @@ import {
 
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
+  downloadBlob,
+  getFilenameFromDisposition,
   normalizeProfitabilityRow,
   optionalNumber,
   periodToMonths,
@@ -213,6 +218,34 @@ export default function FinancialsVehiclePLPage() {
     ],
   );
 
+  const [
+    isExportingVehiclePL,
+    setIsExportingVehiclePL,
+  ] = useState(false);
+  // ponytail: the server export takes only the period, so the table's search/filters don't narrow it.
+  const handleExportVehiclePL = async () => {
+    setIsExportingVehiclePL(true);
+    try {
+      const result = await exportVehiclePL({ params: { periodMonths: periodToMonths(profitabilityPeriod) } });
+      downloadBlob(
+        new Blob(
+          [result.blob],
+          { type: result.contentType || "text/csv" },
+        ),
+        getFilenameFromDisposition(
+          result.contentDisposition,
+          "vehicle-profit-and-loss.csv",
+        ),
+      );
+    }
+    catch {
+      toast.error("Failed to export vehicle P&L");
+    }
+    finally {
+      setIsExportingVehiclePL(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Action buttons — outside the table card, top-right */}
@@ -236,33 +269,14 @@ export default function FinancialsVehiclePLPage() {
               <CardTitle>Vehicle Profit & Loss</CardTitle>
               <CardDescription>Individual vehicle financial performance</CardDescription>
             </div>
-            <ExportButton
-              rows={vehicleTableData}
-              columns={[
-                {
-                  header: "Vehicle", accessor: r => getVehicleName(r.vehicle_id),
-                },
-                {
-                  header: "Revenue", accessor: r => r.revenue?.total ?? 0,
-                },
-                {
-                  header: "Costs", accessor: r => r.costs?.total ?? 0,
-                },
-                {
-                  header: "Net Profit", accessor: r => r.profitability?.net_profit ?? 0,
-                },
-                {
-                  header: "Margin %", accessor: r => (r.profitability?.margin_percent ?? 0).toFixed(1),
-                },
-                {
-                  header: "Status", accessor: r => r.profitability?.tier ?? "marginal",
-                },
-                {
-                  header: "Score", accessor: r => r.profitability?.score ?? 0,
-                },
-              ]}
-              filename="vehicle-profit-and-loss"
-            />
+            <Button
+              variant="outline"
+              onClick={handleExportVehiclePL}
+              loading={isExportingVehiclePL}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Data
+            </Button>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative flex-1">

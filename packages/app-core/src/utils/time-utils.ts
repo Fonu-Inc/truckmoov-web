@@ -30,6 +30,7 @@ import {
   isValid,
   startOfDay as dfStartOfDay,
   startOfMonth as dfStartOfMonth,
+  startOfWeek as dfStartOfWeek,
   subDays as dfSubDays,
   subMonths as dfSubMonths,
 } from 'date-fns'
@@ -361,6 +362,21 @@ export function startOfMonth(value: DateInput): Date | null {
 export function endOfMonth(value: DateInput): Date | null {
   const date = toDate(value)
   return date ? dfEndOfMonth(date) : null
+}
+
+/** Monday at midnight, for weekly operational summaries. */
+export function startOfWeek(value: DateInput): Date | null {
+  const date = toDate(value)
+  return date ? dfStartOfWeek(date, { weekStartsOn: 1 }) : null
+}
+
+/** Local hour boundary; inclusiveEnd selects the millisecond before that hour. */
+export function atHour(value: DateInput, hour: number, inclusiveEnd = false): Date | null {
+  const date = toDate(value)
+  if (!date || !Number.isFinite(hour)) return null
+  const result = new Date(date)
+  result.setHours(hour, 0, 0, inclusiveEnd ? -1 : 0)
+  return result
 }
 
 // ─── Reporting ranges ────────────────────────────────────────────────────────

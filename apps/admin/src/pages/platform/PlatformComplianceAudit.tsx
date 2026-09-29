@@ -62,9 +62,9 @@ const EXPORT_CAP = 5000;
 
 // "system" is the platform's own id; the filters endpoint names it, rows don't.
 function tenantLabel(t: {
-  tenantId: string; tenantName: string | null;
+  tenantId: string | null; tenantName: string | null;
 }) {
-  return t.tenantName || (t.tenantId === "system" ? "System / Platform" : t.tenantId);
+  return t.tenantName || (t.tenantId === "system" ? "System / Platform" : t.tenantId) || "-";
 }
 
 // A failed blob request carries its JSON error as a Blob — read the server's message out of it.

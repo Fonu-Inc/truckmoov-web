@@ -34,7 +34,7 @@ A page therefore returns only its own content — it takes no `title` prop and n
 imports the layout. Auth screens, the redirect aliases, the print-only P&L preview and
 the 404/403 screens sit outside that wrapper and own their own chrome.
 
-`/settings` nests a second layout route inside it — `SettingsLayout`, the only
+`/settings` nests a second layout route inside it — `SettingsLayout`, a
 **pathful** one — which owns the settings tab bar the same way: its tab pages
 render content only. See [Tabs are routes](#tabs-are-routes-not-query-params).
 
@@ -175,13 +175,13 @@ Scrollbars are restyled globally to a 6px muted thumb.
 
 ## Navigation model
 
-Navigation is **role-derived, not route-derived**. `getSidebarConfig(user)`
-returns `{ homeRoute, entries }` for the user's role; there is no per-page nav
+Navigation is **role-derived, not route-derived**. In `apps/main`, `getEntriesForRole(role)` (`features/dashboard/utils/sidebarNav.ts`)
+filters one shared `SIDEBAR_ENTRIES` list by `hasPermission`; there is no per-page nav
 markup. Roles:
 
 | Role | Home | Sidebar flavor |
 |------|------|----------------|
-| `ENTERPRISE_ADMIN` | `/enterprise` | Logistics Overview, Jobs, Fleet |
+| `ENTERPRISE_ADMIN` | `/` | Overview, Jobs, My Vehicles, My Drivers, My Devices, Live Tracking, M2M IoT Bundles, Communications, Payouts & Invoicing, Reports, Analytics, Billing, Settings |
 | `FLEET_ADMIN` | `/overview` | Dashboard, Jobs, Fleet, Drivers |
 | `AGGREGATOR_ADMIN` | `/aggregator` | Network Overview, Jobs, Fleet, Drivers |
 | `OWNER_OPERATOR` | `/owner-operator` | My Overview, My Jobs, My Vehicles (single-user) |
@@ -245,8 +245,7 @@ border. Inactive: `text-sidebar-foreground/80` with `hover:bg-sidebar-accent`.
 
 Two ways to show something that isn't built yet. A single entry gets a normal
 route pointing at `features/dashboard/components/pages/ComingSoon` — the row
-navigates and highlights, the body reads "Coming soon" (`/analytics` and
-`/subscription` today). A whole section gets `disabled: true` on its group
+navigates and highlights, the body reads "Coming soon" (for future pages). A whole section gets `disabled: true` on its group
 instead: the row greys out, stops being a link, and carries a "Coming soon"
 tooltip ("Communications"). Both are one-line reversals when the feature ships.
 `apps/admin` has no `disabled` field on either its items or its group; adding
@@ -264,7 +263,7 @@ The settings tab bar has its own list with its own field: `SETTINGS_TABS` in
 where **empty means every role reaching this app** — the opposite default from
 the sidebar's `hasPermission`, which is required precisely so a new nav entry
 can't slip in visible-to-all. A non-empty array both hides the tab *and*
-gates its URL: `shared/lib/route.tsxx` reads the same list to wrap each tab's
+gates its URL: `shared/lib/route.tsx` reads the same list to wrap each tab's
 lazy Component in `RequireRole`, so a hidden tab is unreachable by typing —
 see [Route-level authorization](#route-level-authorization).
 
@@ -290,7 +289,7 @@ Fleet row.
 
 ### Route code splitting
 
-`shared/lib/route.tsxx` loads pages through react-router's `lazy`, one chunk
+`shared/lib/route.tsx` loads pages through react-router's `lazy`, one chunk
 per page, in both apps:
 
 ```ts
@@ -305,7 +304,7 @@ the pending state and `DashboardLayout` renders it as the top progress bar.
 ### Route-level authorization
 
 Two lists — `SIDEBAR_ENTRIES` and `SETTINGS_TABS` — feed the same
-`RequireRole` wrapper in `shared/lib/route.tsxx`, so a URL a role can't see
+`RequireRole` wrapper in `shared/lib/route.tsx`, so a URL a role can't see
 in the nav can't be reached by typing it either. Roles are read once via
 each app's `useAuthStore`; the check happens client-side before the route's
 chunk loads.

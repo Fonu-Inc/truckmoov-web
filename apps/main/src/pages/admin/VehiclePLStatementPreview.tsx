@@ -33,6 +33,7 @@ type PreviewPayload = {
     includeCover: boolean;
     includeSummary: boolean;
     includePerVehicle: boolean;
+    includeCostBreakdown: boolean;
     accent: "blue" | "green" | "amber" | "slate";
   };
   rows: PreviewRow[];
@@ -258,7 +259,7 @@ export default function VehiclePLStatementPreview() {
           )}
 
           {/* Cost composition */}
-          {options.includePerVehicle && rows.length > 0 && (
+          {options.includeCostBreakdown && rows.length > 0 && (
             <section className="page-break-before-auto">
               <h2 className={`text-2xl font-bold mb-4 ${accentText}`}>Cost Composition</h2>
               <table className="w-full text-sm border-collapse">

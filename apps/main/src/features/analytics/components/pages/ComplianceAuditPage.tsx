@@ -1,4 +1,4 @@
-import type { ChartPeriod } from "@/features/reports/components/ui/ChartPeriodFilter";
+import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
 import {
   getDriversQueryOptions, getVehiclesQueryOptions,
@@ -27,8 +27,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
-import { ChartPeriodFilter } from "@/features/reports/components/ui/ChartPeriodFilter";
-import { ReportsGate } from "@/features/reports/components/ui/ReportsGate";
+import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
+import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 
 export default function ComplianceAuditPage() {
   const vehiclesQuery = useQuery(getVehiclesQueryOptions());
@@ -39,7 +39,7 @@ export default function ComplianceAuditPage() {
   const hasData = vehicles.length > 0 || drivers.length > 0;
 
   return (
-    <ReportsGate
+    <AnalyticsGate
       isPending={isPending}
       hasData={hasData}
     >
@@ -47,7 +47,7 @@ export default function ComplianceAuditPage() {
         vehicles={vehicles}
         drivers={drivers}
       />
-    </ReportsGate>
+    </AnalyticsGate>
   );
 }
 

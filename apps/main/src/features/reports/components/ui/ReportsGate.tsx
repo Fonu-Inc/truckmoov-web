@@ -1,38 +1,40 @@
 import type { ReactNode } from "react";
-import {
-  FileText, Loader2,
-} from "lucide-react";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+import type { useReportsData } from "../../hooks/useReportsData";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/shadcn/button";
 
-/**
- * Shared loading / empty gate used by every report page. Kept as a
- * component so each page still owns its own React Query calls and stays a
- * self-contained lazy chunk. `isPending` is any of the tab's queries still
- * loading; `hasData` is at least one of the datasets it cares about has rows.
- */
 export function ReportsGate({
-  isPending, hasData, children,
+  data, children,
 }: {
-  isPending: boolean;
-  hasData: boolean;
-  children: ReactNode;
+  data: ReturnType<typeof useReportsData>; children: ReactNode;
 }) {
-  if (isPending) {
+  if (data.isPending) {
     return (
-      <div className="flex min-h-64 items-center justify-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
+      <div className="flex items-center justify-center h-64">
+        <Loader2
+          aria-label="Loading reports"
+          className="h-8 w-8 animate-spin text-muted-foreground"
+        />
       </div>
     );
   }
-  if (!hasData) {
+  if (data.error) {
     return (
-      <EmptyState
-        icon={FileText}
-        title="No data for reports"
-        description="Add vehicles, drivers, and jobs to generate reports"
-        actionLabel="Go to Fleet"
-        actionHref="/fleet"
-      />
+      <div
+        role="alert"
+        className="py-8 text-center"
+      >
+        <p>
+          Unable to load reports:
+          {data.error.message}
+        </p>
+        <Button
+          variant="link"
+          onClick={data.refetch}
+        >
+          Try again
+        </Button>
+      </div>
     );
   }
   return <>{children}</>;

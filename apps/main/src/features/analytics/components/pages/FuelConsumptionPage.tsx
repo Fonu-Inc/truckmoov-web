@@ -1,4 +1,4 @@
-import type { ChartPeriod } from "@/features/reports/components/ui/ChartPeriodFilter";
+import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
 import { getJobsQueryOptions } from "@truckmoov/api/dispatch";
 import { getVehiclesQueryOptions } from "@truckmoov/api/fleet";
@@ -27,8 +27,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { ChartPeriodFilter } from "@/features/reports/components/ui/ChartPeriodFilter";
-import { ReportsGate } from "@/features/reports/components/ui/ReportsGate";
+import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
+import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 
 export default function FuelConsumptionPage() {
   const { format: formatCurrency } = useCurrency();
@@ -40,7 +40,7 @@ export default function FuelConsumptionPage() {
   const hasData = vehicles.length > 0 || jobs.length > 0;
 
   return (
-    <ReportsGate
+    <AnalyticsGate
       isPending={isPending}
       hasData={hasData}
     >
@@ -49,7 +49,7 @@ export default function FuelConsumptionPage() {
         jobs={jobs}
         formatCurrency={formatCurrency}
       />
-    </ReportsGate>
+    </AnalyticsGate>
   );
 }
 

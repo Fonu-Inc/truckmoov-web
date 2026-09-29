@@ -11,6 +11,7 @@ import {
   Inbox,
   LayoutDashboard,
   Leaf,
+  LineChart,
   MapPin,
   Package,
   Receipt,
@@ -56,7 +57,7 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
  *
  * `hasPermission` is what decides visibility — a role sees an entry iff its key
  * is listed. One route means one entry, but the label may vary by role via
- * `labelByRole` (e.g. `/jobs` reads as "Shipments" for an enterprise admin and
+ * `labelByRole` (e.g. `/jobs` reads as "Jobs" for an enterprise admin and
  * "Dispatch" for a dispatcher). Roles not listed in `labelByRole` see `label`.
  *
  * The resolved label is also the top-bar title (see `matchNavEntry` +
@@ -159,9 +160,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
   {
     label: "IoT SIMS", href: "/sims", icon: Wifi,
-    labelByRole: { ENTERPRISE_ADMIN: "My IoT SIMs" },
     hasPermission: [
-      "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
       "OWNER_OPERATOR",
       "FINANCE_VIEWER",
@@ -186,10 +185,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
 
   // ─── Install & bundles ─────────────────────────────────────────
   {
-    label: "Installation", href: "/installation", icon: Wrench, hasPermission: [
-      "FLEET_ADMIN",
-      "ENTERPRISE_ADMIN",
-    ],
+    label: "Installation", href: "/installation", icon: Wrench, hasPermission: ["FLEET_ADMIN"],
   },
   {
     label: "M2M IoT Bundles", href: "/data-bundles", icon: Database,
@@ -266,14 +262,16 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Analytics", href: "/analytics", icon: BarChart3, hasPermission: [
+    label: "Analytics", href: "/analytics", icon: LineChart, hasPermission: [
       "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
     ],
   },
   {
-    label: "Subscription", href: "/subscription", icon: CreditCard,
+    label: "Billing", href: "/subscription", icon: CreditCard,
     hasPermission: ["ENTERPRISE_ADMIN"],
   },
   {
@@ -360,8 +358,8 @@ export function getEntriesForRole(role: UserRole): SidebarEntry[] {
       if (items.length) {
         visible.push(changed
           ? {
-            ...entry, items, label,
-          }
+              ...entry, items, label,
+            }
           : entry);
       }
       continue;
