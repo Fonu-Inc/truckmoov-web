@@ -113,6 +113,10 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/features/tenants/components/pages/TenantsPage")).default }),
           },
           {
+            path: "/tenants/onboarding/:id",
+            lazy: async () => ({ Component: (await import("@/features/tenants/components/pages/OnboardingApplicationPage")).default }),
+          },
+          {
             path: "/tenants/:id",
             lazy: async () => ({ Component: (await import("@/features/tenants/components/pages/TenantDetailPage")).default }),
           },

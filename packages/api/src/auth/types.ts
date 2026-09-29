@@ -2967,11 +2967,139 @@ export type SystemOnboardingApplicationsQuery = {
   }
 }
 
+// The review side has its own shapes (Swagger tag "System Onboarding Applications").
+// `status` is the decision; `stage` is how far the customer has come.
+export type SystemOnboardingStage =
+  | 'application'
+  | 'provisioning'
+  | 'payment'
+  | 'installation_scheduling'
+  | 'installation'
+  | 'connectivity_verification'
+  | 'fleet_ready'
+
+export type SystemOnboardingApplicationRow = {
+  id: string
+  reference: string
+  applicantType: OnboardingApplicantType
+  organizationName: string
+  businessEmail: string
+  organizationPhone: string
+  contactFullName: string
+  contactRole: string | null
+  address: string
+  status: OnboardingApplicationStatus
+  stage: SystemOnboardingStage
+  // ponytail: resolved server-side from (status, stage) — rendered as-is, never derived here.
+  stageStatus: string
+  emailVerified: boolean
+  phoneVerified: boolean
+  submittedAt: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+  decisionReason: string | null
+  tenantId: string | null
+  setupLink: OnboardingApplicationSetupLink
+  createdAt: string
+  documentCount: number
+  vehicleCount: number
+  deviceCount: number
+}
+
+export type SystemOnboardingVerificationCheck =
+  'cac_registration' | 'tax_identification' | 'identity' | 'vehicle_registration'
+export type SystemOnboardingVerificationVerdict = 'match' | 'mismatch' | 'not_found' | 'unavailable'
+
+export type SystemOnboardingVerification = {
+  check: SystemOnboardingVerificationCheck
+  verdict: SystemOnboardingVerificationVerdict
+  summary: string
+  fields: { name: string, expected: string | null, actual: string | null, matched: boolean }[]
+  provider: string
+  checkedAt: string
+}
+
+export type SystemOnboardingDocument = {
+  id: string
+  documentType:
+    | 'customer_request_letter'
+    | 'cac_document'
+    | 'tax_certificate_or_tin'
+    | 'signature_card'
+    | 'utility_bill'
+    | 'identification_card'
+    | 'proof_of_ownership'
+    | 'vehicle_license'
+    | 'signed_indemnity_form'
+  documentName: string
+  fileSize: number
+  mimeType: string
+  status: 'pending' | 'approved' | 'rejected'
+  rejectionReason: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+  uploadedAt: string
+  // Expires after five minutes — refetch the detail on click, never cache it.
+  downloadUrl: string | null
+}
+
+export type SystemOnboardingApplicationDetail = Omit<SystemOnboardingApplicationRow, 'documentCount'> & {
+  progress: { stage: SystemOnboardingStage, complete: boolean, current: boolean }[]
+  vehicles: { id: string, registrationNumber: string, vehicleType: string, make: string, model: string }[]
+  deviceRequests: { id: string, quantity: number, useCase: string }[]
+  verifications: SystemOnboardingVerification[]
+  documents: SystemOnboardingDocument[]
+}
+export type SystemOnboardingApplicationResponse = ServerResponse<SystemOnboardingApplicationDetail>
+
+export type SystemOnboardingTimelineEntry = {
+  action: string
+  summary: string
+  actor: string
+  at: string
+}
+export type SystemOnboardingTimelineResponse = ServerResponse<{
+  applicationId: string
+  reference: string
+  entries: SystemOnboardingTimelineEntry[]
+}>
+
 export type SystemOnboardingApplicationsListResponse = ServerResponse<{
-  items: OnboardingApplication[]
+  items: SystemOnboardingApplicationRow[]
   total: number
   page: number
   limit: number
+}>
+
+export type SystemApproveOnboardingApplicationResponse = ServerResponse<{
+  applicationId: string
+  reference: string
+  status: 'approved'
+  stage: SystemOnboardingStage
+  tenantId: string
+  bootstrapRole: string
+}>
+
+export type SystemOnboardingDecisionResponse = ServerResponse<{
+  applicationId: string
+  reference: string
+  status: 'rejected' | 'changes_requested'
+  decisionReason: string
+}>
+
+export type SystemOnboardingProvisionedResponse = ServerResponse<{
+  applicationId: string
+  stage: SystemOnboardingStage
+}>
+
+export type SystemOnboardingSetupLinkResendResponse = ServerResponse<{
+  applicationId: string
+  setupLinkEmail: string
+  setupLinkExpiresAt: string
+  resentBy: string
+  resentAt: string
+  setupLinkStatus: 'sent' | 'failed'
+  setupLinkError: string | null
 }>
 
 export type SystemOnboardingApplicationDocumentActionPayload = {
@@ -2985,8 +3113,10 @@ export type SystemRejectOnboardingApplicationDocumentPayload = {
   data: { reason: string }
 }
 
-export type SystemOnboardingApplicationDocumentResponse =
-  ServerResponse<OnboardingApplicationDocument>
+export type SystemOnboardingApplicationDocumentResponse = ServerResponse<{
+  documentId: string
+  status: 'approved' | 'rejected'
+}>
 
 export type SystemRejectOnboardingApplicationPayload = {
   id: string

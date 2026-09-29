@@ -243,6 +243,8 @@ import {
   getOnboardingApplicationStatus,
   getPlatformIntegrations,
   getSystemOnboardingApplication,
+  getSystemOnboardingApplicationTimeline,
+  markSystemOnboardingApplicationProvisioned,
   getSystemOnboardingApplications,
   rejectSystemOnboardingApplication,
   rejectSystemOnboardingApplicationDocument,
@@ -468,6 +470,7 @@ export const AUTH_QUERY_KEY = {
   systemOnboardingApplications: (payload?: SystemOnboardingApplicationsQuery) =>
     payload ? ['systemOnboardingApplications', payload] : ['systemOnboardingApplications'],
   systemOnboardingApplication: (id: string) => ['systemOnboardingApplication', id],
+  systemOnboardingApplicationTimeline: (id: string) => ['systemOnboardingApplicationTimeline', id],
 
   platformIntegrations: ['platformIntegrations'],
 
@@ -2300,12 +2303,25 @@ export function getSystemOnboardingApplicationQueryOptions(id: string) {
     queryKey: AUTH_QUERY_KEY.systemOnboardingApplication(id),
     queryFn: () => getSystemOnboardingApplication({ id }),
     enabled: Boolean(id),
+    // Document download links expire after five minutes — never serve them from cache.
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
+export function getSystemOnboardingApplicationTimelineQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemOnboardingApplicationTimeline(id),
+    queryFn: () => getSystemOnboardingApplicationTimeline({ id }),
+    enabled: Boolean(id),
   })
 }
 
 function invalidateSystemOnboardingApplication(id: string) {
   queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemOnboardingApplication(id) })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemOnboardingApplicationTimeline(id) })
   queryClient.invalidateQueries({ queryKey: ['systemOnboardingApplications'] })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemOnboardingApplicationsSummary })
 }
 
 export function useApproveSystemOnboardingApplicationDocument() {
@@ -2344,7 +2360,17 @@ export function useRequestChangesSystemOnboardingApplication() {
 }
 
 export function useResendSystemOnboardingApplicationSetupLink() {
-  return useMutation({ mutationFn: resendSystemOnboardingApplicationSetupLink })
+  return useMutation({
+    mutationFn: resendSystemOnboardingApplicationSetupLink,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useMarkSystemOnboardingApplicationProvisioned() {
+  return useMutation({
+    mutationFn: markSystemOnboardingApplicationProvisioned,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
 }
 
 // ─── Platform Integrations ───────────────────────────────────────────────────

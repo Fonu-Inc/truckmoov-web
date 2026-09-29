@@ -301,6 +301,12 @@ import type {
   SystemOnboardingApplicationDocumentActionPayload,
   SystemOnboardingApplicationDocumentResponse,
   SystemOnboardingApplicationsListResponse,
+  SystemOnboardingApplicationResponse,
+  SystemApproveOnboardingApplicationResponse,
+  SystemOnboardingDecisionResponse,
+  SystemOnboardingSetupLinkResendResponse,
+  SystemOnboardingTimelineResponse,
+  SystemOnboardingProvisionedResponse,
   SystemAuditLogFiltersResponse,
   SystemAuditLogQuery,
   SystemAuditLogResponse,
@@ -1841,7 +1847,7 @@ export async function getSystemOnboardingApplications(payload?: SystemOnboarding
 }
 
 export async function getSystemOnboardingApplication({ id }: { id: string }) {
-  const { data } = await axiosInstance.get<OnboardingApplicationResponse>(
+  const { data } = await axiosInstance.get<SystemOnboardingApplicationResponse>(
     `/auth/system/onboarding/applications/${id}`,
   )
   return data
@@ -1870,7 +1876,7 @@ export async function rejectSystemOnboardingApplicationDocument({
 }
 
 export async function approveSystemOnboardingApplication({ id }: { id: string }) {
-  const { data } = await axiosInstance.post<OnboardingApplicationResponse>(
+  const { data } = await axiosInstance.post<SystemApproveOnboardingApplicationResponse>(
     `/auth/system/onboarding/applications/${id}/approve`,
   )
   return data
@@ -1880,7 +1886,7 @@ export async function rejectSystemOnboardingApplication({
   id,
   data: body,
 }: SystemRejectOnboardingApplicationPayload) {
-  const { data } = await axiosInstance.post<OnboardingApplicationResponse>(
+  const { data } = await axiosInstance.post<SystemOnboardingDecisionResponse>(
     `/auth/system/onboarding/applications/${id}/reject`,
     body,
   )
@@ -1891,7 +1897,7 @@ export async function requestChangesSystemOnboardingApplication({
   id,
   data: body,
 }: SystemRequestChangesOnboardingApplicationPayload) {
-  const { data } = await axiosInstance.post<OnboardingApplicationResponse>(
+  const { data } = await axiosInstance.post<SystemOnboardingDecisionResponse>(
     `/auth/system/onboarding/applications/${id}/request-changes`,
     body,
   )
@@ -1899,8 +1905,23 @@ export async function requestChangesSystemOnboardingApplication({
 }
 
 export async function resendSystemOnboardingApplicationSetupLink({ id }: { id: string }) {
-  const { data } = await axiosInstance.post<ServerResponse<{ message: string }>>(
+  const { data } = await axiosInstance.post<SystemOnboardingSetupLinkResendResponse>(
     `/auth/system/onboarding/applications/${id}/setup-link/resend`,
+  )
+  return data
+}
+
+export async function getSystemOnboardingApplicationTimeline({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemOnboardingTimelineResponse>(
+    `/auth/system/onboarding/applications/${id}/timeline`,
+  )
+  return data
+}
+
+// Devices and SIMs are physically allocated — this is what opens payment for the applicant.
+export async function markSystemOnboardingApplicationProvisioned({ id }: { id: string }) {
+  const { data } = await axiosInstance.post<SystemOnboardingProvisionedResponse>(
+    `/auth/system/onboarding/applications/${id}/provisioned`,
   )
   return data
 }
