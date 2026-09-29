@@ -2818,20 +2818,23 @@ export type SystemSecurityEventsResponse = ServerResponse<{
 }>
 
 // ─── Onboarding Applications (public, X-Application-Token) ───────────────────
+// Shapes follow the dev-api Swagger, tag "Onboarding Applications" (TRU-FE-11/12/13).
 
 export type OnboardingApplicantType = 'fleet_provider' | 'owner_operator'
 
+/** Every type the server can list. `signed_indemnity_form` is generated at signing, never uploaded. */
 export type OnboardingApplicationDocumentType =
   | 'customer_request_letter'
-  | 'letter_of_authorization'
-  | 'signed_indemnity_form'
   | 'cac_document'
   | 'tax_certificate_or_tin'
   | 'signature_card'
   | 'utility_bill'
   | 'identification_card'
-  | 'form_c02_c07'
-  | 'agreement_form'
+  | 'proof_of_ownership'
+  | 'vehicle_license'
+  | 'signed_indemnity_form'
+
+export type OnboardingUploadableDocumentType = Exclude<OnboardingApplicationDocumentType, 'signed_indemnity_form'>
 
 export type OnboardingApplicationStatus =
   | 'draft'
@@ -2841,42 +2844,98 @@ export type OnboardingApplicationStatus =
   | 'rejected'
   | 'changes_requested'
 
+export type OnboardingApplicationStage =
+  | 'application'
+  | 'provisioning'
+  | 'payment'
+  | 'installation_scheduling'
+  | 'installation'
+  | 'connectivity_verification'
+  | 'fleet_ready'
+
 export type OnboardingApplicationDocumentReviewStatus = 'pending' | 'approved' | 'rejected'
+
+export type OnboardingIdentificationType = 'nin' | 'drivers_licence' | 'voters_card' | 'passport'
+
+export type OnboardingVehicleType = 'truck' | 'van' | 'bus' | 'car' | 'suv' | 'trailer' | 'motorcycle' | 'tricycle'
+
+export type OnboardingVehiclePurchaseType = 'outright' | 'lease' | 'hire_purchase' | 'financed' | 'other'
+
+export type OnboardingClaimType = 'rc_number' | 'tax_identification_number' | 'identification_number' | 'document_hash'
 
 export type OnboardingApplicationDocument = {
   id: string
+  /** Set only on a `vehicle_license`. */
+  vehicleId: string | null
   documentType: OnboardingApplicationDocumentType
-  fileName: string
-  contentType: string
-  sizeBytes: number
+  documentName: string
+  fileSize: number
+  status: OnboardingApplicationDocumentReviewStatus
+  rejectionReason: string | null
   uploadedAt: string
-  reviewStatus?: OnboardingApplicationDocumentReviewStatus
-  reviewReason?: string | null
-  // ponytail: signed download URL is only present on the system detail endpoint;
-  // field name may differ once confirmed on the live spec.
-  downloadUrl?: string
+}
+
+export type OnboardingApplicationVehicle = {
+  id: string
+  registrationNumber: string
+  vehicleType: OnboardingVehicleType
+  make: string
+  model: string
+  year: number | null
+  engineNumber: string | null
+  chassisNumber: string | null
+  color: string | null
+  engineCapacity: string | null
+  odometerReading: number | null
+  purchaseType: OnboardingVehiclePurchaseType | null
+  purchaseTypeOther: string | null
+}
+
+export type OnboardingApplicationDeviceRequest = {
+  id: string
+  quantity: number
+  useCase: string
+  notes: string | null
+}
+
+export type OnboardingVehicleMissingDocument = {
+  vehicleId: string
+  registrationNumber: string
+  documentType: OnboardingApplicationDocumentType
 }
 
 export type OnboardingApplication = {
   id: string
+  reference: string
   applicantType: OnboardingApplicantType
-  organizationName: string
-  businessEmail: string
-  organizationPhone: string
-  contactFullName: string
-  contactRole: string
-  streetAddress: string
-  city: string
-  state: string
-  emailVerified: boolean
-  phoneVerified: boolean
+  status: OnboardingApplicationStatus
+  stage: OnboardingApplicationStage
+  organization: {
+    organizationName: string
+    businessEmail: string
+    organizationPhone: string
+    streetAddress: string
+    city: string
+    state: string
+  }
+  contact: { fullName: string, role: string | null }
+  m2mPlanCode: string | null
+  registry: {
+    rcNumber: string | null
+    taxIdentificationNumber: string | null
+    identificationType: OnboardingIdentificationType | null
+    identificationNumber: string | null
+  }
+  vehicles: OnboardingApplicationVehicle[]
+  deviceRequests: OnboardingApplicationDeviceRequest[]
+  requestedDevices: number
+  verification: { emailVerified: boolean, phoneVerified: boolean }
   documents: OnboardingApplicationDocument[]
   missingDocuments: OnboardingApplicationDocumentType[]
-  applicationStatus: OnboardingApplicationStatus
+  vehiclesMissingDocuments: OnboardingVehicleMissingDocument[]
+  decisionReason: string | null
+  submittedAt: string | null
   createdAt: string
-  updatedAt: string
-  documentCount?: number
-  setupLink?: OnboardingApplicationSetupLink | null
 }
 
 export type OnboardingApplicationSetupLink = {
@@ -2886,36 +2945,41 @@ export type OnboardingApplicationSetupLink = {
   attempts: number
 }
 
-export type CreateOnboardingApplicationPayload = {
-  data: {
-    applicantType: OnboardingApplicantType
-    organizationName: string
-    businessEmail: string
-    organizationPhone: string
-    contactFullName: string
-    contactRole: string
-    streetAddress: string
-    city: string
-    state: string
-  }
+export type OnboardingApplicationDetails = {
+  applicantType: OnboardingApplicantType
+  organizationName: string
+  businessEmail: string
+  organizationPhone: string
+  contactFullName: string
+  contactRole?: string
+  streetAddress: string
+  city: string
+  state: string
+  m2mPlanCode?: string
+  rcNumber?: string
+  taxIdentificationNumber?: string
+  identificationType?: OnboardingIdentificationType
+  identificationNumber?: string
 }
 
-export type CreateOnboardingApplicationResponse = ServerResponse<{
-  applicationId: string
-  applicationToken: string
-  application: OnboardingApplication
-}>
+export type CreateOnboardingApplicationPayload = { data: OnboardingApplicationDetails }
+
+/** `applicationToken` is returned here once and never again. */
+export type CreateOnboardingApplicationResponse = ServerResponse<OnboardingApplication & { applicationToken: string }>
 
 export type OnboardingApplicationResponse = ServerResponse<OnboardingApplication>
 
+/** PATCH replaces the org and contact details, so the whole set is sent. */
 export type UpdateOnboardingApplicationPayload = {
   id: string
-  data: Partial<CreateOnboardingApplicationPayload['data']>
+  data: OnboardingApplicationDetails
 }
 
 export type UploadOnboardingApplicationDocumentPayload = {
   id: string
-  documentType: OnboardingApplicationDocumentType
+  documentType: OnboardingUploadableDocumentType
+  /** Required for `vehicle_license`, refused on every other type. */
+  vehicleId?: string
   file: File
 }
 
@@ -2925,8 +2989,10 @@ export type DeleteOnboardingApplicationDocumentPayload = {
 }
 
 export type OnboardingApplicationVerifySendResponse = ServerResponse<{
-  maskedDestination: string
+  channel: 'email' | 'sms' | 'billing_email'
+  destination: string
   expiresInSeconds: number
+  resendAfterSeconds: number
 }>
 
 export type OnboardingApplicationVerifyPayload = {
@@ -2934,27 +3000,220 @@ export type OnboardingApplicationVerifyPayload = {
   data: { code: string }
 }
 
+/** The submit 400 body — every gate, so the UI can send the applicant to the right step. */
 export type SubmitOnboardingApplicationIncomplete = {
   incomplete: true
+  message: string
   emailVerified: boolean
   phoneVerified: boolean
   missingDocuments: OnboardingApplicationDocumentType[]
-  message: string
+  vehiclesMissingDocuments: OnboardingVehicleMissingDocument[]
+  vehicleCount: number
+  requestedDevices: number
+  indemnitySigned: boolean
+  planSelected: boolean
 }
 
+export type OnboardingAutomatedDecision = 'approve' | 'reject' | 'manual_review'
+
+export type SubmitOnboardingApplicationResponse = ServerResponse<OnboardingApplication & {
+  automatedDecision: OnboardingAutomatedDecision
+}>
+
 export type OnboardingApplicationTimelineEntry = {
-  step: string
+  key: string
   label: string
   complete: boolean
-  inProgress: boolean
-  completedAt?: string
+  inProgress?: boolean
 }
 
 export type OnboardingApplicationStatusResponse = ServerResponse<{
+  reference: string
   applicationStatus: OnboardingApplicationStatus
-  decisionReason?: string
+  stage: OnboardingApplicationStage
+  decisionReason: string | null
+  submittedAt: string | null
   timeline: OnboardingApplicationTimelineEntry[]
+  documents: {
+    documentType: OnboardingApplicationDocumentType
+    status: OnboardingApplicationDocumentReviewStatus
+    rejectionReason: string | null
+  }[]
 }>
+
+export type OnboardingM2mPlan = {
+  code: string
+  name: string
+  description: string
+  perDeviceYear1Ngn: number
+  perDeviceRenewalNgn: number
+}
+export type OnboardingM2mPlansResponse = ServerResponse<{ plans: OnboardingM2mPlan[] }>
+
+export type OnboardingIndemnityAgreementResponse = ServerResponse<{
+  version: string
+  title: string
+  body: string
+}>
+
+export type SignOnboardingIndemnityPayload = {
+  id: string
+  signerName: string
+  templateVersion: string
+  method: 'drawn' | 'uploaded'
+  /** PNG or JPG, at most 2MB. */
+  file: Blob
+}
+
+/** Unlike most applicant routes, signing nests the application. */
+export type SignOnboardingIndemnityResponse = ServerResponse<{
+  signedAt: string
+  templateVersion: string
+  signerName: string
+  application: OnboardingApplication
+}>
+
+export type ResumeOnboardingApplicationPayload = { data: { businessEmail: string } }
+
+export type OnboardingVehicleInput = {
+  registrationNumber: string
+  vehicleType: OnboardingVehicleType
+  make: string
+  model: string
+  year?: number
+  engineNumber?: string
+  chassisNumber?: string
+  color?: string
+  engineCapacity?: string
+  odometerReading?: number
+  purchaseType?: OnboardingVehiclePurchaseType
+  purchaseTypeOther?: string
+}
+
+export type AddOnboardingVehiclePayload = { id: string, data: OnboardingVehicleInput }
+export type UpdateOnboardingVehiclePayload = { id: string, vehicleId: string, data: OnboardingVehicleInput }
+export type DeleteOnboardingVehiclePayload = { id: string, vehicleId: string }
+export type ImportOnboardingVehiclesPayload = { id: string, file: File }
+
+/** Import nests the application, with the counts and the rows it couldn't read. */
+export type ImportOnboardingVehiclesResponse = ServerResponse<{
+  created: number
+  updated: number
+  skipped: { line: number, message: string }[]
+  application: OnboardingApplication
+}>
+
+export type OnboardingVehicleImportColumn = {
+  header: string
+  required: boolean
+  example: string
+  note: string
+}
+export type OnboardingVehicleImportColumnsResponse = ServerResponse<{ columns: OnboardingVehicleImportColumn[] }>
+
+/** The order, priced by the server from the application's own device rows (TRU-FE-14). */
+export type OnboardingOrder = {
+  planCode: string
+  planName: string
+  deviceCount: number
+  perDeviceNgn: number
+  devicesNgn: number
+  installationNgn: number
+  totalNgn: number
+  renewalPerDeviceNgn: number
+}
+
+export type OnboardingPaymentStatus = 'pending' | 'paid' | 'failed'
+
+export type OnboardingOrderResponse = ServerResponse<{
+  order: OnboardingOrder
+  stage: OnboardingApplicationStage
+  /** True only at the `payment` stage, once provisioning is marked complete. */
+  payable: boolean
+  billingEmail: string | null
+  billingEmailVerified: boolean
+  /** Confirmation arrives by webhook — poll this, not the provider redirect. */
+  payment: { reference: string, status: OnboardingPaymentStatus, paidAt: string | null } | null
+}>
+
+export type SetOnboardingBillingEmailPayload = { id: string, data: { billingEmail: string } }
+export type SetOnboardingBillingEmailResponse = ServerResponse<{ billingEmail: string, billingEmailVerified: boolean }>
+
+export type StartOnboardingPaymentPayload = { id: string, data: { redirectUrl?: string } }
+export type StartOnboardingPaymentResponse = ServerResponse<{
+  reference: string
+  authorizationUrl: string | null
+  provider: string
+  order: OnboardingOrder
+}>
+
+export type OnboardingTimeSlot = 'morning' | 'afternoon'
+
+export type ScheduleOnboardingInstallationPayload = {
+  id: string
+  data: {
+    /** YYYY-MM-DD, at least one day and at most 90 days ahead. */
+    scheduledDate: string
+    timeSlot: OnboardingTimeSlot
+    addressLine: string
+    city: string
+    /** A Nigerian state or FCT. */
+    state: string
+    siteContactName: string
+    siteContactPhone: string
+    notes?: string
+    /** One entry per paid-for device; deviceIndex starts at 1. No vehicle takes two. */
+    assignments: { deviceIndex: number, vehicleId: string }[]
+  }
+}
+
+export type OnboardingInstallerContact = {
+  fullName: string
+  team: string
+  phoneNumber: string
+  email: string
+}
+
+export type ScheduledOnboardingInstallation = {
+  orderNumber: string
+  scheduledDate: string
+  timeSlot: OnboardingTimeSlot
+  timeSlotLabel: string
+  status: 'unassigned' | 'assigned' | 'scheduled' | 'in_progress' | 'overdue' | 'issue_reported' | 'completed' | 'cancelled'
+  /** Null when nobody could be assigned yet — still a success. */
+  installer: OnboardingInstallerContact | null
+  /** Whether the account setup email was accepted for delivery. */
+  setupLinkSent: boolean
+}
+export type ScheduleOnboardingInstallationResponse = ServerResponse<ScheduledOnboardingInstallation>
+
+export type AddOnboardingDeviceRequestPayload = {
+  id: string
+  data: {
+    quantity: number
+    /** At least 10 characters. */
+    useCase: string
+    notes?: string
+    /** Only after a shortfall: accept the exact `availableQuantity` that response reported. */
+    confirmAvailableQuantity?: boolean
+  }
+}
+
+/**
+ * Stock can't cover the request: nothing was saved (still a 201). Resubmit with the
+ * reported `availableQuantity` and `confirmAvailableQuantity: true` to accept it.
+ * ponytail: not in the Swagger spec yet — shape taken from dev-api (2026-09-29).
+ */
+export type OnboardingDeviceRequestShortfall = {
+  requestSaved: false
+  requiresConfirmation: boolean
+  requestedQuantity: number
+  availableQuantity: number
+  simAllocationQuantity: number
+  message: string
+}
+export type AddOnboardingDeviceRequestResponse = ServerResponse<OnboardingApplication | OnboardingDeviceRequestShortfall>
+export type DeleteOnboardingDeviceRequestPayload = { id: string, requestId: string }
 
 // ─── System Onboarding Applications (bearer) ─────────────────────────────────
 

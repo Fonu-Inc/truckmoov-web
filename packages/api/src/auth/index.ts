@@ -231,7 +231,25 @@ import {
   approveSystemOnboardingApplication,
   approveSystemOnboardingApplicationDocument,
   closeSupportTicket,
+  addOnboardingDeviceRequest,
+  addOnboardingVehicle,
   createOnboardingApplication,
+  deleteOnboardingDeviceRequest,
+  deleteOnboardingVehicle,
+  getOnboardingIndemnityAgreement,
+  getOnboardingOrder,
+  sendOnboardingBillingEmailVerification,
+  setOnboardingBillingEmail,
+  startOnboardingPayment,
+  scheduleOnboardingInstallation,
+  verifyOnboardingBillingEmail,
+  getOnboardingM2mPlans,
+  getOnboardingVehicleImportColumns,
+  getOnboardingVehicleImportTemplate,
+  importOnboardingVehicles,
+  resumeOnboardingApplication,
+  signOnboardingIndemnity,
+  updateOnboardingVehicle,
   deleteOnboardingApplicationDocument,
   exportBundleAdoption,
   getBundleAdoption,
@@ -312,6 +330,7 @@ import type {
   BundleCatalogQuery,
   CommunicationsWalletRangeQuery,
   CreateOnboardingApplicationResponse,
+  OnboardingApplicationResponse,
   SystemAuditLogQuery,
   SystemOnboardingApplicationsQuery,
   SystemTenantResourcesPayload,
@@ -466,6 +485,10 @@ export const AUTH_QUERY_KEY = {
 
   onboardingApplication: (id: string) => ['onboardingApplication', id],
   onboardingApplicationStatus: (id: string) => ['onboardingApplicationStatus', id],
+  onboardingOrder: (id: string) => ['onboardingOrder', id],
+  onboardingM2mPlans: ['onboardingM2mPlans'],
+  onboardingIndemnityAgreement: ['onboardingIndemnityAgreement'],
+  onboardingVehicleImportColumns: ['onboardingVehicleImportColumns'],
 
   systemOnboardingApplications: (payload?: SystemOnboardingApplicationsQuery) =>
     payload ? ['systemOnboardingApplications', payload] : ['systemOnboardingApplications'],
@@ -2211,7 +2234,9 @@ export function useCreateOnboardingApplication() {
   return useMutation({
     mutationFn: createOnboardingApplication,
     onSuccess: (res: CreateOnboardingApplicationResponse) => {
+      // Returned once and never again — keep it before anything else can fail.
       persistOnboardingToken(res.data.applicationToken)
+      queryClient.setQueryData(AUTH_QUERY_KEY.onboardingApplication(res.data.id), res)
     },
   })
 }
@@ -2221,6 +2246,8 @@ export function getOnboardingApplicationQueryOptions(id: string) {
     queryKey: AUTH_QUERY_KEY.onboardingApplication(id),
     queryFn: () => getOnboardingApplication({ id }),
     enabled: Boolean(id),
+    // A 404 is a bad/expired token, not a blip — retrying only delays the reset.
+    retry: false,
   })
 }
 
@@ -2232,29 +2259,80 @@ export function getOnboardingApplicationStatusQueryOptions(id: string) {
   })
 }
 
-function invalidateOnboardingApplication(id: string) {
-  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingApplication(id) })
+export function getOnboardingM2mPlansQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingM2mPlans,
+    queryFn: getOnboardingM2mPlans,
+    staleTime: Infinity,
+  })
+}
+
+export function getOnboardingIndemnityAgreementQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingIndemnityAgreement,
+    queryFn: getOnboardingIndemnityAgreement,
+  })
+}
+
+export function getOnboardingVehicleImportColumnsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingVehicleImportColumns,
+    queryFn: getOnboardingVehicleImportColumns,
+    staleTime: Infinity,
+  })
+}
+
+export { getOnboardingVehicleImportTemplate }
+
+// Every applicant mutation answers with the whole application — write it straight into the cache.
+function writeOnboardingApplication(id: string, res: OnboardingApplicationResponse) {
+  queryClient.setQueryData(AUTH_QUERY_KEY.onboardingApplication(id), res)
   queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingApplicationStatus(id) })
 }
 
-export function useUpdateOnboardingApplication() {
-  return useMutation({
-    mutationFn: updateOnboardingApplication,
-    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+function applicationMutation<TVars extends { id: string }, TRes extends OnboardingApplicationResponse>(
+  mutationFn: (vars: TVars) => Promise<TRes>,
+) {
+  return () => useMutation({
+    mutationFn,
+    onSuccess: (res, variables) => writeOnboardingApplication(variables.id, res),
   })
 }
 
-export function useUploadOnboardingApplicationDocument() {
+export const useUpdateOnboardingApplication = applicationMutation(updateOnboardingApplication)
+export const useUploadOnboardingApplicationDocument = applicationMutation(uploadOnboardingApplicationDocument)
+export const useDeleteOnboardingApplicationDocument = applicationMutation(deleteOnboardingApplicationDocument)
+export const useVerifyOnboardingApplicationEmail = applicationMutation(verifyOnboardingApplicationEmail)
+export const useVerifyOnboardingApplicationPhone = applicationMutation(verifyOnboardingApplicationPhone)
+export const useAddOnboardingVehicle = applicationMutation(addOnboardingVehicle)
+export const useUpdateOnboardingVehicle = applicationMutation(updateOnboardingVehicle)
+export const useDeleteOnboardingVehicle = applicationMutation(deleteOnboardingVehicle)
+export const useDeleteOnboardingDeviceRequest = applicationMutation(deleteOnboardingDeviceRequest)
+
+/** A stock shortfall answers 201 without saving — only a saved request carries the application. */
+export function useAddOnboardingDeviceRequest() {
   return useMutation({
-    mutationFn: uploadOnboardingApplicationDocument,
-    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+    mutationFn: addOnboardingDeviceRequest,
+    onSuccess: (res, variables) => {
+      if ('requestSaved' in res.data)
+        return
+      writeOnboardingApplication(variables.id, { ...res, data: res.data })
+    },
   })
 }
 
-export function useDeleteOnboardingApplicationDocument() {
+// These two nest the application in their response rather than returning it flat.
+export function useSignOnboardingIndemnity() {
   return useMutation({
-    mutationFn: deleteOnboardingApplicationDocument,
-    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+    mutationFn: signOnboardingIndemnity,
+    onSuccess: (res, variables) => writeOnboardingApplication(variables.id, { ...res, data: res.data.application }),
+  })
+}
+
+export function useImportOnboardingVehicles() {
+  return useMutation({
+    mutationFn: importOnboardingVehicles,
+    onSuccess: (res, variables) => writeOnboardingApplication(variables.id, { ...res, data: res.data.application }),
   })
 }
 
@@ -2262,28 +2340,74 @@ export function useSendOnboardingApplicationEmailVerification() {
   return useMutation({ mutationFn: sendOnboardingApplicationEmailVerification })
 }
 
-export function useVerifyOnboardingApplicationEmail() {
-  return useMutation({
-    mutationFn: verifyOnboardingApplicationEmail,
-    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
-  })
-}
-
 export function useSendOnboardingApplicationPhoneVerification() {
   return useMutation({ mutationFn: sendOnboardingApplicationPhoneVerification })
 }
 
-export function useVerifyOnboardingApplicationPhone() {
-  return useMutation({
-    mutationFn: verifyOnboardingApplicationPhone,
-    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+export function getOnboardingOrderQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingOrder(id),
+    queryFn: () => getOnboardingOrder({ id }),
+    enabled: Boolean(id),
+    retry: false,
   })
+}
+
+function invalidateOnboardingOrder(id: string) {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingOrder(id) })
+}
+
+export function useSetOnboardingBillingEmail() {
+  return useMutation({
+    mutationFn: setOnboardingBillingEmail,
+    onSuccess: (_res, variables) => invalidateOnboardingOrder(variables.id),
+  })
+}
+
+export function useSendOnboardingBillingEmailVerification() {
+  return useMutation({ mutationFn: sendOnboardingBillingEmailVerification })
+}
+
+export function useVerifyOnboardingBillingEmail() {
+  return useMutation({
+    mutationFn: verifyOnboardingBillingEmail,
+    onSuccess: (res, variables) => {
+      writeOnboardingApplication(variables.id, res)
+      invalidateOnboardingOrder(variables.id)
+    },
+  })
+}
+
+export function useStartOnboardingPayment() {
+  return useMutation({
+    mutationFn: startOnboardingPayment,
+    onSuccess: (_res, variables) => invalidateOnboardingOrder(variables.id),
+  })
+}
+
+export function useScheduleOnboardingInstallation() {
+  return useMutation({
+    mutationFn: scheduleOnboardingInstallation,
+    // The stage moves past installation_scheduling.
+    onSuccess: (_res, variables) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingApplication(variables.id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingApplicationStatus(variables.id) })
+    },
+  })
+}
+
+export function useResumeOnboardingApplication() {
+  return useMutation({ mutationFn: resumeOnboardingApplication })
 }
 
 export function useSubmitOnboardingApplication() {
   return useMutation({
     mutationFn: submitOnboardingApplication,
-    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+    onSuccess: (res, variables) => {
+      if ('incomplete' in res)
+        return
+      writeOnboardingApplication(variables.id, res)
+    },
   })
 }
 

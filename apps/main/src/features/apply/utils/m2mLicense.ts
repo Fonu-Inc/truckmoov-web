@@ -63,8 +63,13 @@ export const M2M_LICENSE_PLANS: M2MLicensePlanInfo[] = [
   },
 ];
 
+/** Accepts the local key (`standard`) or the server plan code (`m2m_standard`). */
 export function findM2MPlan(plan?: string | null) {
-  return M2M_LICENSE_PLANS.find(entry => entry.plan === plan);
+  const key = plan?.replace(
+    /^m2m_/,
+    "",
+  );
+  return M2M_LICENSE_PLANS.find(entry => entry.plan === key);
 }
 
 /**
@@ -75,6 +80,3 @@ export function findM2MPlan(plan?: string | null) {
 export function planCardTitle(plan: M2MLicensePlan) {
   return plan === "standard" ? "M2M Standard License" : "M2M Advance License";
 }
-
-/** Installation is a separate service — not part of the M2M device package. */
-export const INSTALLATION_UNIT_COST = 15000;

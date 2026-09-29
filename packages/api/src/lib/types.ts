@@ -10,4 +10,6 @@ export type ServerErrorResponse = {
   statusCode: number
   field?: string
   retryAfterSeconds?: number
+  /** Onboarding 409s: which identity detail is already on another application. */
+  claimTypes?: string[]
 }

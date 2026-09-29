@@ -10,9 +10,35 @@
  * contract. Keep the two in step.
  */
 
+import type {
+  OnboardingApplication,
+  OnboardingApplicationDetails,
+  OnboardingApplicationVehicle,
+  OnboardingVehicleInput,
+} from "@truckmoov/api/auth";
+import type { ApplicantCustomerType } from "./applyTypes";
+
 import * as z from "zod";
 
-import { MAX_DOCUMENT_BYTES } from "./applyTypes";
+import {
+  MAX_DOCUMENT_BYTES,
+  toApplicantType,
+} from "./applyTypes";
+
+export const IDENTIFICATION_TYPES = [
+  {
+    value: "nin", label: "National Identification Number (NIN)",
+  },
+  {
+    value: "drivers_licence", label: "Driver's licence",
+  },
+  {
+    value: "voters_card", label: "Voter's card",
+  },
+  {
+    value: "passport", label: "International passport",
+  },
+] as const;
 
 /** 36 Nigerian states + FCT. */
 export const NIGERIAN_STATES = [
@@ -129,6 +155,20 @@ const businessDetailsBase = z.object({
     NIGERIAN_STATES,
     { message: "Pick a state." },
   ),
+  /**
+   * Optional server-side, but automated approval cannot run without them (TRU-FE-11):
+   * RC number + TIN for enterprises, ID type + number for owner-operators.
+   */
+  rcNumber: z.string().trim().default(""),
+  taxIdentificationNumber: z.string().trim().default(""),
+  identificationType: z.enum([
+    "nin",
+    "drivers_licence",
+    "voters_card",
+    "passport",
+    "",
+  ]).default(""),
+  identificationNumber: z.string().trim().default(""),
 });
 
 export const businessDetailsSchema = businessDetailsBase;
@@ -160,7 +200,92 @@ export const EMPTY_BUSINESS_DETAILS: BusinessDetailsValues = {
   streetAddress: "",
   city: "",
   state: undefined as unknown as BusinessDetailsValues["state"],
+  rcNumber: "",
+  taxIdentificationNumber: "",
+  identificationType: "",
+  identificationNumber: "",
 };
+
+/** The whole details set — PATCH replaces, so create and update send the same body. */
+export function detailsToPayload(
+  values: BusinessDetailsValues,
+  customerType: ApplicantCustomerType,
+  m2mPlanCode: string,
+): OnboardingApplicationDetails {
+  const enterprise = customerType === "enterprise";
+  const optional = (value: string) => value.trim() || undefined;
+  return {
+    applicantType: toApplicantType(customerType),
+    organizationName: values.organizationName.trim(),
+    businessEmail: values.businessEmail.trim(),
+    organizationPhone: normalizePhone(values.phoneNumber),
+    contactFullName: toContactFullName(
+      values,
+      customerType,
+    ),
+    streetAddress: values.streetAddress.trim(),
+    city: values.city.trim(),
+    state: values.state,
+    m2mPlanCode: optional(m2mPlanCode),
+    rcNumber: enterprise ? optional(values.rcNumber) : undefined,
+    taxIdentificationNumber: enterprise ? optional(values.taxIdentificationNumber) : undefined,
+    identificationType: !enterprise && values.identificationType ? values.identificationType : undefined,
+    identificationNumber: enterprise ? undefined : optional(values.identificationNumber),
+  };
+}
+
+/** Rehydrates the details form from a saved application. */
+export function applicationToDetails(app: OnboardingApplication): BusinessDetailsValues {
+  const [
+    firstName = "",
+    ...rest
+  ] = app.contact.fullName.split(/s+/);
+  return {
+    organizationName: app.organization.organizationName,
+    businessEmail: app.organization.businessEmail,
+    phoneNumber: app.organization.organizationPhone,
+    contactName: app.contact.fullName,
+    firstName,
+    lastName: rest.join(" "),
+    streetAddress: app.organization.streetAddress,
+    city: app.organization.city,
+    state: app.organization.state as BusinessDetailsValues["state"],
+    rcNumber: app.registry.rcNumber ?? "",
+    taxIdentificationNumber: app.registry.taxIdentificationNumber ?? "",
+    identificationType: app.registry.identificationType ?? "",
+    identificationNumber: app.registry.identificationNumber ?? "",
+  };
+}
+
+/** Server `field` on a 400 → the form input it belongs to. */
+export const SERVER_FIELD_TO_FORM_FIELD: Record<string, keyof BusinessDetailsValues> = {
+  organizationName: "organizationName",
+  businessEmail: "businessEmail",
+  organizationPhone: "phoneNumber",
+  contactFullName: "contactName",
+  streetAddress: "streetAddress",
+  city: "city",
+  state: "state",
+  rcNumber: "rcNumber",
+  taxIdentificationNumber: "taxIdentificationNumber",
+  identificationType: "identificationType",
+  identificationNumber: "identificationNumber",
+};
+
+/** Which detail clashes with another live application — never who holds it. */
+export const CLAIM_TYPE_LABELS: Record<string, string> = {
+  rc_number: "RC number",
+  tax_identification_number: "Tax Identification Number",
+  identification_number: "ID number",
+  document_hash: "one of your uploaded files",
+};
+
+export function describeClaims(claimTypes?: string[]) {
+  const labels = (claimTypes ?? []).map(type => CLAIM_TYPE_LABELS[type] ?? type);
+  return labels.length
+    ? `Your ${labels.join(" and ")} is already on another application. Check the details, or contact support if this is your business.`
+    : null;
+}
 
 /** The full name the server stores, derived from whichever branch is in use. */
 export function toContactFullName(
@@ -197,7 +322,6 @@ export const vehicleSchema = z
       1,
       "Select a vehicle type.",
     ),
-    otherVehicleType: z.string().trim().optional(),
     make: z.string().trim().min(
       1,
       "Vehicle make is required.",
@@ -206,24 +330,23 @@ export const vehicleSchema = z
       1,
       "Vehicle model is required.",
     ),
-    year: z.string().trim().optional(),
+    year: z.string().trim().refine(
+      value => !value || (/^\d{4}$/.test(value) && Number(value) >= 1950),
+      "Four digits, 1950 or later.",
+    ).optional(),
     engineNumber: z.string().trim().optional(),
     chassisNumber: z.string().trim().optional(),
     color: z.string().trim().optional(),
     engineCapacity: z.string().trim().optional(),
-    odometer: z.string().trim().optional(),
+    odometer: z.string().trim().refine(
+      value => !value || /^\d+$/.test(value),
+      "Whole kilometres only.",
+    ).optional(),
     purchaseType: z.string().optional(),
     otherPurchaseType: z.string().trim().optional(),
   })
   .refine(
-    values => values.vehicleType !== "Other" || Boolean(values.otherVehicleType?.trim()),
-    {
-      message: "Specify the vehicle type.",
-      path: ["otherVehicleType"],
-    },
-  )
-  .refine(
-    values => values.purchaseType !== "Other" || Boolean(values.otherPurchaseType?.trim()),
+    values => values.purchaseType !== "other" || Boolean(values.otherPurchaseType?.trim()),
     {
       message: "Specify the purchase type.",
       path: ["otherPurchaseType"],
@@ -232,18 +355,65 @@ export const vehicleSchema = z
 
 export type VehicleValues = z.infer<typeof vehicleSchema>;
 
+export function vehicleToPayload(values: VehicleValues): OnboardingVehicleInput {
+  const optional = (value?: string) => value?.trim() || undefined;
+  return {
+    registrationNumber: values.registrationNumber.trim(),
+    vehicleType: values.vehicleType as OnboardingVehicleInput["vehicleType"],
+    make: values.make.trim(),
+    model: values.model.trim(),
+    year: values.year ? Number(values.year) : undefined,
+    engineNumber: optional(values.engineNumber),
+    chassisNumber: optional(values.chassisNumber),
+    color: optional(values.color),
+    engineCapacity: optional(values.engineCapacity),
+    odometerReading: values.odometer ? Number(values.odometer) : undefined,
+    purchaseType: (values.purchaseType || undefined) as OnboardingVehicleInput["purchaseType"],
+    purchaseTypeOther: values.purchaseType === "other" ? optional(values.otherPurchaseType) : undefined,
+  };
+}
+
+export function vehicleToValues(vehicle: OnboardingApplicationVehicle): VehicleValues {
+  return {
+    registrationNumber: vehicle.registrationNumber,
+    vehicleType: vehicle.vehicleType,
+    make: vehicle.make,
+    model: vehicle.model,
+    year: vehicle.year ? String(vehicle.year) : "",
+    engineNumber: vehicle.engineNumber ?? "",
+    chassisNumber: vehicle.chassisNumber ?? "",
+    color: vehicle.color ?? "",
+    engineCapacity: vehicle.engineCapacity ?? "",
+    odometer: vehicle.odometerReading != null ? String(vehicle.odometerReading) : "",
+    purchaseType: vehicle.purchaseType ?? "",
+    otherPurchaseType: vehicle.purchaseTypeOther ?? "",
+  };
+}
+
+/** Server `field` on a vehicle 400 → the modal input it belongs to. */
+export const SERVER_VEHICLE_FIELD: Record<string, keyof VehicleValues> = {
+  registrationNumber: "registrationNumber",
+  vehicleType: "vehicleType",
+  make: "make",
+  model: "model",
+  year: "year",
+  engineNumber: "engineNumber",
+  chassisNumber: "chassisNumber",
+  color: "color",
+  engineCapacity: "engineCapacity",
+  odometerReading: "odometer",
+  purchaseType: "purchaseType",
+  purchaseTypeOther: "otherPurchaseType",
+};
+
 export const deviceRequestSchema = z.object({
   quantity: z.coerce.number().int().min(
     1,
     "Enter the number of devices you need.",
   ),
-  manufacturer: z.string().min(
-    1,
-    "Select a manufacturer.",
-  ),
   useCase: z.string().trim().min(
-    1,
-    "Please describe the intended use of the devices.",
+    10,
+    "Describe the intended use in at least 10 characters.",
   ),
   notes: z.string().trim().optional(),
 });
@@ -263,13 +433,25 @@ export const installationSchema = z.object({
     NIGERIAN_STATES,
     { message: "Pick a state." },
   ),
-  date: z.string().min(
-    1,
-    "Pick an installation date.",
-  ),
-  timeSlot: z.string().min(
-    1,
-    "Pick a time slot.",
+  date: z.string()
+    .min(
+      1,
+      "Pick an installation date.",
+    )
+    .refine(
+      date => date >= installationDateLimit(1),
+      "Pick a date from tomorrow onwards.",
+    )
+    .refine(
+      date => date <= installationDateLimit(90),
+      "Pick a date within the next 90 days.",
+    ),
+  timeSlot: z.enum(
+    [
+      "morning",
+      "afternoon",
+    ],
+    { message: "Pick a time slot." },
   ),
   contactName: personNameField,
   contactPhone: phoneField,
@@ -277,6 +459,13 @@ export const installationSchema = z.object({
 });
 
 export type InstallationValues = z.infer<typeof installationSchema>;
+
+/** Today plus `days`, as the YYYY-MM-DD an `<input type="date">` uses (local time). */
+export function installationDateLimit(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toLocaleDateString("en-CA");
+}
 
 /**
  * Normalise a phone number to the `+234XXXXXXXXXX` form the server returns.
@@ -302,10 +491,13 @@ const ACCEPTED_MIME = new Set([
   "image/png",
 ]);
 
-/** Returns an error message, or null when the file is acceptable. */
+/**
+ * Returns an error message, or null when the file is acceptable. A pre-check only —
+ * the server decides the format from the file contents, not the declared type.
+ */
 export function checkFile(file: File, pdfOnly = false): string | null {
   if (file.size > MAX_DOCUMENT_BYTES)
-    return "This file is larger than 10 MB. Please upload a smaller PDF file.";
+    return "This file is larger than 10 MB. Please upload a smaller file.";
 
   if (pdfOnly) {
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"))

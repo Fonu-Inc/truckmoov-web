@@ -603,16 +603,16 @@ export function ReviewStep({
 
 const FALLBACK_TIMELINE: OnboardingApplicationTimelineEntry[] = [
   {
-    step: "submitted", label: "Application submitted", complete: true, inProgress: false,
+    key: "submitted", label: "Application submitted", complete: true, inProgress: false,
   },
   {
-    step: "details", label: "Organization details received", complete: true, inProgress: false,
+    key: "details", label: "Organization details received", complete: true, inProgress: false,
   },
   {
-    step: "documents", label: "Documents received", complete: true, inProgress: false,
+    key: "documents", label: "Documents received", complete: true, inProgress: false,
   },
   {
-    step: "review", label: "Application Review", complete: false, inProgress: true,
+    key: "review", label: "Application Review", complete: false, inProgress: true,
   },
 ];
 
@@ -646,7 +646,7 @@ export function SubmittedStep({
       <ul className="mt-9 w-full space-y-0 rounded-2xl bg-[#FAFAFA] px-7 py-7 text-left">
         {rows.map((row, index) => (
           <li
-            key={row.step}
+            key={row.key}
             className="flex gap-4"
           >
             <div className="flex flex-col items-center">

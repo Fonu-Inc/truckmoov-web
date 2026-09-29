@@ -72,16 +72,6 @@ export const DOCUMENTS: DocumentEntry[] = [
     pdfOnly: true,
   },
   {
-    id: "letter_of_authorization",
-    title: "Letter of Authorization",
-    description: "On Company Letterhead.",
-  },
-  {
-    id: "signed_indemnity_form",
-    title: "Signed Indemnity Form",
-    description: "Signed By An Authorised Signatory.",
-  },
-  {
     id: "cac_document",
     title: "CAC Document",
     description: "Certificate Of Incorporation Or Business Registration.",
@@ -105,16 +95,6 @@ export const DOCUMENTS: DocumentEntry[] = [
     id: "identification_card",
     title: "Identification Card",
     description: "Government-Issued ID Of The Authorised Signatory.",
-  },
-  {
-    id: "form_c02_c07",
-    title: "Form C02 / C07",
-    description: "CAC Form C02 (Allotment Of Shares) Or C07 (Particulars Of Directors).",
-  },
-  {
-    id: "agreement_form",
-    title: "Agreement Form",
-    description: "Signed Service Agreement Or Terms Acceptance Form.",
   },
 ];
 

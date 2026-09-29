@@ -1,8 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
+import { getOnboardingIndemnityAgreementQueryOptions } from "@truckmoov/api/auth";
 import {
   Check,
-  Download,
+
   Upload,
 } from "lucide-react";
+
 import {
   useRef,
   useState,
@@ -22,63 +25,41 @@ import { Label } from "@/components/shadcn/label";
 import { cn } from "@/lib/utils";
 
 type SignatureMode = "draw" | "upload";
-const CLAUSES = [
-  {
-    heading: "1. Definitions",
-    body: "\"Services\" means the Fleet Pro telematics platform, licences, hardware devices, IoT SIM connectivity, installation, and any related support supplied to the Customer. \"Loss\" means any liability, claim, demand, penalty, fine, cost, or expense of any kind.",
-  },
-  {
-    heading: "2. Indemnity",
-    body: "The Customer shall indemnify, defend, and hold harmless the Service Provider, its affiliates, directors, employees, contractors, and agents from and against any and all Loss arising out of or connected with: (a) the Customer's use or misuse of the Services; (b) any act or omission of the Customer's drivers, employees, or agents; (c) damage to, loss of, tampering with, or unauthorised removal of devices or IoT SIMs installed in the Customer's vehicles; (d) any breach by the Customer of this Agreement or of applicable law.",
-  },
-  {
-    heading: "3. Vehicles, Devices and Installation",
-    body: "The Customer confirms that it owns or is lawfully entitled to operate each vehicle submitted for installation and that it has obtained all consents required to fit tracking devices and to process the resulting location and driver data. The Customer accepts responsibility for any damage to a vehicle that arises from pre-existing faults, unauthorised modification, or interference with installed equipment after handover.",
-  },
-  {
-    heading: "4. Data Protection",
-    body: "The Customer shall comply with the Nigeria Data Protection Act and all applicable regulations in relation to personal data captured through the Services, including notifying drivers of tracking, and shall indemnify the Service Provider against any claim by a data subject or regulator arising from the Customer's failure to do so.",
-  },
-  {
-    heading: "5. Limitation of Liability",
-    body: "The Service Provider shall not be liable for indirect or consequential loss, loss of profit, loss of cargo, or business interruption arising from service unavailability, network outages, device failure, or inaccurate telemetry. Nothing in this Agreement excludes liability that cannot lawfully be excluded.",
-  },
-  {
-    heading: "6. Payment and Suspension",
-    body: "The Customer remains responsible for all charges for hardware, licences, installation, connectivity, and subscription services. The Service Provider may suspend the Services where invoices remain unpaid, and the Customer indemnifies the Service Provider against any Loss resulting from such suspension.",
-  },
-  {
-    heading: "7. Term and Survival",
-    body: "This Agreement takes effect on the date of signature and continues for as long as the Customer uses the Services. The indemnities in this Agreement survive termination.",
-  },
-  {
-    heading: "8. Governing Law",
-    body: "This Agreement is governed by the laws of the Federal Republic of Nigeria, and the parties submit to the exclusive jurisdiction of the Nigerian courts.",
-  },
-];
+
+/** The server takes PNG or JPG, at most 2MB. */
+const MAX_SIGNATURE_BYTES = 2 * 1024 * 1024;
 
 type IndemnityDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Pre-fills the legal-name field when re-opening an already signed form. */
   initialName?: string;
+  /** Shown above the pad, e.g. after the agreement was superseded mid-signing. */
+  notice?: string | null;
   onSigned: (result: {
-    mode: SignatureMode; name: string; image: string | null;
+    method: "drawn" | "uploaded"; name: string; image: string; version: string;
   }) => void;
 };
 
 /**
  * The indemnity agreement, shown full-screen with an electronic signature.
  *
- * The signature pad is a plain `<canvas>` — the design app rolls its own rather
- * than pulling in a signature library, and so do we.
+ * The wording and its `version` come from the server — the signature is recorded
+ * against the version that was on screen (TRU-FE-11). The signature pad is a plain
+ * `<canvas>`; the design app rolls its own rather than pulling in a library.
  */
 export function IndemnityDialog({
   open,
   onOpenChange,
   initialName,
+  notice,
   onSigned,
 }: IndemnityDialogProps) {
+  const agreementQuery = useQuery({
+    ...getOnboardingIndemnityAgreementQueryOptions(),
+    enabled: open,
+  });
+  const agreement = agreementQuery.data?.data;
   const [
     signatureMode,
     setSignatureMode,
@@ -165,6 +146,14 @@ export function IndemnityDialog({
   }
 
   function handleUpload(file: File) {
+    if (file.type !== "image/png" && file.type !== "image/jpeg") {
+      toast.error("Signature must be a PNG or JPG image.");
+      return;
+    }
+    if (file.size > MAX_SIGNATURE_BYTES) {
+      toast.error("Signature image must be 2 MB or smaller.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => setUploadedSignature(String(reader.result));
     reader.readAsDataURL(file);
@@ -179,13 +168,21 @@ export function IndemnityDialog({
     const image = signatureMode === "draw"
       ? (hasDrawn ? (canvasRef.current?.toDataURL("image/png") ?? null) : null)
       : uploadedSignature;
+    if (!image) {
+      toast.error(signatureMode === "draw" ? "Draw your signature in the box." : "Upload an image of your signature.");
+      return;
+    }
+    if (!agreement) {
+      toast.error("The agreement hasn't loaded yet. Try again in a moment.");
+      return;
+    }
 
     onSigned({
-      mode: signatureMode,
+      method: signatureMode === "draw" ? "drawn" : "uploaded",
       name: typedSignature.trim(),
       image,
+      version: agreement.version,
     });
-    toast.success("Indemnity form signed successfully.");
     onOpenChange(false);
   }
 
@@ -197,62 +194,46 @@ export function IndemnityDialog({
       <DialogContent className="h-screen w-screen max-w-none grid-rows-[auto_1fr_auto] gap-0 overflow-hidden rounded-none p-0 sm:rounded-none">
         <DialogHeader className="flex-row items-start justify-between gap-4 space-y-0 border-b border-border px-6 py-5 pr-16">
           <div>
-            <DialogTitle>Fleet Pro Indemnity Form</DialogTitle>
+            <DialogTitle>{agreement?.title ?? "Fleet Pro Indemnity Form"}</DialogTitle>
             <DialogDescription>
               Read the complete document, then sign electronically below.
             </DialogDescription>
           </div>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-          >
-            <a
-              href="/documents/fleet-pro-indemnity-form-sample.pdf"
-              download
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download Form
-            </a>
-          </Button>
+          {agreement && (
+            <span className="shrink-0 text-xs text-muted-foreground">{`Version ${agreement.version}`}</span>
+          )}
         </DialogHeader>
 
         <div className="min-h-0 overflow-y-auto bg-muted p-4 sm:p-8">
           <article className="mx-auto max-w-3xl bg-card p-6 shadow-sm sm:p-12">
             <div className="border-b border-border pb-6 text-center">
               <p className="text-xs font-bold uppercase tracking-widest text-primary">Fleet Pro</p>
-              <h3 className="mt-2 text-2xl font-bold text-foreground">Indemnity Agreement</h3>
-              <p className="mt-2 text-xs font-semibold uppercase text-destructive">
-                Temporary sample — not legal advice
-              </p>
+              <h3 className="mt-2 text-2xl font-bold text-foreground">{agreement?.title ?? "Indemnity Agreement"}</h3>
             </div>
 
-            <div className="space-y-6 py-8 text-sm leading-7 text-muted-foreground">
-              <p>
-                This Indemnity Agreement (the "Agreement") is entered into between Fleet Pro,
-                operating in partnership with MTN Nigeria (the "Service Provider"), and the customer
-                identified in the account creation application (the "Customer"). By signing this
-                Agreement, the Customer agrees to assume responsibility for certain risks, losses,
-                damages, costs, and claims that may arise from the supply, installation, activation,
-                and use of Fleet Pro devices, connectivity, and platform services.
-              </p>
-
-              {CLAUSES.map(clause => (
-                <div key={clause.heading}>
-                  <h4 className="font-semibold text-foreground">{clause.heading}</h4>
-                  <p className="mt-2">{clause.body}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-border pt-5 text-center text-xs font-semibold uppercase text-muted-foreground">
-              Temporary sample — replace with the approved Fleet Pro indemnity form
+            <div className="py-8 text-sm leading-7 text-muted-foreground">
+              {agreementQuery.isLoading && <p className="text-center">Loading the agreement…</p>}
+              {agreementQuery.isError && (
+                <p className="text-center text-destructive">
+                  The agreement couldn't be loaded.
+                  {" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => agreementQuery.refetch()}
+                  >
+                    Try again
+                  </button>
+                </p>
+              )}
+              {agreement && <p className="whitespace-pre-line">{agreement.body}</p>}
             </div>
           </article>
         </div>
 
         <div className="border-t border-border bg-card px-6 py-3">
           <div className="mx-auto max-w-3xl space-y-3">
+            {notice && <p className="text-sm text-destructive">{notice}</p>}
             <p className="text-sm text-foreground">
               By signing below, I confirm that I have read and understood the Fleet Pro Indemnity
               terms and agreements.
@@ -331,7 +312,7 @@ export function IndemnityDialog({
                       <input
                         ref={fileRef}
                         type="file"
-                        accept="image/*"
+                        accept="image/png,image/jpeg"
                         className="hidden"
                         onChange={(event) => {
                           const file = event.target.files?.[0];
@@ -390,6 +371,7 @@ export function IndemnityDialog({
               </Button>
               <Button
                 type="button"
+                disabled={!agreement}
                 onClick={confirmSignature}
               >
                 <Check className="mr-2 h-4 w-4" />

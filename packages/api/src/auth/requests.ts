@@ -1,4 +1,3 @@
-import axios from 'axios'
 
 import { axiosInstance } from '../lib/axios-instance'
 import { onboardingInstance } from '../lib/onboarding-instance'
@@ -288,8 +287,29 @@ import type {
   CreateOnboardingApplicationResponse,
   DeleteOnboardingApplicationDocumentPayload,
   MailboxMessageFlagsResponse,
-  OnboardingApplication,
+  AddOnboardingDeviceRequestPayload,
+  AddOnboardingDeviceRequestResponse,
+  AddOnboardingVehiclePayload,
+  DeleteOnboardingDeviceRequestPayload,
+  DeleteOnboardingVehiclePayload,
+  ImportOnboardingVehiclesPayload,
+  ImportOnboardingVehiclesResponse,
   OnboardingApplicationResponse,
+  OnboardingOrderResponse,
+  ScheduleOnboardingInstallationPayload,
+  ScheduleOnboardingInstallationResponse,
+  SetOnboardingBillingEmailPayload,
+  SetOnboardingBillingEmailResponse,
+  StartOnboardingPaymentPayload,
+  StartOnboardingPaymentResponse,
+  OnboardingIndemnityAgreementResponse,
+  OnboardingM2mPlansResponse,
+  OnboardingVehicleImportColumnsResponse,
+  ResumeOnboardingApplicationPayload,
+  SignOnboardingIndemnityPayload,
+  SignOnboardingIndemnityResponse,
+  SubmitOnboardingApplicationResponse,
+  UpdateOnboardingVehiclePayload,
   OnboardingApplicationStatusResponse,
   OnboardingApplicationVerifyPayload,
   OnboardingApplicationVerifySendResponse,
@@ -1707,42 +1727,69 @@ export async function getSystemSecurityEvents(payload?: SystemSecurityEventsQuer
 }
 
 // ─── Onboarding Applications (public, X-Application-Token) ───────────────────
-// 404 from onboardingInstance means "wrong or missing token" — do NOT surface
-// it as "not found" in the UI.
+// 404 from onboardingInstance means 'wrong or missing token' (or an expired draft) — do NOT
+// surface it as 'not found' in the UI.
+
+const ONBOARDING = '/auth/onboarding/applications'
 
 export async function createOnboardingApplication({ data }: CreateOnboardingApplicationPayload) {
-  const { data: res } = await onboardingInstance.post<CreateOnboardingApplicationResponse>(
-    '/auth/onboarding/applications',
-    data,
-  )
+  const { data: res } = await onboardingInstance.post<CreateOnboardingApplicationResponse>(ONBOARDING, data)
   return res
 }
 
 export async function getOnboardingApplication({ id }: { id: string }) {
-  const { data } = await onboardingInstance.get<OnboardingApplicationResponse>(
-    `/auth/onboarding/applications/${id}`,
-  )
+  const { data } = await onboardingInstance.get<OnboardingApplicationResponse>(`${ONBOARDING}/${id}`)
   return data
 }
 
 export async function updateOnboardingApplication({ id, data }: UpdateOnboardingApplicationPayload) {
-  const { data: res } = await onboardingInstance.patch<OnboardingApplicationResponse>(
-    `/auth/onboarding/applications/${id}`,
-    data,
+  const { data: res } = await onboardingInstance.patch<OnboardingApplicationResponse>(`${ONBOARDING}/${id}`, data)
+  return res
+}
+
+export async function getOnboardingM2mPlans() {
+  const { data } = await onboardingInstance.get<OnboardingM2mPlansResponse>(`${ONBOARDING}/m2m-plans`)
+  return data
+}
+
+export async function getOnboardingIndemnityAgreement() {
+  const { data } = await onboardingInstance.get<OnboardingIndemnityAgreementResponse>(`${ONBOARDING}/indemnity-agreement`)
+  return data
+}
+
+export async function signOnboardingIndemnity({ id, signerName, templateVersion, method, file }: SignOnboardingIndemnityPayload) {
+  const form = new FormData()
+  form.append('signer_name', signerName)
+  form.append('template_version', templateVersion)
+  form.append('method', method)
+  form.append('file', file, file instanceof File ? file.name : 'signature.png')
+  const { data } = await onboardingInstance.post<SignOnboardingIndemnityResponse>(
+    `${ONBOARDING}/${id}/indemnity-signature`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
   )
+  return data
+}
+
+/** Always answers the same, whether or not an application exists — don't branch on it. */
+export async function resumeOnboardingApplication({ data }: ResumeOnboardingApplicationPayload) {
+  const { data: res } = await onboardingInstance.post<ServerResponse<unknown>>(`${ONBOARDING}/resume`, data)
   return res
 }
 
 export async function uploadOnboardingApplicationDocument({
   id,
   documentType,
+  vehicleId,
   file,
 }: UploadOnboardingApplicationDocumentPayload) {
   const form = new FormData()
   form.append('document_type', documentType)
+  if (vehicleId)
+    form.append('vehicle_id', vehicleId)
   form.append('file', file)
   const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(
-    `/auth/onboarding/applications/${id}/documents`,
+    `${ONBOARDING}/${id}/documents`,
     form,
     { headers: { 'Content-Type': 'multipart/form-data' } },
   )
@@ -1753,86 +1800,143 @@ export async function deleteOnboardingApplicationDocument({
   id,
   documentId,
 }: DeleteOnboardingApplicationDocumentPayload) {
-  const { data } = await onboardingInstance.delete<OnboardingApplicationResponse>(
-    `/auth/onboarding/applications/${id}/documents/${documentId}`,
+  const { data } = await onboardingInstance.delete<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/documents/${documentId}`)
+  return data
+}
+
+export async function addOnboardingVehicle({ id, data }: AddOnboardingVehiclePayload) {
+  const { data: res } = await onboardingInstance.post<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/vehicles`, data)
+  return res
+}
+
+export async function updateOnboardingVehicle({ id, vehicleId, data }: UpdateOnboardingVehiclePayload) {
+  const { data: res } = await onboardingInstance.patch<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/vehicles/${vehicleId}`, data)
+  return res
+}
+
+/** Also removes any licence filed against the vehicle. */
+export async function deleteOnboardingVehicle({ id, vehicleId }: DeleteOnboardingVehiclePayload) {
+  const { data } = await onboardingInstance.delete<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/vehicles/${vehicleId}`)
+  return data
+}
+
+export async function importOnboardingVehicles({ id, file }: ImportOnboardingVehiclesPayload) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await onboardingInstance.post<ImportOnboardingVehiclesResponse>(
+    `${ONBOARDING}/${id}/vehicles/import`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
   )
+  return data
+}
+
+export async function getOnboardingVehicleImportTemplate() {
+  const { data } = await onboardingInstance.get<Blob>(`${ONBOARDING}/vehicle-import/template`, { responseType: 'blob' })
+  return data
+}
+
+export async function getOnboardingVehicleImportColumns() {
+  const { data } = await onboardingInstance.get<OnboardingVehicleImportColumnsResponse>(`${ONBOARDING}/vehicle-import/columns`)
+  return data
+}
+
+export async function addOnboardingDeviceRequest({ id, data }: AddOnboardingDeviceRequestPayload) {
+  const { data: res } = await onboardingInstance.post<AddOnboardingDeviceRequestResponse>(`${ONBOARDING}/${id}/device-requests`, data)
+  return res
+}
+
+export async function deleteOnboardingDeviceRequest({ id, requestId }: DeleteOnboardingDeviceRequestPayload) {
+  const { data } = await onboardingInstance.delete<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/device-requests/${requestId}`)
   return data
 }
 
 export async function sendOnboardingApplicationEmailVerification({ id }: { id: string }) {
-  const { data } = await onboardingInstance.post<OnboardingApplicationVerifySendResponse>(
-    `/auth/onboarding/applications/${id}/verify/email/send`,
-  )
+  const { data } = await onboardingInstance.post<OnboardingApplicationVerifySendResponse>(`${ONBOARDING}/${id}/verify/email/send`)
   return data
 }
 
-export async function verifyOnboardingApplicationEmail({
-  id,
-  data: body,
-}: OnboardingApplicationVerifyPayload) {
-  const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(
-    `/auth/onboarding/applications/${id}/verify/email`,
-    body,
-  )
+export async function verifyOnboardingApplicationEmail({ id, data: body }: OnboardingApplicationVerifyPayload) {
+  const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/verify/email`, body)
   return data
 }
 
 export async function sendOnboardingApplicationPhoneVerification({ id }: { id: string }) {
-  const { data } = await onboardingInstance.post<OnboardingApplicationVerifySendResponse>(
-    `/auth/onboarding/applications/${id}/verify/phone/send`,
-  )
+  const { data } = await onboardingInstance.post<OnboardingApplicationVerifySendResponse>(`${ONBOARDING}/${id}/verify/phone/send`)
   return data
 }
 
-export async function verifyOnboardingApplicationPhone({
-  id,
-  data: body,
-}: OnboardingApplicationVerifyPayload) {
-  const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(
-    `/auth/onboarding/applications/${id}/verify/phone`,
-    body,
-  )
+export async function verifyOnboardingApplicationPhone({ id, data: body }: OnboardingApplicationVerifyPayload) {
+  const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/verify/phone`, body)
   return data
 }
 
-// 400 from /submit carries emailVerified, phoneVerified, missingDocuments at
-// the top level of the body. Returned as SubmitOnboardingApplicationIncomplete
-// so callers can jump the user to the right step instead of showing a generic
-// error. Any other failure is rethrown as ServerErrorResponse.
+// The submit 400 carries every gate at the top level of the body. It is returned as
+// SubmitOnboardingApplicationIncomplete so the UI can send the applicant to the right step;
+// anything else (409 claimTypes included) is rethrown as ServerErrorResponse.
 export async function submitOnboardingApplication({
   id,
 }: {
   id: string
-}): Promise<OnboardingApplicationResponse | SubmitOnboardingApplicationIncomplete> {
-  try {
-    const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(
-      `/auth/onboarding/applications/${id}/submit`,
-    )
-    return data
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 400) {
-      const body = error.response.data as {
-        message?: string
-        emailVerified?: boolean
-        phoneVerified?: boolean
-        missingDocuments?: OnboardingApplication['missingDocuments']
-      }
-      return {
-        incomplete: true,
-        emailVerified: body.emailVerified ?? false,
-        phoneVerified: body.phoneVerified ?? false,
-        missingDocuments: body.missingDocuments ?? [],
-        message: body.message ?? 'Application is incomplete.',
-      }
-    }
-    throw error
+}): Promise<SubmitOnboardingApplicationResponse | SubmitOnboardingApplicationIncomplete> {
+  // Let the 400 through as a response: the interceptor would otherwise normalise away its body.
+  const res = await onboardingInstance.post<SubmitOnboardingApplicationResponse | Partial<SubmitOnboardingApplicationIncomplete>>(
+    `${ONBOARDING}/${id}/submit`,
+    undefined,
+    { validateStatus: status => (status >= 200 && status < 300) || status === 400 },
+  )
+  if (res.status !== 400)
+    return res.data as SubmitOnboardingApplicationResponse
+  const raw = res.data as Partial<SubmitOnboardingApplicationIncomplete>
+  return {
+    incomplete: true,
+    message: typeof raw.message === 'string' ? raw.message : 'Application is incomplete.',
+    emailVerified: raw.emailVerified ?? false,
+    phoneVerified: raw.phoneVerified ?? false,
+    missingDocuments: raw.missingDocuments ?? [],
+    vehiclesMissingDocuments: raw.vehiclesMissingDocuments ?? [],
+    vehicleCount: raw.vehicleCount ?? 0,
+    requestedDevices: raw.requestedDevices ?? 0,
+    indemnitySigned: raw.indemnitySigned ?? false,
+    planSelected: raw.planSelected ?? false,
   }
 }
 
+export async function getOnboardingOrder({ id }: { id: string }) {
+  const { data } = await onboardingInstance.get<OnboardingOrderResponse>(`${ONBOARDING}/${id}/order`)
+  return data
+}
+
+/** Changing the address clears its verification. */
+export async function setOnboardingBillingEmail({ id, data }: SetOnboardingBillingEmailPayload) {
+  const { data: res } = await onboardingInstance.put<SetOnboardingBillingEmailResponse>(`${ONBOARDING}/${id}/billing-email`, data)
+  return res
+}
+
+export async function sendOnboardingBillingEmailVerification({ id }: { id: string }) {
+  const { data } = await onboardingInstance.post<OnboardingApplicationVerifySendResponse>(`${ONBOARDING}/${id}/verify/billing-email/send`)
+  return data
+}
+
+export async function verifyOnboardingBillingEmail({ id, data: body }: OnboardingApplicationVerifyPayload) {
+  const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/verify/billing-email`, body)
+  return data
+}
+
+/** Never send a total — the server prices the order itself. Returns the provider's checkout URL. */
+export async function startOnboardingPayment({ id, data }: StartOnboardingPaymentPayload) {
+  const { data: res } = await onboardingInstance.post<StartOnboardingPaymentResponse>(`${ONBOARDING}/${id}/payment`, data)
+  return res
+}
+
+/** Books the fitting. On success the account exists and the setup link is emailed. */
+export async function scheduleOnboardingInstallation({ id, data }: ScheduleOnboardingInstallationPayload) {
+  const { data: res } = await onboardingInstance.post<ScheduleOnboardingInstallationResponse>(`${ONBOARDING}/${id}/installation`, data)
+  return res
+}
+
 export async function getOnboardingApplicationStatus({ id }: { id: string }) {
-  const { data } = await onboardingInstance.get<OnboardingApplicationStatusResponse>(
-    `/auth/onboarding/applications/${id}/status`,
-  )
+  const { data } = await onboardingInstance.get<OnboardingApplicationStatusResponse>(`${ONBOARDING}/${id}/status`)
   return data
 }
 

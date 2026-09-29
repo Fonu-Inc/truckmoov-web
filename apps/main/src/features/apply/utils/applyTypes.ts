@@ -1,12 +1,29 @@
 /**
  * Shared types + reference data for the public "Apply for Account Creation" flow.
  *
- * The visible design comes from the FleetPro design app. This flow is UI-only
- * today — see the ponytail note in ApplyForAccount.tsx.
+ * The visible design comes from the FleetPro design app. Steps 1–3 run against the
+ * onboarding-applications API (TRU-FE-11/12/13); payment and installation are still
+ * local — see the ponytail note in ApplyForAccount.tsx.
  */
+
+import type {
+  OnboardingApplicantType,
+  OnboardingApplicationVehicle,
+  OnboardingUploadableDocumentType,
+  OnboardingVehiclePurchaseType,
+  OnboardingVehicleType,
+} from "@truckmoov/api/auth";
 
 /** The choice the applicant makes on the first screen. */
 export type ApplicantCustomerType = "enterprise" | "owner_operator";
+
+export function toApplicantType(type: ApplicantCustomerType): OnboardingApplicantType {
+  return type === "enterprise" ? "fleet_provider" : "owner_operator";
+}
+
+export function fromApplicantType(type: OnboardingApplicantType): ApplicantCustomerType {
+  return type === "fleet_provider" ? "enterprise" : "owner_operator";
+}
 
 /** Remembers the customer type across reloads so step 1 is not re-asked. */
 export const CUSTOMER_TYPE_STORAGE_KEY = "truckmoov_apply_customer_type";
@@ -33,11 +50,10 @@ export function writeStoredCustomerType(type: ApplicantCustomerType | null) {
 }
 
 export type RequiredDocument = {
-  /** The design app's identifier. Not necessarily a server document type. */
-  type: string;
+  type: OnboardingUploadableDocumentType;
   label: string;
   requirement?: string;
-  /** The design app demands PDF for every document in this flow. */
+  /** Only the Customer Request Letter must be a PDF; the rest take PDF, JPG or PNG. */
   pdfOnly?: boolean;
 };
 
@@ -55,7 +71,7 @@ export const ENTERPRISE_DOCUMENTS: RequiredDocument[] = [
     requirement: "Must reflect the business name shown on the company letterhead.",
   },
   {
-    type: "tax_certificate",
+    type: "tax_certificate_or_tin",
     label: "Tax Certificate or TIN Certificate",
     requirement: "Valid business tax documentation.",
   },
@@ -104,31 +120,22 @@ export function documentsForCustomerType(type: ApplicantCustomerType): RequiredD
   return type === "enterprise" ? ENTERPRISE_DOCUMENTS : OWNER_OPERATOR_DOCUMENTS;
 }
 
-/** A document held in the browser because the server has no type for it yet. */
-export type HeldDocument = {
-  type: string;
-  fileName: string;
-  size: number;
-};
-
 /**
- * The licence choice and indemnity signature collected on the details step.
+ * The plan choice and indemnity confirmation on the details step.
  *
- * ponytail: the application payload has no field for either yet, so this is held
- * client-side. Move it into `detailsToPayload` once the server accepts it.
+ * `licensePlan` holds the server plan code (e.g. `m2m_standard`) once picked; it is
+ * sent as `m2mPlanCode` with the details. Whether the form is signed comes from the
+ * server (`signed_indemnity_form` in the application's documents) — this only keeps
+ * the name typed on the pad and the "I have reviewed it" tick.
  */
 export type LicenceAndIndemnity = {
-  licensePlan: "standard" | "advance" | "";
-  indemnitySigned: boolean;
-  indemnitySignatureMode: "draw" | "upload" | "";
+  licensePlan: string;
   indemnitySignatureName: string;
   indemnityAccepted: boolean;
 };
 
 export const EMPTY_LICENCE_AND_INDEMNITY: LicenceAndIndemnity = {
   licensePlan: "",
-  indemnitySigned: false,
-  indemnitySignatureMode: "",
   indemnitySignatureName: "",
   indemnityAccepted: false,
 };
@@ -136,112 +143,46 @@ export const EMPTY_LICENCE_AND_INDEMNITY: LicenceAndIndemnity = {
 /** The only IoT carrier Fleet Pro provisions today. */
 export const DEFAULT_SIM_CARRIER = "MTN Nigeria";
 
-/** One installable unit per requested device, for the installation step. */
-export type DeviceUnit = {
-  id: string;
-  label: string;
-  manufacturer: string;
-  model: string;
-  imei: string;
-  simCarrier: string;
+/** The server's vehicle types (TRU-FE-12 notes the list was inferred — confirm with backend). */
+export const VEHICLE_TYPE_LABELS: Record<OnboardingVehicleType, string> = {
+  truck: "Truck",
+  van: "Van",
+  bus: "Bus",
+  car: "Car",
+  suv: "SUV",
+  trailer: "Trailer",
+  motorcycle: "Motorcycle",
+  tricycle: "Tricycle",
 };
 
-/**
- * Expands device *requests* (quantities) into individual units so each can be
- * assigned to a vehicle. Mirrors the design app's `expandDeviceUnits`.
- */
-export function expandDeviceUnits(requests: DeviceRequest[]): DeviceUnit[] {
-  const units: DeviceUnit[] = [];
-  requests.forEach((request) => {
-    for (let index = 0; index < request.quantity; index += 1) {
-      const n = units.length;
-      units.push({
-        id: `${request.id}-${index}`,
-        label: `Device ${String(n + 1).padStart(
-          2,
-          "0",
-        )}`,
-        manufacturer: request.manufacturer,
-        model: "FMB920",
-        imei: `35789${410000 + n * 137}`,
-        simCarrier: request.simCarrier ?? DEFAULT_SIM_CARRIER,
-      });
-    }
-  });
-  return units;
+export const PURCHASE_TYPE_LABELS: Record<OnboardingVehiclePurchaseType, string> = {
+  outright: "Outright purchase",
+  lease: "Lease",
+  hire_purchase: "Hire purchase",
+  financed: "Finance / loan",
+  other: "Other",
+};
+
+export function vehicleSummary(vehicle: OnboardingApplicationVehicle) {
+  return [
+    vehicle.make,
+    vehicle.model,
+    VEHICLE_TYPE_LABELS[vehicle.vehicleType] ?? vehicle.vehicleType,
+  ].filter(Boolean).join(" · ");
 }
-
-export type VehicleEntry = {
-  id: string;
-  registrationNumber: string;
-  vehicleType: string;
-  otherVehicleType?: string;
-  make: string;
-  model: string;
-  year: string;
-  engineNumber: string;
-  chassisNumber: string;
-  color: string;
-  engineCapacity: string;
-  odometer: string;
-  purchaseType: string;
-  otherPurchaseType?: string;
-};
-
-export type DeviceRequest = {
-  id: string;
-  quantity: number;
-  manufacturer: string;
-  useCase: string;
-  notes: string;
-  includeSim?: boolean;
-  simCarrier?: string;
-};
-
-export type FleetState = {
-  vehicles: VehicleEntry[];
-  deviceRequests: DeviceRequest[];
-};
-
-export const EMPTY_FLEET: FleetState = {
-  vehicles: [],
-  deviceRequests: [],
-};
-
-export const VEHICLE_TYPES = [
-  "Car",
-  "SUV",
-  "Van",
-  "Pickup",
-  "Truck",
-  "Trailer",
-  "Bus",
-  "Motorcycle",
-  "Other",
-];
-
-export const PURCHASE_TYPES = [
-  "Owned",
-  "Lease",
-  "Finance / Loan",
-  "Hire Purchase",
-  "Rental",
-  "Other",
-];
-
-export const DEVICE_MANUFACTURERS = [
-  "Teltonika",
-  "Queclink",
-  "Concox",
-];
 
 export const SIM_CARRIERS = [DEFAULT_SIM_CARRIER];
 
 export const TIME_SLOTS = [
-  "Morning (8:00 – 12:00)",
-  "Afternoon (12:00 – 16:00)",
-  "Evening (16:00 – 19:00)",
-];
+  {
+    value: "morning",
+    label: "Morning (8:00 – 12:00)",
+  },
+  {
+    value: "afternoon",
+    label: "Afternoon (12:00 – 16:00)",
+  },
+] as const;
 
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 

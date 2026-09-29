@@ -1,8 +1,11 @@
+import type { OnboardingApplication } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
-import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas";
 import type {
   ApplicantCustomerType, RequiredDocument,
 } from "@/features/apply/utils/applyTypes";
+
+import { useQuery } from "@tanstack/react-query";
+import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
 
 import {
   ArrowLeft,
@@ -13,16 +16,18 @@ import {
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
-import { findM2MPlan } from "@/features/apply/utils/m2mLicense";
+import {
+  isIndemnitySigned,
+  requestedDeviceTotal,
+} from "@/features/apply/hooks/useApplySession";
 
 type ReviewStepProps = {
   customerType: ApplicantCustomerType;
-  details: BusinessDetailsValues;
-  emailVerified: boolean;
-  phoneVerified: boolean;
+  application: OnboardingApplication;
   requiredDocuments: RequiredDocument[];
   submitting: boolean;
+  /** From a refused submit: the message, shown above the button. */
+  submitError?: string | null;
   submitLabel?: string;
   onBack: () => void;
   onEditDetails: () => void;
@@ -33,11 +38,10 @@ type ReviewStepProps = {
 
 export function ReviewStep({
   customerType,
-  details,
-  emailVerified,
-  phoneVerified,
+  application,
   requiredDocuments,
   submitting,
+  submitError,
   submitLabel,
   onBack,
   onEditDetails,
@@ -45,15 +49,30 @@ export function ReviewStep({
   onEditDocuments,
   onSubmit,
 }: ReviewStepProps) {
-  const fleet = useApplyDraftStore(state => state.fleet);
-  const licence = useApplyDraftStore(state => state.licence);
-  const heldDocuments = useApplyDraftStore(state => state.heldDocuments);
+  const plansQuery = useQuery(getOnboardingM2mPlansQueryOptions());
+  const plan = plansQuery.data?.data.plans.find(entry => entry.code === application.m2mPlanCode);
+  const { organization } = application;
+  const {
+    emailVerified, phoneVerified,
+  } = application.verification;
 
   const isEnterprise = customerType === "enterprise";
-  const deviceTotal = fleet.deviceRequests.reduce(
-    (total, request) => total + request.quantity,
-    0,
-  );
+  const deviceTotal = requestedDeviceTotal(application);
+  const documentRows = requiredDocuments.flatMap(document => (
+    document.type === "vehicle_license"
+      ? application.vehicles.map(vehicle => ({
+          key: `vehicle_license:${vehicle.id}`,
+          label: `${document.label} — ${vehicle.registrationNumber}`,
+          fileName: application.documents.find(item => item.documentType === "vehicle_license" && item.vehicleId === vehicle.id)?.documentName,
+        }))
+      : [
+          {
+            key: document.type,
+            label: document.label,
+            fileName: application.documents.find(item => item.documentType === document.type)?.documentName,
+          },
+        ]
+  ));
 
   return (
     <div className="space-y-6">
@@ -79,55 +98,60 @@ export function ReviewStep({
           />
           <Field
             label="Organization Name"
-            value={details.organizationName}
+            value={organization.organizationName}
           />
-          {!isEnterprise && (
-            <>
-              <Field
-                label="First Name"
-                value={details.firstName}
-              />
-              <Field
-                label="Last Name"
-                value={details.lastName}
-              />
-            </>
-          )}
+          <Field
+            label={isEnterprise ? "Contact Person" : "Full Name"}
+            value={application.contact.fullName}
+          />
           <Field
             label="Business Email"
-            value={details.businessEmail}
+            value={organization.businessEmail}
             badge={emailVerified ? "Verified" : undefined}
           />
           <Field
             label="Phone Number"
-            value={details.phoneNumber}
+            value={organization.organizationPhone}
             badge={phoneVerified ? "Verified" : undefined}
           />
-          {isEnterprise && (
-            <Field
-              label="Contact Person"
-              value={details.contactName}
-            />
-          )}
+          {isEnterprise
+            ? (
+                <>
+                  <Field
+                    label="RC Number"
+                    value={application.registry.rcNumber ?? ""}
+                  />
+                  <Field
+                    label="TIN"
+                    value={application.registry.taxIdentificationNumber ?? ""}
+                  />
+                </>
+              )
+            : (
+                <Field
+                  label="ID Number"
+                  value={application.registry.identificationNumber ?? ""}
+                />
+              )}
           <Field
             label="License Plan"
-            value={findM2MPlan(licence.licensePlan)?.label ?? ""}
+            value={plan?.name ?? application.m2mPlanCode ?? ""}
           />
           <Field
             label="Indemnity Form"
-            value={licence.indemnitySigned ? "Signed" : "Not signed"}
+            value={isIndemnitySigned(application) ? "Signed" : "Not signed"}
           />
           <Field
             label="Street Address"
-            value={details.streetAddress}
+            value={organization.streetAddress}
           />
           <Field
             label="City"
-            value={details.city}
+            value={organization.city}
           />
           <Field
             label="State"
-            value={details.state ?? ""}
+            value={organization.state}
           />
         </div>
       </Section>
@@ -139,7 +163,7 @@ export function ReviewStep({
         <div className="grid gap-2 sm:grid-cols-2">
           <CountRow
             label="Vehicles added"
-            count={fleet.vehicles.length}
+            count={application.vehicles.length}
           />
           <CountRow
             label="Devices requested"
@@ -147,18 +171,18 @@ export function ReviewStep({
           />
         </div>
 
-        {fleet.deviceRequests.length > 0 && (
+        {application.deviceRequests.length > 0 && (
           <div className="mt-4 space-y-2">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
               Devices requested
             </p>
-            {fleet.deviceRequests.map(request => (
+            {application.deviceRequests.map(request => (
               <div
                 key={request.id}
                 className="flex items-center justify-between gap-3 rounded-lg border border-border/50 px-3 py-2"
               >
                 <span className="min-w-0 truncate text-sm text-foreground">
-                  {request.manufacturer || "Device"}
+                  {request.useCase}
                 </span>
                 <Badge
                   variant="secondary"
@@ -171,16 +195,16 @@ export function ReviewStep({
           </div>
         )}
 
-        {fleet.vehicles.length > 0 && (
+        {application.vehicles.length > 0 && (
           <div className="mt-4 space-y-2">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Vehicles</p>
-            {fleet.vehicles.map(vehicle => (
+            {application.vehicles.map(vehicle => (
               <div
                 key={vehicle.id}
                 className="flex items-center justify-between gap-3 rounded-lg border border-border/50 px-3 py-2"
               >
                 <span className="min-w-0 truncate text-sm text-foreground">
-                  {vehicle.registrationNumber || "Unregistered"}
+                  {vehicle.registrationNumber}
                 </span>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {[
@@ -200,12 +224,12 @@ export function ReviewStep({
         onEdit={onEditDocuments}
       >
         <div className="space-y-2">
-          {requiredDocuments.map((document) => {
-            const fileName = heldDocuments[document.type]?.fileName;
+          {documentRows.map((document) => {
+            const fileName = document.fileName;
 
             return (
               <div
-                key={document.type}
+                key={document.key}
                 className="flex items-center justify-between gap-3 rounded-lg border border-border/50 px-3 py-2"
               >
                 <span className="flex min-w-0 items-center gap-2">
@@ -227,6 +251,10 @@ export function ReviewStep({
           })}
         </div>
       </Section>
+
+      {submitError && (
+        <p className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">{submitError}</p>
+      )}
 
       <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
         By submitting, you confirm the information above is accurate. Once submitted, your

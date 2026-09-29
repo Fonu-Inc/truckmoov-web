@@ -1,19 +1,30 @@
+import type {
+  OnboardingApplicationVehicle,
+  ScheduledOnboardingInstallation,
+} from "@truckmoov/api/auth";
+import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { InstallationValues } from "@/features/apply/utils/applySchemas";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import {
+  getOnboardingOrderQueryOptions,
+  useScheduleOnboardingInstallation,
+} from "@truckmoov/api/auth";
+import {
+  AlertTriangle,
   ArrowLeft,
   CalendarCheck,
   Check,
   CheckCircle2,
   Cpu,
+  Loader2,
   Mail,
   Wand2,
   X,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -37,51 +48,80 @@ import {
 import { Textarea } from "@/components/shadcn/textarea";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import {
+  installationDateLimit,
   installationSchema,
   NIGERIAN_STATES,
+  normalizePhone,
 } from "@/features/apply/utils/applySchemas";
-import {
-  expandDeviceUnits,
-  TIME_SLOTS,
-} from "@/features/apply/utils/applyTypes";
+import { TIME_SLOTS } from "@/features/apply/utils/applyTypes";
 import { cn } from "@/lib/utils";
 
 export const INSTALLATION_FORM_ID = "apply-installation-form";
 
-type ScheduleInstallationStepProps = {
-  defaults: Partial<InstallationValues>;
-  onBack: () => void;
-  onFinish: () => void;
+/** Server field -> form field for 400 `{ message, field }` bodies. */
+const SERVER_FIELD: Record<string, keyof InstallationValues> = {
+  scheduledDate: "date",
+  timeSlot: "timeSlot",
+  addressLine: "streetAddress",
+  city: "city",
+  state: "state",
+  siteContactName: "contactName",
+  siteContactPhone: "contactPhone",
+  notes: "notes",
 };
 
+type ScheduleInstallationStepProps = {
+  applicationId: string;
+  vehicles: OnboardingApplicationVehicle[];
+  defaults: Partial<InstallationValues>;
+  onBack: () => void;
+  /** Booking done: the account exists and sign-in happens from the emailed link. */
+  onDone: () => void;
+};
+
+function deviceLabel(deviceIndex: number) {
+  return `Device ${String(deviceIndex).padStart(
+    2,
+    "0",
+  )}`;
+}
+
 /**
- * ponytail: no installation-scheduling endpoint on the public onboarding API.
- * The preference and the device→vehicle assignment are captured and persisted to
- * applyDraftStore, and the copy says plainly that it is a request awaiting
- * confirmation — never a booked slot.
+ * Last draft-token step (TRU-FE-15). Each paid-for device (from the order) is fitted to
+ * one vehicle; devices have no IMEI yet, so they're labelled by position. A successful
+ * booking creates the account and emails the setup link.
  */
 export function ScheduleInstallationStep({
+  applicationId,
+  vehicles,
   defaults,
   onBack,
-  onFinish,
+  onDone,
 }: ScheduleInstallationStepProps) {
-  const fleet = useApplyDraftStore(state => state.fleet);
   const installation = useApplyDraftStore(state => state.installation);
   const setInstallation = useApplyDraftStore(state => state.setInstallation);
   const assignments = useApplyDraftStore(state => state.deviceAssignments);
   const setAssignments = useApplyDraftStore(state => state.setDeviceAssignments);
-  const scheduled = useApplyDraftStore(state => state.scheduled);
-  const setScheduled = useApplyDraftStore(state => state.setScheduled);
+  const orderQuery = useQuery(getOnboardingOrderQueryOptions(applicationId));
+  const schedule = useScheduleOnboardingInstallation();
+  const [
+    booked,
+    setBooked,
+  ] = useState<ScheduledOnboardingInstallation | null>(null);
+  const [
+    bookingError,
+    setBookingError,
+  ] = useState<{
+    message: string; conflict: boolean;
+  } | null>(null);
 
-  const deviceUnits = useMemo(
-    () => expandDeviceUnits(fleet.deviceRequests),
-    [fleet.deviceRequests],
+  const deviceCount = orderQuery.data?.data.order.deviceCount ?? 0;
+  const deviceIndexes = Array.from(
+    { length: deviceCount },
+    (_, index) => index + 1,
   );
-
-  const assignedCount = deviceUnits.filter(unit => assignments[unit.id]).length;
-  const progress = deviceUnits.length === 0
-    ? 0
-    : (assignedCount / deviceUnits.length) * 100;
+  const assignedCount = deviceIndexes.filter(index => assignments[index]).length;
+  const progress = deviceCount === 0 ? 0 : (assignedCount / deviceCount) * 100;
 
   const form = useForm<InstallationValues>({
     resolver: zodResolver(installationSchema),
@@ -91,7 +131,7 @@ export function ScheduleInstallationStep({
       city: defaults.city ?? "",
       state: defaults.state ?? (undefined as unknown as InstallationValues["state"]),
       date: "",
-      timeSlot: TIME_SLOTS[0],
+      timeSlot: "morning",
       contactName: defaults.contactName ?? "",
       contactPhone: defaults.contactPhone ?? "",
       notes: "",
@@ -99,60 +139,138 @@ export function ScheduleInstallationStep({
   });
 
   /** A vehicle can only be fitted with one device. */
-  function assign(unitId: string, vehicleId: string) {
+  function assign(deviceIndex: number, vehicleId: string) {
     const next = { ...assignments };
     Object.keys(next).forEach((key) => {
-      if (next[key] === vehicleId)
-        delete next[key];
+      if (next[Number(key)] === vehicleId)
+        delete next[Number(key)];
     });
-    next[unitId] = vehicleId;
+    next[deviceIndex] = vehicleId;
     setAssignments(next);
   }
 
   function autoAssign() {
-    const next: Record<string, string> = {};
-    deviceUnits.forEach((unit, index) => {
-      const vehicle = fleet.vehicles[index];
+    const next: Record<number, string> = {};
+    deviceIndexes.forEach((deviceIndex) => {
+      const vehicle = vehicles[deviceIndex - 1];
       if (vehicle)
-        next[unit.id] = vehicle.id;
+        next[deviceIndex] = vehicle.id;
     });
     setAssignments(next);
   }
 
-  function handleSubmit(values: InstallationValues) {
-    if (assignedCount < deviceUnits.length) {
-      toast.error("Select the vehicle each requested device should be fitted to.");
+  async function handleSubmit(values: InstallationValues) {
+    setInstallation(values);
+    setBookingError(null);
+    if (assignedCount < deviceCount) {
+      setBookingError({
+        message: "Select the vehicle each device should be fitted to.",
+        conflict: false,
+      });
       return;
     }
-    setInstallation(values);
-    setScheduled(true);
-    toast.success("Installation scheduled");
+    try {
+      const res = await schedule.mutateAsync({
+        id: applicationId,
+        data: {
+          scheduledDate: values.date,
+          timeSlot: values.timeSlot,
+          addressLine: values.streetAddress,
+          city: values.city,
+          state: values.state,
+          siteContactName: values.contactName,
+          siteContactPhone: normalizePhone(values.contactPhone),
+          notes: values.notes || undefined,
+          assignments: deviceIndexes.map(deviceIndex => ({
+            deviceIndex,
+            vehicleId: assignments[deviceIndex],
+          })),
+        },
+      });
+      setBooked(res.data);
+    }
+    catch (error) {
+      const err = error as ServerErrorResponse;
+      const message = Array.isArray(err.message)
+        ? err.message.join(", ")
+        : err.message || "The installation couldn't be booked. Try again.";
+      const field = err.field ? SERVER_FIELD[err.field] : undefined;
+      if (field) {
+        form.setError(
+          field,
+          { message },
+        );
+        return;
+      }
+      // Date rules come back without a field key.
+      if (err.statusCode === 400 && /date|booked/i.test(message)) {
+        form.setError(
+          "date",
+          { message },
+        );
+        return;
+      }
+      setBookingError({
+        message,
+        conflict: err.statusCode === 409,
+      });
+    }
   }
 
-  if (scheduled) {
+  if (booked) {
     return (
       <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
           <CheckCircle2 className="h-10 w-10 text-success" />
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          Installation Scheduled
+          Installation Booked
         </h2>
+        <p className="mt-2 text-xs text-muted-foreground">{`Order ${booked.orderNumber}`}</p>
         <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
-          Your installation request has been recorded. Our installation team will contact you to
-          confirm the date and time, and you will receive an email with your account setup link
-          once your application is approved.
+          {`Your installation is booked for ${new Date(`${booked.scheduledDate}T00:00:00`).toLocaleDateString(
+            "en-NG",
+            { dateStyle: "long" },
+          )}, ${booked.timeSlotLabel}.`}
         </p>
-        <p className="mt-4 flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-foreground">
-          <Mail className="h-4 w-4 text-primary" />
-          Check your email for your account setup link.
-        </p>
+
+        <div className="mt-6 w-full max-w-md rounded-2xl border border-border/60 bg-muted/20 p-5 text-left text-sm">
+          {booked.installer
+            ? (
+                <>
+                  <p className="font-medium text-foreground">Your installer</p>
+                  <p className="mt-2 text-foreground">{booked.installer.fullName}</p>
+                  <p className="text-muted-foreground">{booked.installer.team}</p>
+                  <p className="text-muted-foreground">{booked.installer.phoneNumber}</p>
+                </>
+              )
+            : (
+                <p className="text-muted-foreground">
+                  We're assigning an installer for this slot and will let you know who is coming.
+                </p>
+              )}
+        </div>
+
+        {booked.setupLinkSent
+          ? (
+              <p className="mt-4 flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-foreground">
+                <Mail className="h-4 w-4 text-primary" />
+                Your account is ready. Check your email for the setup link.
+              </p>
+            )
+          : (
+              <p className="mt-4 flex items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-foreground">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                We couldn't send your account setup email. Please contact support.
+              </p>
+            )}
+
         <Button
           size="lg"
           className="mt-8"
-          onClick={onFinish}
+          onClick={onDone}
         >
-          Return to Home
+          Go to sign in
         </Button>
       </div>
     );
@@ -168,129 +286,136 @@ export function ScheduleInstallationStep({
         </p>
       </div>
 
-      {deviceUnits.length > 0 && (
-        <div className="space-y-3 rounded-xl border border-border/60 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-base font-semibold text-foreground">Devices you requested</p>
-              <p className="text-sm text-muted-foreground">
-                Choose the vehicle each device should be installed in — a vehicle can only be
-                picked once.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={autoAssign}
-              >
-                <Wand2 className="mr-1.5 h-4 w-4" />
-                Auto-assign
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={assignedCount === 0}
-                onClick={() => setAssignments({})}
-              >
-                <X className="mr-1.5 h-4 w-4" />
-                Clear all
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm text-muted-foreground">
-              {`${assignedCount} of ${deviceUnits.length} devices assigned`}
-            </span>
-            <Badge
-              variant="secondary"
-              className="rounded-full"
-            >
-              {`${Math.max(
-                fleet.vehicles.length - assignedCount,
-                0,
-              )} vehicles left`}
-            </Badge>
-          </div>
-          <Progress
-            value={progress}
-            className="h-2"
-          />
-
-          {deviceUnits.length > fleet.vehicles.length && (
-            <p className="rounded-xl border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-              {`You requested ${deviceUnits.length} devices but submitted only ${fleet.vehicles.length} vehicles. Add more vehicles to fit every device.`}
+      <div className="space-y-3 rounded-xl border border-border/60 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-base font-semibold text-foreground">Devices you paid for</p>
+            <p className="text-sm text-muted-foreground">
+              Choose the vehicle each device should be installed in — a vehicle can only be
+              picked once.
             </p>
-          )}
-
-          <div className="max-h-[380px] space-y-2 overflow-y-auto pr-1">
-            {deviceUnits.map((unit) => {
-              const assignedTo = assignments[unit.id];
-
-              return (
-                <div
-                  key={unit.id}
-                  className="grid gap-3 rounded-xl border border-border/60 bg-muted/20 p-3 sm:grid-cols-2 sm:items-center"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                        assignedTo ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {assignedTo ? <Check className="h-4 w-4" /> : <Cpu className="h-4 w-4" />}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {`${unit.label} · ${unit.manufacturer} ${unit.model}`}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {`IMEI ${unit.imei} · SIM carrier ${unit.simCarrier}`}
-                      </p>
-                    </div>
-                  </div>
-
-                  <Select
-                    value={assignedTo ?? ""}
-                    onValueChange={vehicleId => assign(
-                      unit.id,
-                      vehicleId,
-                    )}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select vehicle to assign" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {fleet.vehicles.map((vehicle) => {
-                        const takenBy = Object.entries(assignments)
-                          .find(([
-                            key,
-                            value,
-                          ]) => value === vehicle.id && key !== unit.id);
-
-                        return (
-                          <SelectItem
-                            key={vehicle.id}
-                            value={vehicle.id}
-                            disabled={Boolean(takenBy)}
-                          >
-                            {`${vehicle.registrationNumber || "Unregistered"} — ${vehicle.make} ${vehicle.model}`}
-                            {takenBy ? " (already assigned)" : ""}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              );
-            })}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={deviceCount === 0}
+              onClick={autoAssign}
+            >
+              <Wand2 className="mr-1.5 h-4 w-4" />
+              Auto-assign
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={assignedCount === 0}
+              onClick={() => setAssignments({})}
+            >
+              <X className="mr-1.5 h-4 w-4" />
+              Clear all
+            </Button>
           </div>
         </div>
-      )}
+
+        {orderQuery.isLoading && (
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {orderQuery.isError && (
+          <p className="text-sm text-destructive">
+            {(orderQuery.error as ServerErrorResponse | null)?.message || "We couldn't load your order."}
+          </p>
+        )}
+
+        {deviceCount > 0 && (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm text-muted-foreground">
+                {`${assignedCount} of ${deviceCount} devices assigned`}
+              </span>
+              <Badge
+                variant="secondary"
+                className="rounded-full"
+              >
+                {`${Math.max(
+                  vehicles.length - assignedCount,
+                  0,
+                )} vehicles left`}
+              </Badge>
+            </div>
+            <Progress
+              value={progress}
+              className="h-2"
+            />
+
+            {deviceCount > vehicles.length && (
+              <p className="rounded-xl border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+                {`You paid for ${deviceCount} devices but have only ${vehicles.length} vehicles. Each device needs its own vehicle.`}
+              </p>
+            )}
+
+            <div className="max-h-[380px] space-y-2 overflow-y-auto pr-1">
+              {deviceIndexes.map((deviceIndex) => {
+                const assignedTo = assignments[deviceIndex];
+
+                return (
+                  <div
+                    key={deviceIndex}
+                    className="grid gap-3 rounded-xl border border-border/60 bg-muted/20 p-3 sm:grid-cols-2 sm:items-center"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={cn(
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                          assignedTo ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {assignedTo ? <Check className="h-4 w-4" /> : <Cpu className="h-4 w-4" />}
+                      </span>
+                      <p className="text-sm font-medium text-foreground">{deviceLabel(deviceIndex)}</p>
+                    </div>
+
+                    <Select
+                      value={assignedTo ?? ""}
+                      onValueChange={vehicleId => assign(
+                        deviceIndex,
+                        vehicleId,
+                      )}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select vehicle to assign" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vehicles.map((vehicle) => {
+                          const takenBy = Object.entries(assignments)
+                            .find(([
+                              key,
+                              value,
+                            ]) => value === vehicle.id && Number(key) !== deviceIndex);
+
+                          return (
+                            <SelectItem
+                              key={vehicle.id}
+                              value={vehicle.id}
+                              disabled={Boolean(takenBy)}
+                            >
+                              {`${vehicle.registrationNumber || "Unregistered"} — ${vehicle.make} ${vehicle.model}`}
+                              {takenBy ? " (already assigned)" : ""}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
       <Form {...form}>
         <form
@@ -307,6 +432,7 @@ export function ScheduleInstallationStep({
                 <FormControl>
                   <Input
                     placeholder="Street"
+                    maxLength={200}
                     {...field}
                   />
                 </FormControl>
@@ -325,6 +451,7 @@ export function ScheduleInstallationStep({
                   <FormControl>
                     <Input
                       placeholder="City"
+                      maxLength={80}
                       {...field}
                     />
                   </FormControl>
@@ -375,6 +502,8 @@ export function ScheduleInstallationStep({
                   <FormControl>
                     <Input
                       type="date"
+                      min={installationDateLimit(1)}
+                      max={installationDateLimit(90)}
                       {...field}
                     />
                   </FormControl>
@@ -401,10 +530,10 @@ export function ScheduleInstallationStep({
                     <SelectContent>
                       {TIME_SLOTS.map(slot => (
                         <SelectItem
-                          key={slot}
-                          value={slot}
+                          key={slot.value}
+                          value={slot.value}
                         >
-                          {slot}
+                          {slot.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -423,7 +552,10 @@ export function ScheduleInstallationStep({
                 <FormItem>
                   <FormLabel>Site Contact Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input
+                      maxLength={80}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -458,6 +590,7 @@ export function ScheduleInstallationStep({
                 <FormControl>
                   <Textarea
                     rows={3}
+                    maxLength={1000}
                     placeholder="Anything our installation team should know."
                     {...field}
                   />
@@ -467,10 +600,21 @@ export function ScheduleInstallationStep({
             )}
           />
 
-          <p className="rounded-xl border border-border/60 bg-muted/20 p-4 text-xs text-muted-foreground">
-            This is a scheduling request, not a confirmed booking. Our installation team will
-            contact you to confirm the date and time.
-          </p>
+          {bookingError && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-foreground">
+              <span>{bookingError.message}</span>
+              {bookingError.conflict && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh
+                </Button>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between border-t border-border/60 pt-6">
             <Button
@@ -484,6 +628,8 @@ export function ScheduleInstallationStep({
             <Button
               type="submit"
               size="lg"
+              loading={schedule.isPending}
+              disabled={deviceCount === 0}
             >
               <CalendarCheck className="mr-2 h-4 w-4" />
               Schedule Installation

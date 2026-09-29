@@ -1,6 +1,6 @@
 import type {
   OnboardingApplication,
-  OnboardingApplicationDocumentType,
+  OnboardingUploadableDocumentType,
 } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type {
@@ -112,13 +112,13 @@ function setStoredApplicationId(id: string | null) {
 function applicationToOrgValues(app: OnboardingApplication): OrganizationFormValues {
   return {
     applicantType: app.applicantType,
-    organizationName: app.organizationName,
-    businessEmail: app.businessEmail,
-    phone: app.organizationPhone,
-    contactName: app.contactFullName,
-    address: app.streetAddress,
-    city: app.city,
-    state: app.state as OrganizationFormValues["state"],
+    organizationName: app.organization.organizationName,
+    businessEmail: app.organization.businessEmail,
+    phone: app.organization.organizationPhone,
+    contactName: app.contact.fullName,
+    address: app.organization.streetAddress,
+    city: app.organization.city,
+    state: app.organization.state as OrganizationFormValues["state"],
   };
 }
 
@@ -347,18 +347,18 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
 
       orgForm.reset(applicationToOrgValues(application));
 
-      if (application.emailVerified)
+      if (application.verification.emailVerified)
         setEmailStatus("verified");
-      if (application.phoneVerified)
+      if (application.verification.phoneVerified)
         setPhoneStatus("verified");
 
       // Land on the earliest unfinished step so the applicant continues where they left off.
       const missingDocs = application.missingDocuments.length > 0;
       const nextStep = missingDocs
         ? 1
-        : !application.emailVerified
+        : !application.verification.emailVerified
             ? 3
-            : !application.phoneVerified
+            : !application.verification.phoneVerified
                 ? 4
                 : 5;
       setStep(nextStep);
@@ -439,8 +439,8 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
     if (!applicationId) {
       try {
         const res = await createMutation.mutateAsync({ data: payload });
-        setApplicationId(res.data.applicationId);
-        setStoredApplicationId(res.data.applicationId);
+        setApplicationId(res.data.id);
+        setStoredApplicationId(res.data.id);
         return true;
       }
       catch (error) {
@@ -481,7 +481,7 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
     try {
       await uploadMutation.mutateAsync({
         id: applicationId,
-        documentType: id as OnboardingApplicationDocumentType,
+        documentType: id as OnboardingUploadableDocumentType,
         file,
       });
     }

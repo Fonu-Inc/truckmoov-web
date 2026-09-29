@@ -1,12 +1,18 @@
+import type {
+  OnboardingApplication,
+  OnboardingApplicationVehicle,
+} from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import type { DetailState } from "@/features/apply/components/ui/DetailDialog";
-import type {
-  DeviceRequestValues, VehicleValues,
-} from "@/features/apply/utils/applySchemas";
 
-import type {
-  DeviceRequest, VehicleEntry,
-} from "@/features/apply/utils/applyTypes";
+import {
+  useAddOnboardingDeviceRequest,
+  useAddOnboardingVehicle,
+  useDeleteOnboardingDeviceRequest,
+  useDeleteOnboardingVehicle,
+  useImportOnboardingVehicles,
+  useUpdateOnboardingVehicle,
+} from "@truckmoov/api/auth";
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,82 +26,66 @@ import {
   Upload,
 } from "lucide-react";
 import { useState } from "react";
-
 import { toast } from "sonner";
+
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  AddVehicleModal,
   RequestDevicesModal,
-  UploadModal,
+  VehicleImportModal,
+  VehicleModal,
 } from "@/features/apply/components/forms/ApplyModals";
 import { DetailDialog } from "@/features/apply/components/ui/DetailDialog";
-import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
+import { requestedDeviceTotal } from "@/features/apply/hooks/useApplySession";
+import { useConfirmDialog } from "@/features/apply/hooks/useConfirmDialog";
 import {
-  PURCHASE_TYPES,
-  SIM_CARRIERS,
-  uid,
-  VEHICLE_TYPES,
+  vehicleToPayload,
+  vehicleToValues,
+} from "@/features/apply/utils/applySchemas";
+import {
+  PURCHASE_TYPE_LABELS,
+  VEHICLE_TYPE_LABELS,
+  vehicleSummary,
 } from "@/features/apply/utils/applyTypes";
 import { cn } from "@/lib/utils";
 
-const VEHICLE_CSV_HEADERS = [
-  "Registration Number",
-  "Vehicle Type",
-  "Vehicle Make",
-  "Vehicle Model",
-  "Vehicle Year",
-  "Engine Number",
-  "Chassis Number",
-  "Vehicle Color",
-  "Engine Capacity",
-  "Odometer Reading",
-  "Type of Purchase",
-  "License Plan Selected",
-];
-
-const VEHICLE_CSV_SAMPLE = [
-  "LAG-123-ABC",
-  "Truck",
-  "Toyota",
-  "Hilux",
-  "2021",
-  "ENG-000123",
-  "JTEBU5JR9",
-  "White",
-  "2.8L",
-  "84500",
-  "Owned",
-  "Standard Fleet",
-];
 type FleetRequirementsStepProps = {
+  application: OnboardingApplication;
   onBack: () => void;
   onNext: () => void;
   nextLabel?: string;
 };
 
 /**
- * ponytail: there is no fleet endpoint on the public onboarding-application API.
- * Vehicles and device requests are collected in full and persisted to
- * applyDraftStore so nothing the applicant types is lost, then submitted once a
- * `/auth/onboarding/applications/:id/fleet` endpoint exists.
+ * Step 2 (TRU-FE-12). Vehicles one at a time or by CSV, then device requests — all
+ * saved on the application as they are made. Devices are hard bound to vehicles: the
+ * total requested can never exceed the vehicles added.
  */
 export function FleetRequirementsStep({
+  application,
   onBack,
   onNext,
   nextLabel,
 }: FleetRequirementsStepProps) {
-  const fleet = useApplyDraftStore(state => state.fleet);
-  const setFleet = useApplyDraftStore(state => state.setFleet);
+  const id = application.id;
+  const addVehicle = useAddOnboardingVehicle();
+  const updateVehicle = useUpdateOnboardingVehicle();
+  const deleteVehicle = useDeleteOnboardingVehicle();
+  const importVehicles = useImportOnboardingVehicles();
+  const addDeviceRequest = useAddOnboardingDeviceRequest();
+  const deleteDeviceRequest = useDeleteOnboardingDeviceRequest();
+  const {
+    confirm, dialog: confirmDialog,
+  } = useConfirmDialog();
 
   const [
     expanded,
     setExpanded,
   ] = useState<"vehicles" | "devices" | null>(null);
   const [
-    vehicleOpen,
-    setVehicleOpen,
-  ] = useState(false);
+    vehicleModal,
+    setVehicleModal,
+  ] = useState<{ vehicle: OnboardingApplicationVehicle | null } | null>(null);
   const [
     uploadOpen,
     setUploadOpen,
@@ -105,185 +95,111 @@ export function FleetRequirementsStep({
     setDeviceOpen,
   ] = useState(false);
   const [
-    editingRequest,
-    setEditingRequest,
-  ] = useState<DeviceRequest | null>(null);
-  const [
     detail,
     setDetail,
   ] = useState<DetailState | null>(null);
+  const [
+    removingId,
+    setRemovingId,
+  ] = useState<string | null>(null);
 
-  const deviceTotal = fleet.deviceRequests.reduce(
-    (total, request) => total + request.quantity,
+  const vehicles = application.vehicles;
+  const deviceRequests = application.deviceRequests;
+  const deviceTotal = requestedDeviceTotal(application);
+  const devicesLeft = Math.max(
     0,
+    vehicles.length - deviceTotal,
   );
-  const canProceed = fleet.vehicles.length > 0;
+  const canProceed = vehicles.length > 0;
 
-  function addVehicle(values: VehicleValues) {
-    setFleet(previous => ({
-      ...previous,
-      vehicles: [
-        ...previous.vehicles,
-        {
-          id: uid(),
-          registrationNumber: values.registrationNumber,
-          vehicleType: values.vehicleType,
-          otherVehicleType: values.otherVehicleType,
-          make: values.make,
-          model: values.model,
-          year: values.year ?? "",
-          engineNumber: values.engineNumber ?? "",
-          chassisNumber: values.chassisNumber ?? "",
-          color: values.color ?? "",
-          engineCapacity: values.engineCapacity ?? "",
-          odometer: values.odometer ?? "",
-          purchaseType: values.purchaseType ?? "",
-          otherPurchaseType: values.otherPurchaseType,
-        },
-      ],
-    }));
-  }
-
-  function addDeviceRequest(values: DeviceRequestValues) {
-    if (editingRequest) {
-      setFleet(previous => ({
-        ...previous,
-        deviceRequests: previous.deviceRequests.map(request => (
-          request.id === editingRequest.id
-            ? {
-                ...request,
-                quantity: values.quantity,
-                manufacturer: values.manufacturer,
-                useCase: values.useCase,
-                notes: values.notes ?? "",
-              }
-            : request
-        )),
-      }));
-      setEditingRequest(null);
-      toast.success("Device request updated.");
+  async function removeVehicle(vehicle: OnboardingApplicationVehicle) {
+    const hasLicence = application.documents.some(document => document.vehicleId === vehicle.id);
+    const devicesAfter = vehicles.length - 1;
+    if (deviceTotal > devicesAfter) {
+      toast.error(`Remove a device request first — ${deviceTotal} devices can't be fitted to ${devicesAfter} vehicle${devicesAfter === 1 ? "" : "s"}.`);
       return;
     }
-
-    setFleet(previous => ({
-      ...previous,
-      deviceRequests: [
-        ...previous.deviceRequests,
-        {
-          id: uid(),
-          quantity: values.quantity,
-          manufacturer: values.manufacturer,
-          useCase: values.useCase,
-          notes: values.notes ?? "",
-          includeSim: true,
-          simCarrier: SIM_CARRIERS[0],
-        },
-      ],
-    }));
-  }
-
-  function addVehiclesFromRows(rows: string[][]) {
-    const parsed: VehicleEntry[] = rows
-      .filter(row => (row[0] ?? "").trim())
-      .map(row => ({
-        id: uid(),
-        registrationNumber: (row[0] ?? "").trim(),
-        vehicleType: (row[1] ?? "").trim(),
-        make: (row[2] ?? "").trim(),
-        model: (row[3] ?? "").trim(),
-        year: (row[4] ?? "").trim(),
-        engineNumber: (row[5] ?? "").trim(),
-        chassisNumber: (row[6] ?? "").trim(),
-        color: (row[7] ?? "").trim(),
-        engineCapacity: (row[8] ?? "").trim(),
-        odometer: (row[9] ?? "").trim(),
-        purchaseType: (row[10] ?? "").trim(),
-      }));
-
-    if (parsed.length === 0) {
-      toast.error("No valid vehicle rows found.");
-      return 0;
+    if (hasLicence && !(await confirm({
+      title: `Remove ${vehicle.registrationNumber}?`,
+      description: "The vehicle licence you uploaded for it will be removed too.",
+      confirmLabel: "Remove vehicle",
+    }))) {
+      return;
     }
-
-    setFleet(previous => ({
-      ...previous,
-      vehicles: [
-        ...previous.vehicles,
-        ...parsed,
-      ],
-    }));
-    return parsed.length;
+    setRemovingId(vehicle.id);
+    try {
+      await deleteVehicle.mutateAsync({
+        id,
+        vehicleId: vehicle.id,
+      });
+      toast.success(`${vehicle.registrationNumber} removed.`);
+    }
+    catch (error) {
+      toast.error((error as { message?: string }).message || "The vehicle couldn't be removed.");
+    }
+    finally {
+      setRemovingId(null);
+    }
   }
 
-  function openVehicleDetail(vehicle: VehicleEntry, editing: boolean) {
-    setDetail({
-      title: `Vehicle · ${vehicle.registrationNumber || "Details"}`,
-      editing,
-      fields: [
-        {
-          key: "registrationNumber", label: "Registration Number", value: vehicle.registrationNumber, editable: true,
-        },
-        {
-          key: "vehicleType", label: "Vehicle Type", value: vehicle.vehicleType, editable: true, options: VEHICLE_TYPES,
-        },
-        {
-          key: "make", label: "Vehicle Make", value: vehicle.make, editable: true,
-        },
-        {
-          key: "model", label: "Vehicle Model", value: vehicle.model, editable: true,
-        },
-        {
-          key: "year", label: "Vehicle Year", value: vehicle.year, editable: true,
-        },
-        {
-          key: "engineNumber", label: "Engine Number", value: vehicle.engineNumber, editable: true,
-        },
-        {
-          key: "chassisNumber", label: "Chassis Number", value: vehicle.chassisNumber, editable: true,
-        },
-        {
-          key: "color", label: "Vehicle Color", value: vehicle.color, editable: true,
-        },
-        {
-          key: "engineCapacity", label: "Engine Capacity", value: vehicle.engineCapacity, editable: true,
-        },
-        {
-          key: "odometer", label: "Odometer Reading", value: vehicle.odometer, editable: true,
-        },
-        {
-          key: "purchaseType", label: "Type of Purchase", value: vehicle.purchaseType, editable: true, options: PURCHASE_TYPES,
-        },
-      ],
-      onSave: (values) => {
-        setFleet(previous => ({
-          ...previous,
-          vehicles: previous.vehicles.map(item => (
-            item.id === vehicle.id ? {
-              ...item, ...values,
-            } : item
-          )),
-        }));
-        toast.success("Vehicle updated.");
-      },
-    });
+  async function removeDeviceRequest(requestId: string) {
+    setRemovingId(requestId);
+    try {
+      await deleteDeviceRequest.mutateAsync({
+        id,
+        requestId,
+      });
+      toast.success("Device request removed.");
+    }
+    catch (error) {
+      toast.error((error as { message?: string }).message || "The request couldn't be removed.");
+    }
+    finally {
+      setRemovingId(null);
+    }
   }
 
-  function openDeviceDetail(request: DeviceRequest) {
+  function openVehicleDetail(vehicle: OnboardingApplicationVehicle) {
     setDetail({
-      title: `Device Request · ${request.quantity} × ${request.manufacturer}`,
+      title: `Vehicle · ${vehicle.registrationNumber}`,
       editing: false,
       fields: [
         {
-          key: "quantity", label: "Number of Devices", value: String(request.quantity),
+          key: "registrationNumber", label: "Registration Number", value: vehicle.registrationNumber,
         },
         {
-          key: "manufacturer", label: "Manufacturer", value: request.manufacturer,
+          key: "vehicleType", label: "Vehicle Type", value: VEHICLE_TYPE_LABELS[vehicle.vehicleType] ?? vehicle.vehicleType,
         },
         {
-          key: "useCase", label: "Use Case", value: request.useCase,
+          key: "make", label: "Vehicle Make", value: vehicle.make,
         },
         {
-          key: "notes", label: "Additional Notes", value: request.notes,
+          key: "model", label: "Vehicle Model", value: vehicle.model,
+        },
+        {
+          key: "year", label: "Vehicle Year", value: vehicle.year ? String(vehicle.year) : "",
+        },
+        {
+          key: "engineNumber", label: "Engine Number", value: vehicle.engineNumber ?? "",
+        },
+        {
+          key: "chassisNumber", label: "Chassis Number", value: vehicle.chassisNumber ?? "",
+        },
+        {
+          key: "color", label: "Vehicle Color", value: vehicle.color ?? "",
+        },
+        {
+          key: "engineCapacity", label: "Engine Capacity", value: vehicle.engineCapacity ?? "",
+        },
+        {
+          key: "odometer", label: "Odometer Reading", value: vehicle.odometerReading != null ? `${vehicle.odometerReading} km` : "",
+        },
+        {
+          key: "purchaseType",
+          label: "Type of Purchase",
+          value: vehicle.purchaseType === "other"
+            ? (vehicle.purchaseTypeOther ?? "Other")
+            : vehicle.purchaseType ? PURCHASE_TYPE_LABELS[vehicle.purchaseType] : "",
         },
       ],
     });
@@ -303,11 +219,11 @@ export function FleetRequirementsStep({
         icon={<Car className="h-5 w-5 text-primary" />}
         title="Vehicles"
         description="Upload your vehicle list in bulk or add vehicles one at a time."
-        count={fleet.vehicles.length}
-        summary={`${fleet.vehicles.length} Vehicle${fleet.vehicles.length === 1 ? "" : "s"} Added`}
+        count={vehicles.length}
+        summary={`${vehicles.length} Vehicle${vehicles.length === 1 ? "" : "s"} Added`}
         expanded={expanded === "vehicles"}
         onToggle={() => setExpanded(expanded === "vehicles" ? null : "vehicles")}
-        empty={fleet.vehicles.length === 0}
+        empty={vehicles.length === 0}
         actions={(
           <>
             <Button
@@ -320,7 +236,7 @@ export function FleetRequirementsStep({
             </Button>
             <Button
               size="sm"
-              onClick={() => setVehicleOpen(true)}
+              onClick={() => setVehicleModal({ vehicle: null })}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Vehicle
@@ -328,27 +244,15 @@ export function FleetRequirementsStep({
           </>
         )}
       >
-        {fleet.vehicles.map(vehicle => (
+        {vehicles.map(vehicle => (
           <Row
             key={vehicle.id}
-            primary={vehicle.registrationNumber || "—"}
-            secondary={[
-              vehicle.make,
-              vehicle.model,
-              vehicle.vehicleType === "Other" ? vehicle.otherVehicleType : vehicle.vehicleType,
-            ].filter(Boolean).join(" · ")}
-            onView={() => openVehicleDetail(
-              vehicle,
-              false,
-            )}
-            onEdit={() => openVehicleDetail(
-              vehicle,
-              true,
-            )}
-            onRemove={() => setFleet(previous => ({
-              ...previous,
-              vehicles: previous.vehicles.filter(item => item.id !== vehicle.id),
-            }))}
+            primary={vehicle.registrationNumber}
+            secondary={vehicleSummary(vehicle)}
+            removing={removingId === vehicle.id}
+            onView={() => openVehicleDetail(vehicle)}
+            onEdit={() => setVehicleModal({ vehicle })}
+            onRemove={() => void removeVehicle(vehicle)}
           />
         ))}
       </SectionCard>
@@ -356,39 +260,46 @@ export function FleetRequirementsStep({
       <SectionCard
         icon={<HardDrive className="h-5 w-5 text-primary" />}
         title="Devices"
-        description="Request fleet devices from Fleet Pro. Devices provisioned through Fleet Pro use MTN SIM connectivity."
+        description="Request one device per vehicle from Fleet Pro. Devices provisioned through Fleet Pro use MTN SIM connectivity."
         count={deviceTotal}
-        summary={`${deviceTotal} Device${deviceTotal === 1 ? "" : "s"} Requested`}
+        summary={`${deviceTotal} of ${vehicles.length} Device${vehicles.length === 1 ? "" : "s"} Requested`}
         expanded={expanded === "devices"}
         onToggle={() => setExpanded(expanded === "devices" ? null : "devices")}
-        empty={fleet.deviceRequests.length === 0}
+        empty={deviceRequests.length === 0}
         actions={(
           <Button
             size="sm"
-            onClick={() => {
-              setEditingRequest(null);
-              setDeviceOpen(true);
-            }}
+            disabled={devicesLeft === 0}
+            title={devicesLeft === 0 ? "Every vehicle already has a device requested." : undefined}
+            onClick={() => setDeviceOpen(true)}
           >
             Request Device
           </Button>
         )}
       >
-        {fleet.deviceRequests.map(request => (
+        {deviceRequests.map(request => (
           <Row
             key={request.id}
-            primary={`Request · ${request.quantity} × ${request.manufacturer}`}
+            primary={`Request · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`}
             secondary={`${request.useCase} · MTN SIM connectivity`}
             badge="Requested"
-            onView={() => openDeviceDetail(request)}
-            onEdit={() => {
-              setEditingRequest(request);
-              setDeviceOpen(true);
-            }}
-            onRemove={() => setFleet(previous => ({
-              ...previous,
-              deviceRequests: previous.deviceRequests.filter(item => item.id !== request.id),
-            }))}
+            removing={removingId === request.id}
+            onView={() => setDetail({
+              title: `Device Request · ${request.quantity}`,
+              editing: false,
+              fields: [
+                {
+                  key: "quantity", label: "Number of Devices", value: String(request.quantity),
+                },
+                {
+                  key: "useCase", label: "Use Case", value: request.useCase,
+                },
+                {
+                  key: "notes", label: "Additional Notes", value: request.notes ?? "",
+                },
+              ],
+            })}
+            onRemove={() => void removeDeviceRequest(request.id)}
           />
         ))}
       </SectionCard>
@@ -414,39 +325,104 @@ export function FleetRequirementsStep({
 
       {!canProceed && (
         <p className="text-right text-xs text-muted-foreground">
-          Add at least one vehicle to continue. Requesting devices is optional.
+          Add at least one vehicle to continue. Request one device per vehicle before you submit.
         </p>
       )}
 
-      <AddVehicleModal
-        open={vehicleOpen}
-        onOpenChange={setVehicleOpen}
-        onAdd={addVehicle}
+      <VehicleModal
+        open={Boolean(vehicleModal)}
+        initial={vehicleModal?.vehicle ? vehicleToValues(vehicleModal.vehicle) : null}
+        onOpenChange={open => !open && setVehicleModal(null)}
+        onSubmit={async (values) => {
+          const editing = vehicleModal?.vehicle;
+          if (editing) {
+            await updateVehicle.mutateAsync({
+              id,
+              vehicleId: editing.id,
+              data: vehicleToPayload(values),
+            });
+            toast.success("Vehicle updated.");
+          }
+          else {
+            await addVehicle.mutateAsync({
+              id,
+              data: vehicleToPayload(values),
+            });
+            toast.success(`${values.registrationNumber} added.`);
+          }
+        }}
       />
       <RequestDevicesModal
         open={deviceOpen}
-        initial={editingRequest}
-        onOpenChange={(next) => {
-          setDeviceOpen(next);
-          if (!next)
-            setEditingRequest(null);
+        maxQuantity={devicesLeft}
+        onOpenChange={setDeviceOpen}
+        onSubmit={async (values) => {
+          const data = {
+            quantity: values.quantity,
+            useCase: values.useCase.trim(),
+            notes: values.notes?.trim() || undefined,
+          };
+          const res = await addDeviceRequest.mutateAsync({
+            id,
+            data,
+          });
+          if ("requestSaved" in res.data) {
+            // Stock can't cover it and nothing was saved. Offer the available quantity, if any.
+            const shortfall = res.data;
+            if (shortfall.availableQuantity < 1) {
+              throw Object.assign(
+                new Error(`${shortfall.message} There are no devices in stock right now — try again later.`),
+                { field: "quantity" },
+              );
+            }
+            const accepted = await confirm({
+              title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} available`,
+              description: shortfall.message,
+              confirmLabel: `Request ${shortfall.availableQuantity}`,
+            });
+            if (!accepted) {
+              throw Object.assign(
+                new Error(shortfall.message),
+                { field: "quantity" },
+              );
+            }
+            const confirmed = await addDeviceRequest.mutateAsync({
+              id,
+              data: {
+                ...data,
+                quantity: shortfall.availableQuantity,
+                confirmAvailableQuantity: true,
+              },
+            });
+            if ("requestSaved" in confirmed.data) {
+              throw Object.assign(
+                new Error(confirmed.data.message),
+                { field: "quantity" },
+              );
+            }
+          }
+          toast.success("Device request added.");
         }}
-        onAdd={addDeviceRequest}
       />
-      <UploadModal
+      <VehicleImportModal
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        title="Upload Vehicles"
-        description="Upload a CSV containing your vehicle records."
-        fileName="fleetpro_vehicle_template.csv"
-        headers={VEHICLE_CSV_HEADERS}
-        sample={VEHICLE_CSV_SAMPLE}
-        onRows={addVehiclesFromRows}
+        onUpload={async (file) => {
+          const res = await importVehicles.mutateAsync({
+            id,
+            file,
+          });
+          return {
+            message: res.message,
+            skipped: res.data.skipped ?? [],
+          };
+        }}
       />
       <DetailDialog
         detail={detail}
         onClose={() => setDetail(null)}
       />
+      {confirmDialog}
     </div>
   );
 }
@@ -530,6 +506,7 @@ function Row({
   primary,
   secondary,
   badge,
+  removing,
   onView,
   onEdit,
   onRemove,
@@ -537,8 +514,10 @@ function Row({
   primary: string;
   secondary: string;
   badge?: string;
+  removing?: boolean;
   onView: () => void;
-  onEdit: () => void;
+  /** Device requests can't be edited — remove and request again. */
+  onEdit?: () => void;
   onRemove: () => void;
 }) {
   return (
@@ -564,18 +543,21 @@ function Row({
         >
           <Eye className="h-4 w-4 text-muted-foreground" />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Edit details"
-          onClick={onEdit}
-        >
-          <Pencil className="h-4 w-4 text-muted-foreground" />
-        </Button>
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Edit details"
+            onClick={onEdit}
+          >
+            <Pencil className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon-sm"
           aria-label="Remove"
+          loading={removing}
           onClick={onRemove}
         >
           <Trash2 className="h-4 w-4 text-muted-foreground" />

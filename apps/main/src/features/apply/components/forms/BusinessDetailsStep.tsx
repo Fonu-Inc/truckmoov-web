@@ -2,6 +2,8 @@ import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas";
 import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
 
+import { useQuery } from "@tanstack/react-query";
+import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
 import {
   ArrowRight,
   Check,
@@ -32,11 +34,10 @@ import {
 } from "@/components/shadcn/select";
 import { IndemnityDialog } from "@/features/apply/components/ui/IndemnityDialog";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
-import { NIGERIAN_STATES } from "@/features/apply/utils/applySchemas";
 import {
-  M2M_LICENSE_PLANS,
-  planCardTitle,
-} from "@/features/apply/utils/m2mLicense";
+  IDENTIFICATION_TYPES,
+  NIGERIAN_STATES,
+} from "@/features/apply/utils/applySchemas";
 import { cn } from "@/lib/utils";
 
 export const BUSINESS_DETAILS_FORM_ID = "apply-business-details-form";
@@ -45,6 +46,12 @@ type BusinessDetailsStepProps = {
   form: UseFormReturn<BusinessDetailsValues>;
   customerType: ApplicantCustomerType;
   submitting: boolean;
+  /** Signed on the server already (the generated form is in the documents). */
+  indemnitySigned: boolean;
+  /** Set when the agreement changed under the applicant and they must sign again. */
+  indemnityNotice?: string | null;
+  /** Error from the last save that belongs to no single field. */
+  saveError?: string | null;
   nextLabel?: string;
   onSubmit: (values: BusinessDetailsValues) => void;
 };
@@ -53,13 +60,21 @@ export function BusinessDetailsStep({
   form,
   customerType,
   submitting,
+  indemnitySigned: signedOnServer,
+  indemnityNotice,
+  saveError,
   nextLabel,
   onSubmit,
 }: BusinessDetailsStepProps) {
   const isEnterprise = customerType === "enterprise";
   const licence = useApplyDraftStore(state => state.licence);
   const setLicence = useApplyDraftStore(state => state.setLicence);
-  const setSignatureImage = useApplyDraftStore(state => state.setSignatureImage);
+  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
+  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
+  const plansQuery = useQuery(getOnboardingM2mPlansQueryOptions());
+  const plans = plansQuery.data?.data.plans ?? [];
+  // A signature drawn before the application exists is uploaded right after it is saved.
+  const indemnitySigned = signedOnServer || Boolean(pendingSignature);
   const [
     indemnityOpen,
     setIndemnityOpen,
@@ -76,7 +91,7 @@ export function BusinessDetailsStep({
       setSectionError("Select a license plan to continue.");
       return;
     }
-    if (!licence.indemnitySigned) {
+    if (!indemnitySigned) {
       setSectionError("Review and electronically sign the indemnity form.");
       return;
     }
@@ -204,6 +219,91 @@ export function BusinessDetailsStep({
               />
 
               {isEnterprise && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="rcNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RC Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="RC1234567"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="taxIdentificationNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tax Identification Number (TIN)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="12345678-0001"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {!isEnterprise && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="identificationType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ID Type</FormLabel>
+                        <Select
+                          value={field.value || undefined}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an ID type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {IDENTIFICATION_TYPES.map(type => (
+                              <SelectItem
+                                key={type.value}
+                                value={type.value}
+                              >
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="identificationNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ID Number</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {isEnterprise && (
                 <FormField
                   control={form.control}
                   name="contactName"
@@ -306,13 +406,29 @@ export function BusinessDetailsStep({
               aria-label="M2M Plan"
               className="grid gap-4 sm:grid-cols-2"
             >
-              {M2M_LICENSE_PLANS.map((plan) => {
-                const selected = licence.licensePlan === plan.plan;
-                const title = planCardTitle(plan.plan);
+              {plansQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">Loading plans…</p>
+              )}
+              {plansQuery.isError && (
+                <p className="text-sm text-destructive">
+                  Plans couldn't be loaded.
+                  {" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => plansQuery.refetch()}
+                  >
+                    Try again
+                  </button>
+                </p>
+              )}
+              {plans.map((plan) => {
+                const selected = licence.licensePlan === plan.code;
+                const title = plan.name;
 
                 return (
                   <div
-                    key={plan.plan}
+                    key={plan.code}
                     className={cn(
                       "relative flex flex-col gap-4 rounded-2xl border bg-card p-5 transition-all",
                       selected && "border-primary bg-primary/5 ring-1 ring-primary/30",
@@ -324,7 +440,7 @@ export function BusinessDetailsStep({
                       aria-checked={selected}
                       className="flex flex-col items-start gap-4 text-left"
                       onClick={() => {
-                        setLicence({ licensePlan: plan.plan });
+                        setLicence({ licensePlan: plan.code });
                         setSectionError(null);
                       }}
                     >
@@ -348,13 +464,13 @@ export function BusinessDetailsStep({
                       <span className="flex w-full flex-col gap-1 rounded-xl border border-border/60 bg-muted/30 p-3">
                         <span className="flex items-baseline gap-1.5">
                           <span className="text-lg font-bold text-foreground">
-                            {`₦${plan.yearOnePrice.toLocaleString()}`}
+                            {`₦${plan.perDeviceYear1Ngn.toLocaleString()}`}
                           </span>
                           <span className="text-xs text-muted-foreground">per device — Year 1</span>
                         </span>
                         <span className="flex items-baseline gap-1.5">
                           <span className="text-sm font-semibold text-foreground">
-                            {`₦${plan.renewalPrice.toLocaleString()}`}
+                            {`₦${plan.perDeviceRenewalNgn.toLocaleString()}`}
                           </span>
                           <span className="text-xs text-muted-foreground">
                             per device — Renewal
@@ -404,19 +520,23 @@ export function BusinessDetailsStep({
                 <div>
                   <p className="text-sm font-semibold text-foreground">Fleet Pro Indemnity Form</p>
                   <p className="text-xs text-muted-foreground">
-                    {licence.indemnitySigned ? "Electronically signed" : "Review and sign electronically"}
+                    {signedOnServer
+                      ? "Electronically signed"
+                      : pendingSignature
+                        ? "Signed — saved with your details when you continue"
+                        : "Review and sign electronically"}
                   </p>
                 </div>
               </div>
               <Button
                 type="button"
-                variant={licence.indemnitySigned ? "outline" : "default"}
+                variant={indemnitySigned ? "outline" : "default"}
                 onClick={() => setIndemnityOpen(true)}
               >
-                {licence.indemnitySigned
+                {indemnitySigned
                   ? <FileSignature className="mr-2 h-4 w-4" />
                   : <ExternalLink className="mr-2 h-4 w-4" />}
-                {licence.indemnitySigned ? "Review Signature" : "View & Sign Form"}
+                {indemnitySigned ? "Review & Re-sign" : "View & Sign Form"}
               </Button>
             </div>
 
@@ -428,7 +548,7 @@ export function BusinessDetailsStep({
               <Checkbox
                 id="indemnity-confirmation"
                 checked={licence.indemnityAccepted}
-                disabled={!licence.indemnitySigned}
+                disabled={!indemnitySigned}
                 onCheckedChange={(checked) => {
                   setLicence({ indemnityAccepted: checked === true });
                   setSectionError(null);
@@ -438,15 +558,18 @@ export function BusinessDetailsStep({
                 htmlFor="indemnity-confirmation"
                 className="cursor-pointer text-sm font-normal leading-5 text-foreground"
               >
-                {licence.indemnitySigned
+                {indemnitySigned
                   ? "I confirm that I have reviewed the indemnity form and agree to its terms."
                   : "Sign the indemnity form before confirming your agreement."}
               </Label>
             </div>
           </section>
 
-          {sectionError && (
-            <p className="text-sm text-destructive">{sectionError}</p>
+          {indemnityNotice && !pendingSignature && (
+            <p className="text-sm text-destructive">{indemnityNotice}</p>
+          )}
+          {(sectionError || saveError) && (
+            <p className="text-sm text-destructive">{sectionError ?? saveError}</p>
           )}
 
           <div className="flex justify-end border-t border-border/60 pt-6">
@@ -467,14 +590,18 @@ export function BusinessDetailsStep({
         open={indemnityOpen}
         onOpenChange={setIndemnityOpen}
         initialName={licence.indemnitySignatureName}
+        notice={indemnityNotice}
         onSigned={({
-          mode, name, image,
+          method, name, image, version,
         }) => {
-          setSignatureImage(image);
+          setPendingSignature({
+            method,
+            name,
+            image,
+            version,
+          });
           // Re-signing clears the confirmation, matching the design app.
           setLicence({
-            indemnitySigned: true,
-            indemnitySignatureMode: mode,
             indemnitySignatureName: name,
             indemnityAccepted: false,
           });

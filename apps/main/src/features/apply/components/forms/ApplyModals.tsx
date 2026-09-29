@@ -1,9 +1,15 @@
+import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type {
-  DeviceRequestValues, VehicleValues,
+  DeviceRequestValues,
+  VehicleValues,
 } from "@/features/apply/utils/applySchemas";
-import type { DeviceRequest } from "@/features/apply/utils/applyTypes";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getOnboardingVehicleImportColumnsQueryOptions,
+  getOnboardingVehicleImportTemplate,
+} from "@truckmoov/api/auth";
 import {
   Download,
   FileSpreadsheet,
@@ -11,7 +17,8 @@ import {
   UploadCloud,
 } from "lucide-react";
 import {
-  useEffect, useState,
+  useEffect,
+  useState,
 } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -44,19 +51,18 @@ import {
 import { Textarea } from "@/components/shadcn/textarea";
 import {
   deviceRequestSchema,
+  SERVER_VEHICLE_FIELD,
   vehicleSchema,
 } from "@/features/apply/utils/applySchemas";
 import {
-  DEVICE_MANUFACTURERS,
-  PURCHASE_TYPES,
-  VEHICLE_TYPES,
+  PURCHASE_TYPE_LABELS,
+  VEHICLE_TYPE_LABELS,
 } from "@/features/apply/utils/applyTypes";
 import { cn } from "@/lib/utils";
 
 const EMPTY_VEHICLE: VehicleValues = {
   registrationNumber: "",
   vehicleType: "",
-  otherVehicleType: "",
   make: "",
   model: "",
   year: "",
@@ -71,42 +77,103 @@ const EMPTY_VEHICLE: VehicleValues = {
 
 export const ADD_VEHICLE_FORM_ID = "apply-add-vehicle-form";
 
-export function AddVehicleModal({
+/** Add a vehicle, or edit one when `initial` is set. Server field errors land on their input. */
+export function VehicleModal({
   open,
+  initial,
   onOpenChange,
-  onAdd,
+  onSubmit,
 }: {
   open: boolean;
+  initial?: VehicleValues | null;
   onOpenChange: (open: boolean) => void;
-  onAdd: (values: VehicleValues) => void;
+  /** Rejects with the server error on failure. */
+  onSubmit: (values: VehicleValues) => Promise<unknown>;
 }) {
   const form = useForm<VehicleValues>({
     resolver: zodResolver(vehicleSchema),
     mode: "onTouched",
     defaultValues: EMPTY_VEHICLE,
   });
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+  const [
+    formError,
+    setFormError,
+  ] = useState<string | null>(null);
 
-  const vehicleType = form.watch("vehicleType");
+  useEffect(
+    () => {
+      if (open) {
+        form.reset(initial ?? EMPTY_VEHICLE);
+        setFormError(null);
+      }
+    },
+    [
+      open,
+      initial,
+      form,
+    ],
+  );
+
   const purchaseType = form.watch("purchaseType");
 
-  function handleSubmit(values: VehicleValues) {
-    onAdd(values);
-    form.reset(EMPTY_VEHICLE);
-    onOpenChange(false);
+  async function handleSubmit(values: VehicleValues) {
+    setSaving(true);
+    setFormError(null);
+    try {
+      await onSubmit(values);
+      onOpenChange(false);
+    }
+    catch (error) {
+      const err = error as ServerErrorResponse;
+      const field = err.field ? SERVER_VEHICLE_FIELD[err.field] : undefined;
+      // A 409 "<registration> has already been added" belongs on the registration input.
+      const target = field ?? (err.statusCode === 409 && /already been added/i.test(err.message) ? "registrationNumber" : undefined);
+      if (target) {
+        form.setError(
+          target,
+          { message: err.message },
+        );
+      }
+      else {
+        setFormError(err.message || "The vehicle couldn't be saved.");
+      }
+    }
+    finally {
+      setSaving(false);
+    }
   }
+
+  const textField = (name: keyof VehicleValues, label: string, placeholder?: string) => (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input
+              placeholder={placeholder}
+              {...field}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (!next)
-          form.reset(EMPTY_VEHICLE);
-        onOpenChange(next);
-      }}
+      onOpenChange={next => !saving && onOpenChange(next)}
     >
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add Vehicle</DialogTitle>
+          <DialogTitle>{initial ? "Edit Vehicle" : "Add Vehicle"}</DialogTitle>
           <DialogDescription>
             Registration number, vehicle type, make and model are required.
           </DialogDescription>
@@ -118,22 +185,11 @@ export function AddVehicleModal({
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={form.handleSubmit(handleSubmit)}
           >
-            <FormField
-              control={form.control}
-              name="registrationNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Registration Number</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="LAG-123-XY"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {textField(
+              "registrationNumber",
+              "Registration Number",
+              "LAG-123-XY",
+            )}
 
             <FormField
               control={form.control}
@@ -142,7 +198,7 @@ export function AddVehicleModal({
                 <FormItem>
                   <FormLabel>Vehicle Type</FormLabel>
                   <Select
-                    value={field.value}
+                    value={field.value || undefined}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
@@ -151,12 +207,15 @@ export function AddVehicleModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {VEHICLE_TYPES.map(type => (
+                      {Object.entries(VEHICLE_TYPE_LABELS).map(([
+                        value,
+                        label,
+                      ]) => (
                         <SelectItem
-                          key={type}
-                          value={type}
+                          key={value}
+                          value={value}
                         >
-                          {type}
+                          {label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -166,142 +225,43 @@ export function AddVehicleModal({
               )}
             />
 
-            {vehicleType === "Other" && (
-              <FormField
-                control={form.control}
-                name="otherVehicleType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Specify Vehicle Type</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {textField(
+              "make",
+              "Vehicle Make",
+              "Toyota",
             )}
-
-            <FormField
-              control={form.control}
-              name="make"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Vehicle Make</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Toyota"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="model"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Vehicle Model</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Hilux"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="year"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Vehicle Year</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="2021"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="engineNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Engine Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="chassisNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Chassis Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Vehicle Color</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="engineCapacity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Engine Capacity</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="odometer"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Odometer Reading</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {textField(
+              "model",
+              "Vehicle Model",
+              "Hilux",
+            )}
+            {textField(
+              "year",
+              "Vehicle Year",
+              "2021",
+            )}
+            {textField(
+              "engineNumber",
+              "Engine Number",
+            )}
+            {textField(
+              "chassisNumber",
+              "Chassis Number",
+            )}
+            {textField(
+              "color",
+              "Vehicle Color",
+            )}
+            {textField(
+              "engineCapacity",
+              "Engine Capacity",
+              "2.8L",
+            )}
+            {textField(
+              "odometer",
+              "Odometer Reading (km)",
+              "84500",
+            )}
 
             <FormField
               control={form.control}
@@ -310,7 +270,7 @@ export function AddVehicleModal({
                 <FormItem>
                   <FormLabel>Type of Purchase</FormLabel>
                   <Select
-                    value={field.value}
+                    value={field.value || undefined}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
@@ -319,12 +279,15 @@ export function AddVehicleModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {PURCHASE_TYPES.map(type => (
+                      {Object.entries(PURCHASE_TYPE_LABELS).map(([
+                        value,
+                        label,
+                      ]) => (
                         <SelectItem
-                          key={type}
-                          value={type}
+                          key={value}
+                          value={value}
                         >
-                          {type}
+                          {label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -334,27 +297,19 @@ export function AddVehicleModal({
               )}
             />
 
-            {purchaseType === "Other" && (
-              <FormField
-                control={form.control}
-                name="otherPurchaseType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Specify Purchase Type</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {purchaseType === "other" && textField(
+              "otherPurchaseType",
+              "Specify Purchase Type",
             )}
           </form>
         </Form>
 
+        {formError && <p className="text-sm text-destructive">{formError}</p>}
+
         <DialogFooter>
           <Button
             variant="outline"
+            disabled={saving}
             onClick={() => onOpenChange(false)}
           >
             Cancel
@@ -362,8 +317,9 @@ export function AddVehicleModal({
           <Button
             type="submit"
             form={ADD_VEHICLE_FORM_ID}
+            loading={saving}
           >
-            Add Vehicle
+            {initial ? "Save Changes" : "Add Vehicle"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -373,82 +329,93 @@ export function AddVehicleModal({
 
 const EMPTY_DEVICE_REQUEST: DeviceRequestValues = {
   quantity: 1,
-  manufacturer: "",
   useCase: "",
   notes: "",
 };
 
 export const REQUEST_DEVICES_FORM_ID = "apply-request-devices-form";
 
+/**
+ * Devices are fitted one per vehicle, so a request can never take the total past the
+ * vehicles added (TRU-FE-12). `maxQuantity` stops it early; the server enforces it too.
+ */
 export function RequestDevicesModal({
   open,
-  initial,
+  maxQuantity,
   onOpenChange,
-  onAdd,
+  onSubmit,
 }: {
   open: boolean;
-  /** When set, the modal edits this request instead of creating a new one. */
-  initial?: DeviceRequest | null;
+  maxQuantity: number;
   onOpenChange: (open: boolean) => void;
-  onAdd: (values: DeviceRequestValues) => void;
+  /** Rejects with the server error on failure. */
+  onSubmit: (values: DeviceRequestValues) => Promise<unknown>;
 }) {
   const form = useForm<DeviceRequestValues>({
-    resolver: zodResolver(deviceRequestSchema),
+    resolver: zodResolver(deviceRequestSchema.refine(
+      values => values.quantity <= maxQuantity,
+      {
+        message: `You can request at most ${maxQuantity} more device${maxQuantity === 1 ? "" : "s"} — one per vehicle.`,
+        path: ["quantity"],
+      },
+    )),
     mode: "onTouched",
     defaultValues: EMPTY_DEVICE_REQUEST,
   });
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
 
-  // Load the edited request's values whenever the modal opens on one.
   useEffect(
     () => {
-      if (!open)
-        return;
-      form.reset(initial
-        ? {
-            quantity: initial.quantity,
-            manufacturer: initial.manufacturer,
-            useCase: initial.useCase,
-            notes: initial.notes,
-          }
-        : EMPTY_DEVICE_REQUEST);
+      if (open)
+        form.reset(EMPTY_DEVICE_REQUEST);
     },
     [
       open,
-      initial,
       form,
     ],
   );
 
-  function handleSubmit(values: DeviceRequestValues) {
-    onAdd(values);
-    form.reset(EMPTY_DEVICE_REQUEST);
-    onOpenChange(false);
+  async function handleSubmit(values: DeviceRequestValues) {
+    setSaving(true);
+    try {
+      await onSubmit(values);
+      onOpenChange(false);
+    }
+    catch (error) {
+      const err = error as ServerErrorResponse;
+      const field = err.field === "useCase" || err.field === "notes" ? err.field : "quantity";
+      form.setError(
+        field,
+        { message: err.message || "The request couldn't be saved." },
+      );
+    }
+    finally {
+      setSaving(false);
+    }
   }
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (!next)
-          form.reset(EMPTY_DEVICE_REQUEST);
-        onOpenChange(next);
-      }}
+      onOpenChange={next => !saving && onOpenChange(next)}
     >
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle>{initial ? "Edit Device Request" : "Request Devices"}</DialogTitle>
-          <DialogDescription>
-            {initial
-              ? "Update the details of this device request."
-              : "Request tracking devices to be supplied by Fleet Pro."}
-          </DialogDescription>
+          <DialogTitle>Request Devices</DialogTitle>
+          <DialogDescription>Request tracking devices to be supplied by Fleet Pro.</DialogDescription>
         </DialogHeader>
 
         <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p className="text-xs text-muted-foreground">
-            Each request covers one manufacturer. If you need devices from a different
-            manufacturer, submit a separate request.
+            One device is fitted per vehicle, so you can request up to
+            {" "}
+            <span className="font-medium text-foreground">{maxQuantity}</span>
+            {" "}
+            more. Fleet Pro supplies the hardware.
           </p>
         </div>
 
@@ -468,40 +435,10 @@ export function RequestDevicesModal({
                     <Input
                       type="number"
                       min={1}
+                      max={maxQuantity}
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="manufacturer"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Manufacturer</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a manufacturer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {DEVICE_MANUFACTURERS.map(manufacturer => (
-                        <SelectItem
-                          key={manufacturer}
-                          value={manufacturer}
-                        >
-                          {manufacturer}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -547,6 +484,7 @@ export function RequestDevicesModal({
         <DialogFooter>
           <Button
             variant="outline"
+            disabled={saving}
             onClick={() => onOpenChange(false)}
           >
             Cancel
@@ -554,8 +492,9 @@ export function RequestDevicesModal({
           <Button
             type="submit"
             form={REQUEST_DEVICES_FORM_ID}
+            loading={saving}
           >
-            {initial ? "Save Changes" : "Submit Device Request"}
+            Submit Device Request
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -563,86 +502,118 @@ export function RequestDevicesModal({
   );
 }
 
+const MAX_CSV_BYTES = 2 * 1024 * 1024;
+
+export type VehicleImportResult = {
+  message: string;
+  skipped: {
+    line: number; message: string;
+  }[];
+};
+
 /**
- * Bulk upload for a fleet section. Parses a header row plus data rows and hands
- * the raw cells back to the caller, which maps them to its own entity.
+ * Bulk vehicle import. The server parses the CSV: rows match on registration number, so
+ * re-uploading a corrected file updates vehicles instead of duplicating them, and bad rows
+ * come back in `skipped` while the good ones still import.
  */
-export function UploadModal({
+export function VehicleImportModal({
   open,
   onOpenChange,
-  title,
-  description,
-  fileName,
-  headers,
-  sample,
-  onRows,
+  onUpload,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  fileName: string;
-  headers: string[];
-  sample: string[];
-  /** Returns how many rows were accepted. */
-  onRows: (rows: string[][]) => number;
+  /** Rejects with the server error on failure. */
+  onUpload: (file: File) => Promise<VehicleImportResult>;
 }) {
   const [
     dragging,
     setDragging,
   ] = useState(false);
+  const [
+    uploading,
+    setUploading,
+  ] = useState(false);
+  const [
+    result,
+    setResult,
+  ] = useState<VehicleImportResult | null>(null);
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(null);
+  const columnsQuery = useQuery({
+    ...getOnboardingVehicleImportColumnsQueryOptions(),
+    enabled: open,
+  });
+  const columns = columnsQuery.data?.data.columns ?? [];
 
-  function downloadTemplate() {
-    const csv = `${headers.join(",")}\n${sample.join(",")}`;
-    const url = URL.createObjectURL(new Blob(
-      [csv],
-      { type: "text/csv" },
-    ));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = fileName;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  useEffect(
+    () => {
+      if (open) {
+        setResult(null);
+        setError(null);
+      }
+    },
+    [open],
+  );
+
+  async function downloadTemplate() {
+    try {
+      const blob = await getOnboardingVehicleImportTemplate();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "fleetpro_vehicle_template.csv";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    }
+    catch {
+      toast.error("The template couldn't be downloaded. Try again.");
+    }
   }
 
-  function handleFile(file: File) {
+  async function handleFile(file: File) {
+    setResult(null);
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Only CSV files are supported. Download the template to get started.");
+      setError("Only CSV files are supported. Download the template to get started.");
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const rows = String(reader.result)
-        .split("\n")
-        .map(line => line.trim())
-        .filter(Boolean)
-        .slice(1)
-        .map(line => line.split(",").map(cell => cell.trim()));
-
-      if (rows.length === 0) {
-        toast.error("No records were found in that file.");
-        return;
-      }
-
-      const added = onRows(rows);
-      if (added > 0) {
-        toast.success(`${added} record${added === 1 ? "" : "s"} added from ${file.name}`);
+    if (file.size > MAX_CSV_BYTES) {
+      setError("The CSV must be 2 MB or smaller.");
+      return;
+    }
+    setError(null);
+    setUploading(true);
+    try {
+      const outcome = await onUpload(file);
+      setResult(outcome);
+      if (outcome.skipped.length === 0) {
+        toast.success(outcome.message);
         onOpenChange(false);
       }
-    };
-    reader.readAsText(file);
+    }
+    catch (err) {
+      const serverError = err as ServerErrorResponse;
+      setError(serverError.statusCode === 413 ? "The CSV must be 2 MB or smaller." : serverError.message || "The file couldn't be imported.");
+    }
+    finally {
+      setUploading(false);
+    }
   }
 
   return (
     <Dialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={next => !uploading && onOpenChange(next)}
     >
-      <DialogContent className="sm:max-w-[620px]">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[620px]">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>Upload Vehicles</DialogTitle>
+          <DialogDescription>
+            Upload a CSV of your vehicles. Rows are matched on registration number, so uploading a
+            corrected file again updates those vehicles rather than adding them twice.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4">
@@ -650,9 +621,7 @@ export function UploadModal({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-foreground">Need a template?</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Download the Fleet Pro upload template to ensure your information is structured
-              correctly. You may also upload your own document, provided it follows the same
-              structure.
+              Download the Fleet Pro template so every column is in the expected format.
             </p>
           </div>
           <Button
@@ -666,6 +635,26 @@ export function UploadModal({
           </Button>
         </div>
 
+        {columns.length > 0 && (
+          <div className="rounded-xl border border-border/60">
+            <p className="border-b border-border/60 px-3 py-2 text-xs font-semibold text-foreground">Columns</p>
+            <ul className="divide-y divide-border/60 text-xs">
+              {columns.map(column => (
+                <li
+                  key={column.header}
+                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-3 py-1.5"
+                >
+                  <span className="font-mono text-foreground">
+                    {column.header}
+                    {column.required && <span className="ml-1 text-destructive">*</span>}
+                  </span>
+                  <span className="text-muted-foreground">{column.note || `e.g. ${column.example}`}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div
           onDragOver={(event) => {
             event.preventDefault();
@@ -677,7 +666,7 @@ export function UploadModal({
             setDragging(false);
             const file = event.dataTransfer.files[0];
             if (file)
-              handleFile(file);
+              void handleFile(file);
           }}
           className={cn(
             "relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition-colors",
@@ -687,29 +676,50 @@ export function UploadModal({
           <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <UploadCloud className="h-6 w-6 text-primary" />
           </span>
-          <p className="text-sm font-medium text-foreground">Drag and drop your file here</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            or click to browse and upload · CSV up to 10 MB
+          <p className="text-sm font-medium text-foreground">
+            {uploading ? "Importing…" : "Drag and drop your file here"}
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">or click to browse · CSV up to 2 MB</p>
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,text/csv"
+            disabled={uploading}
             className="absolute inset-0 cursor-pointer opacity-0"
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (file)
-                handleFile(file);
+                void handleFile(file);
               event.target.value = "";
             }}
           />
         </div>
 
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        {result && result.skipped.length > 0 && (
+          <div className="space-y-2 rounded-xl border border-warning/40 bg-warning/5 p-3">
+            <p className="text-sm font-medium text-foreground">{result.message}</p>
+            <p className="text-xs text-muted-foreground">
+              These rows couldn't be read and were skipped. Fix them and upload the file again.
+            </p>
+            <ul className="space-y-1 text-xs">
+              {result.skipped.map(row => (
+                <li key={row.line}>
+                  <span className="font-medium text-foreground">{`Line ${row.line}: `}</span>
+                  <span className="text-muted-foreground">{row.message}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <DialogFooter>
           <Button
             variant="outline"
+            disabled={uploading}
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {result ? "Done" : "Cancel"}
           </Button>
         </DialogFooter>
       </DialogContent>

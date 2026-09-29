@@ -1,15 +1,34 @@
+import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { ReactNode } from "react";
 import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas";
 import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  AUTH_QUERY_KEY,
+  useCreateOnboardingApplication,
+  useDeleteOnboardingApplicationDocument,
+  useResumeOnboardingApplication,
+  useSendOnboardingApplicationEmailVerification,
+  useSendOnboardingApplicationPhoneVerification,
+  useSignOnboardingIndemnity,
+  useSubmitOnboardingApplication,
+  useUpdateOnboardingApplication,
+  useVerifyOnboardingApplicationEmail,
+  useVerifyOnboardingApplicationPhone,
+} from "@truckmoov/api/auth";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
   ArrowLeft,
-  CheckCircle2,
+  Loader2,
   Truck,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -28,15 +47,25 @@ import { FleetRequirementsStep } from "@/features/apply/components/ui/FleetRequi
 import { PaymentStep } from "@/features/apply/components/ui/PaymentStep";
 import { ReviewStep } from "@/features/apply/components/ui/ReviewStep";
 import { VerificationStep } from "@/features/apply/components/ui/VerificationStep";
+import {
+  documentsComplete,
+  isIndemnitySigned,
+  useApplySession,
+} from "@/features/apply/hooks/useApplySession";
+import { useConfirmDialog } from "@/features/apply/hooks/useConfirmDialog";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import {
+  applicationToDetails,
   businessDetailsSchemaFor,
+  describeClaims,
+  detailsToPayload,
   EMPTY_BUSINESS_DETAILS,
+  SERVER_FIELD_TO_FORM_FIELD,
 } from "@/features/apply/utils/applySchemas";
 import {
-  APPLY_STEPS,
   displayStep,
   documentsForCustomerType,
+  fromApplicantType,
   readStoredCustomerType,
   writeStoredCustomerType,
 } from "@/features/apply/utils/applyTypes";
@@ -47,16 +76,87 @@ import {
  *   6 payment · 7 installation · 8 review
  * `displayStep` folds these into the five visible steps.
  *
- * ponytail: the onboarding endpoints this flow was built against are not
- * available yet, so nothing here talks to a server — every step advances on
- * local state and the OTP screens accept any six digits. Restore
- * `useApplyApplication` (see git history) and re-gate the transitions on their
- * responses once the endpoints land.
+ * Steps 1–5 and 8 run against the onboarding-applications API (TRU-FE-11/12/13): the
+ * application is created when the details are first saved, and every later step reads
+ * and writes it through `useApplySession`.
+ *
+ * ponytail: payment (6) and installation (7) are still local (TRU-FE-14/15) — they
+ * read the store's mirror of the fleet and don't touch the server yet.
  */
 type Phase = "form" | "status" | "payment";
 
+/** Seconds, from the send-code response or a 429's retryAfterSeconds. */
+function useCooldown() {
+  const [
+    seconds,
+    setSeconds,
+  ] = useState(0);
+  useEffect(
+    () => {
+      if (seconds <= 0)
+        return;
+      const timer = setTimeout(
+        () => setSeconds(value => value - 1),
+        1000,
+      );
+      return () => clearTimeout(timer);
+    },
+    [seconds],
+  );
+  return [
+    seconds,
+    setSeconds,
+  ] as const;
+}
+
+/**
+ * A reload returns the applicant to the step they were on. Saved progress lives on the
+ * server; these only remember the screen, and the step 1 fields typed before the
+ * application exists (there is nothing to save them to yet). Per tab, like the token.
+ */
+const STEP_KEY = "truckmoov_apply_step";
+const DETAILS_DRAFT_KEY = "truckmoov_apply_details_draft";
+/** Form steps in the order the applicant moves through them. */
+const STEP_ORDER = [
+  1,
+  2,
+  3,
+  4,
+  5,
+  8,
+];
+
+function readStoredStep() {
+  const step = Number(window.sessionStorage.getItem(STEP_KEY));
+  return STEP_ORDER.includes(step) ? step : null;
+}
+
+function readDetailsDraft(): BusinessDetailsValues {
+  try {
+    const raw = window.sessionStorage.getItem(DETAILS_DRAFT_KEY);
+    return raw
+      ? {
+          ...EMPTY_BUSINESS_DETAILS, ...JSON.parse(raw),
+        }
+      : EMPTY_BUSINESS_DETAILS;
+  }
+  catch {
+    return EMPTY_BUSINESS_DETAILS;
+  }
+}
+
+async function dataUrlToBlob(dataUrl: string) {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
 export default function ApplyForAccount() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const session = useApplySession();
+  const {
+    application, applicationId,
+  } = session;
 
   const [
     customerType,
@@ -73,46 +173,397 @@ export default function ApplyForAccount() {
     setPhase,
   ] = useState<Phase>("form");
   const [
-    submitted,
-    setSubmitted,
+    saving,
+    setSaving,
   ] = useState(false);
   const [
-    emailVerified,
-    setEmailVerified,
-  ] = useState(false);
+    saveError,
+    setSaveError,
+  ] = useState<string | null>(null);
   const [
-    phoneVerified,
-    setPhoneVerified,
-  ] = useState(false);
+    indemnityNotice,
+    setIndemnityNotice,
+  ] = useState<string | null>(null);
+  const [
+    submitError,
+    setSubmitError,
+  ] = useState<string | null>(null);
+  const [
+    destinations,
+    setDestinations,
+  ] = useState<{
+    email?: string; phone?: string;
+  }>({});
+  const [
+    emailCooldown,
+    setEmailCooldown,
+  ] = useCooldown();
+  const [
+    phoneCooldown,
+    setPhoneCooldown,
+  ] = useCooldown();
+  const sentRef = useRef<{
+    email?: boolean; phone?: boolean;
+  }>({});
+  const rehydratedRef = useRef(false);
+  // Read before the first render can overwrite it with the default step.
+  const storedStepRef = useRef(readStoredStep());
 
-  const resetDraft = useApplyDraftStore(state => state.reset);
-  const scheduled = useApplyDraftStore(state => state.scheduled);
+  const licence = useApplyDraftStore(state => state.licence);
+  const setLicence = useApplyDraftStore(state => state.setLicence);
+  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
+  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
+
+  const createApplication = useCreateOnboardingApplication();
+  const updateApplication = useUpdateOnboardingApplication();
+  const signIndemnity = useSignOnboardingIndemnity();
+  const sendEmail = useSendOnboardingApplicationEmailVerification();
+  const sendPhone = useSendOnboardingApplicationPhoneVerification();
+  const verifyEmail = useVerifyOnboardingApplicationEmail();
+  const verifyPhone = useVerifyOnboardingApplicationPhone();
+  const submitApplication = useSubmitOnboardingApplication();
+  const resume = useResumeOnboardingApplication();
+  const deleteDocument = useDeleteOnboardingApplicationDocument();
+  const {
+    confirm, dialog: confirmDialog,
+  } = useConfirmDialog();
 
   const form = useForm<BusinessDetailsValues>({
     resolver: zodResolver(businessDetailsSchemaFor(customerType ?? "enterprise")),
     mode: "onTouched",
-    defaultValues: EMPTY_BUSINESS_DETAILS,
+    // Before the application exists, step 1 is only in this tab — restore what was typed.
+    defaultValues: applicationId ? EMPTY_BUSINESS_DETAILS : readDetailsDraft(),
   });
 
+  // Keep typed-but-unsaved details across a reload until the first save creates the application.
+  useEffect(
+    () => {
+      if (applicationId) {
+        window.sessionStorage.removeItem(DETAILS_DRAFT_KEY);
+        return;
+      }
+      const subscription = form.watch((values) => {
+        window.sessionStorage.setItem(
+          DETAILS_DRAFT_KEY,
+          JSON.stringify(values),
+        );
+      });
+      return () => subscription.unsubscribe();
+    },
+    [
+      applicationId,
+      form,
+    ],
+  );
+
+  // Remember the screen, so a reload lands back on it.
+  useEffect(
+    () => {
+      if (phase === "form") {
+        window.sessionStorage.setItem(
+          STEP_KEY,
+          String(step),
+        );
+      }
+    },
+    [
+      step,
+      phase,
+    ],
+  );
+
   const requiredDocuments = customerType ? documentsForCustomerType(customerType) : [];
+  const emailVerified = Boolean(application?.verification.emailVerified);
+  const phoneVerified = Boolean(application?.verification.phoneVerified);
 
-  function handleDetailsSubmit() {
-    setStep(2);
+  // A stored draft that turned out to be gone (30 days idle, or a stale token).
+  useEffect(
+    () => {
+      if (!session.expired)
+        return;
+      toast.error("Your saved application has expired. Please start a new one.");
+      setCustomerType(null);
+      setStep(1);
+      setPhase("form");
+    },
+    [session.expired],
+  );
+
+  // Land a returning applicant where they left off — once, on the first load.
+  useEffect(
+    () => {
+      if (!application || rehydratedRef.current)
+        return;
+      rehydratedRef.current = true;
+      const type = fromApplicantType(application.applicantType);
+      setCustomerType(type);
+      writeStoredCustomerType(type);
+      form.reset(applicationToDetails(application));
+      if (application.m2mPlanCode)
+        setLicence({ licensePlan: application.m2mPlanCode });
+
+      // Past review, the stage decides the screen: payment opens after provisioning, and the
+      // provider redirects back here (`?payment=return`) to confirm.
+      if (application.stage === "payment") {
+        setPhase("payment");
+        setStep(6);
+        return;
+      }
+      if (application.stage === "installation_scheduling") {
+        setPhase("payment");
+        setStep(7);
+        return;
+      }
+      if (application.status !== "draft" && application.status !== "changes_requested") {
+        setPhase("status");
+        return;
+      }
+      const detailsDone = Boolean(application.m2mPlanCode) && isIndemnitySigned(application);
+      const firstUnfinished = !detailsDone
+        ? 1
+        : !application.verification.emailVerified
+            ? 2
+            : !application.verification.phoneVerified
+                ? 3
+                : application.vehicles.length === 0
+                  ? 4
+                  : !documentsComplete(application)
+                      ? 5
+                      : 8;
+      // Back to the step they were on — but never past one that isn't finished yet.
+      const stored = storedStepRef.current;
+      setStep(stored !== null && STEP_ORDER.indexOf(stored) <= STEP_ORDER.indexOf(firstUnfinished)
+        ? stored
+        : firstUnfinished);
+    },
+    [
+      application,
+      form,
+      setLicence,
+    ],
+  );
+
+  async function sendCode(channel: "email" | "phone") {
+    if (!applicationId)
+      return;
+    const mutation = channel === "email" ? sendEmail : sendPhone;
+    const setCooldown = channel === "email" ? setEmailCooldown : setPhoneCooldown;
+    try {
+      const res = await mutation.mutateAsync({ id: applicationId });
+      sentRef.current[channel] = true;
+      setDestinations(previous => ({
+        ...previous, [channel]: res.data.destination,
+      }));
+      setCooldown(res.data.resendAfterSeconds);
+    }
+    catch (error) {
+      const err = error as ServerErrorResponse;
+      if (err.retryAfterSeconds)
+        setCooldown(err.retryAfterSeconds);
+      toast.error(err.message || "The code couldn't be sent. Try again.");
+    }
   }
 
-  /** No verification endpoint yet, so any six-digit code is accepted. */
-  function handleVerify(channel: "email" | "phone") {
-    if (channel === "email")
-      setEmailVerified(true);
-    else
-      setPhoneVerified(true);
-    toast.success(channel === "email" ? "Email address verified" : "Phone number verified");
-    return Promise.resolve(true);
+  // Send the code once when the applicant reaches each verification screen.
+  useEffect(
+    () => {
+      if (phase !== "form" || !applicationId)
+        return;
+      if (step === 2 && !emailVerified && !sentRef.current.email)
+        void sendCode("email");
+      if (step === 3 && !phoneVerified && !sentRef.current.phone)
+        void sendCode("phone");
+    },
+    // ponytail: fires on arriving at a step; sendCode's identity changes every render.
+    // eslint-disable-next-line react/exhaustive-deps
+    [
+      step,
+      phase,
+      applicationId,
+      emailVerified,
+      phoneVerified,
+    ],
+  );
+
+  async function handleVerify(channel: "email" | "phone", code: string) {
+    if (!applicationId)
+      return false;
+    try {
+      const mutation = channel === "email" ? verifyEmail : verifyPhone;
+      await mutation.mutateAsync({
+        id: applicationId,
+        data: { code },
+      });
+      toast.success(channel === "email" ? "Email address verified" : "Phone number verified");
+      return true;
+    }
+    catch (error) {
+      toast.error((error as ServerErrorResponse).message || "That code didn't work. Try again.");
+      return false;
+    }
   }
 
-  function handleSubmitApplication() {
-    setSubmitted(true);
-    setPhase("status");
+  function applyDetailsError(error: unknown) {
+    const err = error as ServerErrorResponse;
+    const claims = describeClaims(err.claimTypes);
+    if (claims) {
+      setSaveError(claims);
+      return;
+    }
+    const field = err.field ? SERVER_FIELD_TO_FORM_FIELD[err.field] : undefined;
+    if (field) {
+      form.setError(
+        field === "contactName" && customerType === "owner_operator" ? "firstName" : field,
+        { message: err.message },
+      );
+      return;
+    }
+    if (err.statusCode === 409 && /email/i.test(err.message)) {
+      form.setError(
+        "businessEmail",
+        { message: err.message },
+      );
+      return;
+    }
+    setSaveError(err.message || "Your details couldn't be saved. Try again.");
+  }
+
+  async function handleDetailsSubmit(values: BusinessDetailsValues) {
+    if (!customerType)
+      return;
+    setSaving(true);
+    setSaveError(null);
+    const payload = detailsToPayload(
+      values,
+      customerType,
+      licence.licensePlan,
+    );
+    let id = applicationId;
+    try {
+      if (id) {
+        await updateApplication.mutateAsync({
+          id,
+          data: payload,
+        });
+      }
+      else {
+        const res = await createApplication.mutateAsync({ data: payload });
+        id = res.data.id;
+        session.start(id);
+      }
+    }
+    catch (error) {
+      applyDetailsError(error);
+      setSaving(false);
+      return;
+    }
+
+    if (pendingSignature) {
+      try {
+        await signIndemnity.mutateAsync({
+          id,
+          signerName: pendingSignature.name,
+          templateVersion: pendingSignature.version,
+          method: pendingSignature.method,
+          file: await dataUrlToBlob(pendingSignature.image),
+        });
+        setPendingSignature(null);
+        setIndemnityNotice(null);
+      }
+      catch (error) {
+        const err = error as ServerErrorResponse;
+        if (err.statusCode === 409 && /version/i.test(err.message)) {
+          // Signed against a superseded version: re-read and sign again, don't retry.
+          setPendingSignature(null);
+          setLicence({ indemnityAccepted: false });
+          queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingIndemnityAgreement });
+          setIndemnityNotice("The indemnity agreement has been updated. Read the current version and sign it again.");
+        }
+        else {
+          // Keep the pending signature — pressing Next again retries the upload.
+          setSaveError(err.message || "Your signature couldn't be saved. Try again.");
+        }
+        setSaving(false);
+        return;
+      }
+    }
+
+    setSaving(false);
+    setStep(!emailVerified ? 2 : !phoneVerified ? 3 : 4);
+  }
+
+  async function handleSaveForLater() {
+    const email = form.getValues("businessEmail").trim() || application?.organization.businessEmail;
+    if (!email) {
+      toast.error("Enter your business email first.");
+      return;
+    }
+    try {
+      await resume.mutateAsync({ data: { businessEmail: email } });
+      // The reply is the same whether or not an application exists, so never branch on it.
+      toast.success("If your business email is verified, we've sent you a link to continue your application.");
+      navigate("/auth");
+    }
+    catch (error) {
+      toast.error((error as ServerErrorResponse).message || "We couldn't send the link. Try again.");
+    }
+  }
+
+  /** The type decides the documents asked for — switching it clears any already uploaded. */
+  async function handleCustomerTypeChange(next: ApplicantCustomerType) {
+    const uploaded = (application?.documents ?? []).filter(document => document.documentType !== "signed_indemnity_form");
+    if (application && next !== fromApplicantType(application.applicantType) && uploaded.length > 0) {
+      const ok = await confirm({
+        title: "Change customer type?",
+        description: `The documents asked for depend on the customer type, so the ${uploaded.length} document(s) you've uploaded will be removed.`,
+        confirmLabel: "Change and remove documents",
+      });
+      if (!ok)
+        return;
+      try {
+        for (const document of uploaded) {
+          await deleteDocument.mutateAsync({
+            id: application.id,
+            documentId: document.id,
+          });
+        }
+      }
+      catch (error) {
+        toast.error((error as ServerErrorResponse).message || "Your documents couldn't be cleared.");
+        return;
+      }
+    }
+    setCustomerType(next);
+    writeStoredCustomerType(next);
+  }
+
+  async function handleSubmitApplication() {
+    if (!applicationId)
+      return;
+    setSubmitError(null);
+    try {
+      const res = await submitApplication.mutateAsync({ id: applicationId });
+      if ("incomplete" in res) {
+        setSubmitError(res.message);
+        setStep(!res.planSelected || !res.indemnitySigned
+          ? 1
+          : !res.emailVerified
+              ? 2
+              : !res.phoneVerified
+                  ? 3
+                  // Devices must equal vehicles, unless a stock shortfall was accepted.
+                  : res.vehicleCount === 0 || res.requestedDevices !== res.vehicleCount
+                    ? 4
+                    : 5);
+        toast.error(res.message);
+        return;
+      }
+      setPhase("status");
+    }
+    catch (error) {
+      const err = error as ServerErrorResponse;
+      setSubmitError(describeClaims(err.claimTypes) ?? err.message ?? "Your application couldn't be submitted.");
+    }
   }
 
   function handleBack() {
@@ -130,9 +581,7 @@ export default function ApplyForAccount() {
       return;
     }
     if (phase === "status") {
-      setPhase("form");
-      setSubmitted(false);
-      setStep(8);
+      navigate("/auth");
       return;
     }
     if (step === 1) {
@@ -148,29 +597,23 @@ export default function ApplyForAccount() {
   }
 
   /** Visible step (1..5); after submission the payment step is highlighted. */
-  const visibleStep = scheduled
-    ? APPLY_STEPS.length + 1
-    : phase === "status"
-      ? 4
-      : displayStep(step);
+  const visibleStep = phase === "status" ? 4 : displayStep(step);
 
-  // ─── Submitted, and the journey is finished ─────────────────────────────────
-  if (submitted && scheduled) {
+  if (session.isRestoring) {
     return (
       <ApplyShell
         customerType={customerType}
         visibleStep={visibleStep}
-        complete
       >
-        <SuccessScreen
-          onHome={() => {
-            resetDraft();
-            navigate("/auth");
-          }}
-        />
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
       </ApplyShell>
     );
   }
+
+  // Steps after 1 need the saved application; send anyone without one back to the details.
+  const needsApplication = phase === "form" && step > 1 && !application;
 
   return (
     <ApplyShell
@@ -197,22 +640,42 @@ export default function ApplyForAccount() {
       {customerType && <ApplyStepRailHorizontal current={visibleStep} />}
 
       <div className="mt-8 rounded-2xl border border-border/60 bg-card/60 p-6 shadow-sm sm:p-8">
-        {phase === "status" && (
+        {phase === "status" && applicationId && (
           <ApplicationStatusScreen
-            status="approved"
+            applicationId={applicationId}
             onContinue={() => {
               setPhase("payment");
               setStep(6);
+            }}
+            onEdit={() => {
+              setPhase("form");
+              setStep(1);
+            }}
+            onSignIn={() => {
+              session.clear();
+              navigate("/auth");
             }}
           />
         )}
 
         {phase === "payment" && step === 6 && (
-          <PaymentStep onContinue={() => setStep(7)} />
+          applicationId && (
+            <PaymentStep
+              applicationId={applicationId}
+              businessEmail={application?.organization.businessEmail ?? ""}
+              onContinue={() => setStep(7)}
+              onEditFleet={() => {
+                setPhase("form");
+                setStep(4);
+              }}
+            />
+          )
         )}
 
-        {phase === "payment" && step === 7 && (
+        {phase === "payment" && step === 7 && applicationId && (
           <ScheduleInstallationStep
+            applicationId={applicationId}
+            vehicles={application?.vehicles ?? []}
             defaults={{
               streetAddress: form.getValues("streetAddress"),
               city: form.getValues("city"),
@@ -221,8 +684,8 @@ export default function ApplyForAccount() {
               contactPhone: form.getValues("phoneNumber"),
             }}
             onBack={() => setStep(6)}
-            onFinish={() => {
-              resetDraft();
+            onDone={() => {
+              session.clear();
               navigate("/auth");
             }}
           />
@@ -231,10 +694,7 @@ export default function ApplyForAccount() {
         {phase === "form" && !customerType && (
           <CustomerTypeStep
             value={customerType}
-            onChange={(value) => {
-              setCustomerType(value);
-              writeStoredCustomerType(value);
-            }}
+            onChange={value => void handleCustomerTypeChange(value)}
             onNext={() => setStep(1)}
           />
         )}
@@ -244,19 +704,18 @@ export default function ApplyForAccount() {
             <BusinessDetailsStep
               form={form}
               customerType={customerType}
-              submitting={false}
-              onSubmit={handleDetailsSubmit}
+              submitting={saving}
+              indemnitySigned={isIndemnitySigned(application)}
+              indemnityNotice={indemnityNotice}
+              saveError={saveError}
+              onSubmit={values => void handleDetailsSubmit(values)}
             />
             <div className="mt-4 flex justify-end">
               <Button
                 variant="ghost"
                 className="text-muted-foreground"
-                onClick={() => {
-                  toast.success(
-                    "Your progress has been saved on this device. Come back to /apply to continue.",
-                  );
-                  navigate("/auth");
-                }}
+                loading={resume.isPending}
+                onClick={() => void handleSaveForLater()}
               >
                 Save & Continue Later
               </Button>
@@ -264,65 +723,87 @@ export default function ApplyForAccount() {
           </>
         )}
 
-        {phase === "form" && step === 2 && (
+        {needsApplication && (
+          <div className="py-10 text-center text-sm text-muted-foreground">
+            Save your customer details first.
+            {" "}
+            <button
+              type="button"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+              onClick={() => setStep(1)}
+            >
+              Go to Customer Details
+            </button>
+          </div>
+        )}
+
+        {phase === "form" && application && step === 2 && (
           <VerificationStep
             channel="email"
-            destination={form.getValues("businessEmail")}
+            destination={destinations.email ?? application.organization.businessEmail}
             verified={emailVerified}
-            sending={false}
-            cooldown={0}
-            onSend={() => toast.success("Enter any six digits to continue.")}
-            onVerify={() => handleVerify("email")}
+            sending={sendEmail.isPending}
+            cooldown={emailCooldown}
+            onSend={() => void sendCode("email")}
+            onVerify={code => handleVerify(
+              "email",
+              code,
+            )}
             onBack={() => setStep(1)}
             onNext={() => setStep(3)}
           />
         )}
 
-        {phase === "form" && step === 3 && (
+        {phase === "form" && application && step === 3 && (
           <VerificationStep
             channel="phone"
-            destination={form.getValues("phoneNumber")}
+            destination={destinations.phone ?? application.organization.organizationPhone}
             verified={phoneVerified}
-            sending={false}
-            cooldown={0}
-            onSend={() => toast.success("Enter any six digits to continue.")}
-            onVerify={() => handleVerify("phone")}
+            sending={sendPhone.isPending}
+            cooldown={phoneCooldown}
+            onSend={() => void sendCode("phone")}
+            onVerify={code => handleVerify(
+              "phone",
+              code,
+            )}
             onBack={() => setStep(2)}
             onNext={() => setStep(4)}
           />
         )}
 
-        {phase === "form" && step === 4 && (
+        {phase === "form" && application && step === 4 && (
           <FleetRequirementsStep
+            application={application}
             onBack={() => setStep(3)}
             onNext={() => setStep(5)}
           />
         )}
 
-        {phase === "form" && customerType && step === 5 && (
+        {phase === "form" && application && customerType && step === 5 && (
           <DocumentsStep
+            application={application}
             required={requiredDocuments}
             onBack={() => setStep(4)}
             onNext={() => setStep(8)}
           />
         )}
 
-        {phase === "form" && customerType && step === 8 && (
+        {phase === "form" && application && customerType && step === 8 && (
           <ReviewStep
             customerType={customerType}
-            details={form.getValues()}
-            emailVerified={emailVerified}
-            phoneVerified={phoneVerified}
+            application={application}
             requiredDocuments={requiredDocuments}
-            submitting={false}
+            submitting={submitApplication.isPending}
+            submitError={submitError}
             onBack={() => setStep(5)}
             onEditDetails={() => setStep(1)}
             onEditFleet={() => setStep(4)}
             onEditDocuments={() => setStep(5)}
-            onSubmit={handleSubmitApplication}
+            onSubmit={() => void handleSubmitApplication()}
           />
         )}
       </div>
+      {confirmDialog}
     </ApplyShell>
   );
 }
@@ -427,35 +908,6 @@ function ApplyShell({
           {children}
         </div>
       </main>
-    </div>
-  );
-}
-
-function SuccessScreen({ onHome }: { onHome: () => void }) {
-  return (
-    <div className="flex min-h-[70vh] flex-col items-center justify-center text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
-        <CheckCircle2 className="h-10 w-10 text-success" />
-      </div>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-        Application Submitted Successfully
-      </h1>
-      <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
-        Thank you for applying for a Fleet Pro account. Your application has been successfully
-        received and will be reviewed by our team.
-      </p>
-      <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-        If your application is approved, you will receive an email with instructions and a setup
-        link to access the Fleet Pro platform. If your application is not approved, you may review
-        the requirements and submit a new application.
-      </p>
-      <Button
-        size="lg"
-        className="mt-8"
-        onClick={onHome}
-      >
-        Return to Home
-      </Button>
     </div>
   );
 }
