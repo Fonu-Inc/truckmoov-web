@@ -46,6 +46,9 @@ const ADMIN_ALERTS: {
   {
     type: "security_alerts", label: "Security Alerts", description: "Notify on suspicious activity",
   },
+  {
+    type: "installation_issues", label: "Installation Issues", description: "Notify when an installer reports an issue on a job",
+  },
 ];
 
 export default function NotificationsSettingsPage() {

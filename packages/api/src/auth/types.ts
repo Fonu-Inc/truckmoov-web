@@ -2465,6 +2465,7 @@ export type PlatformAlertType =
   | 'system_errors'
   | 'billing_alerts'
   | 'security_alerts'
+  | 'installation_issues'
 
 // Row shape confirmed against a live GET response; the OpenAPI omits it.
 // Spec types `channels` as a single string, but the server returns an array
