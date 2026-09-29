@@ -366,19 +366,13 @@ export function FleetRequirementsStep({
             id,
             data,
           });
-          if ("requestSaved" in res.data) {
-            // Stock can't cover it and nothing was saved. Offer the available quantity, if any.
+          if (!res.data.requestSaved) {
+            // Stock can't cover it and nothing was saved. Placing it anyway waits for stock.
             const shortfall = res.data;
-            if (shortfall.availableQuantity < 1) {
-              throw Object.assign(
-                new Error(`${shortfall.message} There are no devices in stock right now — try again later.`),
-                { field: "quantity" },
-              );
-            }
             const accepted = await confirm({
-              title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} available`,
-              description: shortfall.message,
-              confirmLabel: `Request ${shortfall.availableQuantity}`,
+              title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} in stock`,
+              description: "Your request can still be placed. Devices are provisioned as stock arrives, which may delay your installation.",
+              confirmLabel: `Request ${data.quantity} anyway`,
             });
             if (!accepted) {
               throw Object.assign(
@@ -390,11 +384,10 @@ export function FleetRequirementsStep({
               id,
               data: {
                 ...data,
-                quantity: shortfall.availableQuantity,
                 confirmAvailableQuantity: true,
               },
             });
-            if ("requestSaved" in confirmed.data) {
+            if (!confirmed.data.requestSaved) {
               throw Object.assign(
                 new Error(confirmed.data.message),
                 { field: "quantity" },

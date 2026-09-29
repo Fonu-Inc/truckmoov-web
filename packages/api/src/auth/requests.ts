@@ -1897,6 +1897,8 @@ export async function submitOnboardingApplication({
     vehiclesMissingDocuments: raw.vehiclesMissingDocuments ?? [],
     vehicleCount: raw.vehicleCount ?? 0,
     requestedDevices: raw.requestedDevices ?? 0,
+    deviceAllocationComplete: raw.deviceAllocationComplete ?? false,
+    inventoryShortfallAccepted: raw.inventoryShortfallAccepted ?? false,
     indemnitySigned: raw.indemnitySigned ?? false,
     planSelected: raw.planSelected ?? false,
   }

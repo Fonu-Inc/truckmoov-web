@@ -2314,7 +2314,7 @@ export function useAddOnboardingDeviceRequest() {
   return useMutation({
     mutationFn: addOnboardingDeviceRequest,
     onSuccess: (res, variables) => {
-      if ('requestSaved' in res.data)
+      if (!res.data.requestSaved)
         return
       writeOnboardingApplication(variables.id, { ...res, data: res.data })
     },

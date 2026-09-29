@@ -551,8 +551,7 @@ export default function ApplyForAccount() {
               ? 2
               : !res.phoneVerified
                   ? 3
-                  // Devices must equal vehicles, unless a stock shortfall was accepted.
-                  : res.vehicleCount === 0 || res.requestedDevices !== res.vehicleCount
+                  : res.vehicleCount === 0 || !res.deviceAllocationComplete
                     ? 4
                     : 5);
         toast.error(res.message);

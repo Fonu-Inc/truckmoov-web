@@ -2855,7 +2855,7 @@ export type OnboardingApplicationStage =
 
 export type OnboardingApplicationDocumentReviewStatus = 'pending' | 'approved' | 'rejected'
 
-export type OnboardingIdentificationType = 'nin' | 'drivers_licence' | 'voters_card' | 'passport'
+export type OnboardingIdentificationType = 'nin' | 'drivers_licence' | 'passport'
 
 export type OnboardingVehicleType = 'truck' | 'van' | 'bus' | 'car' | 'suv' | 'trailer' | 'motorcycle' | 'tricycle'
 
@@ -3010,6 +3010,9 @@ export type SubmitOnboardingApplicationIncomplete = {
   vehiclesMissingDocuments: OnboardingVehicleMissingDocument[]
   vehicleCount: number
   requestedDevices: number
+  /** False while devices don't equal vehicles (and no accepted shortfall covers it). */
+  deviceAllocationComplete: boolean
+  inventoryShortfallAccepted: boolean
   indemnitySigned: boolean
   planSelected: boolean
 }
@@ -3194,15 +3197,15 @@ export type AddOnboardingDeviceRequestPayload = {
     /** At least 10 characters. */
     useCase: string
     notes?: string
-    /** Only after a shortfall: accept the exact `availableQuantity` that response reported. */
+    /** Only after a shortfall: resend the same request with this set to place it anyway. */
     confirmAvailableQuantity?: boolean
   }
 }
 
 /**
- * Stock can't cover the request: nothing was saved (still a 201). Resubmit with the
- * reported `availableQuantity` and `confirmAvailableQuantity: true` to accept it.
- * ponytail: not in the Swagger spec yet — shape taken from dev-api (2026-09-29).
+ * Stock can't cover the request: nothing was saved (still a 201). Resend the same
+ * request with `confirmAvailableQuantity: true` to place it anyway — devices are
+ * provisioned as stock arrives.
  */
 export type OnboardingDeviceRequestShortfall = {
   requestSaved: false
@@ -3212,7 +3215,9 @@ export type OnboardingDeviceRequestShortfall = {
   simAllocationQuantity: number
   message: string
 }
-export type AddOnboardingDeviceRequestResponse = ServerResponse<OnboardingApplication | OnboardingDeviceRequestShortfall>
+/** A saved request returns the application plus `requestSaved: true`. */
+export type OnboardingDeviceRequestSaved = OnboardingApplication & { requestSaved: true }
+export type AddOnboardingDeviceRequestResponse = ServerResponse<OnboardingDeviceRequestSaved | OnboardingDeviceRequestShortfall>
 export type DeleteOnboardingDeviceRequestPayload = { id: string, requestId: string }
 
 // ─── System Onboarding Applications (bearer) ─────────────────────────────────

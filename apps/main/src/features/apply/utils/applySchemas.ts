@@ -33,9 +33,6 @@ export const IDENTIFICATION_TYPES = [
     value: "drivers_licence", label: "Driver's licence",
   },
   {
-    value: "voters_card", label: "Voter's card",
-  },
-  {
     value: "passport", label: "International passport",
   },
 ] as const;
@@ -164,7 +161,6 @@ const businessDetailsBase = z.object({
   identificationType: z.enum([
     "nin",
     "drivers_licence",
-    "voters_card",
     "passport",
     "",
   ]).default(""),
