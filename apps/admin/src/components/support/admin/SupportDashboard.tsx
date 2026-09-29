@@ -45,6 +45,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 function formatResolutionHours(hrs: number | null): string {
   if (hrs === null || hrs === undefined)
     return "—";
+  if (hrs < 1)
+    return `${Math.round(hrs * 60)}m`;
   if (hrs < 24)
     return `${hrs.toFixed(1)}h`;
   return `${(hrs / 24).toFixed(1)}d`;

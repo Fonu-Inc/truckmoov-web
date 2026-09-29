@@ -238,7 +238,15 @@ export function MyTickets() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const blob = await queryClient.fetchQuery(getSupportTicketsExportQueryOptions(query));
+      // Export takes only status + search (TRU-FE-10 §E).
+      const {
+        status, search,
+      } = query.params;
+      const blob = await queryClient.fetchQuery(getSupportTicketsExportQueryOptions({
+        params: {
+          status, search,
+        },
+      }));
       const url = URL.createObjectURL(blob as Blob);
       const a = document.createElement("a");
       a.href = url;

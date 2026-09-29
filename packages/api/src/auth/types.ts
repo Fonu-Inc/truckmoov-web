@@ -852,6 +852,7 @@ export type SystemSupportTicketMessage = {
 
 export type SystemSupportTicketDetail = SystemSupportTicket & {
   messages: SystemSupportTicketMessage[]
+  attachments: SupportTicketAttachment[]
 }
 
 export type SystemSupportEscalatedTicket = SystemSupportTicket & {

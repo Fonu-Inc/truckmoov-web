@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSupportTicketMessagesQueryOptions,
+  getSystemSupportTicketQueryOptions,
   useAssignSystemSupportTicket,
   useCreateSupportTicketMessage,
   useEscalateSupportTicket,
@@ -50,6 +51,7 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
+import { toSheetTicket } from "./toSheetTicket";
 
 export type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
@@ -278,7 +280,7 @@ function extractMessages(response: unknown): TicketMessage[] {
 }
 
 export function AdminTicketSheet({
-  ticket,
+  ticket: listTicket,
   onClose,
 }: AdminTicketSheetProps) {
   const [
@@ -305,6 +307,27 @@ export function AdminTicketSheet({
     escalationNotes,
     setEscalationNotes,
   ] = useState("");
+  // The list row opens the sheet; the detail payload (same as the tenant's, incl. attachments)
+  // overlays it and refreshes after assign / status / escalate.
+  const detailQuery = useQuery({
+    ...getSystemSupportTicketQueryOptions(listTicket?.id ?? ""),
+    enabled: !!listTicket,
+  });
+  const detail = detailQuery.data?.data;
+  const ticket = useMemo(
+    () => listTicket && detail?.id === listTicket.id
+      ? {
+          ...listTicket,
+          ...toSheetTicket(detail),
+          reporterName: listTicket.reporterName,
+        }
+      : listTicket,
+    [
+      listTicket,
+      detail,
+    ],
+  );
+  const attachments = detail?.id === listTicket?.id ? detail?.attachments ?? [] : [];
   const messagesQuery = useQuery({
     ...getSupportTicketMessagesQueryOptions(ticket?.id ?? ""),
     enabled: !!ticket,
@@ -320,13 +343,20 @@ export function AdminTicketSheet({
       if (!ticket)
         return;
       setStatus(ticket.status);
-      setMessage("");
-      setInternalNote(false);
       setEscalateTo((ticket.escalatedTo as EscalationType | undefined) ?? "");
       setReferenceId(ticket.escalatedReferenceId ?? "");
       setEscalationNotes(ticket.escalationNotes ?? "");
     },
     [ticket],
+  );
+
+  // Only a different ticket clears the reply box — a detail refetch must not wipe a draft.
+  useEffect(
+    () => {
+      setMessage("");
+      setInternalNote(false);
+    },
+    [ticket?.id],
   );
 
   const messages = useMemo(
@@ -533,6 +563,28 @@ export function AdminTicketSheet({
                       </div>
                     ))}
                   </dl>
+                </div>
+              )}
+
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  <FieldLabel>{`Attachments (${attachments.length})`}</FieldLabel>
+                  <ul className="space-y-1 rounded-md border bg-secondary/40 p-3 text-xs">
+                    {attachments.map(a => (
+                      <li
+                        key={a.id}
+                        className="flex justify-between gap-4"
+                      >
+                        <span className="truncate font-semibold">{a.filename}</span>
+                        <span className="shrink-0 text-muted-foreground">
+                          {`${a.contentType} · ${Math.max(
+                            1,
+                            Math.round(a.sizeBytes / 1024),
+                          )} KB`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
