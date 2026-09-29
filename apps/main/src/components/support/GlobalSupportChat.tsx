@@ -5,8 +5,8 @@ import { SupportChatWidget } from "./SupportChatWidget";
 export function GlobalSupportChat() {
   const { pathname } = useLocation();
 
-  // The auth screens and the role-home redirect have no support bubble.
-  if (pathname === "/" || pathname.startsWith("/auth"))
+  // The auth screens, the role-home redirect, the public tracking link and the live map have no support bubble.
+  if (pathname === "/" || pathname === "/map" || pathname.startsWith("/auth") || pathname.startsWith("/track/"))
     return null;
 
   return <SupportChatWidget />;

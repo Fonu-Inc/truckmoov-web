@@ -20,7 +20,7 @@ import "leaflet/dist/leaflet.css";
 export default function PublicTrackPage() {
   const { token = "" } = useParams();
   const {
-    data, isLoading, isError,
+    data, isLoading, isError, refetch, isFetching,
   } = usePublicTrack(token);
   const mapEl = useRef<HTMLDivElement>(null);
   const track = data && data !== "gone" ? data : null;
@@ -72,7 +72,27 @@ export default function PublicTrackPage() {
     );
   }
 
-  if (data === "gone" || isError || !track) {
+  // Only a 410 is "gone"; a network or server failure is worth retrying.
+  if (isError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6 text-center">
+        <div className="space-y-3">
+          <h1 className="text-xl font-semibold">We couldn't load this tracking link</h1>
+          <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
+          <button
+            type="button"
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline disabled:opacity-50"
+            disabled={isFetching}
+            onClick={() => refetch()}
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (data === "gone" || !track) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center">
         <div className="space-y-2">
@@ -91,7 +111,7 @@ export default function PublicTrackPage() {
           {track.job?.reference ? `Delivery ${track.job.reference}` : "Your delivery"}
         </h1>
         <p className="text-xs text-muted-foreground">
-          {track.job?.deliveryAddress && `To ${track.job.deliveryAddress} · `}
+          {(track.job?.deliveryAddress ?? track.job?.dropoffAddress) && `To ${track.job?.deliveryAddress ?? track.job?.dropoffAddress} · `}
           {`Link expires ${formatDateTime(track.expiresAt)}`}
         </p>
       </header>

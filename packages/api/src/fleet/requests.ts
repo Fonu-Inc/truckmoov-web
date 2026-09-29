@@ -1201,10 +1201,11 @@ export async function shareVehicleLocation({ id }: ShareVehicleLocationPayload) 
 
 /**
  * Public, unauthenticated: no bearer, no 401-refresh redirect (the recipient isn't a user).
+ * The page is `{app}/track/:token`; the API behind it is `GET /fleet/track/:token`.
  * 410 = expired, revoked or never existed — deliberately indistinguishable.
  */
 export async function getPublicTrack(token: string): Promise<PublicTrack | 'gone'> {
-  const res = await fetch(new URL(`/track/${encodeURIComponent(token)}`, import.meta.env.VITE_BACKEND_URL))
+  const res = await fetch(new URL(`/fleet/track/${encodeURIComponent(token)}`, import.meta.env.VITE_BACKEND_URL))
   if (res.status === 410 || res.status === 404)
     return 'gone'
   if (!res.ok)

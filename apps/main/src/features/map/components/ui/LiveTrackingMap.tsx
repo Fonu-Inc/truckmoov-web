@@ -5,6 +5,7 @@ import L from "leaflet";
 import {
   useEffect, useRef,
 } from "react";
+import { zoneTypeColors } from "@/features/fleet/utils/geofenceZones";
 import "leaflet/dist/leaflet.css";
 
 const STATUS_COLOR: Record<TrackingStatus, string> = {
@@ -19,13 +20,19 @@ const LAGOS: L.LatLngExpression = [
   3.3792,
 ];
 
+// Sizes, borders and the selected pulse ring match fleetflow's FleetMap marker.
 function vehicleIcon(status: TrackingStatus, heading: number | null, selected: boolean) {
-  const size = selected ? 40 : 30;
+  const size = selected ? 48 : 36;
+  const iconSize = selected ? 24 : 18;
   const color = STATUS_COLOR[status];
-  const border = selected ? "#facc15" : "#ffffff";
+  const border = selected ? "4px solid #facc15" : "3px solid #ffffff";
+  const shadow = selected ? "0 4px 16px rgba(250,204,21,.5),0 2px 8px rgba(0,0,0,.3)" : "0 2px 8px rgba(0,0,0,.3)";
+  const pulse = selected
+    ? `<div style="position:absolute;top:50%;left:50%;width:${size + 20}px;height:${size + 20}px;border-radius:50%;background:rgba(250,204,21,.3);animation:selectedPulse 1.5s ease-out infinite"></div><style>@keyframes selectedPulse{0%{transform:translate(-50%,-50%) scale(.8);opacity:1}100%{transform:translate(-50%,-50%) scale(1.5);opacity:0}}</style>`
+    : "";
   return L.divIcon({
     className: "live-vehicle-marker",
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:3px solid ${border};box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transform:rotate(${heading ?? 0}deg)"><svg width="${size / 2}" height="${size / 2}" viewBox="0 0 24 24" fill="white"><path d="M12 2L4 14h16L12 2z"/></svg></div>`,
+    html: `<div style="position:relative;width:${size}px;height:${size}px">${pulse}<div style="position:relative;z-index:10;width:${size}px;height:${size}px;border-radius:50%;background:${color};border:${border};box-shadow:${shadow};display:flex;align-items:center;justify-content:center;transform:rotate(${heading ?? 0}deg)"><svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="white"><path d="M12 2L4 14h16L12 2z"/></svg></div></div>`,
     iconSize: [
       size,
       size,
@@ -72,17 +79,17 @@ export function LiveTrackingMap({
         return;
       const map = L.map(
         containerRef.current,
-        { zoomControl: false },
+        {
+          zoomControl: false,
+          attributionControl: false,
+        },
       ).setView(
         LAGOS,
         11,
       );
       L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          attribution: "&copy; OpenStreetMap contributors",
-          maxZoom: 19,
-        },
+        { maxZoom: 19 },
       ).addTo(map);
       geofenceLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
@@ -220,7 +227,7 @@ export function LiveTrackingMap({
         return;
       for (const g of geofences) {
         const style = {
-          color: "#8b5cf6", weight: 2, fillOpacity: 0.08,
+          color: zoneTypeColors[g.category] ?? zoneTypeColors.custom, weight: 2, fillOpacity: 0.15,
         };
         const tip = `${g.name}${g.vehiclesInside !== undefined ? ` · ${g.vehiclesInside} inside` : ""}`;
         if (g.shape === "CIRCLE" && g.center && g.radiusMeters) {
@@ -255,9 +262,11 @@ export function LiveTrackingMap({
   );
 
   return (
-    <div
-      ref={containerRef}
-      className="h-full w-full"
-    />
+    <div className="relative w-full h-full rounded-lg overflow-hidden border border-border">
+      <div
+        ref={containerRef}
+        className="w-full h-full"
+      />
+    </div>
   );
 }

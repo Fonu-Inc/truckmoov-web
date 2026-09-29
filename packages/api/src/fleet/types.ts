@@ -2077,6 +2077,8 @@ export type TrackingVehicle = {
   driverName?: string | null
   driverPhone?: string | null
   fuelLevelPercent?: number | null
+  // The live payload sends `fuelLevel`; `fuelLevelPercent` is kept for older rows.
+  fuelLevel?: number | null
   status: TrackingStatus
   /** Null until the vehicle has ever reported. */
   position: TrackingPosition | null
@@ -2087,6 +2089,8 @@ export type TrackingVehicle = {
     status: string
     pickupAddress?: string | null
     deliveryAddress?: string | null
+    // The live payload sends `dropoffAddress`.
+    dropoffAddress?: string | null
     deadline?: string | null
   } | null
 }
@@ -2118,7 +2122,7 @@ export type TrackingAlert = {
   createdAt: string
 }
 
-export type TrackingAlertsResponse = ServerResponse<TrackingAlert[]>
+export type TrackingAlertsResponse = ServerResponse<{ total: number, items: TrackingAlert[] }>
 
 export type ShareVehicleLocationPayload = { id: string }
 
@@ -2135,7 +2139,7 @@ export type VehicleLocationShareResponse = ServerResponse<VehicleLocationShare>
 /** GET /track/:token (public). No driver, plate or tenant — by design. */
 export type PublicTrack = {
   position: TrackingPosition | null
-  job: { reference?: string | null, status?: string | null, deliveryAddress?: string | null, deadline?: string | null } | null
+  job: { reference?: string | null, status?: string | null, deliveryAddress?: string | null, dropoffAddress?: string | null, deadline?: string | null } | null
   expiresAt: string
 }
 

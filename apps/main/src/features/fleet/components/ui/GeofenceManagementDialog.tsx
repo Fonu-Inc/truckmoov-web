@@ -71,19 +71,12 @@ import { Switch } from "@/components/shadcn/switch";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { zoneTypeColors } from "@/features/fleet/utils/geofenceZones";
 
 type GeofenceManagementDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preselectedVehicleId?: string | null;
-};
-
-const zoneTypeColors: Record<string, string> = {
-  depot: "#3b82f6",
-  delivery: "#22c55e",
-  restricted: "#ef4444",
-  customer: "#8b5cf6",
-  custom: "#f59e0b",
 };
 
 const zoneTypeLabels: Record<string, string> = {
