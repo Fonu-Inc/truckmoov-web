@@ -24,6 +24,52 @@ export type SystemLoginPayload = {
   }
 }
 
+// TRU-FE-18 — installer portal sign-in. The password step answers with a session,
+// or a challenge when the installer turned two-factor on.
+export type InstallerLoginPayload = LoginPayload
+
+/** Lasts five minutes and works once; 401 "This sign-in has expired; start again" means re-run the password step. */
+export type TwoFactorChallenge = {
+  twoFactorRequired: true
+  step: 'code'
+  challengeToken: string
+}
+
+/** `code` is six authenticator digits or a recovery code. */
+export type InstallerLoginTwoFactorPayload = {
+  data: {
+    challengeToken: string
+    code: string
+  }
+}
+
+export const INSTALLER_CAPABILITIES = [
+  'tracker_installation_wiring',
+  'sim_installation_activation',
+  'device_configuration_provisioning',
+  'fuel_sensor_installation_calibration',
+  'camera_accessory_installation',
+  'diagnostics_repairs_troubleshooting',
+  'device_replacement_deinstallation',
+  'onsite_customer_training_handover',
+] as const
+export type InstallerCapability = (typeof INSTALLER_CAPABILITIES)[number]
+
+/** POST /auth/system/installers — creates the installer and emails their portal invite. */
+export type CreateSystemInstallerPayload = {
+  data: {
+    firstName: string
+    lastName: string
+    email: string
+    phoneNumber: string
+    state?: string
+    city?: string
+    serviceAreas: string[]
+    capabilities: InstallerCapability[]
+    maxActiveJobs?: number
+  }
+}
+
 export type RefreshPayload = {
   data: {
     refreshToken: string
@@ -1981,6 +2027,8 @@ export type RemoveOrganizationUserData = {
 // ─── Response envelopes ───────────────────────────────────────────────────────
 
 export type AuthTokenResponse = ServerResponse<AuthSession>
+export type InstallerLoginResponse = ServerResponse<AuthSession | TwoFactorChallenge>
+export type SystemInstallerResponse = ServerResponse<Record<string, unknown> & { id: string, code?: string }>
 export type MeResponse = ServerResponse<Record<string, unknown>>
 export type ProfileResponse = ServerResponse<Record<string, unknown>>
 export type OrganizationUserResponse = ServerResponse<OrganizationUserMutationData>

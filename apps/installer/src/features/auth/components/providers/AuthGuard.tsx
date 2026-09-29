@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import {
   Navigate, useLocation,
 } from "react-router";
-import { PUBLIC_ROUTES } from "@/features/auth/utils/publicRoutes";
+import {
+  EMAIL_LINK_ROUTES, PUBLIC_ROUTES,
+} from "@/features/auth/utils/publicRoutes";
 import { useAuthStore } from "@/stores/authStore";
 
 /**
@@ -36,7 +38,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   }
 
   // Signed in and sitting on the login screen — send them to the dashboard.
-  if (isAuthenticated && isPublic) {
+  if (isAuthenticated && isPublic && !EMAIL_LINK_ROUTES.includes(location.pathname)) {
     return (
       <Navigate
         to="/"

@@ -9,6 +9,11 @@
  * `:8080/platform/installers` is equally backendless: it renders a persisted
  * zustand store seeded with these same rows and makes no network calls.
  *
+ * Creating an installer is live (TRU-FE-18): AddInstallerDialog posts to
+ * POST /auth/system/installers, which stores the installer and emails the
+ * portal invite. The list, suspend and resend below are not yet — the API has
+ * them (`/auth/system/installers*`), this page does not call them.
+ *
  * ponytail: mock data from the fleetflow parity port — wire to packages/api.
  * Going live needs an endpoint exposing the installer entity, its installation
  * jobs (for the workload/completed counts and the Job History tab) and an

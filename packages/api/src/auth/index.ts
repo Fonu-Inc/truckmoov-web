@@ -15,6 +15,7 @@ import {
   createSupportTicket,
   createSupportTicketMessage,
   createSystemAdmin,
+  createSystemInstaller,
   createSystemAdminInvite,
   createTenant,
   deleteOnboardingKycDocument,
@@ -103,9 +104,12 @@ import {
   getSystemTenants,
   getSystemTenantsSummary,
   inviteUser,
+  installerLogin,
+  installerLoginTwoFactor,
   login,
   logout,
   refresh,
+  validateInvite,
   register,
   registerInvited,
   reassignSystemSim,
@@ -340,7 +344,7 @@ import type {
 export type * from './types'
 
 // Value + type export: UserRole is a const object, so it must not be type-only.
-export { DEVICE_CATALOG_PROTOCOLS, UserRole } from './types'
+export { DEVICE_CATALOG_PROTOCOLS, INSTALLER_CAPABILITIES, UserRole } from './types'
 
 export const AUTH_QUERY_KEY = {
   me: ['me'],
@@ -543,6 +547,26 @@ export function useSystemLogin() {
   })
 }
 
+// TRU-FE-18 — a challenge carries no tokens, so only a real session is stored.
+export function useInstallerLogin() {
+  return useMutation({
+    mutationFn: installerLogin,
+    onSuccess: (res) => {
+      if (!('twoFactorRequired' in res.data))
+        useAuthStore.getState().setSession(res.data)
+    },
+  })
+}
+
+export function useInstallerLoginTwoFactor() {
+  return useMutation({
+    mutationFn: installerLoginTwoFactor,
+    onSuccess: (res) => {
+      useAuthStore.getState().setSession(res.data)
+    },
+  })
+}
+
 export function useRefresh() {
   return useMutation({ mutationFn: refresh })
 }
@@ -571,6 +595,21 @@ export function useRegisterInvited() {
   return useMutation({ mutationFn: registerInvited })
 }
 
+/** The token is single-use on register, not on validate — safe to refetch; retry off so a bad link fails fast. */
+export function useValidateInvite(token: string | null) {
+  return useQuery({
+    queryKey: ['validateInvite', token],
+    queryFn: () => validateInvite({ params: { token: token! } }),
+    enabled: !!token,
+    retry: false,
+    staleTime: Infinity,
+  })
+}
+
+export function useCreateSystemInstaller() {
+  return useMutation({ mutationFn: createSystemInstaller })
+}
+
 export function useLogout() {
   return useMutation({
     mutationFn: logout,
@@ -585,6 +624,9 @@ export function useUploadMedia() {
 }
 
 export { uploadMedia }
+
+/** Plain-function logout for session stores: revokes the refresh token server-side. The caller clears local state. */
+export { logout as revokeSession }
 
 // Profile and preferences
 

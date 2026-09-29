@@ -101,6 +101,11 @@ import type {
   AIUsageResponse,
   AuthSystemSettingsResponse,
   AuthTokenResponse,
+  CreateSystemInstallerPayload,
+  InstallerLoginPayload,
+  InstallerLoginResponse,
+  InstallerLoginTwoFactorPayload,
+  SystemInstallerResponse,
   ChangeRolePayload,
   CompleteProfilePayload,
   CreateDeviceCatalogPayload,
@@ -369,6 +374,18 @@ export async function systemLogin({ data }: SystemLoginPayload) {
   return res
 }
 
+// TRU-FE-18 — the installer portal's own sign-in: the only route that admits installers
+// and hands out the two-factor challenge.
+export async function installerLogin({ data }: InstallerLoginPayload) {
+  const { data: res } = await axiosInstance.post<InstallerLoginResponse>('/auth/installer/login', data)
+  return res
+}
+
+export async function installerLoginTwoFactor({ data }: InstallerLoginTwoFactorPayload) {
+  const { data: res } = await axiosInstance.post<AuthTokenResponse>('/auth/installer/login/two-factor', data)
+  return res
+}
+
 export async function refresh({ data }: RefreshPayload) {
   const { data: res } = await axiosInstance.post<AuthTokenResponse>('/auth/refresh', data)
   return res
@@ -524,6 +541,11 @@ export async function getActivityLog(payload?: ActivityLogQuery) {
 }
 
 // ─── System admin — admins & invites ─────────────────────────────────────────
+
+export async function createSystemInstaller({ data }: CreateSystemInstallerPayload) {
+  const { data: res } = await axiosInstance.post<SystemInstallerResponse>('/auth/system/installers', data)
+  return res
+}
 
 export async function getSystemAdmins() {
   const { data } = await axiosInstance.get<OrganizationUsersResponse>('/auth/system/admins')

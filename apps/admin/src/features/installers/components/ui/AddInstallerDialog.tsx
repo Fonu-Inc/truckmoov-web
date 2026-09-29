@@ -1,5 +1,7 @@
+import type { InstallerCapability } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import type { Installer } from "@/features/installers/demoData";
+import { useCreateSystemInstaller } from "@truckmoov/api/auth";
 import {
   useEffect,
   useMemo,
@@ -32,6 +34,21 @@ const STEPS = [
   "Service Information",
   "Review & Create",
 ];
+
+// POST /auth/system/installers takes enum values, not the labels the form shows.
+const CAPABILITY_VALUE: Record<string, InstallerCapability> = {
+  "Tracker installation & wiring": "tracker_installation_wiring",
+  "SIM installation & activation": "sim_installation_activation",
+  "Device configuration & provisioning": "device_configuration_provisioning",
+  "Fuel sensor installation & calibration": "fuel_sensor_installation_calibration",
+  "Camera & accessory installation": "camera_accessory_installation",
+  "Diagnostics, repairs & troubleshooting": "diagnostics_repairs_troubleshooting",
+  "Device replacement & de-installation": "device_replacement_deinstallation",
+  "On-site customer training & handover": "onsite_customer_training_handover",
+};
+
+// The API's state enum spells Abuja as "FCT"; every other option already matches.
+const toApiState = (s: string) => (s === "Abuja (FCT)" ? "FCT" : s);
 
 type InstallerForm = {
   firstName: string;
@@ -101,6 +118,7 @@ export function AddInstallerDialog({
     errors,
     setErrors,
   ] = useState<Record<string, string>>({});
+  const createInstaller = useCreateSystemInstaller();
 
   const set = <K extends keyof InstallerForm>(key: K, value: InstallerForm[K]) =>
     setForm(f => ({
@@ -180,33 +198,57 @@ export function AddInstallerDialog({
         },
       );
       toast.success("Installer details updated.");
+      reset();
+      onOpenChange(false);
+      return;
     }
-    else {
-      onCreate({
-        id: form.installerId,
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        state: form.state.trim(),
-        city: form.city.trim(),
-        serviceAreas: form.serviceAreas,
-        capabilities: form.capabilities,
-        deviceTypes: [...DEVICE_TYPE_OPTIONS],
-        vehicleTypes: [...VEHICLE_TYPE_OPTIONS],
-        status: "pending_activation",
-        loginEmail: form.email.trim(),
-        accountSetup: "activation_email",
-        dateAdded: now,
-        lastActivity: now,
-      });
-      toast.success(
-        "Installer added successfully.",
-        { description: "An invitation link to the platform has been emailed to the installer." },
-      );
-    }
-    reset();
-    onOpenChange(false);
+    // Create is live: the server stores the installer and emails their invite to the
+    // installer portal. The list itself is still local state (see demoData.ts).
+    createInstaller.mutate(
+      {
+        data: {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.trim(),
+          phoneNumber: form.phone.trim(),
+          ...(form.state.trim() ? { state: toApiState(form.state.trim()) } : {}),
+          ...(form.city.trim() ? { city: form.city.trim() } : {}),
+          serviceAreas: form.serviceAreas.map(toApiState),
+          capabilities: form.capabilities.map(c => CAPABILITY_VALUE[c]).filter(Boolean),
+        },
+      },
+      {
+        onSuccess: (res) => {
+          onCreate({
+            id: res.data.code ?? form.installerId,
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            email: form.email.trim(),
+            phone: form.phone.trim(),
+            state: form.state.trim(),
+            city: form.city.trim(),
+            serviceAreas: form.serviceAreas,
+            capabilities: form.capabilities,
+            deviceTypes: [...DEVICE_TYPE_OPTIONS],
+            vehicleTypes: [...VEHICLE_TYPE_OPTIONS],
+            status: "pending_activation",
+            loginEmail: form.email.trim(),
+            accountSetup: "activation_email",
+            dateAdded: now,
+            lastActivity: now,
+          });
+          toast.success(
+            "Installer added successfully.",
+            { description: "An invitation link to the installer portal has been emailed to the installer." },
+          );
+          reset();
+          onOpenChange(false);
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      },
+    );
   };
 
   const summary = useMemo(
@@ -456,6 +498,7 @@ export function AddInstallerDialog({
                 <Button
                   type="button"
                   onClick={submit}
+                  loading={createInstaller.isPending}
                 >
                   {isEdit ? "Save Changes" : "Create Installer"}
                 </Button>

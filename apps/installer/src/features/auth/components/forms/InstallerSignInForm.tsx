@@ -1,11 +1,14 @@
+import type { TwoFactorChallenge } from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useLogin } from "@truckmoov/api/auth";
+import { useInstallerLogin } from "@truckmoov/api/auth";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
   ArrowRight, Mail,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import {
+  Link, useNavigate,
+} from "react-router";
 import { toast } from "sonner";
 import * as z from "zod";
 import { Button } from "@/components/shadcn/button";
@@ -18,10 +21,11 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { emailSchema } from "@/features/auth/utils/schemas";
 import { useAuthStore } from "@/stores/authStore";
 
 const installerSignInSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
+  email: emailSchema,
   password: z.string().min(
     1,
     "Password is required.",
@@ -32,13 +36,18 @@ type InstallerSignInFormValues = z.infer<typeof installerSignInSchema>;
 
 export const INSTALLER_SIGN_IN_FORM_ID = "installer-sign-in-form";
 
+type InstallerSignInFormProps = {
+  /** An installer with two-factor on gets a challenge instead of a session. */
+  onChallenge: (challenge: TwoFactorChallenge) => void;
+};
+
 /**
- * Installers are tenant-side users, so this posts to `/auth/login` via
- * `useLogin` — not the `/auth/system/login` endpoint the admin app uses,
- * which is for platform staff.
+ * Posts to `/auth/installer/login` (TRU-FE-18), not `/auth/login`: only the
+ * installer route admits installers and issues the two-factor challenge. A
+ * non-installer, suspended or unverified account is answered with a 404.
  */
-export function InstallerSignInForm() {
-  const login = useLogin();
+export function InstallerSignInForm({ onChallenge }: InstallerSignInFormProps) {
+  const login = useInstallerLogin();
   const navigate = useNavigate();
 
   const form = useForm<InstallerSignInFormValues>({
@@ -58,7 +67,11 @@ export function InstallerSignInForm() {
         },
       },
       {
-        onSuccess: async () => {
+        onSuccess: async (res) => {
+          if ("twoFactorRequired" in res.data) {
+            onChallenge(res.data);
+            return;
+          }
           await useAuthStore.getState().bootstrapFromSession();
           navigate(
             "/",
@@ -66,7 +79,9 @@ export function InstallerSignInForm() {
           );
         },
         onError: (error) => {
-          toast.error(error.message);
+          toast.error(error.statusCode === 404
+            ? "This account can't sign in to the installer portal."
+            : error.message);
         },
       },
     );
@@ -107,7 +122,15 @@ export function InstallerSignInForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <div className="flex items-center justify-between gap-3">
+                <FormLabel>Password</FormLabel>
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <PasswordFieldControl
                 value={field.value}
                 onChange={field.onChange}

@@ -59,7 +59,25 @@ export const router = createBrowserRouter([
           {
             path: "/auth", Component: AuthPage,
           },
+          {
+            path: "/auth/forgot-password",
+            lazy: async () => ({ Component: (await import("@/features/auth/components/pages/ForgotPasswordPage")).default }),
+          },
         ],
+      },
+      // Standalone card screens reached from email links — no branding panel.
+      {
+        path: "/auth/invite",
+        lazy: async () => ({ Component: (await import("@/features/auth/components/pages/InvitePage")).default }),
+      },
+      {
+        path: "/auth/reset-password",
+        lazy: async () => ({ Component: (await import("@/features/auth/components/pages/ResetPasswordPage")).default }),
+      },
+      // The platform's reset email uses apps/main's link shape: /auth/verify-email?token=&type=reset-password.
+      {
+        path: "/auth/verify-email",
+        lazy: async () => ({ Component: (await import("@/features/auth/components/pages/ResetPasswordPage")).default }),
       },
       {
         path: "/not-authorized", Component: NotAuthorized,

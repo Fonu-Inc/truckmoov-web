@@ -60,7 +60,11 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError<unknown>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    // A sign-in 401 is the answer ("Invalid credentials", "This sign-in has expired"), not a
+    // stale session — refreshing would replay the password against whoever was signed in before.
+    const isSignIn = /^\/?auth\/(system\/|installer\/)?login(\/two-factor)?$/.test(originalRequest.url ?? '')
+
+    if (error.response?.status !== 401 || originalRequest._retry || isSignIn) {
       return Promise.reject(normalizeError(error))
     }
 

@@ -33,8 +33,8 @@ export function UserProfileDropdown() {
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const roleLabel = getRoleLabel(user?.role);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth");
   };
 

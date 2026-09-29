@@ -12,7 +12,7 @@ type AuthStoreState = {
 
 export const useAuthStore = create<AuthStoreState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       accessToken: null,
       refreshToken: null,
       user: null,
@@ -20,7 +20,9 @@ export const useAuthStore = create<AuthStoreState>()(
         set({
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,
-          user: session.user,
+          // POST /auth/refresh answers { accessToken, refreshToken, expiresIn } with no user —
+          // keep the one from sign-in, or every refresh would sign the app out on next load.
+          user: session.user ?? get().user,
         }),
       logout: () => set({ accessToken: null, refreshToken: null, user: null }),
     }),
