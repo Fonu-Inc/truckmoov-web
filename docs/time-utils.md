@@ -58,7 +58,10 @@ to reach for it. This is the quick index:
 
 **Timezones** — `TIMEZONES`, `DEFAULT_TIMEZONE`, `getTimezoneLabel`,
 `formatDateInTimezone`, `formatTimeInTimezone`, `formatDateOnlyInTimezone`,
-`getCurrentTimeInTimezone`
+`getCurrentTimeInTimezone`. The three `format*InTimezone` helpers take a
+`Timezone` key or a raw IANA name (a user's saved preference, e.g. the
+installer portal's Display Preferences) — never hardcode `Africa/Lagos` when a
+preference exists.
 
 **Types and constants** — `DateInput`, `Timezone`, `DateRangePreset`,
 `EMPTY_DATE_LABEL`. Use these rather than redeclaring them.

@@ -1,6 +1,7 @@
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { useAuthStore } from '../lib/auth-store'
+import type { ServerErrorResponse } from '../lib/types'
 import { setOnboardingToken as persistOnboardingToken } from '../lib/onboarding-instance'
 import { queryClient } from '../lib/query-client'
 import {
@@ -15,7 +16,13 @@ import {
   createSupportTicket,
   createSupportTicketMessage,
   createSystemAdmin,
+  acceptInstallerJob,
   createSystemInstaller,
+  getInstallerDashboard,
+  getInstallerDisplayPreferences,
+  getInstallerNotifications,
+  getInstallerOptions,
+  rejectInstallerJob,
   createSystemAdminInvite,
   createTenant,
   deleteOnboardingKycDocument,
@@ -411,6 +418,11 @@ export const AUTH_QUERY_KEY = {
   aiUsage: (payload?: AIUsageQuery) => payload?.params ? ['aiUsage', payload.params] : ['aiUsage'],
   aiRequests: (payload?: AIRequestsQuery) => payload?.params ? ['aiRequests', payload.params] : ['aiRequests'],
   twoFactor: ['twoFactor'],
+  installerDashboard: ['installerDashboard'],
+  installerNotifications: (limit?: number) =>
+    limit ? ['installerNotifications', limit] : ['installerNotifications'],
+  installerOptions: ['installerOptions'],
+  installerDisplayPreferences: ['installerDisplayPreferences'],
 
   systemDashboard: ['systemDashboard'],
   systemHealth: ['systemHealth'],
@@ -608,6 +620,51 @@ export function useValidateInvite(token: string | null) {
 
 export function useCreateSystemInstaller() {
   return useMutation({ mutationFn: createSystemInstaller })
+}
+
+// TRU-FE-19 — installer portal dashboard.
+
+export function getInstallerDashboardQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.installerDashboard, queryFn: getInstallerDashboard })
+}
+
+export function useInstallerDashboard() {
+  return useQuery(getInstallerDashboardQueryOptions())
+}
+
+export function useInstallerNotifications(limit?: number) {
+  return useQuery({
+    queryKey: AUTH_QUERY_KEY.installerNotifications(limit),
+    queryFn: () => getInstallerNotifications(limit ? { limit } : undefined),
+  })
+}
+
+/** Reference data (checklist, categories, tips) — changes with a deploy, not a session. */
+export function useInstallerOptions() {
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerOptions, queryFn: getInstallerOptions, staleTime: Infinity })
+}
+
+export function useInstallerDisplayPreferences() {
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerDisplayPreferences, queryFn: getInstallerDisplayPreferences })
+}
+
+// Accepting or rejecting moves the job between sections and counters, and a 409 means the
+// job changed under us — either way the dashboard is stale, so refetch on both.
+function refreshInstallerDashboard() {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerDashboard })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerNotifications() })
+}
+const refreshOnConflict = (error: ServerErrorResponse) => {
+  if (error.statusCode === 409)
+    refreshInstallerDashboard()
+}
+
+export function useAcceptInstallerJob() {
+  return useMutation({ mutationFn: acceptInstallerJob, onSuccess: refreshInstallerDashboard, onError: refreshOnConflict })
+}
+
+export function useRejectInstallerJob() {
+  return useMutation({ mutationFn: rejectInstallerJob, onSuccess: refreshInstallerDashboard, onError: refreshOnConflict })
 }
 
 export function useLogout() {

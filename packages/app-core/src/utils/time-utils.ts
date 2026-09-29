@@ -446,6 +446,14 @@ const IANA_TIMEZONES: Record<Timezone, string> = {
 }
 
 /**
+ * The zone helpers below also take a raw IANA name (e.g. a user's saved preference,
+ * "America/New_York") — anything that isn't a `Timezone` key is passed to `Intl` as-is.
+ */
+function toIanaTimezone(timezone: Timezone | string): string {
+  return timezone in IANA_TIMEZONES ? IANA_TIMEZONES[timezone as Timezone] : timezone
+}
+
+/**
  * Date + time rendered in a specific timezone, e.g. "4 Mar 2026, 14:05".
  *
  * Use this — not `formatDateTime` — whenever the exact wall-clock time in the
@@ -454,7 +462,7 @@ const IANA_TIMEZONES: Record<Timezone, string> = {
  */
 export function formatDateInTimezone(
   value: DateInput,
-  timezone: Timezone = DEFAULT_TIMEZONE,
+  timezone: Timezone | string = DEFAULT_TIMEZONE,
   options: Intl.DateTimeFormatOptions = {},
   fallback = EMPTY_DATE_LABEL,
 ): string {
@@ -465,14 +473,14 @@ export function formatDateInTimezone(
   // (year/month/day/...), so skip the granular defaults if the caller used either.
   const usesStyleShortcut = 'dateStyle' in options || 'timeStyle' in options
   const resolved: Intl.DateTimeFormatOptions = usesStyleShortcut
-    ? { timeZone: IANA_TIMEZONES[timezone], ...options }
+    ? { timeZone: toIanaTimezone(timezone), ...options }
     : {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: IANA_TIMEZONES[timezone],
+      timeZone: toIanaTimezone(timezone),
       ...options,
     }
 
@@ -482,7 +490,7 @@ export function formatDateInTimezone(
 /** Time of day only, in a specific timezone, e.g. "14:05". */
 export function formatTimeInTimezone(
   value: DateInput,
-  timezone: Timezone = DEFAULT_TIMEZONE,
+  timezone: Timezone | string = DEFAULT_TIMEZONE,
   fallback = EMPTY_DATE_LABEL,
 ): string {
   const date = toDate(value)
@@ -490,14 +498,14 @@ export function formatTimeInTimezone(
   return date.toLocaleTimeString('en-NG', {
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: IANA_TIMEZONES[timezone],
+    timeZone: toIanaTimezone(timezone),
   })
 }
 
 /** Date only, in a specific timezone, e.g. "4 Mar 2026". */
 export function formatDateOnlyInTimezone(
   value: DateInput,
-  timezone: Timezone = DEFAULT_TIMEZONE,
+  timezone: Timezone | string = DEFAULT_TIMEZONE,
   fallback = EMPTY_DATE_LABEL,
 ): string {
   const date = toDate(value)
@@ -506,7 +514,7 @@ export function formatDateOnlyInTimezone(
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    timeZone: IANA_TIMEZONES[timezone],
+    timeZone: toIanaTimezone(timezone),
   })
 }
 

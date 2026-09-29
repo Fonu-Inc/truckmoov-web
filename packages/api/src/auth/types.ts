@@ -55,6 +55,93 @@ export const INSTALLER_CAPABILITIES = [
 ] as const
 export type InstallerCapability = (typeof INSTALLER_CAPABILITIES)[number]
 
+// TRU-FE-19 — installer portal dashboard. Every timestamp is an ISO UTC instant; show it in
+// the installer's Display Preferences time zone, not a fixed one.
+export type InstallerJobStatus =
+  | 'unassigned'
+  | 'assigned'
+  | 'scheduled'
+  | 'in_progress'
+  | 'overdue'
+  | 'issue_reported'
+  | 'completed'
+  | 'cancelled'
+
+export type DashboardJob = {
+  jobId: string
+  jobNumber: string
+  companyName: string
+  siteContactName: string
+  siteContactPhone: string
+  siteContactEmail: string | null
+  address: string
+  city: string
+  state: string
+  scheduledAt: string
+  scheduledUntil: string
+  status: InstallerJobStatus
+}
+
+/** `items` is the first 5, soonest first; `total` is how many match in all. */
+export type DashboardSection = { items: DashboardJob[], total: number }
+
+export type InstallerDashboard = {
+  /** `total` excludes offers not yet accepted; `successRate` is a whole percentage. */
+  counters: { total: number, completed: number, pending: number, successRate: number }
+  /** `assigned` jobs waiting for Accept or Reject. */
+  offers: DashboardSection
+  todaysJobs: DashboardSection
+  upcomingJobs: DashboardSection
+  /** The last 6 months, oldest first; `month` is "YYYY-MM". */
+  activityOverTime: { month: string, completed: number, inProgress: number, scheduled: number }[]
+  /** The last 10 events, newest first. */
+  recentActivity: {
+    type: 'offered' | 'accepted' | 'started' | 'issue_reported' | 'completed' | 'cancelled'
+    jobId: string
+    jobNumber: string
+    occurredAt: string
+  }[]
+}
+
+// ponytail: Swagger documents no body for GET /auth/installer/notifications — fields match the page
+// envelope it does return; confirm `items[]` once dev has a notification to show.
+export type InstallerNotification = {
+  id: string
+  title: string
+  message: string
+  read: boolean
+  createdAt: string
+  jobId?: string | null
+}
+
+export type InstallerNotificationsPage = {
+  unreadCount: number
+  items: InstallerNotification[]
+  page: number
+  limit: number
+  total: number
+}
+
+export type InstallerOptionItem = { key: string, label: string }
+
+export type InstallerOptions = {
+  checklist: { key: string, label: string, items: (InstallerOptionItem & { gated?: string })[] }[]
+  evidenceCategories: InstallerOptionItem[]
+  supportCategories: InstallerOptionItem[]
+  fieldTips: string[]
+  priorities: InstallerOptionItem[]
+  ticketStatuses: InstallerOptionItem[]
+}
+
+export type InstallerDisplayPreferences = {
+  /** IANA name, e.g. "Africa/Lagos" — the default until the installer changes it. */
+  timezone: string
+  defaultTimeRange: 'today' | 'last_7_days' | 'last_30_days' | 'last_90_days'
+}
+
+/** A rejected offer goes to the next installer and never returns to this one. */
+export type RejectInstallerJobPayload = { jobId: string, data: { reason: string } }
+
 /** POST /auth/system/installers — creates the installer and emails their portal invite. */
 export type CreateSystemInstallerPayload = {
   data: {
@@ -2028,6 +2115,14 @@ export type RemoveOrganizationUserData = {
 
 export type AuthTokenResponse = ServerResponse<AuthSession>
 export type InstallerLoginResponse = ServerResponse<AuthSession | TwoFactorChallenge>
+export type InstallerDashboardResponse = ServerResponse<InstallerDashboard>
+/** Accept answers with the full job detail; only `id` and `status` are typed until the job page is wired. */
+export type InstallerJobResponse = ServerResponse<{ id: string, status: InstallerJobStatus } & Record<string, unknown>>
+/** The job is no longer the caller's, so only its identity comes back. */
+export type RejectedOfferResponse = ServerResponse<{ id: string, jobNumber: string, rejectedAt: string }>
+export type InstallerNotificationsResponse = ServerResponse<InstallerNotificationsPage>
+export type InstallerOptionsResponse = ServerResponse<InstallerOptions>
+export type InstallerDisplayPreferencesResponse = ServerResponse<InstallerDisplayPreferences>
 export type SystemInstallerResponse = ServerResponse<Record<string, unknown> & { id: string, code?: string }>
 export type MeResponse = ServerResponse<Record<string, unknown>>
 export type ProfileResponse = ServerResponse<Record<string, unknown>>

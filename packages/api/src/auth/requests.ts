@@ -102,7 +102,14 @@ import type {
   AuthSystemSettingsResponse,
   AuthTokenResponse,
   CreateSystemInstallerPayload,
+  InstallerDashboardResponse,
+  InstallerDisplayPreferencesResponse,
+  InstallerJobResponse,
   InstallerLoginPayload,
+  InstallerNotificationsResponse,
+  InstallerOptionsResponse,
+  RejectedOfferResponse,
+  RejectInstallerJobPayload,
   InstallerLoginResponse,
   InstallerLoginTwoFactorPayload,
   SystemInstallerResponse,
@@ -541,6 +548,38 @@ export async function getActivityLog(payload?: ActivityLogQuery) {
 }
 
 // ─── System admin — admins & invites ─────────────────────────────────────────
+
+// ─── TRU-FE-19 — installer portal dashboard ─────────────────────────────────
+
+export async function getInstallerDashboard() {
+  const { data } = await axiosInstance.get<InstallerDashboardResponse>('/auth/installer/dashboard')
+  return data
+}
+
+export async function acceptInstallerJob({ jobId }: { jobId: string }) {
+  const { data } = await axiosInstance.post<InstallerJobResponse>(`/auth/installer/jobs/${jobId}/accept`)
+  return data
+}
+
+export async function rejectInstallerJob({ jobId, data: body }: RejectInstallerJobPayload) {
+  const { data } = await axiosInstance.post<RejectedOfferResponse>(`/auth/installer/jobs/${jobId}/reject`, body)
+  return data
+}
+
+export async function getInstallerNotifications(params?: { limit?: number, page?: number, unread?: boolean }) {
+  const { data } = await axiosInstance.get<InstallerNotificationsResponse>('/auth/installer/notifications', { params })
+  return data
+}
+
+export async function getInstallerOptions() {
+  const { data } = await axiosInstance.get<InstallerOptionsResponse>('/auth/installer/options')
+  return data
+}
+
+export async function getInstallerDisplayPreferences() {
+  const { data } = await axiosInstance.get<InstallerDisplayPreferencesResponse>('/auth/installer/preferences/display')
+  return data
+}
 
 export async function createSystemInstaller({ data }: CreateSystemInstallerPayload) {
   const { data: res } = await axiosInstance.post<SystemInstallerResponse>('/auth/system/installers', data)
