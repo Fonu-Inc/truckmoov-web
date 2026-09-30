@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/shadcn/skeleton";
  * TRU-FE-7 § D — per-account TOTP two-factor.
  *
  * ponytail: three states off the /auth/two-factor GET.
- *   - not enrolled  → "Set up 2FA" CTA → enrol returns secret+uri+recoveryCodes ONCE
+ *   - not enrolled  → "Set up 2FA" CTA → enrol returns secret+uri ONCE, confirm returns recoveryCodes ONCE
  *   - pending       → "Enter 6-digit code"; calling enrol again issues a fresh secret (spec recovery)
  *   - enrolled      → "2FA is on" + Turn off (needs current code; 403 while requireTwoFactor)
  *
@@ -107,7 +107,41 @@ function EnrolmentPanel({
   const confirm = useConfirmTwoFactor();
   const [savedCodes, setSavedCodes] = useState(false);
   const [code, setCode] = useState("");
-  const canConfirm = savedCodes && CODE_RE.test(code) && !confirm.isPending;
+  // Confirm, not enrol, hands out the recovery codes — shown once, before leaving this panel.
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const canConfirm = CODE_RE.test(code) && !confirm.isPending;
+
+  if (recoveryCodes) {
+    return (
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Save your recovery codes — you won&apos;t see them again</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>Store these somewhere safe. Each is one-time use.</p>
+              <div className="grid grid-cols-2 gap-2 rounded border border-destructive/30 bg-background p-2 font-mono text-xs sm:grid-cols-3">
+                {recoveryCodes.map(c => <div key={c}>{c}</div>)}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copy(recoveryCodes.join("\n"), "Recovery codes")}
+              >
+                <Copy className="mr-2 h-3 w-3" />
+                Copy all
+              </Button>
+            </AlertDescription>
+          </Alert>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={savedCodes} onCheckedChange={v => setSavedCodes(v === true)} />
+            I&apos;ve saved the recovery codes
+          </label>
+          <Button disabled={!savedCodes} onClick={onDone}>Done</Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -117,7 +151,7 @@ function EnrolmentPanel({
           Finish setup
         </CardTitle>
         <CardDescription>
-          Add the account to your authenticator app, save the recovery codes, then enter a code to turn 2FA on.
+          Add the account to your authenticator app, then enter a code to turn 2FA on.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -153,30 +187,6 @@ function EnrolmentPanel({
           </div>
         </div>
 
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Save your recovery codes — you won&apos;t see them again</AlertTitle>
-          <AlertDescription className="space-y-2">
-            <p>Store these somewhere safe. Each is one-time use.</p>
-            <div className="grid grid-cols-2 gap-2 rounded border border-destructive/30 bg-background p-2 font-mono text-xs sm:grid-cols-3">
-              {enrolment.recoveryCodes.map(c => <div key={c}>{c}</div>)}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => copy(enrolment.recoveryCodes.join("\n"), "Recovery codes")}
-            >
-              <Copy className="mr-2 h-3 w-3" />
-              Copy all
-            </Button>
-          </AlertDescription>
-        </Alert>
-
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox checked={savedCodes} onCheckedChange={v => setSavedCodes(v === true)} />
-          I&apos;ve saved the recovery codes
-        </label>
-
         <div className="space-y-2">
           <Label>Confirmation code</Label>
           <Input
@@ -202,9 +212,9 @@ function EnrolmentPanel({
             onClick={() => confirm.mutate(
               { data: { code } },
               {
-                onSuccess: () => {
+                onSuccess: (res) => {
                   toast.success("Two-factor authentication is on");
-                  onDone();
+                  setRecoveryCodes(res.data.recoveryCodes);
                 },
                 onError: err => toast.error(err.message),
               },
@@ -235,9 +245,7 @@ function EnrolledCard({ state }: { state: TwoFactorState }) {
           <Badge variant="outline" className="ml-2 border-success/30 bg-success/10 text-success">On</Badge>
         </CardTitle>
         <CardDescription>
-          {state.lastConfirmedAt
-            ? `Last confirmed ${new Date(state.lastConfirmedAt).toLocaleString()}.`
-            : "Your account is protected with a second step at sign-in."}
+          {`Your account is protected with a second step at sign-in. ${state.recoveryCodesRemaining} recovery codes left.`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -315,7 +323,7 @@ export default function SecuritySettingsPage() {
       enrolled: false,
       pendingConfirmation: false,
       requiredByPlatform: enrolRequired,
-      lastConfirmedAt: null,
+      recoveryCodesRemaining: 0,
     },
     [stateQuery.data, enrolRequired],
   );

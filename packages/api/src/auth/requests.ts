@@ -104,6 +104,14 @@ import type {
   CreateSystemInstallerPayload,
   InstallerDashboardResponse,
   InstallerDisplayPreferencesResponse,
+  InstallerNotificationPreferencesResponse,
+  InstallerProfileResponse,
+  InstallerWorkPreferencesResponse,
+  ChangeInstallerPasswordPayload,
+  UpdateInstallerDisplayPreferencesPayload,
+  UpdateInstallerNotificationPreferencesPayload,
+  UpdateInstallerProfilePayload,
+  UpdateInstallerWorkPreferencesPayload,
   InstallerEvidenceLinkResponse,
   InstallerJobResponse,
   InstallerJobsExportQuery,
@@ -281,6 +289,7 @@ import type {
   ConfirmTwoFactorPayload,
   DisableTwoFactorPayload,
   TwoFactorEnrolmentResponse,
+  TwoFactorRecoveryCodesResponse,
   TwoFactorStateResponse,
   UpdateAIGovernancePayload,
   UpdateOpenRouterCredentialPayload,
@@ -586,6 +595,58 @@ export async function getInstallerOptions() {
 
 export async function getInstallerDisplayPreferences() {
   const { data } = await axiosInstance.get<InstallerDisplayPreferencesResponse>('/auth/installer/preferences/display')
+  return data
+}
+
+// ─── TRU-FE-21 — installer settings ──────────────────────────────────────────
+
+export async function updateInstallerDisplayPreferences({ data: body }: UpdateInstallerDisplayPreferencesPayload) {
+  const { data } = await axiosInstance.patch<InstallerDisplayPreferencesResponse>('/auth/installer/preferences/display', body)
+  return data
+}
+
+export async function getInstallerProfile() {
+  const { data } = await axiosInstance.get<InstallerProfileResponse>('/auth/installer/profile')
+  return data
+}
+
+export async function updateInstallerProfile({ data: body }: UpdateInstallerProfilePayload) {
+  const { data } = await axiosInstance.patch<InstallerProfileResponse>('/auth/installer/profile', body)
+  return data
+}
+
+/** JPG or PNG, up to 2 MB. */
+export async function uploadInstallerProfilePhoto({ file }: { file: File }) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await axiosInstance.post<InstallerProfileResponse>('/auth/installer/profile/photo', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function changeInstallerPassword({ data: body }: ChangeInstallerPasswordPayload) {
+  const { data } = await axiosInstance.post<AuthTokenResponse>('/auth/installer/password', body)
+  return data
+}
+
+export async function getInstallerNotificationPreferences() {
+  const { data } = await axiosInstance.get<InstallerNotificationPreferencesResponse>('/auth/installer/preferences/notifications')
+  return data
+}
+
+export async function updateInstallerNotificationPreferences({ data: body }: UpdateInstallerNotificationPreferencesPayload) {
+  const { data } = await axiosInstance.patch<InstallerNotificationPreferencesResponse>('/auth/installer/preferences/notifications', body)
+  return data
+}
+
+export async function getInstallerWorkPreferences() {
+  const { data } = await axiosInstance.get<InstallerWorkPreferencesResponse>('/auth/installer/preferences/work')
+  return data
+}
+
+export async function updateInstallerWorkPreferences({ data: body }: UpdateInstallerWorkPreferencesPayload) {
+  const { data } = await axiosInstance.patch<InstallerWorkPreferencesResponse>('/auth/installer/preferences/work', body)
   return data
 }
 
@@ -1004,11 +1065,11 @@ export async function enrolTwoFactor() {
   return data
 }
 export async function confirmTwoFactor({ data }: ConfirmTwoFactorPayload) {
-  const { data: res } = await axiosInstance.post<TwoFactorStateResponse>('/auth/two-factor/enrol/confirm', data)
+  const { data: res } = await axiosInstance.post<TwoFactorRecoveryCodesResponse>('/auth/two-factor/enrol/confirm', data)
   return res
 }
 export async function disableTwoFactor({ data }: DisableTwoFactorPayload) {
-  const { data: res } = await axiosInstance.post<TwoFactorStateResponse>('/auth/two-factor/disable', data)
+  const { data: res } = await axiosInstance.post<ServerResponse<null>>('/auth/two-factor/disable', data)
   return res
 }
 

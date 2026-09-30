@@ -178,6 +178,19 @@ Tenant-facing support uses the auth service through `@truckmoov/api/auth`:
 
 The attachment endpoint accepts images, PDF, DOC/DOCX, TXT, CSV, XLS/XLSX up to 10 MB per file. Create the ticket first, then use the returned ticket id for its attachments.
 
+### Installer settings
+
+The installer Settings page (TRU-FE-21) uses `@truckmoov/api/auth` hooks for
+`/auth/installer/profile`, `/profile/photo`, `/password` and `/preferences/{display,notifications,work}`.
+Every PATCH answers with the whole record, which is written straight into the query cache.
+
+- `useChangeInstallerPassword()` calls `setSession` on success: the server ends every earlier
+  session (the old refresh token stops working) and returns a new token pair.
+- `useUpdateInstallerDisplayPreferences()` updates the `installerDisplayPreferences` cache that
+  every installer page reads its time zone from.
+- Two-factor (`/auth/two-factor*`) is shared with the tenant app: `enrol` returns the secret and
+  otpauth URI once, `enrol/confirm` returns the recovery codes once.
+
 ### Login / logout mutations
 
 `useLogin` and `useSystemLogin` call `setSession` automatically on success. `useLogout` calls `logout()` automatically on success. Components do not need to manage the store directly for these flows.

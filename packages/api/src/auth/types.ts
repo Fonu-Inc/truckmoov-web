@@ -139,6 +139,65 @@ export type InstallerDisplayPreferences = {
   defaultTimeRange: 'today' | 'last_7_days' | 'last_30_days' | 'last_90_days'
 }
 
+// TRU-FE-21 — installer settings.
+export const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River',
+  'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano',
+  'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
+  'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+] as const
+export type NigerianState = (typeof NIGERIAN_STATES)[number]
+
+export type InstallerProfile = {
+  personal: {
+    firstName: string
+    lastName: string
+    email: string
+    phoneNumber: string
+    state: NigerianState | null
+    city: string | null
+    /** Signed link that expires after about five minutes; null without a photo. */
+    photoUrl: string | null
+  }
+  /** Read-only; the platform admin sets it. */
+  record: {
+    code: string
+    status: 'invited' | 'active' | 'suspended'
+    serviceAreas: string[]
+    createdAt: string
+  }
+}
+export type UpdateInstallerProfilePayload = {
+  data: Partial<{ firstName: string, lastName: string, phoneNumber: string, state: NigerianState, city: string }>
+}
+export type UpdateInstallerDisplayPreferencesPayload = { data: Partial<InstallerDisplayPreferences> }
+
+/** Alerts go by email and to the in-platform inbox only — there is no SMS channel. */
+export type InstallerNotificationPreferences = {
+  newInstallationOffers: boolean
+  scheduleReminders: boolean
+  jobAndIssueUpdates: boolean
+  supportTicketUpdates: boolean
+  emailAlerts: boolean
+  inPlatformAlerts: boolean
+}
+export type UpdateInstallerNotificationPreferencesPayload = { data: Partial<InstallerNotificationPreferences> }
+
+export type InstallerWorkPreferences = {
+  /** unavailable: offered no new jobs. */
+  availability: 'available' | 'unavailable'
+  /** HH:MM, 24-hour, Lagos time; start before end. */
+  workingHours: { start: string, end: string }
+  preferredPeriods: 'weekdays' | 'weekends' | 'all_days'
+  /** Read-only; the platform admin sets it. */
+  serviceAreas: string[]
+}
+export type UpdateInstallerWorkPreferencesPayload = {
+  data: Partial<Omit<InstallerWorkPreferences, 'serviceAreas'>>
+}
+/** Ends every session; the response carries the new token pair. */
+export type ChangeInstallerPasswordPayload = { data: { currentPassword: string, newPassword: string } }
+
 /** A rejected offer goes to the next installer and never returns to this one. */
 export type RejectInstallerJobPayload = { jobId: string, data: { reason: string } }
 
@@ -1368,13 +1427,17 @@ export type TwoFactorState = {
   pendingConfirmation: boolean
   /** Reflects the platform-wide `security.requireTwoFactor` on the caller's tenant/scope. */
   requiredByPlatform: boolean
-  lastConfirmedAt: string | null
+  recoveryCodesRemaining: number
 }
 
-/** Returned by `POST /auth/two-factor/enrol`. `secret` and `recoveryCodes` are shown ONCE. */
+/** Returned by `POST /auth/two-factor/enrol`. `secret` is shown ONCE. */
 export type TwoFactorEnrolment = {
   secret: string
   otpauthUri: string
+}
+
+/** Returned by `POST /auth/two-factor/enrol/confirm`. Eight single-use codes, shown ONCE. */
+export type TwoFactorRecoveryCodes = {
   recoveryCodes: string[]
 }
 
@@ -2300,6 +2363,9 @@ export type RejectedOfferResponse = ServerResponse<{ id: string, jobNumber: stri
 export type InstallerNotificationsResponse = ServerResponse<InstallerNotificationsPage>
 export type InstallerOptionsResponse = ServerResponse<InstallerOptions>
 export type InstallerDisplayPreferencesResponse = ServerResponse<InstallerDisplayPreferences>
+export type InstallerProfileResponse = ServerResponse<InstallerProfile>
+export type InstallerNotificationPreferencesResponse = ServerResponse<InstallerNotificationPreferences>
+export type InstallerWorkPreferencesResponse = ServerResponse<InstallerWorkPreferences>
 export type SystemInstallerResponse = ServerResponse<Record<string, unknown> & { id: string, code?: string }>
 export type MeResponse = ServerResponse<Record<string, unknown>>
 export type ProfileResponse = ServerResponse<Record<string, unknown>>
@@ -2352,6 +2418,7 @@ export type AIRequestsListResponse = ServerResponse<AIRequestsList>
 // TRU-FE-7 § D — 2FA envelopes.
 export type TwoFactorStateResponse = ServerResponse<TwoFactorState>
 export type TwoFactorEnrolmentResponse = ServerResponse<TwoFactorEnrolment>
+export type TwoFactorRecoveryCodesResponse = ServerResponse<TwoFactorRecoveryCodes>
 export type SystemDashboardResponse = ServerResponse<SystemDashboard>
 export type SystemHealthResponse = ServerResponse<SystemHealth>
 export type SystemSupportDashboardResponse = ServerResponse<SystemSupportDashboard>

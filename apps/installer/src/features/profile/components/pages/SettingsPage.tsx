@@ -1,16 +1,23 @@
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { InstallerProfile } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import {
+  useInstallerDisplayPreferences,
+  useInstallerNotificationPreferences,
+  useInstallerProfile,
+  useInstallerWorkPreferences,
+  useUploadInstallerProfilePhoto,
+} from "@truckmoov/api/auth";
+import { formatDateOnlyInTimezone } from "@truckmoov/app-core/utils/time-utils";
+import {
   Bell,
-  Save,
+  Monitor,
   ShieldCheck,
   Upload,
   User,
   Wrench,
 } from "lucide-react";
-import {
-  useRef,
-  useState,
-} from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
 import {
   Avatar,
@@ -28,15 +35,8 @@ import {
 } from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import { Switch } from "@/components/shadcn/switch";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -44,127 +44,49 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { InstallerStatusBadge } from "@/features/jobs/components/ui/InstallerStatusBadge";
-import { installerName } from "@/features/jobs/demoData";
-import { useJobsStore } from "@/features/jobs/stores/jobsStore";
+import { DisplayPreferencesForm } from "../forms/DisplayPreferencesForm";
+import { NotificationPreferencesForm } from "../forms/NotificationPreferencesForm";
+import { PasswordForm } from "../forms/PasswordForm";
+import { ProfileDetailsForm } from "../forms/ProfileDetailsForm";
+import { WorkPreferencesForm } from "../forms/WorkPreferencesForm";
+import { TwoFactorCard } from "../ui/TwoFactorCard";
+
+const DEFAULT_ZONE = "Africa/Lagos";
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+
+const TABS = [
+  [
+    "profile",
+    "Profile",
+    User,
+  ],
+  [
+    "account",
+    "Account & Security",
+    ShieldCheck,
+  ],
+  [
+    "display",
+    "Display",
+    Monitor,
+  ],
+  [
+    "notifications",
+    "Notifications",
+    Bell,
+  ],
+  [
+    "work",
+    "Work Preferences",
+    Wrench,
+  ],
+] as const;
 
 export default function SettingsPage() {
-  const installer = useJobsStore(s => s.installer);
-  const updateInstaller = useJobsStore(s => s.updateInstaller);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  // Seeded from the store — there is no async load, so no effect to re-sync.
-  const [
-    avatar,
-    setAvatar,
-  ] = useState<string | undefined>(installer.avatarUrl);
-  const [
-    firstName,
-    setFirstName,
-  ] = useState(installer.firstName);
-  const [
-    lastName,
-    setLastName,
-  ] = useState(installer.lastName);
-  const [
-    phone,
-    setPhone,
-  ] = useState(installer.phone);
-  const [
-    email,
-    setEmail,
-  ] = useState(installer.email);
-  const [
-    city,
-    setCity,
-  ] = useState(installer.city);
-  const [
-    state,
-    setState,
-  ] = useState(installer.state);
-  const [
-    password,
-    setPassword,
-  ] = useState({
-    current: "", next: "", confirm: "",
-  });
-  const [
-    notify,
-    setNotify,
-  ] = useState({
-    newJob: true,
-    reminder: true,
-    statusUpdates: true,
-    sms: true,
-    email: true,
-  });
-  const [
-    availability,
-    setAvailability,
-  ] = useState("available");
-  const [
-    workingHours,
-    setWorkingHours,
-  ] = useState("08:00 - 18:00");
-
-  const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase() || "IN";
-
-  const pickAvatar = (file?: File) => {
-    if (!file)
-      return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = String(reader.result);
-      setAvatar(url);
-      updateInstaller({ avatarUrl: url });
-      toast.success("Profile picture updated.");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const saveProfile = () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      toast.error("First and last name are required.");
-      return;
-    }
-    updateInstaller({
-      firstName, lastName, phone, city, state,
-    });
-    toast.success("Profile saved.");
-  };
-
-  const saveEmail = () => {
-    if (!/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(email)) {
-      toast.error("Enter a valid email address.");
-      return;
-    }
-    updateInstaller({ email });
-    toast.success("Email address updated.");
-  };
-
-  const savePassword = () => {
-    if (!password.current) {
-      toast.error("Enter your current password.");
-      return;
-    }
-    if (password.next.length < 8) {
-      toast.error("New password must be at least 8 characters.");
-      return;
-    }
-    if (password.next !== password.confirm) {
-      toast.error("Passwords do not match.");
-      return;
-    }
-    setPassword({
-      current: "", next: "", confirm: "",
-    });
-    // ponytail: validation only — there is no change-password endpoint wired
-    // for installers yet, so this confirms the input and stops there.
-    toast.success("Password updated.");
-  };
+  const profile = useInstallerProfile();
+  const display = useInstallerDisplayPreferences();
+  const notifications = useInstallerNotificationPreferences();
+  const work = useInstallerWorkPreferences();
 
   return (
     <Tabs
@@ -172,399 +94,288 @@ export default function SettingsPage() {
       className="space-y-6"
     >
       <TabsList className="flex w-full flex-wrap justify-start gap-1">
-        <TabsTrigger
-          value="profile"
-          className="gap-2"
-        >
-          <User className="h-4 w-4" />
-          {" "}
-          Profile
-        </TabsTrigger>
-        <TabsTrigger
-          value="account"
-          className="gap-2"
-        >
-          <ShieldCheck className="h-4 w-4" />
-          {" "}
-          Account &amp; Security
-        </TabsTrigger>
-        <TabsTrigger
-          value="notifications"
-          className="gap-2"
-        >
-          <Bell className="h-4 w-4" />
-          {" "}
-          Notifications
-        </TabsTrigger>
-        <TabsTrigger
-          value="work"
-          className="gap-2"
-        >
-          <Wrench className="h-4 w-4" />
-          {" "}
-          Work Preferences
-        </TabsTrigger>
+        {TABS.map(([
+          value,
+          label,
+          Icon,
+        ]) => (
+          <TabsTrigger
+            key={value}
+            value={value}
+            className="gap-2"
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </TabsTrigger>
+        ))}
       </TabsList>
 
-      {/* Profile */}
       <TabsContent
         value="profile"
         className="space-y-6"
       >
-        <Card className="surface-sleek rounded-2xl">
-          <CardHeader>
-            <CardTitle>Profile Picture</CardTitle>
-            <CardDescription>Shown to customers on installation jobs.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-6">
-            <Avatar className="h-20 w-20">
-              {avatar
-                ? (
-                    <AvatarImage
-                      src={avatar}
-                      alt={installerName(installer)}
-                    />
-                  )
-                : null}
-              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xl">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-2">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={e => pickAvatar(e.target.files?.[0])}
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileRef.current?.click()}
-                className="gap-2"
+        <Loaded query={profile}>
+          {({ data }) => (
+            <>
+              <PhotoCard personal={data.personal} />
+              <Section
+                title="Personal Details"
+                description="Your name and contact information."
               >
-                <Upload className="h-4 w-4" />
-                {" "}
-                Upload photo
-              </Button>
-              {avatar
-                ? (
-                    <Button
-                      variant="ghost"
-                      className="ml-2"
-                      onClick={() => {
-                        setAvatar(undefined);
-                        updateInstaller({ avatarUrl: undefined });
-                        toast.success("Profile picture removed.");
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  )
-                : null}
-              <p className="text-xs text-muted-foreground">JPG or PNG, up to 2MB.</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="surface-sleek rounded-2xl">
-          <CardHeader>
-            <CardTitle>Personal Details</CardTitle>
-            <CardDescription>Your name and contact information.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>First name</Label>
-                <Input
-                  value={firstName}
-                  onChange={e => setFirstName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Last name</Label>
-                <Input
-                  value={lastName}
-                  onChange={e => setLastName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Phone number</Label>
-                <Input
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>State</Label>
-                <Input
-                  value={state}
-                  onChange={e => setState(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>City / base location</Label>
-                <Input
-                  value={city}
-                  onChange={e => setCity(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button
-              onClick={saveProfile}
-              className="gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {" "}
-              Save changes
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="surface-sleek rounded-2xl">
-          <CardHeader>
-            <CardTitle>Installer Record</CardTitle>
-            <CardDescription>Managed by the Platform Admin.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Read
-                label="Installer ID"
-                value={installer.id}
+                <ProfileDetailsForm personal={data.personal} />
+              </Section>
+              <RecordCard
+                record={data.record}
+                zone={display.data?.data.timezone ?? DEFAULT_ZONE}
               />
-              <Read
-                label="Account status"
-                value={<InstallerStatusBadge status={installer.status} />}
-              />
-              <Read
-                label="Service area"
-                value={installer.serviceAreas.join(", ") || "—"}
-              />
-              <Read
-                label="Date added"
-                value={installer.dateAdded}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Installation capabilities
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {installer.capabilities.map(c => (
-                  <Badge
-                    key={c}
-                    variant="secondary"
-                    className="rounded-full"
-                  >
-                    {c}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </>
+          )}
+        </Loaded>
       </TabsContent>
 
-      {/* Account & Security */}
       <TabsContent
         value="account"
         className="space-y-6"
       >
-        <Card className="surface-sleek rounded-2xl">
-          <CardHeader>
-            <CardTitle>Email Address</CardTitle>
-            <CardDescription>Used for job notifications and sign-in.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Email address</Label>
-                <Input
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Sign-in email</Label>
-                <Input
-                  value={installer.loginEmail}
-                  disabled
-                />
-              </div>
-            </div>
-            <Button
-              onClick={saveEmail}
-              className="gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {" "}
-              Update email
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="surface-sleek rounded-2xl">
-          <CardHeader>
-            <CardTitle>Password</CardTitle>
-            <CardDescription>Use at least 8 characters.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label>Current password</Label>
-                <Input
-                  type="password"
-                  value={password.current}
-                  onChange={e => setPassword({
-                    ...password, current: e.target.value,
-                  })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>New password</Label>
-                <Input
-                  type="password"
-                  value={password.next}
-                  onChange={e => setPassword({
-                    ...password, next: e.target.value,
-                  })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Confirm new password</Label>
-                <Input
-                  type="password"
-                  value={password.confirm}
-                  onChange={e => setPassword({
-                    ...password, confirm: e.target.value,
-                  })}
-                />
-              </div>
-            </div>
-            <Button onClick={savePassword}>Update password</Button>
-            <Separator />
-            <p className="text-xs text-muted-foreground">
-              If you did not request a change, contact the Platform Admin immediately.
-            </p>
-          </CardContent>
-        </Card>
+        <Section
+          title="Email Address"
+          description="Your sign-in email. Contact the Platform Admin to change it."
+        >
+          <div className="max-w-sm space-y-1.5">
+            <Label htmlFor="installer-email">Email address</Label>
+            {profile.data
+              ? (
+                  <Input
+                    id="installer-email"
+                    value={profile.data.data.personal.email}
+                    disabled
+                  />
+                )
+              : <Skeleton className="h-10" />}
+          </div>
+        </Section>
+        <Section
+          title="Password"
+          description="Use at least 8 characters. Changing it signs you out everywhere else."
+        >
+          <PasswordForm />
+          <Separator className="my-4" />
+          <p className="text-xs text-muted-foreground">
+            If you did not request a change, contact the Platform Admin immediately.
+          </p>
+        </Section>
+        <TwoFactorCard />
       </TabsContent>
 
-      {/* Notifications */}
+      <TabsContent
+        value="display"
+        className="space-y-6"
+      >
+        <Section
+          title="Display Preferences"
+          description="How dates, times and default ranges are shown across the portal."
+        >
+          <Loaded query={display}>
+            {({ data }) => <DisplayPreferencesForm preferences={data} />}
+          </Loaded>
+        </Section>
+      </TabsContent>
+
       <TabsContent
         value="notifications"
         className="space-y-6"
       >
-        <Card className="surface-sleek rounded-2xl">
-          <CardHeader>
-            <CardTitle>Job Notifications</CardTitle>
-            <CardDescription>Choose what you want to be alerted about.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Toggle
-              label="New job assigned"
-              description="Alert me when a new installation is assigned to me."
-              checked={notify.newJob}
-              onChange={v => setNotify({
-                ...notify, newJob: v,
-              })}
-            />
-            <Toggle
-              label="Schedule reminders"
-              description="Remind me before a scheduled installation."
-              checked={notify.reminder}
-              onChange={v => setNotify({
-                ...notify, reminder: v,
-              })}
-            />
-            <Toggle
-              label="Job status updates"
-              description="Updates on verification and completion of my jobs."
-              checked={notify.statusUpdates}
-              onChange={v => setNotify({
-                ...notify, statusUpdates: v,
-              })}
-            />
-            <Separator />
-            <Toggle
-              label="SMS alerts"
-              description="Receive alerts by text message."
-              checked={notify.sms}
-              onChange={v => setNotify({
-                ...notify, sms: v,
-              })}
-            />
-            <Toggle
-              label="Email alerts"
-              description="Receive alerts by email."
-              checked={notify.email}
-              onChange={v => setNotify({
-                ...notify, email: v,
-              })}
-            />
-            {/* ponytail: preferences are not persisted — no endpoint stores
-                installer notification settings yet. */}
-            <Button
-              onClick={() => toast.success("Notification preferences saved.")}
-              className="gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {" "}
-              Save preferences
-            </Button>
-          </CardContent>
-        </Card>
+        <Section
+          title="Notifications"
+          description="Choose what you are alerted about and where."
+        >
+          <Loaded query={notifications}>
+            {({ data }) => <NotificationPreferencesForm preferences={data} />}
+          </Loaded>
+        </Section>
       </TabsContent>
 
-      {/* Work preferences */}
       <TabsContent
         value="work"
         className="space-y-6"
       >
-        <Card className="surface-sleek rounded-2xl">
-          <CardHeader>
-            <CardTitle>Availability</CardTitle>
-            <CardDescription>Helps the system schedule your installations.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Current availability</Label>
-                <Select
-                  value={availability}
-                  onValueChange={setAvailability}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="available">Available for jobs</SelectItem>
-                    <SelectItem value="busy">Busy — on a job</SelectItem>
-                    <SelectItem value="off">Off duty</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Working hours</Label>
-                <Input
-                  value={workingHours}
-                  onChange={e => setWorkingHours(e.target.value)}
-                  placeholder="08:00 - 18:00"
-                />
-              </div>
-            </div>
-            <Button
-              onClick={() => toast.success("Work preferences saved.")}
-              className="gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {" "}
-              Save preferences
-            </Button>
-          </CardContent>
-        </Card>
+        <Section
+          title="Availability"
+          description="Decides which installation offers reach you."
+        >
+          <Loaded query={work}>
+            {({ data }) => <WorkPreferencesForm preferences={data} />}
+          </Loaded>
+        </Section>
       </TabsContent>
     </Tabs>
+  );
+}
+
+/** Skeleton while loading, the error on failure, the children once the data is in. */
+function Loaded<T>({
+  query, children,
+}: {
+  query: UseQueryResult<T, { message: string }>;
+  children: (data: T) => ReactNode;
+}) {
+  if (query.data)
+    return <>{children(query.data)}</>;
+  if (query.isError) {
+    return (
+      <div className="flex items-center gap-3 text-sm text-destructive">
+        {query.error.message}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => query.refetch()}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+  return <Skeleton className="h-40 w-full rounded-2xl" />;
+}
+
+function Section({
+  title, description, children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="surface-sleek rounded-2xl">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function PhotoCard({ personal }: { personal: InstallerProfile["personal"] }) {
+  const upload = useUploadInstallerProfilePhoto();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const initials = `${personal.firstName[0] ?? ""}${personal.lastName[0] ?? ""}`.toUpperCase() || "IN";
+
+  const pick = (file?: File) => {
+    if (fileRef.current)
+      fileRef.current.value = "";
+    if (!file)
+      return;
+    if (![
+      "image/jpeg",
+      "image/png",
+    ].includes(file.type)) {
+      toast.error("Choose a JPG or PNG image.");
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      toast.error("The photo must be 2 MB or smaller.");
+      return;
+    }
+    upload.mutate(
+      { file },
+      {
+        onSuccess: () => toast.success("Profile picture updated."),
+        onError: error => toast.error(error.message),
+      },
+    );
+  };
+
+  return (
+    <Section
+      title="Profile Picture"
+      description="Shown to customers on installation jobs."
+    >
+      <div className="flex flex-wrap items-center gap-6">
+        <Avatar className="h-20 w-20">
+          {personal.photoUrl
+            ? (
+                <AvatarImage
+                  src={personal.photoUrl}
+                  alt={`${personal.firstName} ${personal.lastName}`}
+                />
+              )
+            : null}
+          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xl">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="space-y-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            className="hidden"
+            onChange={e => pick(e.target.files?.[0])}
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileRef.current?.click()}
+            loading={upload.isPending}
+            className="gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Upload photo
+          </Button>
+          <p className="text-xs text-muted-foreground">JPG or PNG, up to 2 MB.</p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function RecordCard({
+  record, zone,
+}: {
+  record: InstallerProfile["record"];
+  zone: string;
+}) {
+  return (
+    <Section
+      title="Installer Record"
+      description="Managed by the Platform Admin."
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Read
+          label="Installer ID"
+          value={record.code}
+        />
+        <Read
+          label="Account status"
+          value={<InstallerStatusBadge status={record.status === "invited" ? "pending_activation" : record.status} />}
+        />
+        <Read
+          label="Service areas"
+          value={record.serviceAreas.length
+            ? (
+                <div className="flex flex-wrap gap-1">
+                  {record.serviceAreas.map(a => (
+                    <Badge
+                      key={a}
+                      variant="secondary"
+                      className="rounded-full"
+                    >
+                      {a}
+                    </Badge>
+                  ))}
+                </div>
+              )
+            : "—"}
+        />
+        <Read
+          label="Date added"
+          value={formatDateOnlyInTimezone(
+            record.createdAt,
+            zone,
+          )}
+        />
+      </div>
+    </Section>
   );
 }
 
@@ -578,31 +389,6 @@ function Read({
     <div className="rounded-xl border p-3">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
       <div className="mt-0.5 text-sm font-medium">{value}</div>
-    </div>
-  );
-}
-
-function Toggle({
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border p-3">
-      <div>
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-      <Switch
-        checked={checked}
-        onCheckedChange={onChange}
-      />
     </div>
   );
 }

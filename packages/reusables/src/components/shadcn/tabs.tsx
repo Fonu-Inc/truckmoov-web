@@ -16,8 +16,9 @@ const TabsList = React.forwardRef<
       // within its container instead of punching the page wider on narrow
       // viewports. Keeps `inline-flex` so callers using centered/auto layouts
       // still render at fit-content when they fit. Scrollbar chrome hidden;
-      // swipe/drag still works.
-      "inline-flex h-9 max-w-full items-center justify-center overflow-x-auto rounded-md bg-secondary/60 p-1 text-muted-foreground [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      // swipe/drag still works. No fixed height: overflow-x-auto also clips
+      // vertically, and a fixed h-9 cut off the active trigger's border-b-2.
+      "inline-flex max-w-full items-center justify-center overflow-x-auto rounded-md bg-secondary/60 p-1 text-muted-foreground [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       className,
     )}
     {...props}

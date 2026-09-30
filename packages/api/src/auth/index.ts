@@ -30,6 +30,15 @@ import {
   createSystemInstaller,
   getInstallerDashboard,
   getInstallerDisplayPreferences,
+  changeInstallerPassword,
+  getInstallerNotificationPreferences,
+  getInstallerProfile,
+  getInstallerWorkPreferences,
+  updateInstallerDisplayPreferences,
+  updateInstallerNotificationPreferences,
+  updateInstallerProfile,
+  updateInstallerWorkPreferences,
+  uploadInstallerProfilePhoto,
   getInstallerNotifications,
   getInstallerOptions,
   rejectInstallerJob,
@@ -366,7 +375,7 @@ import type {
 export type * from './types'
 
 // Value + type export: UserRole is a const object, so it must not be type-only.
-export { DEVICE_CATALOG_PROTOCOLS, INSTALLER_CAPABILITIES, INSTALLER_ISSUE_TYPES, UserRole } from './types'
+export { DEVICE_CATALOG_PROTOCOLS, INSTALLER_CAPABILITIES, INSTALLER_ISSUE_TYPES, NIGERIAN_STATES, UserRole } from './types'
 
 export const AUTH_QUERY_KEY = {
   me: ['me'],
@@ -438,6 +447,9 @@ export const AUTH_QUERY_KEY = {
     limit ? ['installerNotifications', limit] : ['installerNotifications'],
   installerOptions: ['installerOptions'],
   installerDisplayPreferences: ['installerDisplayPreferences'],
+  installerProfile: ['installerProfile'],
+  installerNotificationPreferences: ['installerNotificationPreferences'],
+  installerWorkPreferences: ['installerWorkPreferences'],
   installerJobs: (params?: InstallerJobsQuery) => params ? ['installerJobs', params] : ['installerJobs'],
   installerJob: (jobId: string) => ['installerJob', jobId],
 
@@ -663,6 +675,63 @@ export function useInstallerOptions() {
 
 export function useInstallerDisplayPreferences() {
   return useQuery({ queryKey: AUTH_QUERY_KEY.installerDisplayPreferences, queryFn: getInstallerDisplayPreferences })
+}
+
+// TRU-FE-21 — installer settings. Every PATCH answers with the whole record, so it goes straight
+// into the cache; the display time zone then reaches every page that reads it.
+export function useUpdateInstallerDisplayPreferences() {
+  return useMutation({
+    mutationFn: updateInstallerDisplayPreferences,
+    onSuccess: res => queryClient.setQueryData(AUTH_QUERY_KEY.installerDisplayPreferences, res),
+  })
+}
+
+export function useInstallerProfile() {
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerProfile, queryFn: getInstallerProfile })
+}
+
+export function useUpdateInstallerProfile() {
+  return useMutation({
+    mutationFn: updateInstallerProfile,
+    onSuccess: res => queryClient.setQueryData(AUTH_QUERY_KEY.installerProfile, res),
+  })
+}
+
+export function useUploadInstallerProfilePhoto() {
+  return useMutation({
+    mutationFn: uploadInstallerProfilePhoto,
+    onSuccess: res => queryClient.setQueryData(AUTH_QUERY_KEY.installerProfile, res),
+  })
+}
+
+/** Every earlier session ends, so the new token pair replaces the stored one. */
+export function useChangeInstallerPassword() {
+  return useMutation({
+    mutationFn: changeInstallerPassword,
+    onSuccess: res => useAuthStore.getState().setSession(res.data),
+  })
+}
+
+export function useInstallerNotificationPreferences() {
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerNotificationPreferences, queryFn: getInstallerNotificationPreferences })
+}
+
+export function useUpdateInstallerNotificationPreferences() {
+  return useMutation({
+    mutationFn: updateInstallerNotificationPreferences,
+    onSuccess: res => queryClient.setQueryData(AUTH_QUERY_KEY.installerNotificationPreferences, res),
+  })
+}
+
+export function useInstallerWorkPreferences() {
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerWorkPreferences, queryFn: getInstallerWorkPreferences })
+}
+
+export function useUpdateInstallerWorkPreferences() {
+  return useMutation({
+    mutationFn: updateInstallerWorkPreferences,
+    onSuccess: res => queryClient.setQueryData(AUTH_QUERY_KEY.installerWorkPreferences, res),
+  })
 }
 
 export function useInstallerJobs(params?: InstallerJobsQuery) {
