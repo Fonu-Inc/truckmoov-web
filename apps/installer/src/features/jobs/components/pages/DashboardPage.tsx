@@ -425,7 +425,7 @@ function NotificationsPreview() {
                   <p className={n.read ? "text-sm" : "text-sm font-medium"}>{n.title}</p>
                   <span className="shrink-0 text-xs text-muted-foreground">{formatRelative(n.createdAt)}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{n.message}</p>
+                <p className="text-sm text-muted-foreground">{n.body}</p>
               </div>
             ))
           : <EmptyText loading={notifications.isLoading}>No notifications yet.</EmptyText>}

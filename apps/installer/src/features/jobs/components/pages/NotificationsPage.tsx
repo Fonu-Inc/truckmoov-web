@@ -76,7 +76,7 @@ export default function NotificationsPage() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">{n.message}</p>
+                <p className="text-xs text-muted-foreground">{n.body}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{fmt(n.createdAt)}</p>
               </div>
             </div>

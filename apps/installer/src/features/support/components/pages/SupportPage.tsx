@@ -235,13 +235,13 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
 
   const serverCategory = selected && options?.supportCategories.find(c => c.key === selected.key);
   // Server chips carry the `issueCode` key; the fallback labels have none to send.
-  const chips: InstallerOptionItem[] = serverCategory?.issues
+  const chips: InstallerOptionItem[] = serverCategory?.chips
     ?? selected?.issues.map(label => ({
       key: label,
       label,
     }))
     ?? [];
-  const hasServerChips = !!serverCategory?.issues;
+  const hasServerChips = !!serverCategory?.chips;
 
   const reset = () => {
     setSelected(null);

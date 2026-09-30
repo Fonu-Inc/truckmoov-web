@@ -119,15 +119,16 @@ export type InstallerDashboard = {
   }[]
 }
 
-// ponytail: Swagger documents no body for GET /auth/installer/notifications — fields match the page
-// envelope it does return; confirm `items[]` once dev has a notification to show.
+// Confirmed on dev 2026-09-30 (e.g. type "support_ticket_updated").
 export type InstallerNotification = {
   id: string
+  type: string
   title: string
-  message: string
+  body: string
   read: boolean
   createdAt: string
-  jobId?: string | null
+  jobId: string | null
+  jobNumber: string | null
 }
 
 export type InstallerNotificationsPage = {
@@ -143,9 +144,8 @@ export type InstallerOptionItem = { key: string, label: string }
 export type InstallerOptions = {
   checklist: { key: string, label: string, items: (InstallerOptionItem & { gated?: string })[] }[]
   evidenceCategories: InstallerOptionItem[]
-  // ponytail: `issues` (the chips whose key goes out as `issueCode`) is not in the spec — confirm
-  // on dev; without it the Support page falls back to its own chip labels and sends no issueCode.
-  supportCategories: (InstallerOptionItem & { issues?: InstallerOptionItem[] })[]
+  // `chips` keys go out as `issueCode`; required when non-empty (dev answers 400 otherwise).
+  supportCategories: (InstallerOptionItem & { description?: string, chips?: InstallerOptionItem[] })[]
   fieldTips: string[]
   priorities: InstallerOptionItem[]
   ticketStatuses: InstallerOptionItem[]

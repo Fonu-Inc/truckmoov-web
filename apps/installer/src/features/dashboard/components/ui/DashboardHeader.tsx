@@ -146,7 +146,7 @@ function NotificationBell() {
                     </p>
                     <span className="shrink-0 text-xs text-muted-foreground">{formatRelative(n.createdAt)}</span>
                   </div>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">{n.message}</p>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
                 </button>
               ))
             : (
