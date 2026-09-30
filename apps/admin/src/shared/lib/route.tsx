@@ -230,6 +230,11 @@ export const router = createBrowserRouter([
                 path: "notifications",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/NotificationsSettingsPage")).default }),
               },
+              {
+                // TRU-FE-23 — the signed-in admin's own two-factor, shared with the other portals.
+                path: "security",
+                lazy: async () => ({ Component: (await import("@truckmoov/reusables/components/auth/TwoFactorSetupCard")).TwoFactorSetupCard }),
+              },
             ],
           },
           {

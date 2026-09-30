@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getTwoFactorQueryOptions, useLogin } from "@truckmoov/api/auth";
-import { queryClient } from "@truckmoov/api/lib/query-client";
+import {
+  isTwoFactorChallenge, useLogin,
+} from "@truckmoov/api/auth";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
   ArrowRight, Mail,
@@ -22,7 +23,7 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-import { getPostLoginRedirectPath } from "@/features/auth/utils/authRedirect";
+import { resolvePostLoginPath } from "@/features/auth/utils/authRedirect";
 import { emailSchema } from "@/features/auth/utils/schemas";
 
 const signInSchema = z.object({
@@ -37,7 +38,7 @@ type SignInFormValues = z.infer<typeof signInSchema>;
 
 export const SIGN_IN_FORM_ID = "main-sign-in-form";
 
-export function SignInForm() {
+export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: string) => void }) {
   const navigate = useNavigate();
   const login = useLogin();
 
@@ -59,21 +60,17 @@ export function SignInForm() {
       },
       {
         onSuccess: async (res) => {
+          // TRU-FE-23 — two-factor on: no session yet, the code step takes over.
+          if (isTwoFactorChallenge(res.data)) {
+            onChallenge(res.data.challengeToken);
+            return;
+          }
           useAuthStore.getState().syncFromSession();
           toast.success("Login request completed.");
-
-          // TRU-FE-7 § C/§ D — if the platform requires 2FA and this account
-          // isn't enrolled, land on Security to nudge enrolment. Fail-open on
-          // any error (endpoint 404 today) so login can't wedge.
-          let redirectTo = getPostLoginRedirectPath(res.data.user.role);
-          try {
-            const state = await queryClient.fetchQuery(getTwoFactorQueryOptions());
-            if (state.data.requiredByPlatform && !state.data.enrolled)
-              redirectTo = "/settings/security?enrol=required";
-          }
-          catch { /* fail open */ }
-
-          navigate(redirectTo, { replace: true });
+          navigate(
+            await resolvePostLoginPath(res.data.user.role),
+            { replace: true },
+          );
         },
         onError: (error) => {
           toast.error(error.message);

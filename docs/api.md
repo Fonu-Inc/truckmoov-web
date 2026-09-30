@@ -191,6 +191,28 @@ Every PATCH answers with the whole record, which is written straight into the qu
 - Two-factor (`/auth/two-factor*`) is shared with the tenant app: `enrol` returns the secret and
   otpauth URI once, `enrol/confirm` returns the recovery codes once.
 
+### Two-factor sign-in (TRU-FE-23)
+
+Every portal's password step (`useLogin`, `useSystemLogin`, `useInstallerLogin`) answers with a
+session **or** a challenge; check with `isTwoFactorChallenge(res.data)`. The hooks store a session
+only, never a challenge. The code goes to the same portal's two-factor route (`useLoginTwoFactor`,
+`useSystemLoginTwoFactor`, `useInstallerLoginTwoFactor`), which stores the session.
+
+- A challenge lasts five minutes and works once, on the portal that issued it. 401 "This sign-in
+  has expired; start again" means back to the password step; 401 "That code is not valid" means retry.
+- After three wrong codes the account's code checks answer **429 with `retryAfterSeconds`**, even
+  for a correct code — count down, then retry with the same challenge. The per-IP limit is also a
+  429 but has **no** `retryAfterSeconds`; that field is how the two differ (`cooldownSeconds()`).
+- Admin only: when the platform requires two-factor, an admin without it gets `step: "enrolment"`
+  with `enrolment { secret, otpauthUri }`; the first code goes to `/auth/system/login/two-factor`,
+  which also returns `recoveryCodes`.
+
+The UI is shared from `packages/reusables/src/components/auth/`: `TwoFactorCodeForm` (sign-in code
+step, with the cooldown countdown), `TwoFactorSetupCard` (settings: QR via `qrcode.react`, recovery
+codes gated behind copy or download) and `TwoFactorEnrolmentStep` (admin first enrolment). Each app
+passes its own portal's mutation as `verify`. `packages/reusables` pins `react`/`react-dom` 18 as
+devDependencies so its peers don't resolve to the landing page's React 19.
+
 ### Login / logout mutations
 
 `useLogin` and `useSystemLogin` call `setSession` automatically on success. `useLogout` calls `logout()` automatically on success. Components do not need to manage the store directly for these flows.

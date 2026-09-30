@@ -1,5 +1,10 @@
+import type {
+  TwoFactorChallenge, TwoFactorEnrolmentChallenge,
+} from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSystemLogin } from "@truckmoov/api/auth";
+import {
+  isTwoFactorChallenge, useSystemLogin,
+} from "@truckmoov/api/auth";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
   ArrowRight, Mail,
@@ -32,7 +37,7 @@ type AdminSignInFormValues = z.infer<typeof adminSignInSchema>;
 
 export const ADMIN_SIGN_IN_FORM_ID = "admin-sign-in-form";
 
-export function AdminSignInForm() {
+export function AdminSignInForm({ onChallenge }: { onChallenge: (challenge: TwoFactorChallenge | TwoFactorEnrolmentChallenge) => void }) {
   const systemLogin = useSystemLogin();
   const navigate = useNavigate();
 
@@ -53,7 +58,12 @@ export function AdminSignInForm() {
         },
       },
       {
-        onSuccess: async () => {
+        onSuccess: async (res) => {
+          // TRU-FE-23 — two-factor on (or required): no session yet, the code or enrolment step takes over.
+          if (isTwoFactorChallenge(res.data)) {
+            onChallenge(res.data);
+            return;
+          }
           await useAuthStore.getState().bootstrapFromSession();
           toast.success("System login request completed.");
           navigate(

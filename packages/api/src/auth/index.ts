@@ -133,6 +133,8 @@ import {
   installerLogin,
   installerLoginTwoFactor,
   login,
+  loginTwoFactor,
+  systemLoginTwoFactor,
   logout,
   refresh,
   validateInvite,
@@ -369,6 +371,8 @@ import type {
   ReportInstallerJobIssuePayload,
   SaveInstallerJobNotesPayload,
   SetInstallerChecklistItemPayload,
+  AuthSession,
+  SystemLoginResult,
 } from './types'
 
 // Every type in ./types is public — no hand-maintained list to fall out of date.
@@ -570,33 +574,36 @@ export function useRegister() {
   return useMutation({ mutationFn: register })
 }
 
+/** TRU-FE-23 — the password step answered with a two-factor challenge instead of a session. */
+export function isTwoFactorChallenge<T extends SystemLoginResult>(data: T): data is Exclude<T, AuthSession> {
+  return 'twoFactorRequired' in data
+}
+
+// A challenge carries no tokens, so only a real session is stored.
+function storeSession(res: { data: SystemLoginResult }) {
+  if (!isTwoFactorChallenge(res.data))
+    useAuthStore.getState().setSession(res.data)
+}
+
 export function useLogin() {
-  return useMutation({
-    mutationFn: login,
-    onSuccess: (res) => {
-      useAuthStore.getState().setSession(res.data)
-    },
-  })
+  return useMutation({ mutationFn: login, onSuccess: res => storeSession(res) })
+}
+
+export function useLoginTwoFactor() {
+  return useMutation({ mutationFn: loginTwoFactor, onSuccess: res => storeSession(res) })
 }
 
 export function useSystemLogin() {
-  return useMutation({
-    mutationFn: systemLogin,
-    onSuccess: (res) => {
-      useAuthStore.getState().setSession(res.data)
-    },
-  })
+  return useMutation({ mutationFn: systemLogin, onSuccess: res => storeSession(res) })
 }
 
-// TRU-FE-18 — a challenge carries no tokens, so only a real session is stored.
+export function useSystemLoginTwoFactor() {
+  return useMutation({ mutationFn: systemLoginTwoFactor, onSuccess: res => storeSession(res) })
+}
+
+// TRU-FE-18
 export function useInstallerLogin() {
-  return useMutation({
-    mutationFn: installerLogin,
-    onSuccess: (res) => {
-      if (!('twoFactorRequired' in res.data))
-        useAuthStore.getState().setSession(res.data)
-    },
-  })
+  return useMutation({ mutationFn: installerLogin, onSuccess: res => storeSession(res) })
 }
 
 export function useInstallerLoginTwoFactor() {

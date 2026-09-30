@@ -128,6 +128,10 @@ import type {
   RejectInstallerJobPayload,
   InstallerLoginResponse,
   InstallerLoginTwoFactorPayload,
+  LoginResponse,
+  LoginTwoFactorPayload,
+  SystemLoginResponse,
+  SystemLoginTwoFactorResponse,
   SystemInstallerResponse,
   ChangeRolePayload,
   CompleteProfilePayload,
@@ -389,12 +393,23 @@ export async function register({ data }: RegisterPayload) {
 }
 
 export async function login({ data }: LoginPayload) {
-  const { data: res } = await axiosInstance.post<AuthTokenResponse>('/auth/login', data)
+  const { data: res } = await axiosInstance.post<LoginResponse>('/auth/login', data)
+  return res
+}
+
+// TRU-FE-23 — a challenge from a portal's password step is only accepted by that portal's two-factor route.
+export async function loginTwoFactor({ data }: LoginTwoFactorPayload) {
+  const { data: res } = await axiosInstance.post<AuthTokenResponse>('/auth/login/two-factor', data)
   return res
 }
 
 export async function systemLogin({ data }: SystemLoginPayload) {
-  const { data: res } = await axiosInstance.post<AuthTokenResponse>('/auth/system/login', data)
+  const { data: res } = await axiosInstance.post<SystemLoginResponse>('/auth/system/login', data)
+  return res
+}
+
+export async function systemLoginTwoFactor({ data }: LoginTwoFactorPayload) {
+  const { data: res } = await axiosInstance.post<SystemLoginTwoFactorResponse>('/auth/system/login/two-factor', data)
   return res
 }
 

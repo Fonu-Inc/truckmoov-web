@@ -9,6 +9,7 @@ import {
   useUploadInstallerProfilePhoto,
 } from "@truckmoov/api/auth";
 import { formatDateOnlyInTimezone } from "@truckmoov/app-core/utils/time-utils";
+import { TwoFactorSetupCard } from "@truckmoov/reusables/components/auth/TwoFactorSetupCard";
 import {
   Bell,
   Monitor,
@@ -49,7 +50,6 @@ import { NotificationPreferencesForm } from "../forms/NotificationPreferencesFor
 import { PasswordForm } from "../forms/PasswordForm";
 import { ProfileDetailsForm } from "../forms/ProfileDetailsForm";
 import { WorkPreferencesForm } from "../forms/WorkPreferencesForm";
-import { TwoFactorCard } from "../ui/TwoFactorCard";
 
 const DEFAULT_ZONE = "Africa/Lagos";
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
@@ -164,7 +164,7 @@ export default function SettingsPage() {
             If you did not request a change, contact the Platform Admin immediately.
           </p>
         </Section>
-        <TwoFactorCard />
+        <TwoFactorSetupCard className="surface-sleek rounded-2xl" />
       </TabsContent>
 
       <TabsContent

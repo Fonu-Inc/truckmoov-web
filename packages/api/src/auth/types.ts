@@ -35,13 +35,29 @@ export type TwoFactorChallenge = {
   challengeToken: string
 }
 
-/** `code` is six authenticator digits or a recovery code. */
-export type InstallerLoginTwoFactorPayload = {
+/**
+ * TRU-FE-23 — admin portal only, once the platform requires two-factor: an admin who never set
+ * it up is enrolled at sign-in. The first code goes to `/auth/system/login/two-factor`, which
+ * then also returns the recovery codes.
+ */
+export type TwoFactorEnrolmentChallenge = {
+  twoFactorRequired: true
+  step: 'enrolment'
+  challengeToken: string
+  enrolment: TwoFactorEnrolment
+}
+
+export type LoginResult = AuthSession | TwoFactorChallenge
+export type SystemLoginResult = AuthSession | TwoFactorChallenge | TwoFactorEnrolmentChallenge
+
+/** `code` is six authenticator digits or a recovery code. The same body on every portal. */
+export type LoginTwoFactorPayload = {
   data: {
     challengeToken: string
     code: string
   }
 }
+export type InstallerLoginTwoFactorPayload = LoginTwoFactorPayload
 
 export const INSTALLER_CAPABILITIES = [
   'tracker_installation_wiring',
@@ -2350,7 +2366,11 @@ export type RemoveOrganizationUserData = {
 // ─── Response envelopes ───────────────────────────────────────────────────────
 
 export type AuthTokenResponse = ServerResponse<AuthSession>
-export type InstallerLoginResponse = ServerResponse<AuthSession | TwoFactorChallenge>
+export type InstallerLoginResponse = ServerResponse<LoginResult>
+export type LoginResponse = ServerResponse<LoginResult>
+export type SystemLoginResponse = ServerResponse<SystemLoginResult>
+/** ponytail: `recoveryCodes` only comes back after the admin enrolment step; Swagger doesn't show it yet. */
+export type SystemLoginTwoFactorResponse = ServerResponse<AuthSession & { recoveryCodes?: string[] }>
 export type InstallerDashboardResponse = ServerResponse<InstallerDashboard>
 /** Accept, start, checklist, notes, issue and complete all answer with the whole job. */
 export type InstallerJobResponse = ServerResponse<InstallerJobDetail>

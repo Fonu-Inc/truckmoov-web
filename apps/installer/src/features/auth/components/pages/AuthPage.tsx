@@ -1,9 +1,12 @@
+import { useInstallerLoginTwoFactor } from "@truckmoov/api/auth";
+import { TwoFactorCodeForm } from "@truckmoov/reusables/components/auth/TwoFactorCodeForm";
 import {
   ShieldCheck, Wrench,
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { InstallerSignInForm } from "@/features/auth/components/forms/InstallerSignInForm";
-import { TwoFactorForm } from "@/features/auth/components/forms/TwoFactorForm";
+import { useAuthStore } from "@/stores/authStore";
 
 /** Rendered inside AuthLayout, which supplies the branding panel and mobile logo. */
 export default function AuthPage() {
@@ -12,6 +15,8 @@ export default function AuthPage() {
     challengeToken,
     setChallengeToken,
   ] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const verify = useInstallerLoginTwoFactor();
 
   const Icon = challengeToken ? ShieldCheck : Wrench;
 
@@ -33,8 +38,19 @@ export default function AuthPage() {
 
       {challengeToken
         ? (
-            <TwoFactorForm
-              challengeToken={challengeToken}
+            <TwoFactorCodeForm
+              verify={async (code) => {
+                await verify.mutateAsync({
+                  data: {
+                    challengeToken, code,
+                  },
+                });
+                await useAuthStore.getState().bootstrapFromSession();
+                navigate(
+                  "/",
+                  { replace: true },
+                );
+              }}
               onRestart={() => setChallengeToken(null)}
             />
           )
