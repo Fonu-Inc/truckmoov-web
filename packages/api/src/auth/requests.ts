@@ -104,7 +104,15 @@ import type {
   CreateSystemInstallerPayload,
   InstallerDashboardResponse,
   InstallerDisplayPreferencesResponse,
+  InstallerEvidenceLinkResponse,
   InstallerJobResponse,
+  InstallerJobsExportQuery,
+  InstallerJobsQuery,
+  InstallerJobsResponse,
+  ReportInstallerJobIssuePayload,
+  SaveInstallerJobNotesPayload,
+  SetInstallerChecklistItemPayload,
+  UploadInstallerEvidencePayload,
   InstallerLoginPayload,
   InstallerNotificationsResponse,
   InstallerOptionsResponse,
@@ -578,6 +586,71 @@ export async function getInstallerOptions() {
 
 export async function getInstallerDisplayPreferences() {
   const { data } = await axiosInstance.get<InstallerDisplayPreferencesResponse>('/auth/installer/preferences/display')
+  return data
+}
+
+// ─── TRU-FE-20 — installer jobs ──────────────────────────────────────────────
+
+export async function getInstallerJobs(params?: InstallerJobsQuery) {
+  const { data } = await axiosInstance.get<InstallerJobsResponse>('/auth/installer/jobs', { params })
+  return data
+}
+
+/** Installation History as CSV, capped at 5000 rows. */
+export async function exportInstallerJobs(params?: InstallerJobsExportQuery) {
+  const { data } = await axiosInstance.get<Blob>('/auth/installer/jobs/export', { params, responseType: 'blob' })
+  return data
+}
+
+export async function getInstallerJob({ jobId }: { jobId: string }) {
+  const { data } = await axiosInstance.get<InstallerJobResponse>(`/auth/installer/jobs/${jobId}`)
+  return data
+}
+
+export async function startInstallerJob({ jobId }: { jobId: string }) {
+  const { data } = await axiosInstance.post<InstallerJobResponse>(`/auth/installer/jobs/${jobId}/start`)
+  return data
+}
+
+export async function setInstallerChecklistItem({ jobId, itemKey, data: body }: SetInstallerChecklistItemPayload) {
+  const { data } = await axiosInstance.put<InstallerJobResponse>(`/auth/installer/jobs/${jobId}/checklist/${itemKey}`, body)
+  return data
+}
+
+export async function saveInstallerJobNotes({ jobId, data: body }: SaveInstallerJobNotesPayload) {
+  const { data } = await axiosInstance.patch<InstallerJobResponse>(`/auth/installer/jobs/${jobId}/notes`, body)
+  return data
+}
+
+export async function uploadInstallerEvidence({ jobId, category, file }: UploadInstallerEvidencePayload) {
+  const form = new FormData()
+  form.append('category', category)
+  form.append('file', file)
+  const { data } = await axiosInstance.post<ServerResponse<unknown>>(`/auth/installer/jobs/${jobId}/evidence`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function getInstallerEvidenceLink({ jobId, evidenceId }: { jobId: string, evidenceId: string }) {
+  const { data } = await axiosInstance.get<InstallerEvidenceLinkResponse>(`/auth/installer/jobs/${jobId}/evidence/${evidenceId}`)
+  return data
+}
+
+export async function reportInstallerJobIssue({ jobId, issueType, description, photo }: ReportInstallerJobIssuePayload) {
+  const form = new FormData()
+  form.append('issueType', issueType)
+  form.append('description', description)
+  if (photo)
+    form.append('photo', photo)
+  const { data } = await axiosInstance.post<InstallerJobResponse>(`/auth/installer/jobs/${jobId}/issues`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function completeInstallerJob({ jobId }: { jobId: string }) {
+  const { data } = await axiosInstance.post<InstallerJobResponse>(`/auth/installer/jobs/${jobId}/complete`)
   return data
 }
 

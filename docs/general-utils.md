@@ -56,6 +56,13 @@ useEffect(() => () => debounced.cancel(), [debounced])
 onChange={e => debounced(e.target.value)}
 ```
 
+**`downloadBlob(blob, filename)`** — save a Blob (an API CSV export, a generated
+file) to the user's downloads. Browser-only; a no-op without `document`.
+
+```tsx
+downloadBlob(await exportInstallerJobs(params), "installation-history.csv")
+```
+
 ## Adding a function
 
 1. Write it in `general-utils.ts`, with a comment saying **when to reach for it**.

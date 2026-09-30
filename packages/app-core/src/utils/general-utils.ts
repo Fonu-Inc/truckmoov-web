@@ -57,3 +57,18 @@ export function debounce<Args extends unknown[]>(
   }
   return debounced
 }
+
+/**
+ * Save a Blob (an API export, a generated file) to the user's downloads under
+ * `filename`. Browser-only; does nothing without a `document`.
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
+  if (typeof document === 'undefined')
+    return
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}

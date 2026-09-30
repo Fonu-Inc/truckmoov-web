@@ -1,4 +1,4 @@
-import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { useAuthStore } from '../lib/auth-store'
 import type { ServerErrorResponse } from '../lib/types'
@@ -17,6 +17,16 @@ import {
   createSupportTicketMessage,
   createSystemAdmin,
   acceptInstallerJob,
+  completeInstallerJob,
+  exportInstallerJobs,
+  getInstallerEvidenceLink,
+  getInstallerJob,
+  getInstallerJobs,
+  reportInstallerJobIssue,
+  saveInstallerJobNotes,
+  setInstallerChecklistItem,
+  startInstallerJob,
+  uploadInstallerEvidence,
   createSystemInstaller,
   getInstallerDashboard,
   getInstallerDisplayPreferences,
@@ -345,13 +355,18 @@ import type {
   SystemAuditLogQuery,
   SystemOnboardingApplicationsQuery,
   SystemTenantResourcesPayload,
+  InstallerJobResponse,
+  InstallerJobsQuery,
+  ReportInstallerJobIssuePayload,
+  SaveInstallerJobNotesPayload,
+  SetInstallerChecklistItemPayload,
 } from './types'
 
 // Every type in ./types is public — no hand-maintained list to fall out of date.
 export type * from './types'
 
 // Value + type export: UserRole is a const object, so it must not be type-only.
-export { DEVICE_CATALOG_PROTOCOLS, INSTALLER_CAPABILITIES, UserRole } from './types'
+export { DEVICE_CATALOG_PROTOCOLS, INSTALLER_CAPABILITIES, INSTALLER_ISSUE_TYPES, UserRole } from './types'
 
 export const AUTH_QUERY_KEY = {
   me: ['me'],
@@ -423,6 +438,8 @@ export const AUTH_QUERY_KEY = {
     limit ? ['installerNotifications', limit] : ['installerNotifications'],
   installerOptions: ['installerOptions'],
   installerDisplayPreferences: ['installerDisplayPreferences'],
+  installerJobs: (params?: InstallerJobsQuery) => params ? ['installerJobs', params] : ['installerJobs'],
+  installerJob: (jobId: string) => ['installerJob', jobId],
 
   systemDashboard: ['systemDashboard'],
   systemHealth: ['systemHealth'],
@@ -648,24 +665,101 @@ export function useInstallerDisplayPreferences() {
   return useQuery({ queryKey: AUTH_QUERY_KEY.installerDisplayPreferences, queryFn: getInstallerDisplayPreferences })
 }
 
-// Accepting or rejecting moves the job between sections and counters, and a 409 means the
-// job changed under us — either way the dashboard is stale, so refetch on both.
-function refreshInstallerDashboard() {
+export function useInstallerJobs(params?: InstallerJobsQuery) {
+  return useQuery({
+    queryKey: AUTH_QUERY_KEY.installerJobs(params),
+    queryFn: () => getInstallerJobs(params),
+    // Keep the last page on screen while the next one loads, so paging and filtering don't flash empty.
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useInstallerJob(jobId: string | undefined) {
+  return useQuery({
+    queryKey: AUTH_QUERY_KEY.installerJob(jobId ?? ''),
+    queryFn: () => getInstallerJob({ jobId: jobId! }),
+    enabled: !!jobId,
+    // A 404 is an answer ("not found, or not yours"), not a blip worth retrying.
+    retry: (count, error) => error.statusCode !== 404 && count < 2,
+  })
+}
+
+// Any job change moves it between the dashboard sections, the list tabs and the counters; a 409
+// means it changed under us. Either way everything that shows jobs is stale.
+function refreshInstallerJobs(jobId?: string) {
   queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerDashboard })
   queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerNotifications() })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerJobs() })
+  if (jobId)
+    queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerJob(jobId) })
 }
-const refreshOnConflict = (error: ServerErrorResponse) => {
-  if (error.statusCode === 409)
-    refreshInstallerDashboard()
+
+/** Mutations that answer with the whole job write it straight into the job's cache. */
+function jobMutationHandlers<TVars extends { jobId: string }>() {
+  return {
+    onSuccess: (res: InstallerJobResponse, { jobId }: TVars) => {
+      queryClient.setQueryData(AUTH_QUERY_KEY.installerJob(jobId), res)
+      refreshInstallerJobs()
+    },
+    onError: (error: ServerErrorResponse, { jobId }: TVars) => {
+      if (error.statusCode === 409)
+        refreshInstallerJobs(jobId)
+    },
+  }
 }
 
 export function useAcceptInstallerJob() {
-  return useMutation({ mutationFn: acceptInstallerJob, onSuccess: refreshInstallerDashboard, onError: refreshOnConflict })
+  return useMutation({ mutationFn: acceptInstallerJob, ...jobMutationHandlers<{ jobId: string }>() })
 }
 
 export function useRejectInstallerJob() {
-  return useMutation({ mutationFn: rejectInstallerJob, onSuccess: refreshInstallerDashboard, onError: refreshOnConflict })
+  return useMutation({
+    mutationFn: rejectInstallerJob,
+    // The job is no longer ours — drop it rather than cache the id-only answer.
+    onSuccess: (_res, { jobId }) => {
+      queryClient.removeQueries({ queryKey: AUTH_QUERY_KEY.installerJob(jobId) })
+      refreshInstallerJobs()
+    },
+    onError: (error, { jobId }) => {
+      if (error.statusCode === 409)
+        refreshInstallerJobs(jobId)
+    },
+  })
 }
+
+export function useStartInstallerJob() {
+  return useMutation({ mutationFn: startInstallerJob, ...jobMutationHandlers<{ jobId: string }>() })
+}
+
+export function useSetInstallerChecklistItem() {
+  return useMutation({ mutationFn: setInstallerChecklistItem, ...jobMutationHandlers<SetInstallerChecklistItemPayload>() })
+}
+
+export function useSaveInstallerJobNotes() {
+  return useMutation({ mutationFn: saveInstallerJobNotes, ...jobMutationHandlers<SaveInstallerJobNotesPayload>() })
+}
+
+export function useReportInstallerJobIssue() {
+  return useMutation({ mutationFn: reportInstallerJobIssue, ...jobMutationHandlers<ReportInstallerJobIssuePayload>() })
+}
+
+export function useCompleteInstallerJob() {
+  return useMutation({ mutationFn: completeInstallerJob, ...jobMutationHandlers<{ jobId: string }>() })
+}
+
+/** The upload answer is undocumented, so read the new evidence back through the job. */
+export function useUploadInstallerEvidence() {
+  return useMutation({
+    mutationFn: uploadInstallerEvidence,
+    onSuccess: (_res, { jobId }) => refreshInstallerJobs(jobId),
+    onError: (error, { jobId }) => {
+      if (error.statusCode === 409)
+        refreshInstallerJobs(jobId)
+    },
+  })
+}
+
+export { exportInstallerJobs, getInstallerEvidenceLink }
 
 export function useLogout() {
   return useMutation({

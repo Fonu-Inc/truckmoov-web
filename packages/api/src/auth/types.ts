@@ -142,6 +142,179 @@ export type InstallerDisplayPreferences = {
 /** A rejected offer goes to the next installer and never returns to this one. */
 export type RejectInstallerJobPayload = { jobId: string, data: { reason: string } }
 
+// TRU-FE-20 — installer jobs list, job detail and job work.
+
+export type InstallerJobListItem = {
+  id: string
+  jobNumber: string
+  siteContactName: string
+  siteContactPhone: string
+  firstVehicle: { registrationNumber: string, make: string, model: string } | null
+  firstDevice: { manufacturer: string, model: string } | null
+  vehicleCount: number
+  deviceCount: number
+  /** The booked Lagos day, "YYYY-MM-DD". */
+  scheduledDate: string
+  scheduledAt: string
+  scheduledUntil: string
+  status: InstallerJobStatus
+  /** When it was completed or cancelled. */
+  completedAt: string | null
+  /** Empty when the application is gone. */
+  companyName: string
+  address: string
+  city: string
+  state: string
+}
+
+/** `total` excludes offers (assigned); overdue is included. */
+export type InstallerJobCounters = {
+  total: number
+  scheduled: number
+  inProgress: number
+  overdue: number
+  completed: number
+  cancelled: number
+  issueReported: number
+  unassigned: number
+}
+
+export type InstallerJobsPage = {
+  counters: InstallerJobCounters
+  items: InstallerJobListItem[]
+  page: number
+  limit: number
+  total: number
+}
+
+export type InstallerJobsQuery = {
+  /** active (default): every status but completed and cancelled; history: completed. */
+  scope?: 'active' | 'history'
+  status?: InstallerJobStatus
+  search?: string
+  /** "YYYY-MM-DD" */
+  completedFrom?: string
+  completedTo?: string
+  page?: number
+  /** Default 20, at most 100. */
+  limit?: number
+}
+
+export type InstallerJobsExportQuery = Pick<InstallerJobsQuery, 'search' | 'completedFrom' | 'completedTo'> & {
+  /** IANA zone the CSV's completion date/time are written in, so they match the screen. */
+  timezone?: string
+}
+
+export type InstallerChecklistItem = {
+  key: string
+  label: string
+  checked: boolean
+  checkedAt: string | null
+  /** Can only be ticked once devices communicate / evidence exists — the server enforces it. */
+  gated?: 'device_communicating' | 'evidence'
+}
+
+export type InstallerJobDetail = {
+  id: string
+  jobNumber: string
+  status: InstallerJobStatus
+  customer: {
+    customerName: string
+    customerType: 'Enterprise' | 'Owner operator' | null
+    phone: string
+    email: string | null
+    address: string
+    scheduledDate: string
+    scheduledAt: string
+    scheduledUntil: string
+  }
+  units: {
+    index: number
+    vehicle: {
+      registrationNumber: string
+      vehicleType: string
+      make: string
+      model: string
+      year: number | null
+      engineNumber: string | null
+      chassisNumber: string | null
+      colour: string | null
+      engineCapacity: string | null
+      odometer: number | null
+    } | null
+    /** Null until bound, or when fleet cannot answer. */
+    device: {
+      id: string
+      name: string | null
+      imei: string
+      manufacturer: string
+      model: string
+      status: string
+      statusLabel: string
+      deviceType: string | null
+      verificationStatus: string | null
+    } | null
+    sim: {
+      iccid: string
+      imsi: string | null
+      msisdn: string | null
+      carrier: string
+      activationStatus: string
+      network: string | null
+    } | null
+  }[]
+  checklist: {
+    groups: { key: string, label: string, items: InstallerChecklistItem[] }[]
+    completed: number
+    total: number
+  }
+  evidence: { id: string, category: string, label: string, fileName: string, size: number, createdAt: string }[]
+  notes: string | null
+  completion: {
+    customer: string
+    vehicle: string | null
+    device: string | null
+    vehicles: string
+    devices: string
+    installationDate: string
+    installer: string
+    checklist: string
+    evidenceCount: number
+    notes: string | null
+  }
+  /** Drive every button from these — never infer them from `status`. */
+  actions: {
+    canAccept: boolean
+    canStart: boolean
+    canComplete: boolean
+    canEditNotes: boolean
+    canUploadEvidence: boolean
+    canTick: boolean
+  }
+  issues: { ticketId: string, displayId: string, status: string, createdAt: string }[]
+}
+
+export const INSTALLER_ISSUE_TYPES = [
+  'device_hardware',
+  'configuration_setup',
+  'sim_connectivity',
+  'job_scheduling',
+  'site_access_safety',
+  'account_tools',
+] as const
+export type InstallerIssueType = (typeof INSTALLER_ISSUE_TYPES)[number]
+
+export type SetInstallerChecklistItemPayload = { jobId: string, itemKey: string, data: { checked: boolean } }
+export type SaveInstallerJobNotesPayload = { jobId: string, data: { notes: string | null } }
+/** JPG, PNG or WebP, up to 10 MB. */
+export type UploadInstallerEvidencePayload = { jobId: string, category: string, file: File }
+export type ReportInstallerJobIssuePayload = {
+  jobId: string
+  issueType: InstallerIssueType
+  description: string
+  photo?: File
+}
+
 /** POST /auth/system/installers — creates the installer and emails their portal invite. */
 export type CreateSystemInstallerPayload = {
   data: {
@@ -2116,8 +2289,12 @@ export type RemoveOrganizationUserData = {
 export type AuthTokenResponse = ServerResponse<AuthSession>
 export type InstallerLoginResponse = ServerResponse<AuthSession | TwoFactorChallenge>
 export type InstallerDashboardResponse = ServerResponse<InstallerDashboard>
-/** Accept answers with the full job detail; only `id` and `status` are typed until the job page is wired. */
-export type InstallerJobResponse = ServerResponse<{ id: string, status: InstallerJobStatus } & Record<string, unknown>>
+/** Accept, start, checklist, notes, issue and complete all answer with the whole job. */
+export type InstallerJobResponse = ServerResponse<InstallerJobDetail>
+export type InstallerJobsResponse = ServerResponse<InstallerJobsPage>
+// ponytail: Swagger documents no body for the evidence upload (201) or link (200); the upload is
+// read back through the job refetch, and the link is read from `url` — confirm once dev has a job.
+export type InstallerEvidenceLinkResponse = ServerResponse<{ url: string, expiresAt?: string }>
 /** The job is no longer the caller's, so only its identity comes back. */
 export type RejectedOfferResponse = ServerResponse<{ id: string, jobNumber: string, rejectedAt: string }>
 export type InstallerNotificationsResponse = ServerResponse<InstallerNotificationsPage>

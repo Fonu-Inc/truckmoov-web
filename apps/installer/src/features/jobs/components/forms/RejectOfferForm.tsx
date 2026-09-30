@@ -44,13 +44,15 @@ export const REJECT_OFFER_FORM_ID = "installer-reject-offer-form";
 
 type RejectOfferFormProps = {
   /** The offer being rejected; null closes the dialog. */
-  offer: DashboardJob | null;
+  offer: Pick<DashboardJob, "jobId" | "jobNumber"> | null;
   onClose: () => void;
+  /** After a successful reject — the job is no longer the installer's. */
+  onRejected?: () => void;
 };
 
 /** A rejected offer goes to the next installer and never comes back to this one. */
 export function RejectOfferForm({
-  offer, onClose,
+  offer, onClose, onRejected,
 }: RejectOfferFormProps) {
   const reject = useRejectInstallerJob();
 
@@ -79,6 +81,7 @@ export function RejectOfferForm({
             { description: "It has gone to the next installer." },
           );
           close();
+          onRejected?.();
         },
         onError: (error) => {
           if (error.statusCode === 409) {

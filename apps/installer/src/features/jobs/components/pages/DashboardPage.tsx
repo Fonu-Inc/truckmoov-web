@@ -1,5 +1,5 @@
 import type {
-  DashboardJob, DashboardSection, InstallerDashboard, InstallerJobStatus,
+  DashboardJob, DashboardSection, InstallerDashboard,
 } from "@truckmoov/api/auth";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
@@ -53,20 +53,10 @@ import {
   ChartTooltipContent,
 } from "@/components/shadcn/chart";
 import { RejectOfferForm } from "@/features/jobs/components/forms/RejectOfferForm";
+import { InstallerJobStatusBadge } from "@/features/jobs/components/ui/InstallerJobStatusBadge";
 
 // Display Preferences default (TRU-FE-21) until the installer picks another zone.
 const DEFAULT_ZONE = "Africa/Lagos";
-
-const STATUS_LABEL: Record<InstallerJobStatus, string> = {
-  unassigned: "Unassigned",
-  assigned: "Offer",
-  scheduled: "Scheduled",
-  in_progress: "In progress",
-  overdue: "Overdue",
-  issue_reported: "Issue reported",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
 
 const ACTIVITY_LABEL: Record<InstallerDashboard["recentActivity"][number]["type"], string> = {
   offered: "New offer",
@@ -304,7 +294,7 @@ function JobSection({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{job.jobNumber}</span>
-                      <Badge variant="outline">{STATUS_LABEL[job.status]}</Badge>
+                      <InstallerJobStatusBadge status={job.status} />
                     </div>
                     <p className="mt-1 truncate text-sm">{job.companyName}</p>
                     <p className="truncate text-sm text-muted-foreground">
