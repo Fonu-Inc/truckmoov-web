@@ -13,11 +13,13 @@ import {
 import {
   Download,
   FileSpreadsheet,
+  FileText,
   Info,
   UploadCloud,
 } from "lucide-react";
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { useForm } from "react-hook-form";
@@ -41,6 +43,7 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -50,6 +53,7 @@ import {
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
 import {
+  checkFile,
   deviceRequestSchema,
   SERVER_VEHICLE_FIELD,
   vehicleSchema,
@@ -77,6 +81,8 @@ const EMPTY_VEHICLE: VehicleValues = {
 
 export const ADD_VEHICLE_FORM_ID = "apply-add-vehicle-form";
 
+const LICENCE_REQUIRED = "Upload the vehicle licence to add this vehicle.";
+
 /** Add a vehicle, or edit one when `initial` is set. Server field errors land on their input. */
 export function VehicleModal({
   open,
@@ -87,8 +93,8 @@ export function VehicleModal({
   open: boolean;
   initial?: VehicleValues | null;
   onOpenChange: (open: boolean) => void;
-  /** Rejects with the server error on failure. */
-  onSubmit: (values: VehicleValues) => Promise<unknown>;
+  /** `licence` is required when adding and only present when replacing on edit. Rejects with the server error on failure. */
+  onSubmit: (values: VehicleValues, licence: File | null) => Promise<unknown>;
 }) {
   const form = useForm<VehicleValues>({
     resolver: zodResolver(vehicleSchema),
@@ -103,12 +109,31 @@ export function VehicleModal({
     formError,
     setFormError,
   ] = useState<string | null>(null);
+  const [
+    licence,
+    setLicence,
+  ] = useState<File | null>(null);
+  const [
+    licenceError,
+    setLicenceError,
+  ] = useState<string | null>(null);
+  const licenceInput = useRef<HTMLInputElement>(null);
+
+  function pickLicence(file: File | undefined) {
+    if (!file)
+      return;
+    const problem = checkFile(file);
+    setLicenceError(problem);
+    setLicence(problem ? null : file);
+  }
 
   useEffect(
     () => {
       if (open) {
         form.reset(initial ?? EMPTY_VEHICLE);
         setFormError(null);
+        setLicence(null);
+        setLicenceError(null);
       }
     },
     [
@@ -121,14 +146,20 @@ export function VehicleModal({
   const purchaseType = form.watch("purchaseType");
 
   async function handleSubmit(values: VehicleValues) {
+    if (!initial && !licence)
+      return;
     setSaving(true);
     setFormError(null);
     try {
-      await onSubmit(values);
+      await onSubmit(values, licence);
       onOpenChange(false);
     }
     catch (error) {
       const err = error as ServerErrorResponse;
+      if (err.field === "vehicleLicense") {
+        setLicenceError(err.message);
+        return;
+      }
       const field = err.field ? SERVER_VEHICLE_FIELD[err.field] : undefined;
       // A 409 "<registration> has already been added" belongs on the registration input.
       const target = field ?? (err.statusCode === 409 && /already been added/i.test(err.message) ? "registrationNumber" : undefined);
@@ -175,7 +206,9 @@ export function VehicleModal({
         <DialogHeader>
           <DialogTitle>{initial ? "Edit Vehicle" : "Add Vehicle"}</DialogTitle>
           <DialogDescription>
-            Registration number, vehicle type, make and model are required.
+            {initial
+              ? "Update the vehicle's details. Choose a file only to replace its licence."
+              : "Registration number, vehicle type, make and model are required, along with the vehicle licence."}
           </DialogDescription>
         </DialogHeader>
 
@@ -183,7 +216,11 @@ export function VehicleModal({
           <form
             id={ADD_VEHICLE_FORM_ID}
             className="grid gap-4 sm:grid-cols-2"
-            onSubmit={form.handleSubmit(handleSubmit)}
+            onSubmit={(event) => {
+              if (!initial && !licence)
+                setLicenceError(licenceError ?? LICENCE_REQUIRED);
+              return form.handleSubmit(handleSubmit)(event);
+            }}
           >
             {textField(
               "registrationNumber",
@@ -301,6 +338,57 @@ export function VehicleModal({
               "otherPurchaseType",
               "Specify Purchase Type",
             )}
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label className={cn(licenceError && "text-destructive")}>
+                Vehicle License Document
+                {!initial && <span className="text-destructive"> *</span>}
+              </Label>
+              <input
+                ref={licenceInput}
+                type="file"
+                accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(event) => {
+                  pickLicence(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => licenceInput.current?.click()}
+                onDragOver={event => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  pickLicence(event.dataTransfer.files?.[0]);
+                }}
+                className={cn(
+                  "flex w-full flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-6 text-center transition-colors hover:bg-muted/40",
+                  licenceError && "border-destructive",
+                )}
+              >
+                {licence
+                  ? (
+                      <>
+                        <FileText className="h-6 w-6 text-primary" />
+                        <span className="max-w-full truncate text-sm font-medium">{licence.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {`${(licence.size / 1024 / 1024).toFixed(2)} MB · click to replace`}
+                        </span>
+                      </>
+                    )
+                  : (
+                      <>
+                        <UploadCloud className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-sm font-medium">Upload vehicle license</span>
+                        <span className="text-xs text-muted-foreground">
+                          {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG — max 10MB"}
+                        </span>
+                      </>
+                    )}
+              </button>
+              {licenceError && <p className="text-xs text-destructive">{licenceError}</p>}
+            </div>
           </form>
         </Form>
 

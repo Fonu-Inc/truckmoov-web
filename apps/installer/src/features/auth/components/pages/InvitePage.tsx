@@ -26,7 +26,7 @@ export default function InvitePage() {
       title={broken ? "This invite link doesn't work" : "Set up your installer account"}
       description={broken
         ? "It may have expired or already been used. Ask your platform admin to resend the invite."
-        : "Add your name and choose a password to activate your account."}
+        : "Choose a password to activate your account."}
     >
       {broken
         ? (
@@ -49,6 +49,7 @@ export default function InvitePage() {
               <InviteForm
                 inviteToken={token}
                 email={invite.data.data.email}
+                fullName={invite.data.data.fullName}
               />
             )
           : (

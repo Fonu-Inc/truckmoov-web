@@ -19,9 +19,11 @@ interface AuthBrandingPanelProps {
   /** Eyebrow for the mobile lockup. The desktop column's copy is fixed. */
   subtitle: string;
   helpMode?: AuthHelpMode;
+  /** Sits beside the help button in the content column's top-right corner. */
+  topRightAction?: ReactNode;
 }
 
-export function AuthBrandingPanel({ children, subtitle, helpMode }: AuthBrandingPanelProps) {
+export function AuthBrandingPanel({ children, subtitle, helpMode, topRightAction }: AuthBrandingPanelProps) {
   const [helpOpen, setHelpOpen] = useState(false);
 
   return (
@@ -87,9 +89,10 @@ export function AuthBrandingPanel({ children, subtitle, helpMode }: AuthBranding
       </div>
 
       <div className="relative flex-1 flex flex-col items-center justify-center p-8 bg-gradient-auth">
-        {helpMode && (
-          <>
-            <div className="absolute top-4 right-4">
+        {(helpMode || topRightAction) && (
+          <div className="absolute top-4 right-4 flex items-center gap-1">
+            {topRightAction}
+            {helpMode && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -99,11 +102,10 @@ export function AuthBrandingPanel({ children, subtitle, helpMode }: AuthBranding
               >
                 <HelpCircle className="!h-6 !w-6" />
               </Button>
-            </div>
-
-            <AuthHelpDialog open={helpOpen} onOpenChange={setHelpOpen} mode={helpMode} />
-          </>
+            )}
+          </div>
         )}
+        {helpMode && <AuthHelpDialog open={helpOpen} onOpenChange={setHelpOpen} mode={helpMode} />}
         <MobileLogo subtitle={subtitle} />
         {children}
       </div>

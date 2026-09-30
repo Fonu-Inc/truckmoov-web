@@ -1,13 +1,18 @@
-import type {
-  Installer,
-  InstallerStatus,
-} from "@/features/installers/demoData";
+import type { SystemInstaller, SystemInstallerStatus } from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSystemInstallersQueryOptions,
+  useReactivateSystemInstaller,
+  useResendSystemInstallerInvite,
+  useSuspendSystemInstaller,
+} from "@truckmoov/api/auth";
 import {
   Ban,
   CheckCircle2,
   Clock,
   Eye,
   HardHat,
+  Mail,
   MoreHorizontal,
   PauseCircle,
   Pencil,
@@ -16,7 +21,7 @@ import {
   Search,
 } from "lucide-react";
 import {
-  useMemo,
+  useEffect,
   useState,
 } from "react";
 import { toast } from "sonner";
@@ -56,13 +61,14 @@ import { AddInstallerDialog } from "@/features/installers/components/ui/AddInsta
 import { InstallerProfileDialog } from "@/features/installers/components/ui/InstallerProfileDialog";
 import { InstallerStatusBadge } from "@/features/installers/components/ui/InstallerStatusBadge";
 import {
+  AVAILABILITY_LABEL,
+  capabilityLabel,
+  fromApiState,
   installerName,
-  SEED_INSTALLERS,
-  SEED_JOBS,
-} from "@/features/installers/demoData";
+} from "@/features/installers/installerOptions";
 import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 
-function fmt(iso?: string) {
+function fmt(iso?: string | null) {
   return iso
     ? new Date(iso).toLocaleDateString(
         "en-GB",
@@ -76,34 +82,28 @@ function fmt(iso?: string) {
 }
 
 const PAGE_SIZE = 8;
-
-const ACTIVE_JOB_STATUSES = [
-  "accepted",
-  "scheduled",
-  "in_progress",
-];
+const SEARCH_PAUSE_MS = 350;
 
 export default function InstallersPage() {
-  // Demo data — see features/installers/demoData.ts for why there is no
-  // request here. Edits live for the session and reset on reload.
-  const [
-    installers,
-    setInstallers,
-  ] = useState<Installer[]>(SEED_INSTALLERS);
-  const jobs = SEED_JOBS;
-
   const {
     confirm, confirmDialog,
   } = useConfirmAction();
+  const suspend = useSuspendSystemInstaller();
+  const reactivate = useReactivateSystemInstaller();
+  const resendInvite = useResendSystemInstallerInvite();
 
   const [
     search,
     setSearch,
   ] = useState("");
   const [
+    searchTerm,
+    setSearchTerm,
+  ] = useState("");
+  const [
     status,
     setStatus,
-  ] = useState("all");
+  ] = useState<"all" | SystemInstallerStatus>("all");
   const [
     page,
     setPage,
@@ -115,84 +115,55 @@ export default function InstallersPage() {
   const [
     editInstaller,
     setEditInstaller,
-  ] = useState<Installer | null>(null);
+  ] = useState<SystemInstaller | null>(null);
   const [
-    selected,
-    setSelected,
-  ] = useState<Installer | null>(null);
-  const [
-    profileOpen,
-    setProfileOpen,
-  ] = useState(false);
+    selectedId,
+    setSelectedId,
+  ] = useState<string | null>(null);
 
-  const activeJobs = (id: string) =>
-    jobs.filter(j => j.installerId === id && ACTIVE_JOB_STATUSES.includes(j.status)).length;
-
-  const completedJobs = (id: string) =>
-    jobs.filter(j => j.installerId === id && j.status === "completed").length;
-
-  const availability = (i: Installer) => {
-    if (i.status === "suspended")
-      return "Unavailable";
-    if (i.status === "pending_activation")
-      return "Not yet onboarded";
-    return activeJobs(i.id) >= 3 ? "At capacity" : "Available";
-  };
-
-  const setInstallerStatus = (id: string, next: InstallerStatus) =>
-    setInstallers(list => list.map(i => (i.id === id
-      ? {
-          ...i, status: next,
-        }
-      : i)));
-
-  const createInstaller = (installer: Installer) =>
-    setInstallers(list => [
-      ...list,
-      installer,
-    ]);
-
-  const updateInstaller = (id: string, updates: Partial<Installer>) =>
-    setInstallers(list => list.map(i => (i.id === id
-      ? {
-          ...i, ...updates,
-        }
-      : i)));
-
-  const filtered = useMemo(
+  useEffect(
     () => {
-      const q = search.trim().toLowerCase();
-      return installers.filter((i) => {
-        const matchQ
-          = !q
-            || installerName(i).toLowerCase().includes(q)
-            || i.id.toLowerCase().includes(q)
-            || i.email.toLowerCase().includes(q)
-            || i.serviceAreas.join(" ").toLowerCase().includes(q);
-        const matchS = status === "all" || i.status === status;
-        return matchQ && matchS;
-      });
+      const timer = setTimeout(
+        () => {
+          setSearchTerm(search.trim());
+          setPage(1);
+        },
+        SEARCH_PAUSE_MS,
+      );
+      return () => clearTimeout(timer);
     },
-    [
-      installers,
-      search,
-      status,
-    ],
+    [search],
   );
 
+  const {
+    data, isLoading, isError, error, refetch,
+  } = useQuery(getSystemInstallersQueryOptions({
+    search: searchTerm || undefined,
+    status: status === "all" ? undefined : status,
+    page,
+    limit: PAGE_SIZE,
+  }));
+
+  const installers = data?.data.items ?? [];
+  const summary = data?.data.summary;
+  const total = data?.data.total ?? 0;
   const pages = Math.max(
     1,
-    Math.ceil(filtered.length / PAGE_SIZE),
+    Math.ceil(total / PAGE_SIZE),
   );
-  const current = filtered.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE,
-  );
+  const selected = installers.find(i => i.id === selectedId) ?? null;
 
-  const openProfile = (i: Installer) => {
-    setSelected(i);
-    setProfileOpen(true);
-  };
+  const act = (
+    action: typeof suspend,
+    installer: SystemInstaller,
+    done: string,
+  ) => action.mutate(
+    { id: installer.id },
+    {
+      onSuccess: () => toast.success(`${installerName(installer)} ${done}.`),
+      onError: err => toast.error(err.message),
+    },
+  );
 
   return (
     <>
@@ -200,24 +171,24 @@ export default function InstallersPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Installers"
-            value={installers.length}
+            value={summary?.total ?? 0}
             icon={HardHat}
           />
           <StatCard
             title="Active"
-            value={installers.filter(i => i.status === "active").length}
+            value={summary?.active ?? 0}
             icon={CheckCircle2}
             variant="success"
           />
           <StatCard
             title="Invitation Sent"
-            value={installers.filter(i => i.status === "pending_activation").length}
+            value={summary?.invited ?? 0}
             icon={Clock}
             variant="warning"
           />
           <StatCard
             title="Suspended"
-            value={installers.filter(i => i.status === "suspended").length}
+            value={summary?.suspended ?? 0}
             icon={PauseCircle}
             variant="danger"
           />
@@ -225,15 +196,7 @@ export default function InstallersPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
-            <CardTitle className="flex items-center gap-2">
-              Installer Pool
-              <Badge
-                variant="outline"
-                className="text-[10px]"
-              >
-                Demo data
-              </Badge>
-            </CardTitle>
+            <CardTitle>Installer Pool</CardTitle>
             <Button
               onClick={() => setAddOpen(true)}
               className="gap-2"
@@ -249,10 +212,7 @@ export default function InstallersPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
+                  onChange={e => setSearch(e.target.value)}
                   placeholder="Search installers, ID, email or area"
                   className="pl-9"
                 />
@@ -260,7 +220,7 @@ export default function InstallersPage() {
               <Select
                 value={status}
                 onValueChange={(v) => {
-                  setStatus(v);
+                  setStatus(v as "all" | SystemInstallerStatus);
                   setPage(1);
                 }}
               >
@@ -270,7 +230,7 @@ export default function InstallersPage() {
                 <SelectContent>
                   <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="pending_activation">Invitation Sent</SelectItem>
+                  <SelectItem value="invited">Invitation Sent</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
                 </SelectContent>
               </Select>
@@ -296,13 +256,13 @@ export default function InstallersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {current.map(i => (
+                  {installers.map(i => (
                     <TableRow key={i.id}>
                       <TableCell className="font-medium">{installerName(i)}</TableCell>
-                      <TableCell className="text-muted-foreground">{i.id}</TableCell>
-                      <TableCell>{i.phone}</TableCell>
+                      <TableCell className="text-muted-foreground">{i.code}</TableCell>
+                      <TableCell>{i.phoneNumber}</TableCell>
                       <TableCell className="text-muted-foreground">{i.email}</TableCell>
-                      <TableCell>{i.serviceAreas.join(", ")}</TableCell>
+                      <TableCell>{i.serviceAreas.map(fromApiState).join(", ")}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {i.capabilities.slice(
@@ -314,7 +274,7 @@ export default function InstallersPage() {
                               variant="secondary"
                               className="rounded-full"
                             >
-                              {c}
+                              {capabilityLabel(c)}
                             </Badge>
                           ))}
                           {i.capabilities.length > 2 && (
@@ -333,20 +293,20 @@ export default function InstallersPage() {
                           variant="secondary"
                           className="rounded-full"
                         >
-                          {availability(i)}
+                          {AVAILABILITY_LABEL[i.availability]}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <InstallerStatusBadge status={i.status} />
                       </TableCell>
                       <TableCell className="tabular-nums">
-                        {activeJobs(i.id)}
+                        {i.activeJobs}
                         {" active "}
-                        {activeJobs(i.id) === 1 ? "job" : "jobs"}
+                        {i.activeJobs === 1 ? "job" : "jobs"}
                       </TableCell>
-                      <TableCell className="tabular-nums">{completedJobs(i.id)}</TableCell>
-                      <TableCell>{fmt(i.dateAdded)}</TableCell>
-                      <TableCell>{fmt(i.lastActivity)}</TableCell>
+                      <TableCell className="tabular-nums">{i.jobsCompleted}</TableCell>
+                      <TableCell>{fmt(i.createdAt)}</TableCell>
+                      <TableCell>{fmt(i.lastActivityAt)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -358,7 +318,7 @@ export default function InstallersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openProfile(i)}>
+                            <DropdownMenuItem onClick={() => setSelectedId(i.id)}>
                               <Eye className="mr-2 h-4 w-4" />
                               {" "}
                               View Installer Details
@@ -373,6 +333,13 @@ export default function InstallersPage() {
                               {" "}
                               Edit Installer Details
                             </DropdownMenuItem>
+                            {i.status === "invited" && (
+                              <DropdownMenuItem onClick={() => act(resendInvite, i, "was sent a new invite")}>
+                                <Mail className="mr-2 h-4 w-4" />
+                                {" "}
+                                Resend Invite
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {i.status === "suspended"
                               ? (
@@ -383,13 +350,7 @@ export default function InstallersPage() {
                                         description: `${installerName(i)} will be able to sign in and receive new installation jobs again.`,
                                         confirmLabel: "Reactivate Installer",
                                         destructive: false,
-                                        onConfirm: () => {
-                                          setInstallerStatus(
-                                            i.id,
-                                            "active",
-                                          );
-                                          toast.success(`${installerName(i)} reactivated.`);
-                                        },
+                                        onConfirm: () => act(reactivate, i, "reactivated"),
                                       })}
                                   >
                                     <RotateCcw className="mr-2 h-4 w-4" />
@@ -405,13 +366,7 @@ export default function InstallersPage() {
                                         title: "Suspend this installer?",
                                         description: `${installerName(i)} will no longer be able to sign in or be assigned new installation jobs.`,
                                         confirmLabel: "Suspend Installer",
-                                        onConfirm: () => {
-                                          setInstallerStatus(
-                                            i.id,
-                                            "suspended",
-                                          );
-                                          toast.success(`${installerName(i)} suspended.`);
-                                        },
+                                        onConfirm: () => act(suspend, i, "suspended"),
                                       })}
                                   >
                                     <Ban className="mr-2 h-4 w-4" />
@@ -424,16 +379,35 @@ export default function InstallersPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {current.length === 0 && (
+                  {installers.length === 0 && (
                     <TableRow>
                       <TableCell
                         colSpan={13}
                         className="py-12 text-center"
                       >
-                        <p className="text-sm font-medium">No installers found</p>
-                        <p className="text-xs text-muted-foreground">
-                          Adjust your search or add an installer to the pool.
-                        </p>
+                        {isLoading && <p className="text-sm text-muted-foreground">Loading installers…</p>}
+                        {isError && (
+                          <>
+                            <p className="text-sm font-medium">Couldn't load installers</p>
+                            <p className="text-xs text-muted-foreground">{error.message}</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-3"
+                              onClick={() => void refetch()}
+                            >
+                              Try again
+                            </Button>
+                          </>
+                        )}
+                        {!isLoading && !isError && (
+                          <>
+                            <p className="text-sm font-medium">No installers found</p>
+                            <p className="text-xs text-muted-foreground">
+                              Adjust your search or add an installer to the pool.
+                            </p>
+                          </>
+                        )}
                       </TableCell>
                     </TableRow>
                   )}
@@ -445,9 +419,9 @@ export default function InstallersPage() {
               <span>
                 Showing
                 {" "}
-                {current.length}
+                {installers.length}
                 {" of "}
-                {filtered.length}
+                {total}
                 {" installers"}
               </span>
               <div className="flex items-center gap-2">
@@ -488,20 +462,16 @@ export default function InstallersPage() {
             setEditInstaller(null);
         }}
         installer={editInstaller}
-        onCreate={createInstaller}
-        onUpdate={updateInstaller}
       />
       <InstallerProfileDialog
         installer={selected}
-        jobs={jobs}
-        open={profileOpen}
-        onOpenChange={setProfileOpen}
+        open={selectedId !== null}
+        onOpenChange={v => !v && setSelectedId(null)}
         onStartEdit={() => {
           setEditInstaller(selected);
-          setProfileOpen(false);
+          setSelectedId(null);
           setAddOpen(true);
         }}
-        onStatusChange={setInstallerStatus}
       />
       {confirmDialog}
     </>

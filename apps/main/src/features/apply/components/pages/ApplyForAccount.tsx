@@ -33,6 +33,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/shadcn/button";
 import { BusinessDetailsStep } from "@/features/apply/components/forms/BusinessDetailsStep";
 import { ScheduleInstallationStep } from "@/features/apply/components/forms/ScheduleInstallationStep";
@@ -707,6 +708,7 @@ export default function ApplyForAccount() {
               indemnitySigned={isIndemnitySigned(application)}
               indemnityNotice={indemnityNotice}
               saveError={saveError}
+              applicationId={applicationId}
               onSubmit={values => void handleDetailsSubmit(values)}
             />
             <div className="mt-4 flex justify-end">
@@ -903,6 +905,9 @@ function ApplyShell({
       </aside>
 
       <main className="h-full flex-1 overflow-y-auto bg-gradient-auth">
+        <div className="sticky top-0 z-20 flex h-0 justify-end px-4 pt-4">
+          <ThemeToggle />
+        </div>
         <div className="mx-auto w-full max-w-3xl px-6 py-10 pb-16 sm:px-10">
           {children}
         </div>

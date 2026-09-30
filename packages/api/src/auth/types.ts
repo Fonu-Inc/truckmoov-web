@@ -471,6 +471,93 @@ export type CreateSystemInstallerPayload = {
   }
 }
 
+export type SystemInstallerStatus = 'invited' | 'active' | 'suspended'
+export type SystemInstallerAvailability = 'not_onboarded' | 'unavailable' | 'at_capacity' | 'available'
+
+/** One row of GET /auth/system/installers. */
+export type SystemInstaller = {
+  id: string
+  code: string
+  firstName: string
+  lastName: string
+  fullName: string
+  email: string
+  phoneNumber: string
+  state: string
+  city: string
+  serviceAreas: string[]
+  capabilities: InstallerCapability[]
+  availability: SystemInstallerAvailability
+  status: SystemInstallerStatus
+  activeJobs: number
+  maxActiveJobs: number
+  jobsCompleted: number
+  createdAt: string
+  lastActivityAt: string | null
+}
+
+export type SystemInstallersQuery = {
+  search?: string
+  status?: SystemInstallerStatus
+  page?: number
+  limit?: number
+}
+
+export type SystemInstallersResponse = ServerResponse<{
+  summary: { total: number, active: number, invited: number, suspended: number }
+  items: SystemInstaller[]
+  page: number
+  limit: number
+  total: number
+}>
+
+/** The email cannot change. */
+export type UpdateSystemInstallerPayload = {
+  id: string
+  data: Partial<Omit<CreateSystemInstallerPayload['data'], 'email'>>
+}
+
+export type SystemInstallerActionPayload = { id: string }
+
+/** One row of GET /auth/system/installation-orders. */
+export type SystemInstallationJob = {
+  id: string
+  jobNumber: string
+  tenantId: string
+  /** Organisation name, empty when the application is gone. */
+  customer: string
+  siteContactName: string
+  siteContactPhone: string
+  firstVehicle: { registrationNumber: string, make: string, model: string } | null
+  firstDevice: { manufacturer: string, model: string } | null
+  location: { city: string, state: string }
+  vehicleCount: number
+  deviceCount: number
+  /** The booked Lagos day, "YYYY-MM-DD". */
+  scheduledDate: string
+  scheduledAt: string
+  scheduledUntil: string
+  status: InstallerJobStatus
+  /** When it was completed or cancelled. */
+  completedAt: string | null
+  installer: { id: string, code: string, fullName: string } | null
+}
+
+export type SystemInstallationJobsQuery = {
+  status?: InstallerJobStatus
+  installerId?: string
+  search?: string
+  page?: number
+  limit?: number
+}
+
+export type SystemInstallationJobsResponse = ServerResponse<{
+  items: SystemInstallationJob[]
+  page: number
+  limit: number
+  total: number
+}>
+
 export type RefreshPayload = {
   data: {
     refreshToken: string
@@ -578,7 +665,8 @@ export type ResendOrgInvitePayload = {
 export type RegisterInvitedPayload = {
   data: {
     inviteToken: string
-    fullName: string
+    /** Not needed for an installer: the invited name is used. */
+    fullName?: string
     password: string
   }
 }
@@ -2486,6 +2574,8 @@ export type InviteValidationResponse = ServerResponse<{
   email: string
   role: string
   tenantId: string
+  /** The name an installer was invited under; null for every other role. */
+  fullName: string | null
 }>
 
 export type ChangeSystemPasswordResponse = ServerResponse<{
@@ -3527,6 +3617,7 @@ export type OnboardingM2mPlan = {
   perDeviceRenewalNgn: number
 }
 export type OnboardingM2mPlansResponse = ServerResponse<{ plans: OnboardingM2mPlan[] }>
+export type OnboardingEmailAvailabilityResponse = ServerResponse<{ available: boolean }>
 
 export type OnboardingIndemnityAgreementResponse = ServerResponse<{
   version: string
@@ -3568,7 +3659,7 @@ export type OnboardingVehicleInput = {
   purchaseTypeOther?: string
 }
 
-export type AddOnboardingVehiclePayload = { id: string, data: OnboardingVehicleInput }
+export type AddOnboardingVehiclePayload = { id: string, data: OnboardingVehicleInput, licence: File }
 export type UpdateOnboardingVehiclePayload = { id: string, vehicleId: string, data: OnboardingVehicleInput }
 export type DeleteOnboardingVehiclePayload = { id: string, vehicleId: string }
 export type ImportOnboardingVehiclesPayload = { id: string, file: File }

@@ -136,7 +136,13 @@ import type {
   LoginTwoFactorPayload,
   SystemLoginResponse,
   SystemLoginTwoFactorResponse,
+  SystemInstallationJobsQuery,
+  SystemInstallationJobsResponse,
+  SystemInstallerActionPayload,
   SystemInstallerResponse,
+  SystemInstallersQuery,
+  SystemInstallersResponse,
+  UpdateSystemInstallerPayload,
   ChangeRolePayload,
   CompleteProfilePayload,
   CreateDeviceCatalogPayload,
@@ -340,6 +346,7 @@ import type {
   StartOnboardingPaymentPayload,
   StartOnboardingPaymentResponse,
   OnboardingIndemnityAgreementResponse,
+  OnboardingEmailAvailabilityResponse,
   OnboardingM2mPlansResponse,
   OnboardingVehicleImportColumnsResponse,
   ResumeOnboardingApplicationPayload,
@@ -769,6 +776,36 @@ export async function completeInstallerJob({ jobId }: { jobId: string }) {
 export async function createSystemInstaller({ data }: CreateSystemInstallerPayload) {
   const { data: res } = await axiosInstance.post<SystemInstallerResponse>('/auth/system/installers', data)
   return res
+}
+
+export async function getSystemInstallers(params?: SystemInstallersQuery) {
+  const { data } = await axiosInstance.get<SystemInstallersResponse>('/auth/system/installers', { params })
+  return data
+}
+
+export async function getSystemInstallationJobs(params?: SystemInstallationJobsQuery) {
+  const { data } = await axiosInstance.get<SystemInstallationJobsResponse>('/auth/system/installation-orders', { params })
+  return data
+}
+
+export async function updateSystemInstaller({ id, data }: UpdateSystemInstallerPayload) {
+  const { data: res } = await axiosInstance.patch<SystemInstallerResponse>(`/auth/system/installers/${id}`, data)
+  return res
+}
+
+export async function suspendSystemInstaller({ id }: SystemInstallerActionPayload) {
+  const { data } = await axiosInstance.post<SystemInstallerResponse>(`/auth/system/installers/${id}/suspend`)
+  return data
+}
+
+export async function reactivateSystemInstaller({ id }: SystemInstallerActionPayload) {
+  const { data } = await axiosInstance.post<SystemInstallerResponse>(`/auth/system/installers/${id}/reactivate`)
+  return data
+}
+
+export async function resendSystemInstallerInvite({ id }: SystemInstallerActionPayload) {
+  const { data } = await axiosInstance.post<SystemInstallerResponse>(`/auth/system/installers/${id}/resend-invite`)
+  return data
 }
 
 export async function getSystemAdmins() {
@@ -1998,6 +2035,14 @@ export async function getOnboardingM2mPlans() {
   return data
 }
 
+export async function getOnboardingEmailAvailability({ email, applicationId }: { email: string, applicationId?: string }) {
+  const { data } = await onboardingInstance.get<OnboardingEmailAvailabilityResponse>(
+    `${ONBOARDING}/email-availability`,
+    { params: { email, applicationId } },
+  )
+  return data
+}
+
 export async function getOnboardingIndemnityAgreement() {
   const { data } = await onboardingInstance.get<OnboardingIndemnityAgreementResponse>(`${ONBOARDING}/indemnity-agreement`)
   return data
@@ -2050,8 +2095,19 @@ export async function deleteOnboardingApplicationDocument({
   return data
 }
 
-export async function addOnboardingVehicle({ id, data }: AddOnboardingVehiclePayload) {
-  const { data: res } = await onboardingInstance.post<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/vehicles`, data)
+/** The vehicle licence travels with the vehicle: the server refuses a vehicle without it. */
+export async function addOnboardingVehicle({ id, data, licence }: AddOnboardingVehiclePayload) {
+  const form = new FormData()
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined)
+      form.append(key, String(value))
+  }
+  form.append('file', licence)
+  const { data: res } = await onboardingInstance.post<OnboardingApplicationResponse>(
+    `${ONBOARDING}/${id}/vehicles`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
   return res
 }
 

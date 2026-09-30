@@ -28,6 +28,12 @@ import {
   startInstallerJob,
   uploadInstallerEvidence,
   createSystemInstaller,
+  getSystemInstallationJobs,
+  getSystemInstallers,
+  reactivateSystemInstaller,
+  resendSystemInstallerInvite,
+  suspendSystemInstaller,
+  updateSystemInstaller,
   getInstallerDashboard,
   getInstallerDisplayPreferences,
   changeInstallerPassword,
@@ -281,6 +287,7 @@ import {
   startOnboardingPayment,
   scheduleOnboardingInstallation,
   verifyOnboardingBillingEmail,
+  getOnboardingEmailAvailability,
   getOnboardingM2mPlans,
   getOnboardingVehicleImportColumns,
   getOnboardingVehicleImportTemplate,
@@ -330,6 +337,8 @@ import {
 } from './requests'
 import type {
   AIRequestsQuery,
+  SystemInstallationJobsQuery,
+  SystemInstallersQuery,
   AIUsageQuery,
   ActivityLogQuery,
   CommunicationChannel,
@@ -411,6 +420,9 @@ export const AUTH_QUERY_KEY = {
     payload ? ['supportTicketsExport', payload] : ['supportTicketsExport'],
 
   systemAdmins: ['systemAdmins'],
+  systemInstallers: ['systemInstallers'],
+  systemInstallationJobs: (payload?: SystemInstallationJobsQuery) => ['systemInstallationJobs', payload],
+  systemInstallersList: (payload?: SystemInstallersQuery) => ['systemInstallers', 'list', payload],
   systemAdminInvites: ['systemAdminInvites'],
 
   systemSecurityOverview: ['systemSecurityOverview'],
@@ -546,6 +558,7 @@ export const AUTH_QUERY_KEY = {
   onboardingApplicationStatus: (id: string) => ['onboardingApplicationStatus', id],
   onboardingOrder: (id: string) => ['onboardingOrder', id],
   onboardingM2mPlans: ['onboardingM2mPlans'],
+  onboardingEmailAvailability: (email: string, applicationId?: string) => ['onboardingEmailAvailability', email, applicationId],
   onboardingIndemnityAgreement: ['onboardingIndemnityAgreement'],
   onboardingVehicleImportColumns: ['onboardingVehicleImportColumns'],
 
@@ -664,8 +677,44 @@ export function useValidateInvite(token: string | null) {
   })
 }
 
+export function getSystemInstallersQueryOptions(payload?: SystemInstallersQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemInstallersList(payload),
+    queryFn: () => getSystemInstallers(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getSystemInstallationJobsQueryOptions(payload?: SystemInstallationJobsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemInstallationJobs(payload),
+    queryFn: () => getSystemInstallationJobs(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+function refreshInstallers() {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemInstallers })
+}
+
+export function useUpdateSystemInstaller() {
+  return useMutation({ mutationFn: updateSystemInstaller, onSuccess: refreshInstallers })
+}
+
+export function useSuspendSystemInstaller() {
+  return useMutation({ mutationFn: suspendSystemInstaller, onSuccess: refreshInstallers })
+}
+
+export function useReactivateSystemInstaller() {
+  return useMutation({ mutationFn: reactivateSystemInstaller, onSuccess: refreshInstallers })
+}
+
+export function useResendSystemInstallerInvite() {
+  return useMutation({ mutationFn: resendSystemInstallerInvite, onSuccess: refreshInstallers })
+}
+
 export function useCreateSystemInstaller() {
-  return useMutation({ mutationFn: createSystemInstaller })
+  return useMutation({ mutationFn: createSystemInstaller, onSuccess: refreshInstallers })
 }
 
 // TRU-FE-19 — installer portal dashboard.
@@ -2582,6 +2631,15 @@ export function getOnboardingM2mPlansQueryOptions() {
     queryKey: AUTH_QUERY_KEY.onboardingM2mPlans,
     queryFn: getOnboardingM2mPlans,
     staleTime: Infinity,
+  })
+}
+
+export function getOnboardingEmailAvailabilityQueryOptions(email: string, applicationId?: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingEmailAvailability(email, applicationId),
+    queryFn: () => getOnboardingEmailAvailability({ email, applicationId }),
+    staleTime: 10_000,
+    retry: false,
   })
 }
 

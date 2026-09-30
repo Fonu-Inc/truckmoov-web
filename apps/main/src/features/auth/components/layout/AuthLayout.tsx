@@ -3,6 +3,7 @@ import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthB
 import {
   Outlet, useLocation,
 } from "react-router";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 /**
  * Which FAQ set the panel's help button opens, per route. An unlisted path
@@ -25,6 +26,7 @@ export function AuthLayout() {
     <AuthBrandingPanel
       subtitle="Enterprise Fleet"
       helpMode={HELP_MODE[pathname]}
+      topRightAction={<ThemeToggle />}
     >
       <Outlet />
     </AuthBrandingPanel>

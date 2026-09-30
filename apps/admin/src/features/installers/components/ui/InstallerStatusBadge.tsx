@@ -1,56 +1,15 @@
-import type {
-  InstallationJobStatus,
-  InstallerStatus,
-} from "@/features/installers/demoData";
+import type { InstallerJobStatus, SystemInstallerStatus } from "@truckmoov/api/auth";
 import { Badge } from "@/components/shadcn/badge";
-import { JOB_STATUS_LABEL } from "@/features/installers/demoData";
+import { JOB_STATUS_LABEL, STATUS_LABEL } from "@/features/installers/installerOptions";
 import { cn } from "@/lib/utils";
 
-const jobTone: Record<InstallationJobStatus, string> = {
-  created: "bg-muted text-muted-foreground",
-  awaiting_assignment: "bg-muted text-muted-foreground",
-  accepted: "bg-info/10 text-info",
-  scheduled: "bg-chart-4/10 text-chart-4",
-  in_progress: "bg-warning/10 text-warning",
-  completed: "bg-success/10 text-success",
-  issue_reported: "bg-destructive/10 text-destructive",
-  unable_to_complete: "bg-destructive/10 text-destructive",
-};
-
-export function JobStatusBadge({
-  status,
-  className,
-}: {
-  status: InstallationJobStatus;
-  className?: string;
-}) {
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "rounded-full border-transparent",
-        jobTone[status],
-        className,
-      )}
-    >
-      {JOB_STATUS_LABEL[status]}
-    </Badge>
-  );
-}
-
-const installerTone: Record<InstallerStatus, string> = {
+const installerTone: Record<SystemInstallerStatus, string> = {
   active: "bg-success/10 text-success",
   suspended: "bg-destructive/10 text-destructive",
-  pending_activation: "bg-warning/10 text-warning",
+  invited: "bg-warning/10 text-warning",
 };
 
-const installerLabel: Record<InstallerStatus, string> = {
-  active: "Active",
-  suspended: "Suspended",
-  pending_activation: "Invitation Sent",
-};
-
-export function InstallerStatusBadge({ status }: { status: InstallerStatus }) {
+export function InstallerStatusBadge({ status }: { status: SystemInstallerStatus }) {
   return (
     <Badge
       variant="outline"
@@ -59,7 +18,32 @@ export function InstallerStatusBadge({ status }: { status: InstallerStatus }) {
         installerTone[status],
       )}
     >
-      {installerLabel[status]}
+      {STATUS_LABEL[status]}
+    </Badge>
+  );
+}
+
+const jobTone: Record<InstallerJobStatus, string> = {
+  unassigned: "bg-muted text-muted-foreground",
+  assigned: "bg-info/10 text-info",
+  scheduled: "bg-chart-4/10 text-chart-4",
+  in_progress: "bg-warning/10 text-warning",
+  overdue: "bg-destructive/10 text-destructive",
+  issue_reported: "bg-destructive/10 text-destructive",
+  completed: "bg-success/10 text-success",
+  cancelled: "bg-muted text-muted-foreground",
+};
+
+export function JobStatusBadge({ status }: { status: InstallerJobStatus }) {
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "rounded-full border-transparent",
+        jobTone[status],
+      )}
+    >
+      {JOB_STATUS_LABEL[status]}
     </Badge>
   );
 }

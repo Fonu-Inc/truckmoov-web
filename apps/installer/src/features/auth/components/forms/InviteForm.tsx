@@ -19,13 +19,12 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import {
-  confirmPasswordSchema, fullNameSchema, newPasswordSchema, passwordMismatch,
+  confirmPasswordSchema, newPasswordSchema, passwordMismatch,
 } from "@/features/auth/utils/schemas";
 import { useAuthStore } from "@/stores/authStore";
 
 const inviteSchema = z
   .object({
-    fullName: fullNameSchema,
     newPassword: newPasswordSchema,
     confirmPassword: confirmPasswordSchema,
   })
@@ -42,6 +41,8 @@ type InviteFormProps = {
   inviteToken: string;
   /** From GET /auth/invite/validate — shown, not editable: the invite is bound to it. */
   email: string;
+  /** The name the installer was invited under, shown as it will appear to customers. */
+  fullName?: string | null;
 };
 
 /**
@@ -50,7 +51,7 @@ type InviteFormProps = {
  * installer-only gate apply from the very first session.
  */
 export function InviteForm({
-  inviteToken, email,
+  inviteToken, email, fullName,
 }: InviteFormProps) {
   const navigate = useNavigate();
   const registerInvited = useRegisterInvited();
@@ -58,7 +59,6 @@ export function InviteForm({
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
     defaultValues: {
-      fullName: "",
       newPassword: "",
       confirmPassword: "",
     },
@@ -69,7 +69,6 @@ export function InviteForm({
       {
         data: {
           inviteToken,
-          fullName: values.fullName.trim(),
           password: values.newPassword,
         },
       },
@@ -111,27 +110,20 @@ export function InviteForm({
           </div>
         </FormItem>
 
-        <FormField
-          control={form.control}
-          name="fullName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full name</FormLabel>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <FormControl>
-                  <Input
-                    placeholder="Tunde Akinwale"
-                    className="pl-10"
-                    autoComplete="name"
-                    {...field}
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {fullName && (
+          <FormItem>
+            <FormLabel>Full name</FormLabel>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={fullName}
+                className="pl-10"
+                readOnly
+                disabled
+              />
+            </div>
+          </FormItem>
+        )}
 
         <FormField
           control={form.control}

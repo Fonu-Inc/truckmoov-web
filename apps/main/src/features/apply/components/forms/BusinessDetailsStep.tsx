@@ -38,6 +38,7 @@ import {
   IDENTIFICATION_TYPES,
   NIGERIAN_STATES,
 } from "@/features/apply/utils/applySchemas";
+import { useEmailAvailability } from "@/features/apply/utils/useEmailAvailability";
 import { cn } from "@/lib/utils";
 
 export const BUSINESS_DETAILS_FORM_ID = "apply-business-details-form";
@@ -53,6 +54,8 @@ type BusinessDetailsStepProps = {
   /** Error from the last save that belongs to no single field. */
   saveError?: string | null;
   nextLabel?: string;
+  /** Lets the email check ignore the application being edited. */
+  applicationId?: string | null;
   onSubmit: (values: BusinessDetailsValues) => void;
 };
 
@@ -64,8 +67,10 @@ export function BusinessDetailsStep({
   indemnityNotice,
   saveError,
   nextLabel,
+  applicationId,
   onSubmit,
 }: BusinessDetailsStepProps) {
+  useEmailAvailability(form, applicationId);
   const isEnterprise = customerType === "enterprise";
   const licence = useApplyDraftStore(state => state.licence);
   const setLicence = useApplyDraftStore(state => state.setLicence);

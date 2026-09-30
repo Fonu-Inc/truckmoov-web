@@ -1,10 +1,10 @@
+import type { SystemInstaller } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
-import type {
-  InstallationJob,
-  Installer,
-  InstallerStatus,
-} from "@/features/installers/demoData";
-import { useMemo } from "react";
+import {
+  useReactivateSystemInstaller,
+  useResendSystemInstallerInvite,
+  useSuspendSystemInstaller,
+} from "@truckmoov/api/auth";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -17,27 +17,22 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { installerName } from "@/features/installers/demoData";
-import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 import {
-  InstallerStatusBadge,
-  JobStatusBadge,
-} from "./InstallerStatusBadge";
+  AVAILABILITY_LABEL,
+  capabilityLabel,
+  fromApiState,
+  installerName,
+} from "@/features/installers/installerOptions";
+import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
+import { InstallerJobHistory } from "./InstallerJobHistory";
+import { InstallerStatusBadge } from "./InstallerStatusBadge";
 
-function fmt(iso?: string) {
+function fmt(iso?: string | null) {
   return iso
     ? new Date(iso).toLocaleDateString(
         "en-GB",
@@ -51,32 +46,38 @@ function fmt(iso?: string) {
 }
 
 type Props = {
-  installer: Installer | null;
-  jobs: InstallationJob[];
+  installer: SystemInstaller | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onStartEdit?: () => void;
-  onStatusChange: (id: string, status: InstallerStatus) => void;
 };
 
 export function InstallerProfileDialog({
   installer,
-  jobs,
   open,
   onOpenChange,
   onStartEdit,
-  onStatusChange,
 }: Props) {
   const {
     confirm, confirmDialog,
   } = useConfirmAction();
+  const suspend = useSuspendSystemInstaller();
+  const reactivate = useReactivateSystemInstaller();
+  const resendInvite = useResendSystemInstallerInvite();
 
-  const myJobs = useMemo(
-    () => (installer ? jobs.filter(j => j.installerId === installer.id) : []),
-    [
-      jobs,
-      installer,
-    ],
+  const run = (
+    action: typeof suspend,
+    id: string,
+    done: string,
+  ) => action.mutate(
+    { id },
+    {
+      onSuccess: () => {
+        toast.success(done);
+        onOpenChange(false);
+      },
+      onError: error => toast.error(error.message),
+    },
   );
 
   if (!installer)
@@ -94,12 +95,12 @@ export function InstallerProfileDialog({
             <InstallerStatusBadge status={installer.status} />
           </DialogTitle>
           <DialogDescription>
-            {installer.id}
+            {installer.code}
             {" · "}
             {installer.city}
             ,
             {" "}
-            {installer.state}
+            {fromApiState(installer.state)}
           </DialogDescription>
         </DialogHeader>
 
@@ -120,43 +121,47 @@ export function InstallerProfileDialog({
             />
             <Info
               label="Installer ID"
-              value={installer.id}
+              value={installer.code}
             />
             <Info
               label="Email"
               value={installer.email}
             />
             <Info
-              label="Phone number"
-              value={installer.phone}
+              label="Phone"
+              value={installer.phoneNumber}
             />
             <Info
-              label="Account status"
+              label="Status"
               value={<InstallerStatusBadge status={installer.status} />}
             />
             <Info
-              label="Service area"
-              value={installer.serviceAreas.join(", ")}
+              label="Availability"
+              value={AVAILABILITY_LABEL[installer.availability]}
+            />
+            <Info
+              label="Service areas"
+              value={installer.serviceAreas.map(fromApiState).join(", ")}
             />
             <Info
               label="Capabilities"
-              value={installer.capabilities.join(", ")}
+              value={installer.capabilities.map(capabilityLabel).join(", ")}
             />
             <Info
-              label="Supported devices"
-              value={installer.deviceTypes.join(", ")}
+              label="Current workload"
+              value={`${installer.activeJobs} of ${installer.maxActiveJobs} active jobs`}
             />
             <Info
-              label="Supported vehicles"
-              value={installer.vehicleTypes.join(", ")}
+              label="Jobs completed"
+              value={installer.jobsCompleted}
             />
             <Info
-              label="Date onboarded"
-              value={fmt(installer.dateAdded)}
+              label="Date added"
+              value={fmt(installer.createdAt)}
             />
             <Info
               label="Last activity"
-              value={fmt(installer.lastActivity)}
+              value={fmt(installer.lastActivityAt)}
             />
           </TabsContent>
 
@@ -164,55 +169,7 @@ export function InstallerProfileDialog({
             value="history"
             className="mt-4"
           >
-            <div className="overflow-x-auto rounded-2xl border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Job ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Device</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Completed</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {myJobs.map(j => (
-                    <TableRow key={j.id}>
-                      <TableCell className="font-medium">{j.id}</TableCell>
-                      <TableCell>{j.customer.name}</TableCell>
-                      <TableCell>{j.vehicle.registration}</TableCell>
-                      <TableCell>
-                        {j.device.manufacturer}
-                        {" "}
-                        {j.device.model}
-                      </TableCell>
-                      <TableCell>{j.scheduledDate}</TableCell>
-                      <TableCell>
-                        {j.customer.city}
-                        ,
-                        {" "}
-                        {j.customer.state}
-                      </TableCell>
-                      <TableCell><JobStatusBadge status={j.status} /></TableCell>
-                      <TableCell>{fmt(j.completedAt)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {myJobs.length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={8}
-                        className="py-8 text-center text-muted-foreground"
-                      >
-                        No installation history for this installer.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <InstallerJobHistory installerId={installer.id} />
           </TabsContent>
 
           <TabsContent
@@ -222,15 +179,7 @@ export function InstallerProfileDialog({
             <div className="grid gap-3 sm:grid-cols-2">
               <Info
                 label="Login email"
-                value={installer.loginEmail}
-              />
-              <Info
-                label="Account setup"
-                value={
-                  installer.accountSetup === "activation_email"
-                    ? "Activation email"
-                    : "Temporary password"
-                }
+                value={installer.email}
               />
               <Info
                 label="Account status"
@@ -238,7 +187,7 @@ export function InstallerProfileDialog({
               />
               <Info
                 label="Last activity"
-                value={fmt(installer.lastActivity)}
+                value={fmt(installer.lastActivityAt)}
               />
             </div>
 
@@ -259,6 +208,19 @@ export function InstallerProfileDialog({
               >
                 Edit installer details
               </Button>
+              {installer.status === "invited" && (
+                <Button
+                  variant="outline"
+                  loading={resendInvite.isPending}
+                  onClick={() => run(
+                    resendInvite,
+                    installer.id,
+                    "Invite resent.",
+                  )}
+                >
+                  Resend invite
+                </Button>
+              )}
               {installer.status === "suspended"
                 ? (
                     <Button
@@ -268,13 +230,11 @@ export function InstallerProfileDialog({
                           description: "They will be able to sign in and receive new installation jobs again.",
                           confirmLabel: "Reactivate account",
                           destructive: false,
-                          onConfirm: () => {
-                            onStatusChange(
-                              installer.id,
-                              "active",
-                            );
-                            toast.success("Installer reactivated.");
-                          },
+                          onConfirm: () => run(
+                            reactivate,
+                            installer.id,
+                            "Installer reactivated.",
+                          ),
                         })}
                     >
                       Reactivate account
@@ -288,13 +248,11 @@ export function InstallerProfileDialog({
                           title: "Suspend this installer?",
                           description: "They will no longer be able to sign in or be assigned new installation jobs.",
                           confirmLabel: "Suspend account",
-                          onConfirm: () => {
-                            onStatusChange(
-                              installer.id,
-                              "suspended",
-                            );
-                            toast.success("Installer suspended.");
-                          },
+                          onConfirm: () => run(
+                            suspend,
+                            installer.id,
+                            "Installer suspended.",
+                          ),
                         })}
                     >
                       Suspend account

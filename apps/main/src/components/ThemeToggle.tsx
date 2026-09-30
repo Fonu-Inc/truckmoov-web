@@ -1,48 +1,25 @@
-import {
-  Monitor, Moon, Sun,
-} from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/shadcn/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
 export function ThemeToggle() {
-  const { setTheme } = useTheme();
+  const {
+    resolvedTheme, setTheme,
+  } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
-    <DropdownMenu>
-      <TooltipWrapper content="Toggle theme">
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-          >
-            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-        </DropdownMenuTrigger>
-      </TooltipWrapper>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          <Sun className="mr-2 h-4 w-4" />
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          <Moon className="mr-2 h-4 w-4" />
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          <Monitor className="mr-2 h-4 w-4" />
-          System
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <TooltipWrapper content={isDark ? "Switch to light mode" : "Switch to dark mode"}>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        className="h-10 w-10 text-muted-foreground hover:text-foreground"
+      >
+        {isDark ? <Sun className="!h-5 !w-5" /> : <Moon className="!h-5 !w-5" />}
+      </Button>
+    </TooltipWrapper>
   );
 }

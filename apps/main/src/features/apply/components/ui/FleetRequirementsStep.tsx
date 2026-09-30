@@ -12,6 +12,7 @@ import {
   useDeleteOnboardingVehicle,
   useImportOnboardingVehicles,
   useUpdateOnboardingVehicle,
+  useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
 import {
   ArrowLeft,
@@ -70,6 +71,7 @@ export function FleetRequirementsStep({
   const id = application.id;
   const addVehicle = useAddOnboardingVehicle();
   const updateVehicle = useUpdateOnboardingVehicle();
+  const uploadDocument = useUploadOnboardingApplicationDocument();
   const deleteVehicle = useDeleteOnboardingVehicle();
   const importVehicles = useImportOnboardingVehicles();
   const addDeviceRequest = useAddOnboardingDeviceRequest();
@@ -333,7 +335,7 @@ export function FleetRequirementsStep({
         open={Boolean(vehicleModal)}
         initial={vehicleModal?.vehicle ? vehicleToValues(vehicleModal.vehicle) : null}
         onOpenChange={open => !open && setVehicleModal(null)}
-        onSubmit={async (values) => {
+        onSubmit={async (values, licence) => {
           const editing = vehicleModal?.vehicle;
           if (editing) {
             await updateVehicle.mutateAsync({
@@ -341,12 +343,21 @@ export function FleetRequirementsStep({
               vehicleId: editing.id,
               data: vehicleToPayload(values),
             });
+            if (licence) {
+              await uploadDocument.mutateAsync({
+                id,
+                documentType: "vehicle_license",
+                vehicleId: editing.id,
+                file: licence,
+              });
+            }
             toast.success("Vehicle updated.");
           }
           else {
             await addVehicle.mutateAsync({
               id,
               data: vehicleToPayload(values),
+              licence: licence as File,
             });
             toast.success(`${values.registrationNumber} added.`);
           }
