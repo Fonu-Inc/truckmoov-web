@@ -191,6 +191,23 @@ Every PATCH answers with the whole record, which is written straight into the qu
 - Two-factor (`/auth/two-factor*`) is shared with the tenant app: `enrol` returns the secret and
   otpauth URI once, `enrol/confirm` returns the recovery codes once.
 
+### Installer notifications & support (TRU-FE-22)
+
+- `useInstallerNotifications(limit?)` — `GET /auth/installer/notifications`, newest first with
+  `unreadCount`. The header bell (`limit=5`), the dashboard preview (`limit=3`) and `/notifications`
+  share the `installerNotifications` prefix key, so `useMarkInstallerNotificationRead()` and
+  `useMarkAllInstallerNotificationsRead()` refresh all three.
+- `useCreateInstallerSupportTicket()` — `POST /auth/installer/support/tickets`. `category` is the
+  same enum as `INSTALLER_ISSUE_TYPES`; `issueCode` is required when the category has chips
+  (from `GET /auth/installer/options`); `callbackPhone` is required.
+- `useInstallerSupportTickets(query?)` / `useInstallerSupportTicket(id)` — list with counts, and the
+  read-only detail with its related job and attachments. `getInstallerSupportTicketAttachmentLink()`
+  is a plain request: the link is short-lived, so fetch it on click.
+- Every ticket status change arrives as a notification.
+
+Swagger documents no response bodies for these routes; the ticket shapes in `types.ts` are marked
+`ponytail:` until confirmed against dev.
+
 ### Two-factor sign-in (TRU-FE-23)
 
 Every portal's password step (`useLogin`, `useSystemLogin`, `useInstallerLogin`) answers with a

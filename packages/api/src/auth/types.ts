@@ -143,10 +143,76 @@ export type InstallerOptionItem = { key: string, label: string }
 export type InstallerOptions = {
   checklist: { key: string, label: string, items: (InstallerOptionItem & { gated?: string })[] }[]
   evidenceCategories: InstallerOptionItem[]
-  supportCategories: InstallerOptionItem[]
+  // ponytail: `issues` (the chips whose key goes out as `issueCode`) is not in the spec — confirm
+  // on dev; without it the Support page falls back to its own chip labels and sends no issueCode.
+  supportCategories: (InstallerOptionItem & { issues?: InstallerOptionItem[] })[]
   fieldTips: string[]
   priorities: InstallerOptionItem[]
   ticketStatuses: InstallerOptionItem[]
+}
+
+// TRU-FE-22 — installer support tickets. Every status change arrives as a notification.
+// ponytail: Swagger documents no response bodies for these routes — the ticket, page and detail
+// shapes follow the jobs envelope and job `issues[]`; confirm once dev can be signed into.
+export type InstallerSupportTicketStatus =
+  | 'open'
+  | 'in_progress'
+  | 'waiting_on_tenant'
+  | 'escalated'
+  | 'resolved'
+  | 'closed'
+
+export type InstallerSupportTicket = {
+  id: string
+  /** e.g. "#TKT-1000" */
+  displayId: string
+  category: string
+  priority: SupportTicketPriority
+  status: InstallerSupportTicketStatus
+  description: string
+  createdAt: string
+}
+
+export type InstallerSupportTicketsPage = {
+  /** `closed` counts resolved and closed. */
+  counts: { total: number, open: number, inProgress: number, escalated: number, closed: number }
+  items: InstallerSupportTicket[]
+  page: number
+  limit: number
+  total: number
+}
+
+export type InstallerSupportTicketDetail = InstallerSupportTicket & {
+  issueCode: string | null
+  callbackPhone: string | null
+  relatedJob: { id: string, jobNumber: string } | null
+  attachments: { id: string, fileName: string, size: number, createdAt: string }[]
+}
+
+export type InstallerSupportTicketsQuery = {
+  params?: {
+    status?: InstallerSupportTicketStatus
+    category?: string
+    priority?: SupportTicketPriority
+    /** Ticket id (#tkt-1000), title or description. */
+    search?: string
+    page?: number
+    limit?: number
+  }
+}
+
+export type CreateInstallerSupportTicketPayload = {
+  data: {
+    category: InstallerIssueType
+    /** Required from the category's chips when it has any. */
+    issueCode?: string
+    /** One of the installer's own jobs. */
+    relatedJobId?: string
+    priority: SupportTicketPriority
+    /** At most 4000 characters. */
+    description: string
+    callbackPhone: string
+  }
 }
 
 export type InstallerDisplayPreferences = {
@@ -2381,6 +2447,8 @@ export type InstallerEvidenceLinkResponse = ServerResponse<{ url: string, expire
 /** The job is no longer the caller's, so only its identity comes back. */
 export type RejectedOfferResponse = ServerResponse<{ id: string, jobNumber: string, rejectedAt: string }>
 export type InstallerNotificationsResponse = ServerResponse<InstallerNotificationsPage>
+export type InstallerSupportTicketsResponse = ServerResponse<InstallerSupportTicketsPage>
+export type InstallerSupportTicketResponse = ServerResponse<InstallerSupportTicketDetail>
 export type InstallerOptionsResponse = ServerResponse<InstallerOptions>
 export type InstallerDisplayPreferencesResponse = ServerResponse<InstallerDisplayPreferences>
 export type InstallerProfileResponse = ServerResponse<InstallerProfile>

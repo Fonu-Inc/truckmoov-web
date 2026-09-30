@@ -1,3 +1,8 @@
+import {
+  useInstallerNotifications,
+  useMarkAllInstallerNotificationsRead,
+  useMarkInstallerNotificationRead,
+} from "@truckmoov/api/auth";
 import { Bell } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Badge } from "@/components/shadcn/badge";
@@ -8,10 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import {
-  useJobsStore,
-  useMyNotifications,
-} from "@/features/jobs/stores/jobsStore";
 import { cn } from "@/lib/utils";
 
 function fmt(iso: string) {
@@ -26,34 +27,34 @@ function fmt(iso: string) {
   );
 }
 
+/** GET /auth/installer/notifications — newest first. ponytail: first page only; add paging when installers pile up more than a page. */
 export default function NotificationsPage() {
   const navigate = useNavigate();
-  const myNotifications = useMyNotifications();
-  const markRead = useJobsStore(s => s.markNotificationRead);
-  const markAllRead = useJobsStore(s => s.markAllNotificationsRead);
+  const notifications = useInstallerNotifications();
+  const markRead = useMarkInstallerNotificationRead();
+  const markAllRead = useMarkAllInstallerNotificationsRead();
+  const page = notifications.data?.data;
+  const items = page?.items ?? [];
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2">
           All Notifications
-          <Badge
-            variant="outline"
-            className="text-[10px]"
-          >
-            Demo data
-          </Badge>
+          {!!page?.unreadCount && <Badge>{page.unreadCount}</Badge>}
         </CardTitle>
         <Button
           variant="outline"
           size="sm"
-          onClick={markAllRead}
+          onClick={() => markAllRead.mutate()}
+          loading={markAllRead.isPending}
+          disabled={!page?.unreadCount}
         >
           Mark all as read
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        {myNotifications.map(n => (
+        {items.map(n => (
           <div
             key={n.id}
             className={cn(
@@ -93,7 +94,7 @@ export default function NotificationsPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => markRead(n.id)}
+                  onClick={() => markRead.mutate({ id: n.id })}
                 >
                   Mark read
                 </Button>
@@ -101,9 +102,13 @@ export default function NotificationsPage() {
             </div>
           </div>
         ))}
-        {myNotifications.length === 0 && (
+        {items.length === 0 && (
           <p className="py-12 text-center text-sm text-muted-foreground">
-            You have no notifications.
+            {notifications.isLoading
+              ? "Loading…"
+              : notifications.isError
+                ? "Unable to load your notifications."
+                : "You have no notifications."}
           </p>
         )}
       </CardContent>

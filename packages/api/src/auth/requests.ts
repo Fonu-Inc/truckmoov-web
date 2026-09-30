@@ -123,6 +123,10 @@ import type {
   UploadInstallerEvidencePayload,
   InstallerLoginPayload,
   InstallerNotificationsResponse,
+  InstallerSupportTicketResponse,
+  InstallerSupportTicketsQuery,
+  InstallerSupportTicketsResponse,
+  CreateInstallerSupportTicketPayload,
   InstallerOptionsResponse,
   RejectedOfferResponse,
   RejectInstallerJobPayload,
@@ -600,6 +604,38 @@ export async function rejectInstallerJob({ jobId, data: body }: RejectInstallerJ
 
 export async function getInstallerNotifications(params?: { limit?: number, page?: number, unread?: boolean }) {
   const { data } = await axiosInstance.get<InstallerNotificationsResponse>('/auth/installer/notifications', { params })
+  return data
+}
+
+export async function markInstallerNotificationRead({ id }: { id: string }) {
+  const { data } = await axiosInstance.post<ServerResponse<unknown>>(`/auth/installer/notifications/${id}/read`)
+  return data
+}
+
+export async function markAllInstallerNotificationsRead() {
+  const { data } = await axiosInstance.post<ServerResponse<unknown>>('/auth/installer/notifications/read-all')
+  return data
+}
+
+// ─── TRU-FE-22 — installer support tickets ──────────────────────────────────
+
+export async function createInstallerSupportTicket({ data: body }: CreateInstallerSupportTicketPayload) {
+  const { data } = await axiosInstance.post<InstallerSupportTicketResponse>('/auth/installer/support/tickets', body)
+  return data
+}
+
+export async function getInstallerSupportTickets(payload?: InstallerSupportTicketsQuery) {
+  const { data } = await axiosInstance.get<InstallerSupportTicketsResponse>('/auth/installer/support/tickets', { params: payload?.params })
+  return data
+}
+
+export async function getInstallerSupportTicket({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<InstallerSupportTicketResponse>(`/auth/installer/support/tickets/${id}`)
+  return data
+}
+
+export async function getInstallerSupportTicketAttachmentLink({ id, attachmentId }: { id: string, attachmentId: string }) {
+  const { data } = await axiosInstance.get<InstallerEvidenceLinkResponse>(`/auth/installer/support/tickets/${id}/attachments/${attachmentId}`)
   return data
 }
 

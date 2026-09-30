@@ -40,6 +40,12 @@ import {
   updateInstallerWorkPreferences,
   uploadInstallerProfilePhoto,
   getInstallerNotifications,
+  markInstallerNotificationRead,
+  markAllInstallerNotificationsRead,
+  createInstallerSupportTicket,
+  getInstallerSupportTickets,
+  getInstallerSupportTicket,
+  getInstallerSupportTicketAttachmentLink,
   getInstallerOptions,
   rejectInstallerJob,
   createSystemAdminInvite,
@@ -368,6 +374,7 @@ import type {
   SystemTenantResourcesPayload,
   InstallerJobResponse,
   InstallerJobsQuery,
+  InstallerSupportTicketsQuery,
   ReportInstallerJobIssuePayload,
   SaveInstallerJobNotesPayload,
   SetInstallerChecklistItemPayload,
@@ -456,6 +463,9 @@ export const AUTH_QUERY_KEY = {
   installerWorkPreferences: ['installerWorkPreferences'],
   installerJobs: (params?: InstallerJobsQuery) => params ? ['installerJobs', params] : ['installerJobs'],
   installerJob: (jobId: string) => ['installerJob', jobId],
+  installerSupportTickets: (payload?: InstallerSupportTicketsQuery) =>
+    payload?.params ? ['installerSupportTickets', payload.params] : ['installerSupportTickets'],
+  installerSupportTicket: (id: string) => ['installerSupportTicket', id],
 
   systemDashboard: ['systemDashboard'],
   systemHealth: ['systemHealth'],
@@ -675,6 +685,45 @@ export function useInstallerNotifications(limit?: number) {
   })
 }
 
+// TRU-FE-22 — the prefix key covers the dashboard preview, the header bell and the page.
+function refreshInstallerNotifications() {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerNotifications() })
+}
+
+export function useMarkInstallerNotificationRead() {
+  return useMutation({ mutationFn: markInstallerNotificationRead, onSuccess: refreshInstallerNotifications })
+}
+
+export function useMarkAllInstallerNotificationsRead() {
+  return useMutation({ mutationFn: markAllInstallerNotificationsRead, onSuccess: refreshInstallerNotifications })
+}
+
+export function useInstallerSupportTickets(payload?: InstallerSupportTicketsQuery) {
+  return useQuery({
+    queryKey: AUTH_QUERY_KEY.installerSupportTickets(payload),
+    queryFn: () => getInstallerSupportTickets(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useInstallerSupportTicket(id: string | undefined) {
+  return useQuery({
+    queryKey: AUTH_QUERY_KEY.installerSupportTicket(id ?? ''),
+    queryFn: () => getInstallerSupportTicket({ id: id! }),
+    enabled: !!id,
+  })
+}
+
+export function useCreateInstallerSupportTicket() {
+  return useMutation({
+    mutationFn: createInstallerSupportTicket,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerSupportTickets() })
+      refreshInstallerNotifications()
+    },
+  })
+}
+
 /** Reference data (checklist, categories, tips) — changes with a deploy, not a session. */
 export function useInstallerOptions() {
   return useQuery({ queryKey: AUTH_QUERY_KEY.installerOptions, queryFn: getInstallerOptions, staleTime: Infinity })
@@ -835,7 +884,7 @@ export function useUploadInstallerEvidence() {
   })
 }
 
-export { exportInstallerJobs, getInstallerEvidenceLink }
+export { exportInstallerJobs, getInstallerEvidenceLink, getInstallerSupportTicketAttachmentLink }
 
 export function useLogout() {
   return useMutation({
