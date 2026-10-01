@@ -328,10 +328,6 @@ export const router = createBrowserRouter([
         loader: () => redirect("/messages/ivr-dashboard"),
       },
       {
-        path: "/maintenance",
-        loader: () => redirect("/fleet?tab=maintenance"),
-      },
-      {
         path: "/fuel",
         loader: () => redirect("/fleet?tab=fuel"),
       },
@@ -368,6 +364,17 @@ export const router = createBrowserRouter([
             lazy: guarded(
               "/aggregator",
               () => import("@/features/dashboard/components/pages/AggregatorDashboard"),
+            ),
+          },
+          // FINANCE_VIEWER's Maintenance: the fleet tab's component without
+          // FleetLayout's tab bar (they can't open the other fleet tabs).
+          // Other roles keep /fleet/maintenance.
+          {
+            path: "/maintenance",
+            lazy: guardedByNamed(
+              getRolesForHref("/maintenance") ?? [],
+              () => import("@/features/fleet/components/ui/MaintenanceTab"),
+              "MaintenanceTab",
             ),
           },
 

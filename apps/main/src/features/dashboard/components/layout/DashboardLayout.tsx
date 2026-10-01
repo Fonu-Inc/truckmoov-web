@@ -63,7 +63,8 @@ export function DashboardLayout() {
           entry?.fullWidth && "p-0",
         )}
         >
-          <ErrorBoundary>
+          {/* Keyed so a crash on one page doesn't follow you to the next. */}
+          <ErrorBoundary key={pathname}>
             <OnboardingRouteGate><Outlet /></OnboardingRouteGate>
           </ErrorBoundary>
         </main>

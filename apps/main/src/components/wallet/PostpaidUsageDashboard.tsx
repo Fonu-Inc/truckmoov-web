@@ -48,15 +48,24 @@ const eventTypeConfig: Record<string, {
   },
 };
 
-export function PostpaidUsageDashboard({ tenantId }: PostpaidUsageDashboardProps) {
-  const {
-    usageSummary,
-    totalCurrentUsage,
-    currentPeriod,
-    creditLimit,
-    postpaidInvoices,
-    isLoading,
-  } = usePostpaidBilling(tenantId);
+const CURRENT_PERIOD = new Date().toLocaleDateString(
+  "en-US",
+  {
+    month: "short", year: "numeric",
+  },
+);
+
+// ponytail: postpaid billing API not built yet — empty defaults stand in for
+// the deleted usePostpaidBilling hook.
+export function PostpaidUsageDashboard(_props: PostpaidUsageDashboardProps) {
+  const usageSummary: Record<string, {
+    count: number; total: number;
+  }> = {};
+  const totalCurrentUsage = 0;
+  const currentPeriod = CURRENT_PERIOD;
+  const creditLimit: any = null;
+  const postpaidInvoices: any[] = [];
+  const isLoading = false;
 
   if (isLoading) {
     return (

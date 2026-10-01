@@ -246,7 +246,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Fuel Costs", href: "/fuel", icon: Gauge, hasPermission: ["FINANCE_VIEWER"],
   },
   {
-    label: "Maintenance", href: "/fleet/maintenance", icon: Settings, hasPermission: ["FINANCE_VIEWER"],
+    label: "Maintenance", href: "/maintenance", icon: Settings, hasPermission: ["FINANCE_VIEWER"],
   },
   {
     label: "Wallet & Billing", href: "/wallet", icon: CreditCard, hasPermission: ["FINANCE_VIEWER"],
