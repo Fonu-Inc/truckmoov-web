@@ -9,7 +9,7 @@ export const ROLE_REDIRECT_MAP: Partial<Record<UserRole, string>> = {
   FLEET_ADMIN: "/overview",
   OPERATIONS_MANAGER: "/overview",
   DISPATCHER: "/jobs",
-  FINANCE_VIEWER: "/fleet?tab=analytics",
+  FINANCE_VIEWER: "/fleet/analytics",
 };
 
 const FALLBACK_PATH = "/not-authorized";

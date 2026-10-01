@@ -15,7 +15,6 @@ import {
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PeriodFilter } from "@/features/fleet/components/ui/PeriodFilter";
 import {
-  DEMO_PL,
   normalizeProfitabilityRow,
   periodToMonths,
 
@@ -43,7 +42,7 @@ export default function FinancialsUnderperformingPage() {
     [underperformingResp?.data],
   );
 
-  const displayData: ProfitabilityAnalysisRow[] = profitabilityData.length > 0 ? profitabilityData : DEMO_PL;
+  const displayData: ProfitabilityAnalysisRow[] = profitabilityData;
   const underperformingSource = underperformingResp ? underperformingData : displayData;
   const underperformingVehicles = underperformingSource
     .filter(v => v.profitability?.tier === "loss-making" || v.profitability?.tier === "marginal")

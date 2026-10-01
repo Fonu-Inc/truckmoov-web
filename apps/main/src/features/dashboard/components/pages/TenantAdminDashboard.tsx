@@ -215,7 +215,7 @@ export default function TenantAdminDashboard() {
                 title: "Create Job", desc: "Dispatch a new shipment to your fleet.", icon: Package, cta: "Open jobs", to: "/jobs",
               },
               {
-                title: "View Analytics", desc: "Performance, utilization and trends.", icon: TrendingUp, cta: "Open analytics", to: "/fleet?tab=analytics",
+                title: "View Analytics", desc: "Performance, utilization and trends.", icon: TrendingUp, cta: "Open analytics", to: "/fleet/analytics",
               },
             ].map(qa => (
               <button

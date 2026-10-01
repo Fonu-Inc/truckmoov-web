@@ -29,7 +29,6 @@ import {
 
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
-  DEMO_PL,
   downloadBlob,
   getFilenameFromDisposition,
   normalizeProfitabilityRow,
@@ -163,7 +162,7 @@ export default function FinancialsCostBreakdownPage() {
     setDraftCostMaintMax,
   ] = useState("");
 
-  const displayData: ProfitabilityAnalysisRow[] = profitabilityData.length > 0 ? profitabilityData : DEMO_PL;
+  const displayData: ProfitabilityAnalysisRow[] = profitabilityData;
 
   const handleExportCostBreakdown = async () => {
     setIsExportingCostBreakdown(true);

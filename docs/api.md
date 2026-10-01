@@ -247,6 +247,22 @@ devDependencies so its peers don't resolve to the landing page's React 19.
   `cargoWeight` is tonnes too, so the page always sends `load_weight_kg`.
 - `PATCH /dispatch/jobs/{id}` is not partial — it rejects a body without `pickup`.
 
+### Fleet page (`/fleet/*`)
+
+`apps/main/src/features/fleet/` — tabs are NavLinks (`utils/fleetNav.ts`), one route each.
+
+- **Trips** (`/fleet/schedules`) is built from `GET /dispatch/jobs` plus `useVehicles()` /
+  `useDrivers()` for names; progress follows the dispatch status (en-route 25 → delivered 100).
+  `MaintenanceProfilesTab` is unmounted (the design has no Schedules tab).
+- `GET /fleet/vehicles` with a `tabs` header (`useVehiclesByTab`) is no longer rendered — its
+  summary payload isn't part of the design.
+- Compliance "Set Reminder" is `PATCH /fleet/compliance/documents/:id/reminder` (`reminderDays`
+  only); `POST /fleet/compliance/reminders/send` takes no body, so the recipient email the dialog
+  collects is not sent.
+- Renewing a compliance document creates a new record and supersedes the old one
+  (`supersededById`) rather than updating it in place.
+- Financials "Cost per KM" is total cost ÷ `kmDriven` summed over `POST /fleet/financials/profitability`.
+
 ### Login / logout mutations
 
 `useLogin` and `useSystemLogin` call `setSession` automatically on success. `useLogout` calls `logout()` automatically on success. Components do not need to manage the store directly for these flows.

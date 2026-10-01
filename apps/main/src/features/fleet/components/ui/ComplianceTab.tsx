@@ -11,9 +11,8 @@ import {
   useCreateComplianceDoc,
   useDeleteComplianceDoc,
   useRenewComplianceDoc,
-  useSendComplianceReminders,
-  useSetComplianceDocFileUrl,
-  useVehiclesByTab,
+  useSendComplianceReminders, useSetComplianceDocFileUrl,
+  useSetComplianceDocReminder,
 } from "@truckmoov/api/fleet";
 import {
   daysUntil, formatDate, formatDayMonth, toDateParam,
@@ -70,7 +69,6 @@ import {
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
 
-import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
@@ -85,9 +83,6 @@ type UploadedDocumentMetadata = {
 };
 
 export function ComplianceTab() {
-  // ponytail: page-shell tabbed summary from GET /fleet/vehicles.
-  // Payload rendered via TabSummaryStrip; strip is neutral until BE ships concrete fields.
-  const tabSummaryQuery = useVehiclesByTab("compliance");
   const [
     searchQuery,
     setSearchQuery,
@@ -156,6 +151,7 @@ export function ComplianceTab() {
   const setFileUrlMutation = useSetComplianceDocFileUrl();
   const renewMutation = useRenewComplianceDoc();
   const sendRemindersMutation = useSendComplianceReminders();
+  const setReminderMutation = useSetComplianceDocReminder();
   const isSending = sendRemindersMutation.isPending;
   const [
     isFilterOpen,
@@ -535,20 +531,22 @@ export function ComplianceTab() {
     }
   };
 
+  // PATCH /fleet/compliance/documents/:id/reminder stores reminderDays only.
+  // ponytail: the recipient email field is kept for parity with the design, but the
+  // endpoint has no recipient — reminders go to the tenant's configured contacts.
   const handleReminderSubmit = async () => {
     if (!selectedDocument)
       return;
-    if (!recipientEmail) {
-      toast.error("Please enter a recipient email");
-      return;
-    }
 
     try {
-      await sendRemindersMutation.mutateAsync();
+      await setReminderMutation.mutateAsync({
+        id: selectedDocument.id,
+        reminderDays: Number(reminderDaysValue),
+      });
       setIsReminderDialogOpen(false);
       setSelectedDocument(null);
       setRecipientEmail("");
-      toast.success("Reminders queued");
+      toast.success("Reminder saved");
     }
     catch {
       toast.error("Failed to send reminder");
@@ -607,7 +605,6 @@ export function ComplianceTab() {
 
   return (
     <div className="space-y-6">
-      <TabSummaryStrip query={tabSummaryQuery} />
       {/* Top-right Actions */}
       <div className="flex justify-end gap-2">
         <Button
@@ -1464,15 +1461,15 @@ export function ComplianceTab() {
           <DialogFooter>
             <Button
               variant="outline"
-              disabled={sendRemindersMutation.isPending}
+              disabled={setReminderMutation.isPending}
               onClick={() => setIsReminderDialogOpen(false)}
             >
               Cancel
             </Button>
             <Button
               variant="gradient"
-              loading={sendRemindersMutation.isPending}
-              disabled={sendRemindersMutation.isPending || !recipientEmail}
+              loading={setReminderMutation.isPending}
+              disabled={setReminderMutation.isPending}
               onClick={handleReminderSubmit}
             >
               Save Reminder

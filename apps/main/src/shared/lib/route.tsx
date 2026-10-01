@@ -329,11 +329,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "/fuel",
-        loader: () => redirect("/fleet?tab=fuel"),
+        loader: () => redirect("/fleet/fuel"),
       },
       {
         path: "/compliance",
-        loader: () => redirect("/fleet?tab=compliance"),
+        loader: () => redirect("/fleet/compliance"),
       },
 
       // Everything inside the dashboard shell. Pages render their own content
@@ -403,7 +403,8 @@ export const router = createBrowserRouter([
               },
               {
                 path: "schedules",
-                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/MaintenanceProfilesTab")).MaintenanceProfilesTab }),
+                // ponytail: the design's 2nd tab is Trips. MaintenanceProfilesTab is unmounted (the reference doesn't mount it either) — re-add a route here to bring it back.
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/TripsTab")).TripsTab }),
               },
               {
                 path: "maintenance",

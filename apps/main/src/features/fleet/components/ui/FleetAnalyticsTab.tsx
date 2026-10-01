@@ -15,7 +15,6 @@ import {
   useFleetAnalyticsJobPipeline,
   useFleetAnalyticsSummary,
   useVehicleSafetyRadar,
-  useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
   Activity,
@@ -66,7 +65,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 import { cn } from "@/lib/utils";
 import { PeriodFilter } from "./PeriodFilter";
 
@@ -354,8 +352,6 @@ function KPICard({
 }
 
 export function FleetAnalyticsTab() {
-  // ponytail: page-shell tabbed summary (summary only, no items) — rendered via TabSummaryStrip.
-  const tabSummaryQuery = useVehiclesByTab("analytics");
   const { format: formatCurrency } = useCurrency();
   const [
     lastRefresh,
@@ -582,7 +578,6 @@ export function FleetAnalyticsTab() {
 
   return (
     <div className="space-y-6">
-      <TabSummaryStrip query={tabSummaryQuery} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <LiveIndicator connected={connected} />

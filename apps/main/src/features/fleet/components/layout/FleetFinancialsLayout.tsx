@@ -6,10 +6,9 @@ import type {
 import {
   useFleetFinancialSummary,
   useFleetProfitability,
-  useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
-  DollarSign, TrendingDown, TrendingUp, Truck,
+  Calculator, DollarSign, TrendingDown, TrendingUp,
 } from "lucide-react";
 import {
   useCallback, useMemo, useState,
@@ -22,11 +21,10 @@ import {
   Card, CardContent,
 } from "@/components/shadcn/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 import { VehicleFinancialConfigDialog } from "@/features/fleet/components/ui/VehicleFinancialConfigDialog";
 import { VehiclePLStatementBuilder } from "@/features/fleet/components/ui/VehiclePLStatementBuilder";
 import {
-  DEMO_NAMES, normalizeProfitabilityRow, normalizeTier, periodToMonths, TIER_LABELS,
+  normalizeProfitabilityRow, normalizeTier, periodToMonths, TIER_LABELS,
 } from "@/features/fleet/utils/fleetFinancials";
 import { FINANCIALS_TABS } from "@/features/fleet/utils/fleetFinancialsNav";
 import { cn } from "@/lib/utils";
@@ -50,8 +48,6 @@ export type FleetFinancialsLayoutContext = {
 };
 
 export function FleetFinancialsLayout() {
-  // ponytail: page-shell tabbed summary (summary only, no items) — rendered via TabSummaryStrip.
-  const tabSummaryQuery = useVehiclesByTab("financials");
   const vehicles: VehicleLookup[] = useMemo(
     () => [],
     [],
@@ -153,8 +149,6 @@ export function FleetFinancialsLayout() {
         ]),
       );
       return (vehicleId: string) => {
-        if (DEMO_NAMES[vehicleId])
-          return DEMO_NAMES[vehicleId];
         if (lookup[vehicleId])
           return lookup[vehicleId] as string;
         const vehicle = vehicles.find(v => v.id === vehicleId);
@@ -206,7 +200,6 @@ export function FleetFinancialsLayout() {
 
   return (
     <div className="space-y-4">
-      <TabSummaryStrip query={tabSummaryQuery} />
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card>
@@ -219,9 +212,10 @@ export function FleetFinancialsLayout() {
                 <p className="text-2xl font-bold text-success">{format(summaryStats.totalRevenue)}</p>
                 <p className="text-xs text-muted-foreground">
                   Total Revenue ·
-                  {summaryStats.vehicleCount}
                   {" "}
-                  vehicles
+                  {fleetTotals.jobsCompleted}
+                  {" "}
+                  jobs
                 </p>
               </div>
             </div>
@@ -236,7 +230,13 @@ export function FleetFinancialsLayout() {
               </div>
               <div className="min-w-0">
                 <p className="text-2xl font-bold text-destructive">{format(summaryStats.totalCost)}</p>
-                <p className="text-xs text-muted-foreground">Total Costs · Fleet total</p>
+                <p className="text-xs text-muted-foreground">
+                  Total Costs ·
+                  {" "}
+                  {fleetTotals.totalKm.toFixed(0)}
+                  {" "}
+                  km
+                </p>
               </div>
             </div>
           </CardContent>
@@ -254,8 +254,9 @@ export function FleetFinancialsLayout() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Net Profit ·
+                  {" "}
                   {summaryStats.avgMarginPercent.toFixed(1)}
-                  % avg margin
+                  % margin
                 </p>
               </div>
             </div>
@@ -266,10 +267,12 @@ export function FleetFinancialsLayout() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-accent/20 shrink-0">
-                <Truck className="h-5 w-5 text-accent" />
+                <Calculator className="h-5 w-5 text-accent" />
               </div>
               <div className="min-w-0">
-                <p className="text-2xl font-bold">-</p>
+                <p className="text-2xl font-bold">
+                  {fleetTotals.totalKm > 0 ? format(fleetTotals.totalCosts / fleetTotals.totalKm) : "—"}
+                </p>
                 <p className="text-xs text-muted-foreground">Cost per KM · Fleet average</p>
               </div>
             </div>

@@ -186,7 +186,7 @@ const FINANCE_VIEWER_ACTIONS: QuickAction[] = [
     id: "fuel", title: "Fuel Costs", description: "Track and analyse fuel expenses.", icon: Gauge, to: "/fuel",
   },
   {
-    id: "maintenance", title: "Maintenance", description: "View scheduled and completed maintenance.", icon: Wrench, to: "/fleet?tab=maintenance",
+    id: "maintenance", title: "Maintenance", description: "View scheduled and completed maintenance.", icon: Wrench, to: "/fleet/maintenance",
   },
   {
     id: "analytics", title: "Analytics", description: "Review financial and operational analytics.", icon: BarChart3, to: "/analytics",

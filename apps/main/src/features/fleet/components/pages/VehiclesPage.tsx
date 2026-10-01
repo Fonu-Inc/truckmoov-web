@@ -340,8 +340,21 @@ export default function VehiclesPage() {
       },
     },
     {
+      id: "vehicleId",
+      header: "Vehicle ID",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.original.id.slice(
+            0,
+            8,
+          )}
+        </span>
+      ),
+    },
+    {
       accessorKey: "registrationNumber",
-      header: "Registration",
+      header: "Registration No.",
+      enableSorting: false,
       cell: ({ row }) => (
         <span className="rounded bg-secondary px-2 py-1 font-mono text-xs">
           {row.original.registrationNumber}
@@ -351,27 +364,13 @@ export default function VehiclesPage() {
     {
       accessorKey: "type",
       header: "Type",
+      enableSorting: false,
       meta: { className: "capitalize" },
     },
     {
       accessorKey: "year",
       header: "Year",
-    },
-    {
-      id: "capacity",
-      header: "Capacity",
-      cell: ({ row }) => {
-        const v = row.original;
-        if (v.capacity === null || v.capacity === undefined)
-          return <span className="text-muted-foreground">-</span>;
-        return (
-          <span>
-            {v.capacity}
-            {" "}
-            {v.capacityUnit ?? "tons"}
-          </span>
-        );
-      },
+      enableSorting: false,
     },
     {
       id: "driver",
@@ -389,6 +388,7 @@ export default function VehiclesPage() {
     {
       accessorKey: "status",
       header: "Status",
+      enableSorting: false,
       cell: ({ row }) => (
         <span
           className={cn(
@@ -431,7 +431,7 @@ export default function VehiclesPage() {
     },
     {
       id: "actions",
-      header: "",
+      header: "Actions",
       meta: { className: "w-[60px] text-right" },
       cell: ({ row }) => {
         const vehicle = row.original;
@@ -492,7 +492,7 @@ export default function VehiclesPage() {
               onClick={() => setIsBulkUploadOpen(true)}
             >
               <Upload className="mr-2 h-4 w-4" />
-              Bulk Import
+              Upload Vehicle
             </Button>
             <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
               <Plus className="mr-2 h-4 w-4" />
