@@ -25,6 +25,7 @@ export function SettingsLayout() {
     tab,
     role,
   ));
+  const barTabs = visibleTabs.filter(tab => !tab.hidden);
 
   // Organization is enterprise-admin-only, but the sidebar routes several
   // other roles to /settings. Send them to their first visible tab instead
@@ -45,12 +46,12 @@ export function SettingsLayout() {
 
   return (
     <div className="space-y-6">
-      {visibleTabs.length > 1 && (
+      {barTabs.length > 1 && (
         <nav
           aria-label="Settings sections"
           className="bg-muted/50 text-muted-foreground flex flex-wrap gap-1 h-auto rounded-md p-1"
         >
-          {visibleTabs.map(tab => (
+          {barTabs.map(tab => (
             <NavLink
               key={tab.to}
               to={tab.to}

@@ -345,6 +345,26 @@ export function OrganizationSettingsForm() {
                   </FormItem>
                 )}
               />
+              {/* US-E02-006 — Portal session timeout */}
+              {/* ponytail: no API backing (parity port) — add to org settings defaults when the endpoint supports it */}
+              <div className="space-y-2">
+                <Label htmlFor="sessionTimeout">Portal Session Timeout</Label>
+                <Select defaultValue="60">
+                  <SelectTrigger id="sessionTimeout">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15 minutes</SelectItem>
+                    <SelectItem value="30">30 minutes</SelectItem>
+                    <SelectItem value="60">1 hour</SelectItem>
+                    <SelectItem value="240">4 hours</SelectItem>
+                    <SelectItem value="480">8 hours</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Inactive users are signed out after this period. Applies to all team members.
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-end">

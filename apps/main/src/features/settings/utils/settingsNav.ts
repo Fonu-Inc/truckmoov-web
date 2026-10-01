@@ -8,6 +8,7 @@ import {
   Building2,
   CreditCard,
   FileCheck,
+  FileText,
   HardDrive,
   Palette,
   Plug,
@@ -26,6 +27,8 @@ export type SettingsTab = {
   icon: ElementType;
   /** Roles that may see this tab. Empty means every role. */
   hasPermissions: UserRole[];
+  /** Routed and guarded, but left off the tab bar. */
+  hidden?: boolean;
 };
 
 /**
@@ -49,16 +52,16 @@ export const SETTINGS_TABS: SettingsTab[] = [
     to: "/settings", label: "Organization", icon: Building2, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/documents", label: "Documents", icon: FileText, hasPermissions: [
+      "ENTERPRISE_ADMIN",
+      "OWNER_OPERATOR",
+    ],
   },
   {
     to: "/settings/storage", label: "Storage", icon: HardDrive, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
     to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: ENTERPRISE_ADMIN_ONLY,
-  },
-  {
-    to: "/settings/kyc", label: "KYC", icon: FileCheck, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
     to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ENTERPRISE_ADMIN_ONLY,
@@ -73,12 +76,6 @@ export const SETTINGS_TABS: SettingsTab[] = [
     to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/dispatch", label: "Dispatch", icon: Radio, hasPermissions: ["DISPATCHER"],
-  },
-  {
-    to: "/settings/communication", label: "Communication", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY,
-  },
-  {
     to: "/settings/users", label: "Users", icon: Users, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
@@ -87,12 +84,26 @@ export const SETTINGS_TABS: SettingsTab[] = [
   {
     to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
+  // Routed but off the bar, to match fleetflow's tab set. Still reached by
+  // links (TrialBanner, StoragePanel, authRedirect) and the /settings redirect.
   {
-    to: "/settings/upgrade", label: "Upgrade", icon: ArrowUpCircle, hasPermissions: ["OWNER_OPERATOR"],
+    to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: ENTERPRISE_ADMIN_ONLY, hidden: true,
+  },
+  {
+    to: "/settings/kyc", label: "KYC", icon: FileCheck, hasPermissions: ENTERPRISE_ADMIN_ONLY, hidden: true,
+  },
+  {
+    to: "/settings/dispatch", label: "Dispatch", icon: Radio, hasPermissions: ["DISPATCHER"], hidden: true,
+  },
+  {
+    to: "/settings/communication", label: "Communication", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY, hidden: true,
+  },
+  {
+    to: "/settings/upgrade", label: "Upgrade", icon: ArrowUpCircle, hasPermissions: ["OWNER_OPERATOR"], hidden: true,
   },
   {
     // TRU-FE-7 § D — per-account 2FA. Empty array = visible to every role.
-    to: "/settings/security", label: "Security", icon: ShieldCheck, hasPermissions: [],
+    to: "/settings/security", label: "Security", icon: ShieldCheck, hasPermissions: [], hidden: true,
   },
 ];
 

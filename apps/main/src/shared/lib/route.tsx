@@ -808,6 +808,14 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "documents",
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/documents") ?? [],
+                  () => import("@/features/settings/components/ui/OrgDocumentsPanel"),
+                  "OrgDocumentsPanel",
+                ),
+              },
+              {
                 path: "subscription",
                 lazy: guardedBy(
                   settingsTabRoles("/settings/subscription") ?? [],
