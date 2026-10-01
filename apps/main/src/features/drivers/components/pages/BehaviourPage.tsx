@@ -56,120 +56,16 @@ type GeofenceAlert = {
   triggeredAt: Date;
 };
 
-// ponytail: demo data mirrors fleetflow-pro's tab exactly. Swap for a real
-// hook when the driver-behavior + geofence services land.
-const now = Date.now();
-const minutes = (m: number) => new Date(now - m * 60_000);
+// ponytail: empty until the driver-behaviour + geofence APIs land.
+const DRIVER_SCORES: DriverScore[] = [];
+const BEHAVIOR_EVENTS: BehaviorEvent[] = [];
+const GEOFENCE_ALERTS: GeofenceAlert[] = [];
 
-const DEMO_DRIVER_SCORES: DriverScore[] = [
-  {
-    driverId: "drv-001", driverName: "Adebayo Okonkwo",
-    overallScore: 92, brakingScore: 94, accelerationScore: 90, corneringScore: 95, speedingScore: 89,
-    totalEvents: 7,
-    eventBreakdown: {
-      harshBraking: 2, harshAcceleration: 1, harshCornering: 1, overspeeding: 3,
-    },
-    trend: "improving",
-  },
-  {
-    driverId: "drv-002", driverName: "Chinedu Eze",
-    overallScore: 85, brakingScore: 88, accelerationScore: 82, corneringScore: 86, speedingScore: 84,
-    totalEvents: 12,
-    eventBreakdown: {
-      harshBraking: 4, harshAcceleration: 3, harshCornering: 2, overspeeding: 3,
-    },
-    trend: "stable",
-  },
-  {
-    driverId: "drv-003", driverName: "Ibrahim Suleiman",
-    overallScore: 78, brakingScore: 75, accelerationScore: 80, corneringScore: 82, speedingScore: 74,
-    totalEvents: 18,
-    eventBreakdown: {
-      harshBraking: 5, harshAcceleration: 4, harshCornering: 3, overspeeding: 6,
-    },
-    trend: "declining",
-  },
-  {
-    driverId: "drv-004", driverName: "Tunde Bakare",
-    overallScore: 71, brakingScore: 68, accelerationScore: 72, corneringScore: 75, speedingScore: 69,
-    totalEvents: 24,
-    eventBreakdown: {
-      harshBraking: 7, harshAcceleration: 5, harshCornering: 4, overspeeding: 8,
-    },
-    trend: "declining",
-  },
-  {
-    driverId: "drv-005", driverName: "Femi Adeyemi",
-    overallScore: 88, brakingScore: 90, accelerationScore: 86, corneringScore: 89, speedingScore: 87,
-    totalEvents: 9,
-    eventBreakdown: {
-      harshBraking: 2, harshAcceleration: 2, harshCornering: 2, overspeeding: 3,
-    },
-    trend: "improving",
-  },
-];
-
-const DEMO_BEHAVIOR_EVENTS: BehaviorEvent[] = [
-  {
-    id: "e1", deviceId: "dev-001", driverId: "drv-003", eventType: "overspeeding", severity: "critical", speed: 118, createdAt: minutes(8),
-  },
-  {
-    id: "e2", deviceId: "dev-002", driverId: "drv-004", eventType: "harsh_braking", severity: "high", speed: 72, createdAt: minutes(22),
-  },
-  {
-    id: "e3", deviceId: "dev-003", driverId: "drv-002", eventType: "harsh_cornering", severity: "medium", speed: 54, createdAt: minutes(41),
-  },
-  {
-    id: "e4", deviceId: "dev-004", driverId: "drv-001", eventType: "harsh_acceleration", severity: "low", speed: 38, createdAt: minutes(68),
-  },
-  {
-    id: "e5", deviceId: "dev-001", driverId: "drv-003", eventType: "overspeeding", severity: "high", speed: 102, createdAt: minutes(95),
-  },
-  {
-    id: "e6", deviceId: "dev-005", driverId: "drv-005", eventType: "harsh_braking", severity: "medium", speed: 61, createdAt: minutes(140),
-  },
-  {
-    id: "e7", deviceId: "dev-002", driverId: "drv-004", eventType: "overspeeding", severity: "critical", speed: 124, createdAt: minutes(180),
-  },
-  {
-    id: "e8", deviceId: "dev-003", driverId: "drv-002", eventType: "harsh_acceleration", severity: "medium", speed: 47, createdAt: minutes(220),
-  },
-  {
-    id: "e9", deviceId: "dev-004", driverId: "drv-001", eventType: "harsh_cornering", severity: "low", speed: 32, createdAt: minutes(285),
-  },
-  {
-    id: "e10", deviceId: "dev-005", driverId: "drv-005", eventType: "overspeeding", severity: "high", speed: 98, createdAt: minutes(360),
-  },
-];
-
-const DEMO_GEOFENCE_ALERTS: GeofenceAlert[] = [
-  {
-    id: "g1", deviceId: "dev-001-fleet", geofenceName: "Apapa Port Zone", alertType: "entry", triggeredAt: minutes(5),
-  },
-  {
-    id: "g2", deviceId: "dev-002-fleet", geofenceName: "Lagos HQ Depot", alertType: "exit", triggeredAt: minutes(18),
-  },
-  {
-    id: "g3", deviceId: "dev-003-fleet", geofenceName: "Tin Can Island", alertType: "entry", triggeredAt: minutes(34),
-  },
-  {
-    id: "g4", deviceId: "dev-004-fleet", geofenceName: "Ikeja Warehouse", alertType: "dwell", triggeredAt: minutes(52),
-  },
-  {
-    id: "g5", deviceId: "dev-005-fleet", geofenceName: "Abuja Distribution Hub", alertType: "exit", triggeredAt: minutes(75),
-  },
-  {
-    id: "g6", deviceId: "dev-001-fleet", geofenceName: "Lekki Toll Gate", alertType: "entry", triggeredAt: minutes(110),
-  },
-  {
-    id: "g7", deviceId: "dev-002-fleet", geofenceName: "Port Harcourt Terminal", alertType: "entry", triggeredAt: minutes(165),
-  },
-  {
-    id: "g8", deviceId: "dev-003-fleet", geofenceName: "Kano Logistics Park", alertType: "exit", triggeredAt: minutes(220),
-  },
-];
-
-function ScoreGauge({ score, label }: { score: number; label: string }) {
+function ScoreGauge({
+  score, label,
+}: {
+  score: number; label: string;
+}) {
   const scoreColor = score >= 80 ? "text-success" : score >= 60 ? "text-warning" : "text-destructive";
   return (
     <div className="text-center space-y-2">
@@ -203,7 +99,11 @@ function ScoreGauge({ score, label }: { score: number; label: string }) {
   );
 }
 
-function DriverScoreCard({ score, rank }: { score: DriverScore; rank: number }) {
+function DriverScoreCard({
+  score, rank,
+}: {
+  score: DriverScore; rank: number;
+}) {
   const trendIcon = score.trend === "improving"
     ? <TrendingUp className="h-4 w-4 text-success" />
     : score.trend === "declining"
@@ -211,12 +111,20 @@ function DriverScoreCard({ score, rank }: { score: DriverScore; rank: number }) 
       : <Minus className="h-4 w-4 text-muted-foreground" />;
 
   const badge = score.overallScore >= 90
-    ? { label: "Excellent", className: "bg-success text-success-foreground" }
+    ? {
+        label: "Excellent", className: "bg-success text-success-foreground",
+      }
     : score.overallScore >= 80
-      ? { label: "Good", className: "bg-primary text-primary-foreground" }
+      ? {
+          label: "Good", className: "bg-primary text-primary-foreground",
+        }
       : score.overallScore >= 60
-        ? { label: "Fair", className: "bg-warning text-warning-foreground" }
-        : { label: "Poor", className: "" };
+        ? {
+            label: "Fair", className: "bg-warning text-warning-foreground",
+          }
+        : {
+            label: "Poor", className: "",
+          };
 
   return (
     <Card className="transition-colors hover:border-primary/50">
@@ -380,17 +288,19 @@ export default function BehaviourPage() {
   const [
     unreadCount,
     setUnreadCount,
-  ] = useState(3);
+  ] = useState(0);
 
-  const driverScores = DEMO_DRIVER_SCORES;
-  const events = DEMO_BEHAVIOR_EVENTS;
-  const alerts = DEMO_GEOFENCE_ALERTS;
+  const driverScores = DRIVER_SCORES;
+  const events = BEHAVIOR_EVENTS;
+  const alerts = GEOFENCE_ALERTS;
 
   const behaviorStats = {
-    averageScore: Math.round(driverScores.reduce(
-      (s, d) => s + d.overallScore,
-      0,
-    ) / driverScores.length),
+    averageScore: driverScores.length
+      ? Math.round(driverScores.reduce(
+          (s, d) => s + d.overallScore,
+          0,
+        ) / driverScores.length)
+      : 0,
     last24h: events.length,
     total: events.length,
     critical: events.filter(e => e.severity === "critical").length,
@@ -493,6 +403,9 @@ export default function BehaviourPage() {
                   Drivers are ranked by performance score — braking (30%), speeding (30%),
                   acceleration (20%) and cornering (20%), calculated from recorded telemetry events.
                 </p>
+                {driverScores.length === 0 && (
+                  <p className="py-6 text-center text-sm text-muted-foreground">No drivers scored yet.</p>
+                )}
                 {driverScores.map((score, index) => (
                   <DriverScoreCard
                     key={score.driverId}
@@ -519,6 +432,9 @@ export default function BehaviourPage() {
                 <CardContent>
                   <ScrollArea className="h-[500px] pr-4">
                     <div className="space-y-2">
+                      {events.length === 0 && (
+                        <p className="py-6 text-center text-sm text-muted-foreground">No behaviour events recorded.</p>
+                      )}
                       {events.slice(
                         0,
                         50,
@@ -569,6 +485,9 @@ export default function BehaviourPage() {
             <CardContent>
               <ScrollArea className="h-[550px] pr-4">
                 <div className="space-y-2">
+                  {alerts.length === 0 && (
+                    <p className="py-6 text-center text-sm text-muted-foreground">No geofence alerts.</p>
+                  )}
                   {alerts.map(alert => (
                     <GeofenceAlertItem
                       key={alert.id}

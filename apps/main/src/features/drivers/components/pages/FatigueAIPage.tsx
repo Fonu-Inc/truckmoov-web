@@ -42,104 +42,8 @@ const riskLevelBg: Record<RiskLevel, string> = {
   critical: "from-destructive/10 to-transparent",
 };
 
-// ponytail: demo data lifted verbatim from fleetflow-pro. Swap the array for a
-// real hook when the fatigue-analysis endpoint is wired up.
-const fatigueNow = Date.now();
-const fatigueAgo = (m: number) => new Date(fatigueNow - m * 60_000).toISOString();
-
-const DEMO_FATIGUE_ALERTS: FatigueAlert[] = [
-  {
-    id: "f-001",
-    driver_name: "Ibrahim Suleiman",
-    fatigue_score: 9,
-    risk_level: "critical",
-    driving_duration_minutes: 612,
-    rest_compliance_score: 2,
-    indicators: [
-      "No break in last 10+ hours",
-      "Frequent harsh braking events",
-      "Lane drifting detected via cornering pattern",
-    ],
-    recommendations: [
-      "Mandatory 45-minute rest immediately",
-      "Reassign next leg to backup driver",
-      "Schedule medical wellness check",
-    ],
-    ai_analysis: "Driver shows critical fatigue indicators after exceeding 10 hours of continuous driving without a recorded rest stop. Recent harsh braking and erratic cornering signal reduced reaction time. Immediate intervention is recommended.",
-    created_at: fatigueAgo(12),
-  },
-  {
-    id: "f-002",
-    driver_name: "Tunde Bakare",
-    fatigue_score: 7,
-    risk_level: "high",
-    driving_duration_minutes: 480,
-    rest_compliance_score: 4,
-    indicators: [
-      "Driving past recommended shift end",
-      "Skipped scheduled 30-min break",
-      "Slight overspeeding episodes increasing",
-    ],
-    recommendations: [
-      "Take a 30-minute break within the next hour",
-      "Hydrate and stretch",
-      "Consider rotating to passenger seat if co-driver available",
-    ],
-    ai_analysis: "Driver is approaching maximum safe shift duration. Pattern of missed rest breaks combined with rising overspeeding incidents suggests reduced alertness.",
-    created_at: fatigueAgo(48),
-  },
-  {
-    id: "f-003",
-    driver_name: "Chinedu Eze",
-    fatigue_score: 5,
-    risk_level: "medium",
-    driving_duration_minutes: 320,
-    rest_compliance_score: 6,
-    indicators: [
-      "Mid-shift fatigue indicators emerging",
-      "Slightly elevated reaction time",
-    ],
-    recommendations: [
-      "Take a short 15-minute break at next safe stop",
-      "Caffeine + light snack recommended",
-    ],
-    ai_analysis: "Moderate fatigue detected mid-shift. Driver is still within safe operating parameters but a short break would meaningfully restore alertness.",
-    created_at: fatigueAgo(95),
-  },
-  {
-    id: "f-004",
-    driver_name: "Femi Adeyemi",
-    fatigue_score: 3,
-    risk_level: "low",
-    driving_duration_minutes: 180,
-    rest_compliance_score: 9,
-    indicators: [
-      "Within safe driving window",
-      "Good rest compliance this week",
-    ],
-    recommendations: [
-      "Continue current driving plan",
-      "Maintain hydration",
-    ],
-    ai_analysis: "Driver is operating well within healthy parameters. No interventions required at this time.",
-    created_at: fatigueAgo(150),
-  },
-  {
-    id: "f-005",
-    driver_name: "Adebayo Okonkwo",
-    fatigue_score: 2,
-    risk_level: "low",
-    driving_duration_minutes: 95,
-    rest_compliance_score: 10,
-    indicators: [
-      "Recently started shift",
-      "All rest periods fully observed",
-    ],
-    recommendations: ["No action required"],
-    ai_analysis: "Driver is at the start of shift with full rest compliance. Optimal alertness expected.",
-    created_at: fatigueAgo(220),
-  },
-];
+// ponytail: empty until the fatigue-analysis API lands.
+const FATIGUE_ALERTS: FatigueAlert[] = [];
 
 function FatigueScoreGauge({ score }: { score: number }) {
   const percentage = (score / 10) * 100;
@@ -303,21 +207,21 @@ export default function FatigueAIPage() {
     setExpandedId,
   ] = useState<string | null>(null);
 
-  const alerts = DEMO_FATIGUE_ALERTS;
+  const alerts = FATIGUE_ALERTS;
+  const avg = (pick: (a: FatigueAlert) => number) => alerts.length
+    ? Math.round(alerts.reduce(
+        (s, a) => s + pick(a),
+        0,
+      ) / alerts.length)
+    : 0;
   const stats = {
     total: alerts.length,
     critical: alerts.filter(a => a.risk_level === "critical").length,
     high: alerts.filter(a => a.risk_level === "high").length,
     medium: alerts.filter(a => a.risk_level === "medium").length,
     low: alerts.filter(a => a.risk_level === "low").length,
-    avgFatigueScore: Math.round(alerts.reduce(
-      (s, a) => s + a.fatigue_score,
-      0,
-    ) / alerts.length),
-    avgRestCompliance: Math.round(alerts.reduce(
-      (s, a) => s + a.rest_compliance_score,
-      0,
-    ) / alerts.length),
+    avgFatigueScore: avg(a => a.fatigue_score),
+    avgRestCompliance: avg(a => a.rest_compliance_score),
   };
 
   return (
@@ -436,6 +340,9 @@ export default function FatigueAIPage() {
         <CardContent>
           <ScrollArea className="h-[500px] pr-4">
             <div className="space-y-4">
+              {alerts.length === 0 && (
+                <p className="py-6 text-center text-sm text-muted-foreground">No fatigue analyses yet.</p>
+              )}
               {alerts.map(alert => (
                 <AlertCard
                   key={alert.id}
