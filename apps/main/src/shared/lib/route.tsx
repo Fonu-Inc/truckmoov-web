@@ -549,7 +549,7 @@ export const router = createBrowserRouter([
             path: "/jobs",
             lazy: guarded(
               "/jobs",
-              () => import("@/pages/admin/JobDispatch"),
+              () => import("@/features/jobs/components/pages/JobsPage"),
             ),
           },
           {

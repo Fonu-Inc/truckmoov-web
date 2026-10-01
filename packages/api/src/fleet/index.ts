@@ -499,6 +499,7 @@ export function getDriverQueryOptions(id: string) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.driver(id),
     queryFn: () => getDriver({ id }),
+    enabled: Boolean(id),
   })
 }
 

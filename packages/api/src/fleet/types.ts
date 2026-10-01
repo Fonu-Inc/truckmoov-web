@@ -1176,6 +1176,8 @@ export type FleetDriver = {
   trips?: number | null
   tripBand?: DriverTripBand | null
   preferredChannel?: DriverCommunicationPreference | null
+  // ponytail: returned by /fleet/drivers but absent from DriverSchema in the spec.
+  performanceScore?: number | null
   createdAt: string
   updatedAt: string
 }

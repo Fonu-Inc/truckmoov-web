@@ -230,6 +230,23 @@ codes gated behind copy or download) and `TwoFactorEnrolmentStep` (admin first e
 passes its own portal's mutation as `verify`. `packages/reusables` pins `react`/`react-dom` 18 as
 devDependencies so its peers don't resolve to the landing page's React 19.
 
+### Jobs page (`/jobs`)
+
+`apps/main/src/features/jobs/` — behaviour verified against dev, where it differs from the spec:
+
+- Job responses carry only `assigned_driver_id` / `assigned_vehicle_id` reliably; the
+  `assigned_driver_name` / `assigned_vehicle_reg` fields are undocumented and not always sent.
+  Names come from `useDrivers()` / `useVehicles()` by id.
+- `POST /dispatch/jobs/{id}/assign` requires **both** `driver_id` and `vehicle_id` (400 otherwise).
+  Assigning one side sends the job's current other side; an unassigned job holds the first pick
+  and opens the other picker.
+- Driver ranking is `GET /fleet/dispatch/recommend-drivers` (`score`, `reasons`, `distanceKm`).
+  Fleet has no vehicle-recommend route, so vehicles are ranked client-side; proximity comes from
+  `GET /fleet/vehicles/nearest`.
+- `GET /dispatch/jobs` `weight_from` / `weight_to` are **tonnes**; `POST /dispatch/jobs`
+  `cargoWeight` is tonnes too, so the page always sends `load_weight_kg`.
+- `PATCH /dispatch/jobs/{id}` is not partial — it rejects a body without `pickup`.
+
 ### Login / logout mutations
 
 `useLogin` and `useSystemLogin` call `setSession` automatically on success. `useLogout` calls `logout()` automatically on success. Components do not need to manage the store directly for these flows.

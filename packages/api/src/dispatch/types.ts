@@ -358,8 +358,9 @@ export type DispatchJob = {
   updated_at?: string
   acknowledged_at?: string
 
-  // ponytail: not in the published dispatch schema, but the UI renders these.
-  // Drop them once the server confirms it never sends them.
+  // ponytail: not in the published dispatch schema, and the server sends the name
+  // fields inconsistently (absent on some list responses). Resolve names from
+  // /fleet/drivers and /fleet/vehicles by the assigned_* ids; use these as fallback.
   assigned_driver_name?: string
   assigned_vehicle_reg?: string
   assigned_vehicle_make?: string

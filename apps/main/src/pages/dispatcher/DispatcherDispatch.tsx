@@ -1,6 +1,6 @@
 import type {
   JobsFilterBounds, JobsFilterValue,
-} from "@/components/jobs/JobsFilterDialog";
+} from "@/features/jobs/components/ui/JobsFilterDialog";
 import {
   CheckCircle, Clock, Loader2, Package, Plus, Search,
   SlidersHorizontal, Truck,
@@ -15,11 +15,6 @@ import { JobCompletionDialog } from "@/components/jobs/JobCompletionDialog";
 import { JobDetailsSheet } from "@/components/jobs/JobDetailsSheet";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
 import { JobMatchingDialog } from "@/components/jobs/JobMatchingDialog";
-import {
-  buildDefaultFilterValue,
-  countActiveFilters,
-} from "@/components/jobs/jobsFilter";
-import { JobsFilterDialog } from "@/components/jobs/JobsFilterDialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -33,6 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { JobsFilterDialog } from "@/features/jobs/components/ui/JobsFilterDialog";
+import {
+  buildDefaultFilterValue,
+  countActiveFilters,
+} from "@/features/jobs/utils/jobsFilter";
 
 type JobData = any;
 
