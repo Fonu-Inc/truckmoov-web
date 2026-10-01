@@ -1,6 +1,8 @@
+import { NIGERIAN_STATES } from "@truckmoov/api/auth";
 import {
   formatDate, formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
+import { CityCombobox } from "@truckmoov/reusables/components/location/CityCombobox";
 import {
   AlertCircle, CheckCircle2, Clock, Download, Eye, FileCheck, FileText, Loader2, Shield, Trash2, UploadCloud, XCircle,
 } from "lucide-react";
@@ -574,25 +576,37 @@ export function TenantKYCVerification({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
-                <Input
-                  id="city"
-                  value={businessInfo.city || ""}
-                  onChange={e => setBusinessInfo({
-                    ...businessInfo, city: e.target.value,
+                <Label htmlFor="state">State *</Label>
+                <Select
+                  value={businessInfo.state || ""}
+                  onValueChange={state => setBusinessInfo({
+                    ...businessInfo, state, city: "",
                   })}
-                  placeholder="City"
-                />
+                >
+                  <SelectTrigger id="state">
+                    <SelectValue placeholder="Select a state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NIGERIAN_STATES.map(state => (
+                      <SelectItem
+                        key={state}
+                        value={state}
+                      >
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
-                <Input
-                  id="state"
-                  value={businessInfo.state || ""}
-                  onChange={e => setBusinessInfo({
-                    ...businessInfo, state: e.target.value,
+                <Label htmlFor="city">City *</Label>
+                <CityCombobox
+                  id="city"
+                  state={businessInfo.state || ""}
+                  value={businessInfo.city || ""}
+                  onChange={city => setBusinessInfo({
+                    ...businessInfo, city,
                   })}
-                  placeholder="State"
                 />
               </div>
               <div className="space-y-2">

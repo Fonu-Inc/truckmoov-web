@@ -4,6 +4,7 @@ import {
   NIGERIAN_STATES,
   useUpdateInstallerProfile,
 } from "@truckmoov/api/auth";
+import { CityCombobox } from "@truckmoov/reusables/components/location/CityCombobox";
 import { Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -169,7 +170,13 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
                 <Select
                   name={field.name}
                   value={field.value}
-                  onValueChange={field.onChange}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    form.setValue(
+                      "city",
+                      "",
+                    );
+                  }}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -198,7 +205,11 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
               <FormItem className="sm:col-span-2">
                 <FormLabel>City / base location</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <CityCombobox
+                    state={form.watch("state") ?? ""}
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

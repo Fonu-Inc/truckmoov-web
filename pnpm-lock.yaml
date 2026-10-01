@@ -819,6 +819,9 @@ importers:
       axios:
         specifier: ^1.7.0
         version: 1.16.1
+      nigerian-states-and-lgas:
+        specifier: 1.0.8
+        version: 1.0.8
       socket.io-client:
         specifier: ^4.8.3
         version: 4.8.3
@@ -5986,6 +5989,9 @@ packages:
     peerDependencies:
       react: ^16.8 || ^17 || ^18
       react-dom: ^16.8 || ^17 || ^18
+
+  nigerian-states-and-lgas@1.0.8:
+    resolution: {integrity: sha512-zfl5y+fXAvzfrGqKTDUx+U1/xus5MH1zR3UZTRbkNO5VGvanKgFcFRJ3ogQbYJytXNZn9t0PjLSk4D2BCvHDuw==}
 
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
@@ -13529,6 +13535,8 @@ snapshots:
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+
+  nigerian-states-and-lgas@1.0.8: {}
 
   node-domexception@1.0.0: {}
 

@@ -1,6 +1,7 @@
-import type { InstallerCapability, InstallerJobStatus, SystemInstaller } from "@truckmoov/api/auth";
+import type {
+  InstallerCapability, InstallerJobStatus, SystemInstaller,
+} from "@truckmoov/api/auth";
 import { NIGERIAN_STATES } from "@truckmoov/api/auth";
-import { CITIES_BY_STATE } from "./nigeriaCities";
 
 export const CAPABILITY_LABELS: Record<InstallerCapability, string> = {
   tracker_installation_wiring: "Tracker installation & wiring",
@@ -15,8 +16,9 @@ export const CAPABILITY_LABELS: Record<InstallerCapability, string> = {
 
 export const CAPABILITY_OPTIONS = Object.values(CAPABILITY_LABELS);
 
-export const capabilityValue = (label: string) =>
-  (Object.keys(CAPABILITY_LABELS) as InstallerCapability[]).find(key => CAPABILITY_LABELS[key] === label);
+export function capabilityValue(label: string) {
+  return (Object.keys(CAPABILITY_LABELS) as InstallerCapability[]).find(key => CAPABILITY_LABELS[key] === label);
+}
 
 export const capabilityLabel = (value: string) => CAPABILITY_LABELS[value as InstallerCapability] ?? value;
 
@@ -25,12 +27,6 @@ export const toApiState = (state: string) => (state === "Abuja (FCT)" ? "FCT" : 
 export const fromApiState = (state: string) => (state === "FCT" ? "Abuja (FCT)" : state);
 
 export const STATE_OPTIONS = NIGERIAN_STATES.map(fromApiState);
-
-/** Cities for a state label, keeping an already saved city selectable even when it is not listed. */
-export function cityOptions(stateLabel: string, current = "") {
-  const cities = CITIES_BY_STATE[toApiState(stateLabel)] ?? [];
-  return current && !cities.includes(current) ? [current, ...cities] : cities;
-}
 
 export function installerName(installer: Pick<SystemInstaller, "firstName" | "lastName">) {
   return `${installer.firstName} ${installer.lastName}`;

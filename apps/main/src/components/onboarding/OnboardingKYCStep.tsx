@@ -6,12 +6,13 @@ import {
   getOnboardingBusinessInfoQueryOptions,
   getOnboardingKycDocumentsQueryOptions,
   getOnboardingStatusQueryOptions,
-
+  NIGERIAN_STATES,
   useDeleteOnboardingKycDocument,
   useUpdateOnboardingBusinessInfo,
   useUploadOnboardingKycDocument,
 } from "@truckmoov/api/auth";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
+import { CityCombobox } from "@truckmoov/reusables/components/location/CityCombobox";
 import {
   AlertCircle,
   Building2,
@@ -626,28 +627,46 @@ export function OnboardingKYCStep({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="city">City *</Label>
-              <Input
-                id="city"
-                value={businessInfo.city ?? ""}
-                onChange={e => updateField(
-                  "city",
-                  e.target.value || null,
-                )}
-                placeholder="Lagos"
+              <Label htmlFor="state">State *</Label>
+              <Select
+                value={businessInfo.state ?? ""}
+                onValueChange={(state) => {
+                  updateField(
+                    "state",
+                    state,
+                  );
+                  updateField(
+                    "city",
+                    null,
+                  );
+                }}
                 disabled={isBusinessInfoLoading}
-              />
+              >
+                <SelectTrigger id="state">
+                  <SelectValue placeholder="Select a state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {NIGERIAN_STATES.map(state => (
+                    <SelectItem
+                      key={state}
+                      value={state}
+                    >
+                      {state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="state">State / Province *</Label>
-              <Input
-                id="state"
-                value={businessInfo.state ?? ""}
-                onChange={e => updateField(
-                  "state",
-                  e.target.value || null,
+              <Label htmlFor="city">City *</Label>
+              <CityCombobox
+                id="city"
+                state={businessInfo.state ?? ""}
+                value={businessInfo.city ?? ""}
+                onChange={city => updateField(
+                  "city",
+                  city,
                 )}
-                placeholder="Lagos State"
                 disabled={isBusinessInfoLoading}
               />
             </div>

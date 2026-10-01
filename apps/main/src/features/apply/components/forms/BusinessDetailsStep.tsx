@@ -4,6 +4,7 @@ import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
 
 import { useQuery } from "@tanstack/react-query";
 import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
+import { CityCombobox } from "@truckmoov/reusables/components/location/CityCombobox";
 import {
   ArrowRight,
   Check,
@@ -70,7 +71,10 @@ export function BusinessDetailsStep({
   applicationId,
   onSubmit,
 }: BusinessDetailsStepProps) {
-  useEmailAvailability(form, applicationId);
+  useEmailAvailability(
+    form,
+    applicationId,
+  );
   const isEnterprise = customerType === "enterprise";
   const licence = useApplyDraftStore(state => state.licence);
   const setLicence = useApplyDraftStore(state => state.setLicence);
@@ -352,7 +356,13 @@ export function BusinessDetailsStep({
                     <FormLabel>State</FormLabel>
                     <Select
                       value={field.value}
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue(
+                          "city",
+                          "",
+                        );
+                      }}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -382,9 +392,10 @@ export function BusinessDetailsStep({
                   <FormItem>
                     <FormLabel>City</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Lagos"
-                        {...field}
+                      <CityCombobox
+                        state={form.watch("state")}
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />

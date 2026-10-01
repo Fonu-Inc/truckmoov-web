@@ -396,6 +396,7 @@ export type * from './types'
 
 // Value + type export: UserRole is a const object, so it must not be type-only.
 export { DEVICE_CATALOG_PROTOCOLS, INSTALLER_CAPABILITIES, INSTALLER_ISSUE_TYPES, NIGERIAN_STATES, UserRole } from './types'
+export { CITIES_BY_STATE } from './nigeriaCities'
 
 export const AUTH_QUERY_KEY = {
   me: ['me'],

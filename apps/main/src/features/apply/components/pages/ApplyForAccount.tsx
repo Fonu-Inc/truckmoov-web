@@ -33,8 +33,8 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/shadcn/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { BusinessDetailsStep } from "@/features/apply/components/forms/BusinessDetailsStep";
 import { ScheduleInstallationStep } from "@/features/apply/components/forms/ScheduleInstallationStep";
 import { ApplicationStatusScreen } from "@/features/apply/components/ui/ApplicationStatusScreen";
@@ -904,7 +904,8 @@ function ApplyShell({
         />
       </aside>
 
-      <main className="h-full flex-1 overflow-y-auto bg-gradient-auth">
+      {/* relative: anchors Radix's hidden absolute inputs here, else they stretch the page past h-screen. */}
+      <main className="relative h-full flex-1 overflow-y-auto bg-gradient-auth">
         <div className="sticky top-0 z-20 flex h-0 justify-end px-4 pt-4">
           <ThemeToggle />
         </div>

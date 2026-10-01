@@ -1,6 +1,9 @@
 import type { SystemInstaller } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
-import { useCreateSystemInstaller, useUpdateSystemInstaller } from "@truckmoov/api/auth";
+import {
+  useCreateSystemInstaller, useUpdateSystemInstaller,
+} from "@truckmoov/api/auth";
+import { CityCombobox } from "@truckmoov/reusables/components/location/CityCombobox";
 import {
   useEffect,
   useMemo,
@@ -30,7 +33,6 @@ import {
   CAPABILITY_OPTIONS,
   capabilityLabel,
   capabilityValue,
-  cityOptions,
   fromApiState,
   STATE_OPTIONS,
   toApiState,
@@ -397,31 +399,14 @@ export function AddInstallerDialog({
               label="City / Location*"
               error={errors.city}
             >
-              <Select
+              <CityCombobox
+                state={toApiState(form.state)}
                 value={form.city}
-                onValueChange={city => set(
+                onChange={city => set(
                   "city",
                   city,
                 )}
-                disabled={!form.state}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={form.state ? "Select a city" : "Select a state first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {cityOptions(
-                    form.state,
-                    form.city,
-                  ).map(city => (
-                    <SelectItem
-                      key={city}
-                      value={city}
-                    >
-                      {city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </Field>
             <Field
               label="Service Area*"

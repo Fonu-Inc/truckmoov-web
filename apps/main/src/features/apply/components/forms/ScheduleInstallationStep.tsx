@@ -11,6 +11,7 @@ import {
   getOnboardingOrderQueryOptions,
   useScheduleOnboardingInstallation,
 } from "@truckmoov/api/auth";
+import { CityCombobox } from "@truckmoov/reusables/components/location/CityCombobox";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -444,31 +445,19 @@ export function ScheduleInstallationStep({
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="City"
-                      maxLength={80}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="state"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>State</FormLabel>
                   <Select
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      form.setValue(
+                        "city",
+                        "",
+                      );
+                    }}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -486,6 +475,24 @@ export function ScheduleInstallationStep({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <FormControl>
+                    <CityCombobox
+                      state={form.watch("state")}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

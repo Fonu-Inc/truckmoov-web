@@ -1,9 +1,11 @@
 import type { SimBundleValue } from "./SimBundlePicker";
+import { NIGERIAN_STATES } from "@truckmoov/api/auth";
 import {
   useDeviceCatalogManufacturers,
   useDeviceCatalogModels,
   useDeviceSetupRequestTrackerTypes,
 } from "@truckmoov/api/fleet";
+import { CityCombobox } from "@truckmoov/reusables/components/location/CityCombobox";
 import {
   Cpu, Loader2,
 } from "lucide-react";
@@ -398,18 +400,34 @@ export function DeviceSetupRequestDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>State</Label>
-              <Input
+              <Select
                 value={installationState}
-                onChange={e => setInstallationState(e.target.value)}
-                placeholder="e.g. Lagos"
-              />
+                onValueChange={(state) => {
+                  setInstallationState(state);
+                  setInstallationCity("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {NIGERIAN_STATES.map(state => (
+                    <SelectItem
+                      key={state}
+                      value={state}
+                    >
+                      {state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>City</Label>
-              <Input
+              <CityCombobox
+                state={installationState}
                 value={installationCity}
-                onChange={e => setInstallationCity(e.target.value)}
-                placeholder="e.g. Ikeja"
+                onChange={setInstallationCity}
               />
             </div>
           </div>
