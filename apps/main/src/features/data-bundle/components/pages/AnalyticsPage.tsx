@@ -1,22 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  getDataBundleAllocationsQueryOptions,
   getDataBundleCarrierDistributionQueryOptions,
+  getDataBundleCarriersQueryOptions,
   getDataBundleSpendBreakdownQueryOptions,
   getDataBundleSpendTrendQueryOptions,
   getDataBundleSubscriptionUsageQueryOptions,
-  getDataBundleTransactionsQueryOptions,
 } from "@truckmoov/api/auth";
 import {
   Activity, TrendingUp, Zap,
 } from "lucide-react";
-import {
-  useMemo, useState,
-} from "react";
+import { useState } from "react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
@@ -26,16 +24,18 @@ import {
 import {
   CHART_COLORS,
   RANGE_OPTIONS,
+  spendingTrend,
   toAnalyticsRange,
-  useDataBundleCatalog,
 } from "@/features/data-bundle/utils/dataBundle";
 
 export function AnalyticsPage() {
-  const { catalog } = useDataBundleCatalog();
-
   const [
     spendRange,
     setSpendRange,
+  ] = useState("30d");
+  const [
+    breakdownRange,
+    setBreakdownRange,
   ] = useState("30d");
   const [
     channelRange,
@@ -47,260 +47,59 @@ export function AnalyticsPage() {
   ] = useState("30d");
 
   const spendTrendQuery = useQuery(getDataBundleSpendTrendQueryOptions(toAnalyticsRange(spendRange)));
-  const spendBreakdownQuery = useQuery(getDataBundleSpendBreakdownQueryOptions(toAnalyticsRange(spendRange)));
+  const spendBreakdownQuery = useQuery(getDataBundleSpendBreakdownQueryOptions(toAnalyticsRange(breakdownRange)));
   const carrierDistributionQuery = useQuery(getDataBundleCarrierDistributionQueryOptions(toAnalyticsRange(channelRange)));
+  // ponytail: subscription-usage has no date filter; wire this select when the API accepts a range.
   const subscriptionUsageQuery = useQuery(getDataBundleSubscriptionUsageQueryOptions());
+  const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
 
-  // Unfiltered fallback sources for local derivations
-  const allocationsQuery = useQuery(getDataBundleAllocationsQueryOptions({
-    params: {
-      page: 1, limit: 100,
-    },
+  const dailySpend = spendTrendQuery.data
+    ? spendingTrend(
+        spendTrendQuery.data.data.trend,
+        spendRange,
+      )
+    : [];
+  const spendBreakdown = (spendBreakdownQuery.data?.data.breakdown ?? []).map(item => ({
+    name: item.bundleName || item.bundleCode,
+    value: item.amount,
   }));
-  const transactionsQuery = useQuery(getDataBundleTransactionsQueryOptions({
-    params: {
-      page: 1, limit: 100,
-    },
+  const channelDistribution = (carrierDistributionQuery.data?.data.distribution ?? []).map(item => ({
+    name: carriersQuery.data?.data.carriers.find(carrier => carrier.id === item.carrierId)?.displayName ?? item.carrierId,
+    value: item.amount,
   }));
-
-  const topups = useMemo(
-    () => {
-      return (transactionsQuery.data?.data.items ?? []).map(item => ({
-        id: item.id,
-        created_at: item.date,
-        msisdn: item.mobileNumber,
-        bundle_code: item.bundle.code,
-        bundle: item.bundle,
-        status: String(item.status).toUpperCase(),
-        amount_ngn: item.amount,
-        payment_reference: item.paymentReference,
-        failure_reason: item.failureReason,
-      }));
-    },
-    [transactionsQuery.data],
-  );
-
-  const successTopups = useMemo(
-    () => topups.filter((t: { status: string }) => t.status === "SUCCESS"),
-    [topups],
-  );
-
-  const allocations = useMemo(
-    () => {
-      return (allocationsQuery.data?.data.items ?? []).map(item => ({
-        id: item.id,
-        msisdn: item.mobileNumber,
-        bundle_code: item.bundle.code,
-        bundle: item.bundle,
-        data_mb_total: item.dataTotalMb,
-        data_mb_used: item.dataUsedMb,
-        usage_percentage: item.usagePercentage,
-        status: item.status,
-        expires_at: item.expiresAt,
-        created_at: item.activatedAt,
-        days_left: item.daysLeft,
-      }));
-    },
-    [allocationsQuery.data],
-  );
-
-  const rangeStart = (rangeKey: string) => {
-    const opt = RANGE_OPTIONS.find(r => r.value === rangeKey) ?? RANGE_OPTIONS[3];
-    const d = new Date();
-    if (rangeKey === "yesterday") {
-      d.setDate(d.getDate() - 1);
-      d.setHours(
-        0,
-        0,
-        0,
-        0,
-      );
-      return d;
-    }
-    d.setDate(d.getDate() - opt.days);
-    return d;
-  };
-
-  const dailySpend = useMemo(
-    () => {
-      if (spendTrendQuery.data) {
-        return spendTrendQuery.data.data.trend.map(point => ({
-          day: point.date.slice(5),
-          spend: point.amount,
-        }));
-      }
-      const opt = RANGE_OPTIONS.find(r => r.value === spendRange) ?? RANGE_OPTIONS[3];
-      const days = opt.days;
-      const buckets = new Map<string, number>();
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        buckets.set(
-          d.toISOString().slice(
-            0,
-            10,
-          ),
-          0,
-        );
-      }
-      successTopups.forEach((t: {
-        created_at: string; bundle_code: string;
-      }) => {
-        const key = new Date(t.created_at).toISOString().slice(
-          0,
-          10,
-        );
-        if (!buckets.has(key))
-          return;
-        const b = catalog.find(c => c.code === t.bundle_code);
-        buckets.set(
-          key,
-          (buckets.get(key) ?? 0) + (b ? Number(b.price_ngn) : 0),
-        );
-      });
-      return Array.from(buckets.entries()).map(([
-        day,
-        spend,
-      ]) => ({
-        day: day.slice(5),
-        spend,
-      }));
-    },
-    [
-      successTopups,
-      catalog,
-      spendRange,
-      spendTrendQuery.data,
-    ],
-  );
-
-  const spendBreakdown = useMemo(
-    () => {
-      if (spendBreakdownQuery.data) {
-        return spendBreakdownQuery.data.data.breakdown.map(item => ({
-          name: item.bundleName || item.bundleCode,
-          value: item.amount,
-        }));
-      }
-      const start = rangeStart(spendRange);
-      const map = new Map<string, number>();
-      successTopups
-        .filter((t: { created_at: string }) => new Date(t.created_at) >= start)
-        .forEach((t: { bundle_code: string }) => {
-          const b = catalog.find(c => c.code === t.bundle_code);
-          if (!b)
-            return;
-          map.set(
-            b.name,
-            (map.get(b.name) ?? 0) + Number(b.price_ngn),
-          );
-        });
-      return Array.from(map.entries()).map(([
-        name,
-        value,
-      ]) => ({
-        name, value,
-      }));
-    },
-    [
-      successTopups,
-      catalog,
-      spendRange,
-      spendBreakdownQuery.data,
-    ],
-  );
-
-  const channelDistribution = useMemo(
-    () => {
-      if (carrierDistributionQuery.data) {
-        return carrierDistributionQuery.data.data.distribution.map(item => ({
-          name: item.carrierId,
-          value: item.amount,
-        }));
-      }
-      const start = rangeStart(channelRange);
-      const map = new Map<string, number>();
-      successTopups
-        .filter((t: { created_at: string }) => new Date(t.created_at) >= start)
-        .forEach((t: { bundle_code: string }) => {
-          const b = catalog.find(c => c.code === t.bundle_code);
-          const carrier = b?.carrier ?? "Unknown";
-          map.set(
-            carrier,
-            (map.get(carrier) ?? 0) + 1,
-          );
-        });
-      return Array.from(map.entries()).map(([
-        name,
-        value,
-      ]) => ({
-        name, value,
-      }));
-    },
-    [
-      successTopups,
-      catalog,
-      channelRange,
-      carrierDistributionQuery.data,
-    ],
-  );
-
-  const usageByBundle = useMemo(
-    () => {
-      if (subscriptionUsageQuery.data) {
-        return subscriptionUsageQuery.data.data.usage.map(item => ({
-          name: item.bundleCode,
-          used: item.usedMb,
-          total: item.totalMb,
-        }));
-      }
-      const start = rangeStart(usageRange);
-      const map = new Map<string, {
-        name: string; used: number; total: number;
-      }>();
-      allocations.forEach((a) => {
-        if (new Date(a.created_at ?? Date.now()) < start)
-          return;
-        const cur = map.get(a.bundle_code) ?? {
-          name: a.bundle_code, used: 0, total: 0,
-        };
-        cur.used += a.data_mb_used || 0;
-        cur.total += a.data_mb_total || 0;
-        map.set(
-          a.bundle_code,
-          cur,
-        );
-      });
-      if (map.size === 0) {
-      // fallback to full allocations if range yields nothing
-        allocations.forEach((a) => {
-          const cur = map.get(a.bundle_code) ?? {
-            name: a.bundle_code, used: 0, total: 0,
-          };
-          cur.used += a.data_mb_used || 0;
-          cur.total += a.data_mb_total || 0;
-          map.set(
-            a.bundle_code,
-            cur,
-          );
-        });
-      }
-      return Array.from(map.values()).slice(
-        0,
-        8,
-      );
-    },
-    [
-      allocations,
-      usageRange,
-      subscriptionUsageQuery.data,
-    ],
-  );
+  const usageByBundle = (subscriptionUsageQuery.data?.data.usage ?? []).map(item => ({
+    name: item.bundleCode,
+    used: item.usedMb,
+    total: item.totalMb,
+  }));
+  const queries = [
+    spendTrendQuery,
+    spendBreakdownQuery,
+    carrierDistributionQuery,
+    subscriptionUsageQuery,
+  ];
+  const failedQuery = queries.find(query => query.isError);
+  if (failedQuery) {
+    return (
+      <div role="alert">
+        {failedQuery.error.message}
+        <Button
+          variant="link"
+          onClick={() => queries.forEach(query => query.refetch())}
+        >
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  if (queries.some(query => query.isLoading)) {
+    return <div role="status">Loading analytics...</div>;
+  }
 
   return (
     <div className="space-y-4">
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
+      <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
+        <CardHeader className="space-y-1.5 p-6 pb-4">
           <div className="flex items-center justify-between gap-2">
             <div>
               <CardTitle className="flex items-center gap-2">
@@ -314,7 +113,7 @@ export function AnalyticsPage() {
               value={spendRange}
               onValueChange={setSpendRange}
             >
-              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl px-3.5 w-[160px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {RANGE_OPTIONS.map(r => (
                   <SelectItem
@@ -328,7 +127,7 @@ export function AnalyticsPage() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent className="h-[280px]">
+        <CardContent className="p-6 pt-0 h-[280px]">
           <ResponsiveContainer
             width="100%"
             height="100%"
@@ -383,8 +182,8 @@ export function AnalyticsPage() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="bg-card/50 border-border/50">
-          <CardHeader>
+        <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
+          <CardHeader className="space-y-1.5 p-6 pb-4">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <CardTitle className="flex items-center gap-2">
@@ -395,10 +194,10 @@ export function AnalyticsPage() {
                 <CardDescription>By bundle type</CardDescription>
               </div>
               <Select
-                value={spendRange}
-                onValueChange={setSpendRange}
+                value={breakdownRange}
+                onValueChange={setBreakdownRange}
               >
-                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 rounded-xl px-3.5 w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {RANGE_OPTIONS.map(r => (
                     <SelectItem
@@ -412,7 +211,7 @@ export function AnalyticsPage() {
               </Select>
             </div>
           </CardHeader>
-          <CardContent className="h-[280px]">
+          <CardContent className="p-6 pt-0 h-[280px]">
             {spendBreakdown.length === 0
               ? (
                   <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No spend data yet</div>
@@ -451,8 +250,8 @@ export function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card/50 border-border/50">
-          <CardHeader>
+        <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
+          <CardHeader className="space-y-1.5 p-6 pb-4">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <CardTitle className="flex items-center gap-2">
@@ -466,7 +265,7 @@ export function AnalyticsPage() {
                 value={channelRange}
                 onValueChange={setChannelRange}
               >
-                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 rounded-xl px-3.5 w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {RANGE_OPTIONS.map(r => (
                     <SelectItem
@@ -480,7 +279,7 @@ export function AnalyticsPage() {
               </Select>
             </div>
           </CardHeader>
-          <CardContent className="h-[280px]">
+          <CardContent className="p-6 pt-0 h-[280px]">
             {channelDistribution.length === 0
               ? (
                   <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No allocations yet</div>
@@ -518,8 +317,8 @@ export function AnalyticsPage() {
         </Card>
       </div>
 
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
+      <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
+        <CardHeader className="space-y-1.5 p-6 pb-4">
           <div className="flex items-center justify-between gap-2">
             <div>
               <CardTitle>Subscription Usage Breakdown</CardTitle>
@@ -529,7 +328,7 @@ export function AnalyticsPage() {
               value={usageRange}
               onValueChange={setUsageRange}
             >
-              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl px-3.5 w-[160px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {RANGE_OPTIONS.map(r => (
                   <SelectItem
@@ -543,7 +342,7 @@ export function AnalyticsPage() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent className="h-[300px]">
+        <CardContent className="p-6 pt-0 h-[300px]">
           <ResponsiveContainer
             width="100%"
             height="100%"

@@ -1,15 +1,18 @@
 import type { DataBundleTransactionsQuery } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
+  exportDataBundleTransactions,
   getDataBundleCarriersQueryOptions,
   getDataBundleTransactionsQueryOptions,
 } from "@truckmoov/api/auth";
+import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
 import {
   Download, Search, SlidersHorizontal,
 } from "lucide-react";
 import {
   useMemo, useState,
 } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -28,7 +31,6 @@ import {
 } from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
-  downloadCsv,
   formatMobile,
   useDataBundleCatalog,
   useDebouncedValue,
@@ -121,33 +123,19 @@ export function TransactionHistoryPage() {
     setTxCarriers([]);
   };
 
-  const exportTopupsCsv = () => downloadCsv(
-    `transactions-${Date.now()}.csv`,
-    [
-      "Date",
-      "MSISDN",
-      "Bundle",
-      "Amount",
-      "Status",
-    ],
-    filteredTopups.map((t: {
-      created_at: string; msisdn: string; bundle_code: string; status: string;
-    }) => {
-      const b = catalog.find(c => c.code === t.bundle_code);
-      return [
-        new Date(t.created_at).toISOString(),
-        t.msisdn,
-        t.bundle_code,
-        b ? Number(b.price_ngn) : 0,
-        t.status,
-      ];
-    }),
-  );
+  const exportTopupsCsv = () => {
+    exportDataBundleTransactions(transactionQueryPayload)
+      .then(blob => downloadBlob(
+        blob,
+        `transactions-${Date.now()}.csv`,
+      ))
+      .catch((error: Error) => toast.error(error.message));
+  };
 
   return (
     <div className="space-y-4">
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
+      <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
+        <CardHeader className="space-y-1.5 p-6 pb-4">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Transaction History</CardTitle>
@@ -177,7 +165,7 @@ export function TransactionHistoryPage() {
               value={txStatus}
               onValueChange={setTxStatus}
             >
-              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl px-3.5 w-[160px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="SUCCESS">Success</SelectItem>
@@ -244,7 +232,7 @@ export function TransactionHistoryPage() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 pt-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -256,7 +244,22 @@ export function TransactionHistoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactionsQuery.isLoading
+              {transactionsQuery.isError ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-6"
+                  >
+                    <p role="alert">{transactionsQuery.error.message}</p>
+                    <Button
+                      variant="link"
+                      onClick={() => transactionsQuery.refetch()}
+                    >
+                      Try again
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ) : transactionsQuery.isLoading
                 ? (
                     <TableRow>
                       <TableCell

@@ -91,7 +91,9 @@ Three conventions fall out of those documents:
   *not* all mounted under the service name. In `auth`
   only the `Auth` group keeps it (`/auth/login`, `/auth/me`, `/auth/invite`,
   …) and the platform-admin group (`/auth/system/...`) keep it — the rest sit
-  at the root: `/profile`, `/organization`, `/onboarding`, `/sims`, `/data-bundles`. Every fleet route remains under
+  at the root for some groups, such as `/profile`, `/organization`, and `/onboarding`.
+  SIM and data-bundle routes are mounted at `/auth/sims` and `/auth/data-bundles`.
+  Every fleet route remains under
   `/fleet`, including `/fleet/vehicles`, `/fleet/devices`, `/fleet/drivers`,
   and `/fleet/webhooks/health`.
   `dispatch`, `notification` and `tracking` still prefix everything. Keep
@@ -277,6 +279,49 @@ devDependencies so its peers don't resolve to the landing page's React 19.
   `GET /fleet/drivers/:id/fatigue` per driver (`useQueries`). When the deployment has fatigue
   switched off every fatigue route answers **503 `FeatureDisabled`**; the page shows a
   "not enabled" state and skips the per-driver calls.
+
+### Devices page (`/devices`)
+
+`apps/main/src/features/device/components/pages/DeviceManagementPage.tsx` (Enterprise Admin design).
+
+- **Active / Offline** are derived from each device's `lastSeen` (online = seen in the last 10
+  minutes) — `/fleet/devices/summary` has no online/offline counts. Total and Suspended come from
+  the summary.
+- **Vehicle Assigned** joins `vehicleId` against `/fleet/vehicles`; **SIM Card** joins
+  `GET /auth/sims` items by `assignedDevice.id` / `.imei` (the device record has no SIM fields).
+- **Suspend / Reinstate** use `PATCH /fleet/devices/:id/lifecycle`. On dev the lifecycle route
+  rejects `suspended` from every state, so Suspend surfaces the server error until that is fixed.
+  `decommissioned` is terminal — never set it from a probe.
+- **Request Device** (`ui/RequestDeviceDialog.tsx`) posts `/fleet/device-setup-requests`. The API
+  requires `manufacturer` and `trackerType`, which the design's form lacks, so step 1 adds them.
+  Fulfilment (pickup store / delivery street) has no API field and is appended to `notes`.
+- **Tracking device-detail routes** (`/tracking/devices/:id/*`) have been seen both bare and wrapped
+  in `ServerResponse`; `tracking/requests.ts` unwraps either shape.
+
+### Data bundles page (`/data-bundles/*`)
+
+`apps/main/src/features/data-bundle/` follows the Enterprise Admin design, with four route tabs.
+
+- Total Bundles comes from allocations `total`; active, expiring, expired and data used come
+  from `/auth/data-bundles/summary`.
+- Top Up Bundle joins `/auth/sims` with `/auth/data-bundles/rates` and `/carriers`, then posts
+  `/auth/data-bundles/allocations`. The carrier-filtered `/allocations/sims` route requires a
+  carrier before searching, so the SIM-first picker uses `/auth/sims` instead.
+- Purchase retries reuse an `idempotencyKey` for the same SIM and plan while the dialog stays
+  open. The canonical SIM mobile number is sent; row actions accept local or international formatting.
+- Allocation rows join SIM devices by normalized mobile number. The API supplies device type,
+  not the reference's hardware model. Missing bundle/device values render a dash.
+- Exports use the three server CSV routes, preserving the current filters.
+- Analytics uses the four aggregate endpoints. Today and Yesterday send `range=custom` with
+  matching `startDate` and `endDate`. A successful empty spending trend gets zero-valued days;
+  failed queries show an error and retry instead of estimating totals from a partial transaction list.
+- Subscription usage has no date-range parameters in the published API. Its selector is retained
+  for design parity, but cannot filter the server aggregate yet.
+- The design's unused Spending Limit, Auto Top-up and wallet top-up dialogs are absent; API hooks remain.
+- Current list/catalog requests retain the existing limits (100 rows/plans, 200 SIMs).
+  Add pagination when fleets exceed these limits; exports use the server endpoints.
+
+See [data-bundles-verification.md](data-bundles-verification.md) for endpoint evidence and ticket drafts.
 
 ### Login / logout mutations
 

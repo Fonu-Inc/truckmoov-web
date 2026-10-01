@@ -2010,6 +2010,7 @@ export function useAllocateDataBundle() {
     mutationFn: allocateDataBundle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dataBundleAllocations'] })
+      queryClient.invalidateQueries({ queryKey: ['dataBundleTransactions'] })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleWalletBalance })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleDashboardSummary })
     },

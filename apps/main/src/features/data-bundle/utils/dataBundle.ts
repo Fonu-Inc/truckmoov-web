@@ -2,6 +2,9 @@ import type { DataBundleAnalyticsRangeQuery } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import { getDataBundleRatesQueryOptions } from "@truckmoov/api/auth";
 import {
+  subDays, toDateParam,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
   useEffect, useMemo, useState,
 } from "react";
 
@@ -12,12 +15,6 @@ export function formatDataUsedGb(gb: number) {
     undefined,
     { maximumFractionDigits: 1 },
   )} GB`;
-}
-
-export function useBundleTopup() {
-  return {
-    mutateAsync: async (..._args: any[]) => {}, isPending: false,
-  };
 }
 
 export function useDebouncedValue<T>(value: T, delay = 400) {
@@ -52,26 +49,6 @@ export const CHART_COLORS = [
   "hsl(var(--accent))",
 ];
 
-export type AutoTopupSettings = {
-  enabled: boolean;
-  triggerBalance: number; // NGN — top up when balance drops below
-  topupAmount: number; // NGN — amount to top up
-  momoPhone: string; // MTN MoMo phone number
-};
-
-export const TRIGGER_PRESETS = [
-  500,
-  1000,
-  2000,
-  5000,
-];
-export const AMOUNT_PRESETS = [
-  2000,
-  5000,
-  10000,
-  20000,
-];
-
 export const RANGE_OPTIONS = [
   {
     value: "today", label: "Today", days: 1,
@@ -90,8 +67,40 @@ export const RANGE_OPTIONS = [
   },
 ];
 
-export function toAnalyticsRange(rangeKey: string): DataBundleAnalyticsRangeQuery {
+export function toAnalyticsRange(rangeKey: string, now = new Date()): DataBundleAnalyticsRangeQuery {
+  if (rangeKey === "today" || rangeKey === "yesterday") {
+    const date = toDateParam(rangeKey === "yesterday" ? subDays(
+      now,
+      1,
+    ) : now);
+    return {
+      params: {
+        range: "custom", startDate: date, endDate: date,
+      },
+    };
+  }
   return { params: { range: rangeKey === "7d" || rangeKey === "90d" ? rangeKey : "30d" } };
+}
+
+export function spendingTrend(trend: {
+  date: string; amount: number;
+}[], range: string, now = new Date()) {
+  if (trend.length) {
+    return trend.map(point => ({
+      day: point.date.slice(5), spend: point.amount,
+    }));
+  }
+  const days = range === "yesterday" ? 1 : (RANGE_OPTIONS.find(option => option.value === range)?.days ?? 30);
+  return Array.from(
+    { length: days },
+    (_, index) => ({
+      day: toDateParam(subDays(
+        now,
+        range === "yesterday" ? 1 : days - index - 1,
+      )).slice(5),
+      spend: 0,
+    }),
+  );
 }
 
 /* ── Format a Nigerian mobile number into a human-readable form ── */
@@ -114,13 +123,6 @@ export function formatMobile(raw: string) {
     7,
   )} ${local.slice(7)}`;
 }
-
-export type SpendingLimitSettings = {
-  enabled: boolean;
-  monthlyLimit: number; // NGN
-  resetDay: number; // 1-28
-  alertEmail: string;
-};
 
 export type AllocationRow = {
   id: string;
@@ -171,21 +173,4 @@ export function useDataBundleCatalog() {
   return {
     catalog, catalogQuery,
   };
-}
-
-export function downloadCsv(filename: string, header: string[], rows: (string | number)[][]) {
-  const csv = [
-    header,
-    ...rows,
-  ].map(r => r.join(",")).join("\n");
-  const blob = new Blob(
-    [csv],
-    { type: "text/csv" },
-  );
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
 }

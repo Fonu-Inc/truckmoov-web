@@ -1,15 +1,18 @@
 import type { DataBundleRatesQuery } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
+  exportDataBundleRates,
   getDataBundleCarriersQueryOptions,
   getDataBundleRatesQueryOptions,
 } from "@truckmoov/api/auth";
+import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
 import {
   Download, Search, SlidersHorizontal,
 } from "lucide-react";
 import {
   useMemo, useState,
 } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -21,14 +24,10 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/shadcn/select";
-import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
-  downloadCsv,
   formatBundleSize,
   useDataBundleCatalog,
   useDebouncedValue,
@@ -51,22 +50,12 @@ export function CurrentRatesPage() {
     ratesDraftCarriers,
     setRatesDraftCarriers,
   ] = useState<string[]>([]);
-  const [
-    ratesPlanType,
-    setRatesPlanType,
-  ] = useState("all");
-  const [
-    ratesDraftPlanType,
-    setRatesDraftPlanType,
-  ] = useState("all");
-
   const debouncedRatesSearch = useDebouncedValue(ratesSearch.trim());
   const ratesQueryPayload = useMemo<DataBundleRatesQuery>(
     () => ({
       params: {
         search: debouncedRatesSearch || undefined,
         carriers: ratesCarriers.length > 0 ? ratesCarriers : undefined,
-        planType: ratesPlanType === "all" ? undefined : ratesPlanType,
         page: 1,
         limit: 100,
       },
@@ -74,7 +63,6 @@ export function CurrentRatesPage() {
     [
       debouncedRatesSearch,
       ratesCarriers,
-      ratesPlanType,
     ],
   );
 
@@ -119,39 +107,25 @@ export function CurrentRatesPage() {
 
   const applyRatesFilter = () => {
     setRatesCarriers(ratesDraftCarriers);
-    setRatesPlanType(ratesDraftPlanType);
   };
   const clearRatesFilter = () => {
     setRatesDraftCarriers([]);
     setRatesCarriers([]);
-    setRatesDraftPlanType("all");
-    setRatesPlanType("all");
   };
 
-  const exportRatesCsv = () => downloadCsv(
-    `rates-${Date.now()}.csv`,
-    [
-      "Bundle",
-      "Carrier",
-      "Data (MB)",
-      "Validity (days)",
-      "Cycle",
-      "Price (NGN)",
-    ],
-    filteredRates.map(b => [
-      b.name,
-      b.carrier,
-      b.data_mb,
-      b.validity_days,
-      b.billing_cycle,
-      Number(b.price_ngn),
-    ]),
-  );
+  const exportRatesCsv = () => {
+    exportDataBundleRates(ratesQueryPayload)
+      .then(blob => downloadBlob(
+        blob,
+        `rates-${Date.now()}.csv`,
+      ))
+      .catch((error: Error) => toast.error(error.message));
+  };
 
   return (
     <div className="space-y-4">
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
+      <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
+        <CardHeader className="space-y-1.5 p-6 pb-4">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Current Rates</CardTitle>
@@ -191,20 +165,6 @@ export function CurrentRatesPage() {
                 sideOffset={8}
               >
                 <h4 className="text-xs font-medium text-foreground px-0.5">Only show rates by...</h4>
-                <div className="space-y-1.5">
-                  <p className="text-xs font-medium">Plan type</p>
-                  <Select
-                    value={ratesDraftPlanType}
-                    onValueChange={setRatesDraftPlanType}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All plan types</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium">Carrier</p>
                   <div className="space-y-1.5 pl-0.5">
@@ -250,7 +210,7 @@ export function CurrentRatesPage() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 pt-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -263,7 +223,22 @@ export function CurrentRatesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ratesQuery.isLoading
+              {ratesQuery.isError ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-6"
+                  >
+                    <p role="alert">{ratesQuery.error.message}</p>
+                    <Button
+                      variant="link"
+                      onClick={() => ratesQuery.refetch()}
+                    >
+                      Try again
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ) : ratesQuery.isLoading
                 ? (
                     <TableRow>
                       <TableCell

@@ -2159,6 +2159,7 @@ export type AllocateDataBundlePayload = {
     planType: string
     bundleId: string
     mobileNumbers: string[]
+    idempotencyKey?: string
   }
 }
 

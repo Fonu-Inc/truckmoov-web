@@ -15,26 +15,33 @@ import type {
 
 // ─── Device detail — queries ──────────────────────────────────────────────────
 
+// ponytail: the device-detail routes are documented unwrapped, but dev answered with the
+// ServerResponse envelope on 2026-10-01 (and bare earlier the same day). Accept both
+// until the backend settles on one.
+function unwrap<T extends object>(body: T | { status: boolean, message: string, data: T }): T {
+  return 'data' in body && 'status' in body ? body.data : body as T
+}
+
 export async function getDeviceOverview({ deviceId }: { deviceId: string }) {
-  const { data } = await axiosInstance.get<DeviceOverviewResponse>(`/tracking/devices/${deviceId}/overview`)
-  return data
+  const { data } = await axiosInstance.get<DeviceOverviewResponse | { status: boolean, message: string, data: DeviceOverviewResponse }>(`/tracking/devices/${deviceId}/overview`)
+  return unwrap(data)
 }
 
 export async function getDeviceConnectivity({ deviceId }: { deviceId: string }) {
-  const { data } = await axiosInstance.get<DeviceConnectivityResponse>(`/tracking/devices/${deviceId}/connectivity`)
-  return data
+  const { data } = await axiosInstance.get<DeviceConnectivityResponse | { status: boolean, message: string, data: DeviceConnectivityResponse }>(`/tracking/devices/${deviceId}/connectivity`)
+  return unwrap(data)
 }
 
 export async function getDeviceTelemetry({ deviceId, limit }: DeviceTelemetryQuery) {
-  const { data } = await axiosInstance.get<DeviceTelemetryResponse>(`/tracking/devices/${deviceId}/telemetry`, {
+  const { data } = await axiosInstance.get<DeviceTelemetryResponse | { status: boolean, message: string, data: DeviceTelemetryResponse }>(`/tracking/devices/${deviceId}/telemetry`, {
     params: { limit },
   })
-  return data
+  return unwrap(data)
 }
 
 export async function getDeviceFirmware({ deviceId }: { deviceId: string }) {
-  const { data } = await axiosInstance.get<DeviceFirmwareResponse>(`/tracking/devices/${deviceId}/firmware`)
-  return data
+  const { data } = await axiosInstance.get<DeviceFirmwareResponse | { status: boolean, message: string, data: DeviceFirmwareResponse }>(`/tracking/devices/${deviceId}/firmware`)
+  return unwrap(data)
 }
 
 // ─── Vehicle locations — queries ──────────────────────────────────────────────

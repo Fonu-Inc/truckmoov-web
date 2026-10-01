@@ -1,7 +1,10 @@
 import type { DataBundleAllocationsQuery } from "@truckmoov/api/auth";
 import type { DataBundlesLayoutContext } from "@/features/data-bundle/components/layout/DataBundlesLayout";
 import { useQuery } from "@tanstack/react-query";
-import { getDataBundleAllocationsQueryOptions } from "@truckmoov/api/auth";
+import {
+  exportDataBundleAllocations, getDataBundleAllocationsQueryOptions, getSimsQueryOptions,
+} from "@truckmoov/api/auth";
+import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
 import {
   Download, Eye, MoreHorizontal, Search, SlidersHorizontal, Smartphone, Wifi,
 } from "lucide-react";
@@ -9,6 +12,7 @@ import {
   useMemo, useState,
 } from "react";
 import { useOutletContext } from "react-router";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -30,18 +34,24 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import {
-  downloadCsv,
   formatBundleSize,
   formatMobile,
-  useDataBundleCatalog,
   useDebouncedValue,
 } from "@/features/data-bundle/utils/dataBundle";
 
 export function MyBundlesPage() {
   const {
-    openAllocateDialog, openViewAllocation,
+    openTopUp, openViewAllocation,
   } = useOutletContext<DataBundlesLayoutContext>();
-  const { catalog } = useDataBundleCatalog();
+  // Allocations carry only the mobile number — carrier and fitted device come from the SIM list.
+  const simsQuery = useQuery(getSimsQueryOptions({ params: { limit: 200 } }));
+  const simByNumber = useMemo(
+    () => new Map((simsQuery.data?.data?.items ?? []).map(sim => [
+      formatMobile(sim.mobileNumber),
+      sim,
+    ])),
+    [simsQuery.data],
+  );
 
   const [
     search,
@@ -50,10 +60,6 @@ export function MyBundlesPage() {
   const [
     statusFilter,
     setStatusFilter,
-  ] = useState<string>("all");
-  const [
-    draftStatusFilter,
-    setDraftStatusFilter,
   ] = useState<string>("all");
   const [
     filterCycles,
@@ -89,7 +95,7 @@ export function MyBundlesPage() {
       return (allocationsQuery.data?.data.items ?? []).map(item => ({
         id: item.id,
         msisdn: item.mobileNumber,
-        bundle_code: item.bundle.code,
+        bundle_code: item.bundle?.code ?? "?",
         bundle: item.bundle,
         data_mb_total: item.dataTotalMb,
         data_mb_used: item.dataUsedMb,
@@ -107,41 +113,25 @@ export function MyBundlesPage() {
 
   const applyFilter = () => {
     setFilterCycles(draftCycles);
-    setStatusFilter(draftStatusFilter);
   };
   const clearFilter = () => {
     setDraftCycles([]);
     setFilterCycles([]);
-    setDraftStatusFilter("all");
-    setStatusFilter("all");
   };
 
   const exportCsv = () => {
-    downloadCsv(
-      `data-bundles-${Date.now()}.csv`,
-      [
-        "MSISDN",
-        "Bundle",
-        "Used (MB)",
-        "Total (MB)",
-        "Expires",
-        "Status",
-      ],
-      filtered.map(a => [
-        a.msisdn,
-        a.bundle_code,
-        a.data_mb_used,
-        a.data_mb_total,
-        new Date(a.expires_at).toISOString(),
-        a.status,
-      ]),
-    );
+    exportDataBundleAllocations(allocationQueryPayload)
+      .then(blob => downloadBlob(
+        blob,
+        `data-bundles-${Date.now()}.csv`,
+      ))
+      .catch((error: Error) => toast.error(error.message));
   };
 
   return (
     <div className="space-y-4">
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
+      <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
+        <CardHeader className="space-y-1.5 p-6 pb-4">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
@@ -171,6 +161,18 @@ export function MyBundlesPage() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
+              <SelectTrigger className="h-10 rounded-xl px-3.5 w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="expiring">Expiring soon</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline">
@@ -185,21 +187,6 @@ export function MyBundlesPage() {
                 sideOffset={8}
               >
                 <h4 className="text-xs font-medium text-foreground px-0.5">Only show allocations by...</h4>
-                <div className="space-y-1.5">
-                  <p className="text-xs font-medium">Status</p>
-                  <Select
-                    value={draftStatusFilter}
-                    onValueChange={setDraftStatusFilter}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All statuses</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="expiring">Expiring soon</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium">Billing cycle</p>
                   <div className="space-y-1.5 pl-0.5">
@@ -251,11 +238,12 @@ export function MyBundlesPage() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 pt-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Mobile Number</TableHead>
+                <TableHead>SIM Card</TableHead>
+                <TableHead>Device Assigned To</TableHead>
                 <TableHead>Bundle</TableHead>
                 <TableHead>Usage</TableHead>
                 <TableHead>Expires</TableHead>
@@ -264,11 +252,26 @@ export function MyBundlesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading
+              {allocationsQuery.isError ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-6"
+                  >
+                    <p role="alert">{allocationsQuery.error.message}</p>
+                    <Button
+                      variant="link"
+                      onClick={() => allocationsQuery.refetch()}
+                    >
+                      Try again
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ) : isLoading
                 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="text-center py-8 text-muted-foreground"
                       >
                         Loading...
@@ -279,7 +282,7 @@ export function MyBundlesPage() {
                   ? (
                       <TableRow>
                         <TableCell
-                          colSpan={6}
+                          colSpan={7}
                           className="text-center py-8 text-muted-foreground"
                         >
                           No bundles match your filters.
@@ -291,9 +294,17 @@ export function MyBundlesPage() {
                       const days = a.days_left ?? Math.ceil((new Date(a.expires_at).getTime() - Date.now()) / 86400000);
                       const status = String(a.status).toUpperCase();
                       const isExpired = status === "EXPIRED" || days <= 0;
+                      const sim = simByNumber.get(formatMobile(a.msisdn));
                       return (
                         <TableRow key={a.id}>
-                          <TableCell className="text-sm">{formatMobile(a.msisdn)}</TableCell>
+                          <TableCell>
+                            <p className="text-sm">{formatMobile(a.msisdn)}</p>
+                            <p className="text-xs text-muted-foreground">{sim?.operator ?? a.bundle?.carrier ?? "—"}</p>
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-sm">{sim?.assignedDevice?.name || sim?.assignedDevice?.imei || "—"}</p>
+                            <p className="text-xs text-muted-foreground">{sim?.assignedDevice?.type}</p>
+                          </TableCell>
                           <TableCell>{a.bundle_code}</TableCell>
                           <TableCell className="w-[200px]">
                             <div className="space-y-1">
@@ -329,6 +340,7 @@ export function MyBundlesPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
+                                  aria-label="Allocation actions"
                                 >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
@@ -343,19 +355,10 @@ export function MyBundlesPage() {
                                   View allocation
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => {
-                                  const b = a.bundle ?? catalog.find(c => c.code === a.bundle_code);
-                                  openAllocateDialog({
-                                    carrier: b?.carrier ?? "",
-                                    cycle: (b && ("billingCycle" in b ? b.billingCycle : b.billing_cycle)) ?? "",
-                                    bundleCode: a.bundle_code,
-                                    numbers: formatMobile(a.msisdn),
-                                  });
-                                }}
-                                >
+                                <DropdownMenuItem onClick={() => openTopUp(a.msisdn)}>
                                   <Smartphone className="h-4 w-4 mr-2" />
                                   {" "}
-                                  Allocate bundle
+                                  Top up bundle
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>

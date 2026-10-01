@@ -25,6 +25,7 @@ export type DeviceLifecycleStatus =
   | 'assignable'
   | 'assigned'
   | 'faulty'
+  | 'suspended'
   | 'decommissioned'
 
 export type DeviceLastSeenBucket = '5min' | '1hr' | '24hr' | '7day' | 'never'
