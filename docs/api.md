@@ -294,8 +294,9 @@ devDependencies so its peers don't resolve to the landing page's React 19.
   `suspendedBy === "platform"`: only a platform admin can lift that one.
   `decommissioned` is terminal — never set it from a probe.
 - **Request Device** (`ui/RequestDeviceDialog.tsx`) posts `/fleet/device-setup-requests`. The API
-  requires `manufacturer` and `trackerType`, which the design's form lacks, so step 1 adds them.
-  Fulfilment (pickup store / delivery street) has no API field and is appended to `notes`.
+  is a single step (quantity, use case, notes). Pickup/delivery fulfilment and the MTN store
+  picker are out of scope by product decision. Manufacturer and Tracker Type stay in the form
+  only until dev makes them optional (services-ts b230a04).
   When a SIM is picked, `carrierId` / `bundleId` must be ids from `/fleet/carriers` and
   `/fleet/data-bundles` (400 otherwise). This dialog sends no SIM pick today.
 - **Tracking routes** are wrapped in `ServerResponse`; `tracking/requests.ts` returns `data.data`.
