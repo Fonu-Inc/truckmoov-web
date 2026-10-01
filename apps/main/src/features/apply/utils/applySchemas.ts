@@ -22,7 +22,6 @@ import * as z from "zod";
 
 import {
   MAX_DOCUMENT_BYTES,
-  toApplicantType,
 } from "./applyTypes";
 
 export const IDENTIFICATION_TYPES = [
@@ -211,7 +210,7 @@ export function detailsToPayload(
   const enterprise = customerType === "enterprise";
   const optional = (value: string) => value.trim() || undefined;
   return {
-    applicantType: toApplicantType(customerType),
+    applicantType: customerType,
     organizationName: values.organizationName.trim(),
     businessEmail: values.businessEmail.trim(),
     organizationPhone: normalizePhone(values.phoneNumber),

@@ -100,7 +100,7 @@ export const DOCUMENTS: DocumentEntry[] = [
 
 export const ORG_TYPES = [
   {
-    id: "fleet_provider",
+    id: "enterprise",
     title: "Enterprise Admin",
     description: "Operates An Internal Logistics Organisation With Full Authority Over Fleet, Depots, Drivers And Dispatch.",
     illustration: mapIllustration,
@@ -201,7 +201,7 @@ const NG_PHONE = /^(?:\+234|234|0)[789][01]\d{8}$/;
 export const organizationSchema = z.object({
   applicantType: z.enum(
     [
-      "fleet_provider",
+      "enterprise",
       "owner_operator",
     ],
     { message: "Please pick what best describes you." },

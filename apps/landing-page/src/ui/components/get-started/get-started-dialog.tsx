@@ -85,7 +85,7 @@ const EMPTY_ORG_VALUES: OrganizationFormValues = {
 // contactRole is required by the server but the applicant never types it —
 // it's implied by the Enterprise Admin / Owner Operator card they pick.
 const APPLICANT_TYPE_TO_ROLE: Record<OrganizationFormValues["applicantType"], string> = {
-  fleet_provider: "Enterprise Admin",
+  enterprise: "Enterprise Admin",
   owner_operator: "Owner Operator",
 };
 

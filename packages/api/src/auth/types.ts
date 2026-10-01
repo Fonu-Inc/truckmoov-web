@@ -3393,7 +3393,7 @@ export type SystemSecurityEventsResponse = ServerResponse<{
 // ─── Onboarding Applications (public, X-Application-Token) ───────────────────
 // Shapes follow the dev-api Swagger, tag "Onboarding Applications" (TRU-FE-11/12/13).
 
-export type OnboardingApplicantType = 'fleet_provider' | 'owner_operator'
+export type OnboardingApplicantType = 'enterprise' | 'owner_operator'
 
 /** Every type the server can list. `signed_indemnity_form` is generated at signing, never uploaded. */
 export type OnboardingApplicationDocumentType =

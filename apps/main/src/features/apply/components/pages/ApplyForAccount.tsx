@@ -66,7 +66,6 @@ import {
 import {
   displayStep,
   documentsForCustomerType,
-  fromApplicantType,
   readStoredCustomerType,
   writeStoredCustomerType,
 } from "@/features/apply/utils/applyTypes";
@@ -296,7 +295,7 @@ export default function ApplyForAccount() {
       if (!application || rehydratedRef.current)
         return;
       rehydratedRef.current = true;
-      const type = fromApplicantType(application.applicantType);
+      const type = application.applicantType;
       setCustomerType(type);
       writeStoredCustomerType(type);
       form.reset(applicationToDetails(application));
@@ -513,7 +512,7 @@ export default function ApplyForAccount() {
   /** The type decides the documents asked for — switching it clears any already uploaded. */
   async function handleCustomerTypeChange(next: ApplicantCustomerType) {
     const uploaded = (application?.documents ?? []).filter(document => document.documentType !== "signed_indemnity_form");
-    if (application && next !== fromApplicantType(application.applicantType) && uploaded.length > 0) {
+    if (application && next !== application.applicantType && uploaded.length > 0) {
       const ok = await confirm({
         title: "Change customer type?",
         description: `The documents asked for depend on the customer type, so the ${uploaded.length} document(s) you've uploaded will be removed.`,

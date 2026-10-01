@@ -50,7 +50,7 @@ export const ONBOARDING_STAGE_LABELS: Record<SystemOnboardingStage, string> = {
 };
 
 export const APPLICANT_TYPE_LABELS: Record<OnboardingApplicantType, string> = {
-  fleet_provider: "Fleet Provider",
+  enterprise: "Enterprise",
   owner_operator: "Owner Operator",
 };
 

@@ -15,15 +15,7 @@ import type {
 } from "@truckmoov/api/auth";
 
 /** The choice the applicant makes on the first screen. */
-export type ApplicantCustomerType = "enterprise" | "owner_operator";
-
-export function toApplicantType(type: ApplicantCustomerType): OnboardingApplicantType {
-  return type === "enterprise" ? "fleet_provider" : "owner_operator";
-}
-
-export function fromApplicantType(type: OnboardingApplicantType): ApplicantCustomerType {
-  return type === "fleet_provider" ? "enterprise" : "owner_operator";
-}
+export type ApplicantCustomerType = OnboardingApplicantType;
 
 /** Remembers the customer type across reloads so step 1 is not re-asked. */
 export const CUSTOMER_TYPE_STORAGE_KEY = "truckmoov_apply_customer_type";
