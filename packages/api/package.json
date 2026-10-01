@@ -17,6 +17,7 @@
     "./dispatch": "./src/dispatch/index.ts",
     "./tracking": "./src/tracking/index.ts",
     "./notification": "./src/notification/index.ts",
+    "./billing": "./src/billing/index.ts",
     "./console": "./src/console/index.ts"
   },
   "dependencies": {

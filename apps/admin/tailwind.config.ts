@@ -115,6 +115,17 @@ export default {
         "enterprise-lg": "0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08)",
       },
       keyframes: {
+        heartbeat: {
+          "0%": { opacity: "0.55" },
+          "12%": { opacity: "1" },
+          "24%": { opacity: "0.6" },
+          "36%": { opacity: "1" },
+          "60%, 100%": { opacity: "0.55" },
+        },
+        "loading-bar": {
+          from: { transform: "translateX(-100%)" },
+          to: { transform: "translateX(250%)" },
+        },
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -163,6 +174,9 @@ export default {
         },
       },
       animation: {
+        // Overrides Tailwind's pulse for this app: a steady fade-and-return reads as a flicker on small shapes.
+        pulse: "heartbeat 1.5s ease-in-out infinite",
+        "loading-bar": "loading-bar 1.1s ease-in-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.25s ease-out",
