@@ -7,6 +7,7 @@ on:
       - packages/**
       - package.json
       - pnpm-lock.yaml
+      - .github/scripts/**
   push:
     branches:
       - main
@@ -15,19 +16,45 @@ on:
       - packages/**
       - package.json
       - pnpm-lock.yaml
+      - .github/scripts/**
   workflow_dispatch:
 
+# A run on main may be the only one that deploys this app, so a newer push must
+# not cancel it. Each main run gets its own group; only pull requests cancel.
 concurrency:
-  group: truckmoov-admin-${{ github.ref }}
-  cancel-in-progress: true
+  group: truckmoov-admin-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   APP_NAME: truckmoov-admin
   RELEASE_ARCHIVE: truckmoov-admin-release.tar.gz
 
 jobs:
+  affected:
+    name: Affected
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      affected: ${{ steps.detect.outputs.affected }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect whether this app can change
+        id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.sha }}
+        run: .github/scripts/affected.sh admin admin-cicd.yml
+
   validate:
     name: Validate
+    needs: affected
+    if: needs.affected.outputs.affected == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -75,11 +102,40 @@ jobs:
           path: ${{ env.RELEASE_ARCHIVE }}
           if-no-files-found: error
 
+  # Out-of-order finishes: if a newer commit on main also changes this app, its
+  # run deploys a build that already contains this one, so this one stands down.
+  latest:
+    name: Newest for this app
+    needs: [affected, validate]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.affected.outputs.affected == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      superseded: ${{ steps.newer.outputs.affected }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Does a newer commit change this app
+        id: newer
+        env:
+          EVENT: push
+          BASE: ${{ github.sha }}
+          HEAD: HEAD
+        run: .github/scripts/affected.sh admin admin-cicd.yml
+
   deploy:
     name: Deploy
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.affected.outputs.affected == 'true' && needs.latest.outputs.superseded != 'true'
     runs-on: ubuntu-latest
-    needs: validate
+    needs: [affected, validate, latest]
+    concurrency:
+      group: deploy-truckmoov-admin
+      cancel-in-progress: false
     permissions:
       contents: read
     steps:
