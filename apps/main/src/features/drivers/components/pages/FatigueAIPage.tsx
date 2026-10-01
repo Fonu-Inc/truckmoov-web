@@ -1,9 +1,8 @@
-import type { DriverFatigue } from "@truckmoov/api/fleet";
-import { useQueries } from "@tanstack/react-query";
+import type {
+  DriverFatigueAnalysis, DriverFatigueRiskLevel,
+} from "@truckmoov/api/fleet";
 import {
-  getDriverFatigueByIdQueryOptions,
   useDriverFatigueSummary,
-  useDrivers,
   useRunDriverFatigue,
 } from "@truckmoov/api/fleet";
 import {
@@ -21,13 +20,8 @@ import { Progress } from "@/components/shadcn/progress";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
 
-type RiskLevel = "low" | "medium" | "high" | "critical";
-
-type FatigueAlert = DriverFatigue & {
-  driverId: string;
-  driverName: string;
-  band: RiskLevel;
-};
+type RiskLevel = DriverFatigueRiskLevel;
+type FatigueAlert = DriverFatigueAnalysis;
 
 const riskLevelColors: Record<RiskLevel, string> = {
   low: "bg-success/20 text-success border-success/30",
@@ -97,10 +91,7 @@ function AlertCard({
   const rerun = () => runMutation.mutate(
     {
       id: alert.driverId,
-      data: {
-        drivingMinutes: alert.drivingMinutes ?? 0,
-        breakMinutes: alert.breakMinutes ?? undefined,
-      },
+      data: { drivingMinutes: alert.drivingMinutes ?? 0 },
     },
     {
       onSuccess: () => toast.success(`Fatigue analysis re-run for ${alert.driverName}`),
@@ -108,19 +99,19 @@ function AlertCard({
     },
   );
   return (
-    <Card className={`bg-gradient-to-r border-border/50 ${riskLevelBg[alert.band]}`}>
+    <Card className={`bg-gradient-to-r border-border/50 ${riskLevelBg[alert.riskLevel]}`}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <FatigueScoreGauge score={alert.score ?? 0} />
+            <FatigueScoreGauge score={alert.score} />
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
                 {alert.driverName}
                 <Badge
                   variant="outline"
-                  className={riskLevelColors[alert.band]}
+                  className={riskLevelColors[alert.riskLevel]}
                 >
-                  {alert.band}
+                  {alert.riskLevel}
                 </Badge>
               </CardTitle>
               <CardDescription className="mt-1 flex items-center gap-4">
@@ -158,16 +149,36 @@ function AlertCard({
       {expanded && (
         <CardContent className="pt-0">
           <Separator className="my-3" />
-          {/* ponytail: fleetflow lists indicators and recommendations here; the fatigue API
-              returns only analysisText. Add the lists when the response carries them. */}
-          {alert.analysisText && (
+          {alert.indicators.length > 0 && (
+            <div className="mb-4">
+              <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
+                <Activity className="h-4 w-4 text-primary" />
+                Indicators
+              </h4>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                {alert.indicators.map(i => <li key={i}>{i}</li>)}
+              </ul>
+            </div>
+          )}
+          {alert.recommendations.length > 0 && (
+            <div className="mb-4">
+              <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                Recommendations
+              </h4>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                {alert.recommendations.map(r => <li key={r}>{r}</li>)}
+              </ul>
+            </div>
+          )}
+          {alert.analysis && (
             <div>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
                 <Brain className="h-4 w-4 text-primary" />
                 AI Analysis
               </h4>
               <p className="rounded-lg bg-muted/30 p-3 text-sm text-muted-foreground">
-                {alert.analysisText}
+                {alert.analysis}
               </p>
             </div>
           )}
@@ -198,44 +209,18 @@ export default function FatigueAIPage() {
   // The fatigue feature can be switched off per deployment: every fatigue route then
   // answers 503 FeatureDisabled. Don't fan out per-driver calls in that case.
   const isDisabled = summaryQuery.error?.statusCode === 503;
-  const driversQuery = useDrivers();
-  const drivers = driversQuery.data?.data ?? [];
-  const fatigueQueries = useQueries({
-    queries: drivers.map(d => ({
-      ...getDriverFatigueByIdQueryOptions(d.id),
-      enabled: summaryQuery.isSuccess,
-    })),
-  });
-
-  const alerts: FatigueAlert[] = fatigueQueries
-    .map((q, i) => {
-      const fatigue = q.data?.data;
-      const driver = drivers[i];
-      if (!fatigue || fatigue.score === null || !fatigue.band || !driver)
-        return null;
-      return {
-        ...fatigue, band: fatigue.band, driverId: driver.id, driverName: driver.name,
-      };
-    })
-    .filter((alert): alert is FatigueAlert => alert !== null)
-    .sort((x, y) => (y.score ?? 0) - (x.score ?? 0));
-  const isListLoading = summaryQuery.isLoading || fatigueQueries.some(q => q.isLoading);
-
-  const avg = (pick: (a: FatigueAlert) => number | null) => {
-    const values = alerts.map(pick).filter((v): v is number => v !== null);
-    return values.length ? Math.round(values.reduce(
-      (sum, v) => sum + v,
-      0,
-    ) / values.length) : 0;
-  };
+  // The summary carries the counters and the latest analyses; no per-driver fan-out.
+  const summary = summaryQuery.data?.data;
+  const alerts: FatigueAlert[] = summary?.recent ?? [];
+  const isListLoading = summaryQuery.isLoading;
   const stats = {
-    total: summaryQuery.data?.data?.driversAnalyzed ?? alerts.length,
-    critical: alerts.filter(a => a.band === "critical").length,
-    high: alerts.filter(a => a.band === "high").length,
-    medium: alerts.filter(a => a.band === "medium").length,
-    low: alerts.filter(a => a.band === "low").length,
-    avgFatigueScore: Math.round(summaryQuery.data?.data?.averageScore ?? avg(a => a.score)),
-    avgRestCompliance: avg(a => a.restCompliance),
+    total: summary?.totalAnalyses ?? 0,
+    critical: summary?.criticalAlerts ?? 0,
+    high: summary?.highRiskAlerts ?? 0,
+    medium: summary?.byRisk.medium ?? 0,
+    low: summary?.byRisk.low ?? 0,
+    avgFatigueScore: Math.round(summary?.averageScore ?? 0),
+    avgRestCompliance: Math.round(summary?.averageRestCompliance ?? 0),
   };
 
   return (
@@ -380,10 +365,10 @@ export default function FatigueAIPage() {
               )}
               {alerts.map(alert => (
                 <AlertCard
-                  key={alert.driverId}
+                  key={alert.id}
                   alert={alert}
-                  expanded={expandedId === alert.driverId}
-                  onToggle={() => setExpandedId(expandedId === alert.driverId ? null : alert.driverId)}
+                  expanded={expandedId === alert.id}
+                  onToggle={() => setExpandedId(expandedId === alert.id ? null : alert.id)}
                 />
               ))}
             </div>

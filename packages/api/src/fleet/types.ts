@@ -343,6 +343,9 @@ export type ImportDevicesPayload = {
   }
 }
 
+export type SuspendDevicePayload = { id: string, data?: { reason?: string } }
+export type ReinstateDevicePayload = { id: string }
+
 export type UpdateDeviceLifecyclePayload = {
   id: string
   data: {
@@ -675,20 +678,36 @@ export type DriverBehavior = {
 
 // § 10
 export type DriverFatigueDataQuality = 'partial' | 'good' | 'full'
+export type DriverFatigueRiskLevel = 'low' | 'medium' | 'high' | 'critical'
+/** One run of the fatigue model (also the POST …/fatigue/run response). Shapes verified on dev 2026-10-01. */
+export type DriverFatigueAnalysis = {
+  id: string
+  driverId: string
+  driverName: string
+  score: number
+  riskLevel: DriverFatigueRiskLevel
+  drivingMinutes: number | null
+  restCompliance: number | null
+  indicators: string[]
+  recommendations: string[]
+  analysis: string
+  dataQuality: DriverFatigueDataQuality
+  analyzedAt: string
+}
 export type DriverFatigueSummary = {
+  averageScore: number | null
+  averageRestCompliance: number | null
+  criticalAlerts: number
+  highRiskAlerts: number
+  totalAnalyses: number
+  byRisk: Record<DriverFatigueRiskLevel, number>
   driversAnalyzed: number
   driversTotal: number
-  averageScore: number | null
-  dataQuality: DriverFatigueDataQuality
+  recent: DriverFatigueAnalysis[]
 }
 export type DriverFatigue = {
-  score: number | null
-  band: 'low' | 'medium' | 'high' | 'critical' | null
-  restCompliance: number | null
-  drivingMinutes: number | null
-  breakMinutes: number | null
-  dataQuality: DriverFatigueDataQuality
-  analysisText: string
+  current: DriverFatigueAnalysis | null
+  history: DriverFatigueAnalysis[]
 }
 export type RunDriverFatiguePayload = {
   id: string
@@ -1263,6 +1282,11 @@ export type FleetDevice = {
   assignedAt: string | null
   traccarDeviceId: string | null
   provisionStatus: DeviceProvisionStatus
+  /** A tenant can reinstate only its own suspensions; a platform one stays until an admin lifts it. */
+  suspendedBy?: 'tenant' | 'platform' | null
+  suspendedAt?: string | null
+  suspensionReason?: string | null
+  preSuspensionLifecycleStatus?: DeviceLifecycleStatus | null
   createdAt: string
   updatedAt: string
 }
@@ -1879,6 +1903,7 @@ export type MarkGeofenceAlertsReadResponse = ServerResponse<MarkGeofenceAlertsRe
 export type DriverBehaviorResponse = ServerResponse<DriverBehavior>
 export type DriverFatigueSummaryResponse = ServerResponse<DriverFatigueSummary>
 export type DriverFatigueResponse = ServerResponse<DriverFatigue>
+export type DriverFatigueRunResponse = ServerResponse<DriverFatigueAnalysis>
 export type DriverImportColumnsResponse = ServerResponse<DriverImportColumns>
 export type BulkDeviceImportResponse = ServerResponse<BulkImportResult<FleetDevice>>
 export type FleetDashboardResponse = ServerResponse<FleetDashboard>

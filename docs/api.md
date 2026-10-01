@@ -289,8 +289,9 @@ devDependencies so its peers don't resolve to the landing page's React 19.
   the summary.
 - **Vehicle Assigned** joins `vehicleId` against `/fleet/vehicles`; **SIM Card** joins
   `GET /auth/sims` items by `assignedDevice.id` / `.imei` (the device record has no SIM fields).
-- **Suspend / Reinstate** use `PATCH /fleet/devices/:id/lifecycle`. On dev the lifecycle route
-  rejects `suspended` from every state, so Suspend surfaces the server error until that is fixed.
+- **Suspend / Reinstate** use `POST /fleet/devices/:id/suspend` / `reinstate` (the lifecycle route
+  doesn't accept `suspended`). Suspending frees the vehicle. Reinstate is hidden when
+  `suspendedBy === "platform"`: only a platform admin can lift that one.
   `decommissioned` is terminal — never set it from a probe.
 - **Request Device** (`ui/RequestDeviceDialog.tsx`) posts `/fleet/device-setup-requests`. The API
   requires `manufacturer` and `trackerType`, which the design's form lacks, so step 1 adds them.

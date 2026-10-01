@@ -76,6 +76,8 @@ import {
   runDriverFatigue,
   sendDriverMessage,
   suspendDriver,
+  suspendDevice,
+  reinstateDevice,
   getFleetAnalyticsDriverScores,
   getFleetAnalyticsEvents,
   getFleetAnalyticsFleetStatus,
@@ -1383,6 +1385,7 @@ export function useUnassignDriverFromVehicle() {
 
 function invalidateDevices() {
   queryClient.invalidateQueries({ queryKey: ['fleet', 'devices'] })
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devicesSummary })
 }
 
 export function useRegisterGpsDevice() {
@@ -1438,6 +1441,26 @@ export function useImportDevices() {
     mutationFn: importDevices,
     onSuccess: () => {
       invalidateDevices()
+    },
+  })
+}
+
+export function useSuspendDevice() {
+  return useMutation({
+    mutationFn: suspendDevice,
+    onSuccess: (_, { id }) => {
+      invalidateDevices()
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
+    },
+  })
+}
+
+export function useReinstateDevice() {
+  return useMutation({
+    mutationFn: reinstateDevice,
+    onSuccess: (_, { id }) => {
+      invalidateDevices()
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
     },
   })
 }

@@ -13,9 +13,10 @@ import {
   useDevices,
   useDevicesFilters,
   useDevicesSummary,
+  useReinstateDevice,
+  useSuspendDevice,
   useUpdateDevice,
   useUpdateDeviceFirmware,
-  useUpdateDeviceLifecycle,
   useVehicles,
 } from "@truckmoov/api/fleet";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
@@ -240,7 +241,9 @@ export default function DeviceManagement() {
   const { data: deviceResponse } = useDevice(selectedDevice?.id ?? "");
   const createDeviceSetupRequest = useCreateDeviceSetupRequest();
   const updateDevice = useUpdateDevice();
-  const updateLifecycle = useUpdateDeviceLifecycle();
+  const suspendDevice = useSuspendDevice();
+  const reinstateDevice = useReinstateDevice();
+  const isSuspendPending = suspendDevice.isPending || reinstateDevice.isPending;
   const updateFirmware = useUpdateDeviceFirmware();
 
   const devices = useMemo(
@@ -333,13 +336,11 @@ export default function DeviceManagement() {
     }
   };
 
-  // Suspend/reinstate go through the lifecycle route; /auth/system/devices/:id/suspend
-  // is platform-admin only.
+  // POST /fleet/devices/:id/suspend | reinstate. Suspending frees the vehicle; reinstating
+  // restores the pre-suspension state. Platform suspensions can't be lifted here.
   const setSuspended = (device: FleetDevice, suspended: boolean) => {
-    updateLifecycle.mutate(
-      {
-        id: device.id, data: { lifecycleStatus: suspended ? "suspended" : "assignable" },
-      },
+    (suspended ? suspendDevice : reinstateDevice).mutate(
+      { id: device.id },
       {
         onSuccess: () => {
           toast.success(suspended ? "Device suspended" : "Device reinstated");
@@ -834,16 +835,16 @@ export default function DeviceManagement() {
                                           </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           {state === "suspended"
-                                            ? (
-                                                <DropdownMenuItem onClick={() => setSuspended(
-                                                  device,
-                                                  false,
-                                                )}
-                                                >
-                                                  <RotateCcw className="mr-2 h-4 w-4" />
-                                                  Reinstate Device
-                                                </DropdownMenuItem>
-                                              )
+                                            ? device.suspendedBy !== "platform" && (
+                                              <DropdownMenuItem onClick={() => setSuspended(
+                                                device,
+                                                false,
+                                              )}
+                                              >
+                                                <RotateCcw className="mr-2 h-4 w-4" />
+                                                Reinstate Device
+                                              </DropdownMenuItem>
+                                            )
                                             : (
                                                 <DropdownMenuItem
                                                   className="text-destructive focus:text-destructive"
@@ -889,7 +890,7 @@ export default function DeviceManagement() {
       <AlertDialog
         open={Boolean(devicePendingSuspend)}
         onOpenChange={(open) => {
-          if (!open && !updateLifecycle.isPending)
+          if (!open && !isSuspendPending)
             setDevicePendingSuspend(null);
         }}
       >
@@ -901,14 +902,14 @@ export default function DeviceManagement() {
               {" "}
               {devicePendingSuspend?.imei || devicePendingSuspend?.id}
               {" "}
-              will stop being active on its assigned vehicle until you reinstate it.
+              will be released from its assigned vehicle and stay inactive until you reinstate it.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={updateLifecycle.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSuspendPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={updateLifecycle.isPending}
+              disabled={isSuspendPending}
               onClick={(event) => {
                 event.preventDefault();
                 if (devicePendingSuspend) {

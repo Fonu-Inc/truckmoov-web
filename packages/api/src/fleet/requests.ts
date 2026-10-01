@@ -79,6 +79,7 @@ import type {
   DriverConsentResponse,
   DriverDetailResponse,
   DriverFatigueResponse,
+  DriverFatigueRunResponse,
   DriverFatigueSummaryResponse,
   DriverGeofenceAlertsResponse,
   DriverImportColumnsResponse,
@@ -95,6 +96,8 @@ import type {
   SendDriverMessagePayload,
   SendDriverMessageResponse,
   SuspendDriverPayload,
+  SuspendDevicePayload,
+  ReinstateDevicePayload,
   GeofenceListResponse,
   GeofenceResponse,
   GeofencesQuery,
@@ -451,6 +454,16 @@ export async function updateDeviceLifecycle({ id, data }: UpdateDeviceLifecycleP
   return res
 }
 
+export async function suspendDevice({ id, data }: SuspendDevicePayload) {
+  const { data: res } = await axiosInstance.post<FleetDeviceResponse>(`/fleet/devices/${id}/suspend`, data ?? {})
+  return res
+}
+
+export async function reinstateDevice({ id }: ReinstateDevicePayload) {
+  const { data: res } = await axiosInstance.post<FleetDeviceResponse>(`/fleet/devices/${id}/reinstate`, {})
+  return res
+}
+
 export async function validateDeviceAssignment({ id, params }: ValidateDeviceAssignmentQuery) {
   const { data } = await axiosInstance.get<DeviceAssignmentValidationResponse>(`/fleet/devices/${id}/assignment/validate`, { params })
   return data
@@ -670,7 +683,7 @@ export async function getDriverFatigueById({ id }: { id: string }) {
 }
 
 export async function runDriverFatigue({ id, data }: RunDriverFatiguePayload) {
-  const { data: res } = await axiosInstance.post<DriverFatigueResponse>(`/fleet/drivers/${id}/fatigue/run`, data ?? {})
+  const { data: res } = await axiosInstance.post<DriverFatigueRunResponse>(`/fleet/drivers/${id}/fatigue/run`, data ?? {})
   return res
 }
 
