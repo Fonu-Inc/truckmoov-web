@@ -120,9 +120,6 @@ const OWNER_OPERATOR_ACTIONS: QuickAction[] = [
     id: "devices", title: "Devices", description: "Manage IoT devices on your vehicles.", icon: Cpu, to: "/devices",
   },
   {
-    id: "payouts", title: "Payouts & Invoicing", description: "Track your earnings and invoices.", icon: Receipt, to: "/waybill-invoices",
-  },
-  {
     id: "profile", title: "Profile", description: "Update your personal and business details.", icon: Users, to: "/settings",
   },
 ];

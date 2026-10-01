@@ -32,11 +32,14 @@ export type SettingsTab = {
 };
 
 /**
- * Tabs limited to the enterprise admin — the only tenant role that owns
- * org-wide configuration. Kept as a constant so route.ts can reuse the same
- * list when guarding the URL.
+ * Tabs for the tenant roles that own org-wide configuration — enterprise admin
+ * and owner-operator share the same tab set. Kept as a constant so route.ts can
+ * reuse the same list when guarding the URL.
  */
-const ENTERPRISE_ADMIN_ONLY: UserRole[] = ["ENTERPRISE_ADMIN"];
+const ORG_SETTINGS_ROLES: UserRole[] = [
+  "ENTERPRISE_ADMIN",
+  "OWNER_OPERATOR",
+];
 
 /**
  * The settings tab bar, in order. One entry per child route of `/settings` —
@@ -49,7 +52,7 @@ const ENTERPRISE_ADMIN_ONLY: UserRole[] = ["ENTERPRISE_ADMIN"];
  */
 export const SETTINGS_TABS: SettingsTab[] = [
   {
-    to: "/settings", label: "Organization", icon: Building2, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings", label: "Organization", icon: Building2, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
     to: "/settings/documents", label: "Documents", icon: FileText, hasPermissions: [
@@ -58,45 +61,45 @@ export const SETTINGS_TABS: SettingsTab[] = [
     ],
   },
   {
-    to: "/settings/storage", label: "Storage", icon: HardDrive, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/storage", label: "Storage", icon: HardDrive, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
-    to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
-    to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
-    to: "/settings/ai", label: "AI Matching", icon: Bot, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/ai", label: "AI Matching", icon: Bot, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
-    to: "/settings/ai-usage", label: "AI Usage", icon: BarChart3, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/ai-usage", label: "AI Usage", icon: BarChart3, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
-    to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
-    to: "/settings/users", label: "Users", icon: Users, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/users", label: "Users", icon: Users, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
-    to: "/settings/branding", label: "Branding", icon: Palette, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/branding", label: "Branding", icon: Palette, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
-    to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+    to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ORG_SETTINGS_ROLES,
   },
   // Routed but off the bar, to match fleetflow's tab set. Still reached by
   // links (TrialBanner, StoragePanel, authRedirect) and the /settings redirect.
   {
-    to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: ENTERPRISE_ADMIN_ONLY, hidden: true,
+    to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
   },
   {
-    to: "/settings/kyc", label: "KYC", icon: FileCheck, hasPermissions: ENTERPRISE_ADMIN_ONLY, hidden: true,
+    to: "/settings/kyc", label: "KYC", icon: FileCheck, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
   },
   {
     to: "/settings/dispatch", label: "Dispatch", icon: Radio, hasPermissions: ["DISPATCHER"], hidden: true,
   },
   {
-    to: "/settings/communication", label: "Communication", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY, hidden: true,
+    to: "/settings/communication", label: "Communication", icon: Bell, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
   },
   {
     to: "/settings/upgrade", label: "Upgrade", icon: ArrowUpCircle, hasPermissions: ["OWNER_OPERATOR"], hidden: true,

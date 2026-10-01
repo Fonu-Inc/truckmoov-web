@@ -22,6 +22,7 @@ import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
 import { DataBundlesLayout } from "@/features/data-bundle/components/layout/DataBundlesLayout";
 import { DriversLayout } from "@/features/drivers/components/layout/DriversLayout";
 import { FleetLayout } from "@/features/fleet/components/layout/FleetLayout";
+import { FLEET_TABS } from "@/features/fleet/utils/fleetNav";
 import { IntegrationsLayout } from "@/features/integration/components/layout/IntegrationsLayout";
 import { PayoutsInvoicingLayout } from "@/features/payouts-invoicing/components/layout/PayoutsInvoicingLayout";
 import { ReportsLayout } from "@/features/reports/components/layout/ReportsLayout";
@@ -102,6 +103,17 @@ function settingsTabRoles(to: string): UserRole[] | undefined {
   if (!tab)
     throw new Error(`route.tsx: no SETTINGS_TABS entry for ${to}`);
   return tab.hasPermissions.length === 0 ? undefined : tab.hasPermissions;
+}
+
+/**
+ * Role list for a `/fleet/*` tab — the sidebar's /fleet roles minus the tab's
+ * `hiddenFor` in FLEET_TABS, so the tab bar and the URL guard cannot disagree.
+ */
+function fleetTabRoles(to: string): UserRole[] {
+  const tab = FLEET_TABS.find(t => t.to === to);
+  if (!tab)
+    throw new Error(`route.tsx: no FLEET_TABS entry for ${to}`);
+  return (getRolesForHref("/fleet") ?? []).filter(r => !tab.hiddenFor?.includes(r));
 }
 
 /**
@@ -366,17 +378,6 @@ export const router = createBrowserRouter([
               () => import("@/features/dashboard/components/pages/AggregatorDashboard"),
             ),
           },
-          // FINANCE_VIEWER's Maintenance: the fleet tab's component without
-          // FleetLayout's tab bar (they can't open the other fleet tabs).
-          // Other roles keep /fleet/maintenance.
-          {
-            path: "/maintenance",
-            lazy: guardedByNamed(
-              getRolesForHref("/maintenance") ?? [],
-              () => import("@/features/fleet/components/ui/MaintenanceTab"),
-              "MaintenanceTab",
-            ),
-          },
 
           // Tenant Admin / Fleet Provider
           {
@@ -399,12 +400,24 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                lazy: async () => ({ Component: (await import("@/features/fleet/components/pages/VehiclesPage")).default }),
+                // Roles without the Vehicles tab (FINANCE_VIEWER) land on their default fleet tab instead of a 403.
+                loader: () => {
+                  const role = useAuthStore.getState().user?.role;
+                  return role && !fleetTabRoles("/fleet").includes(role) ? redirect("/fleet/analytics") : null;
+                },
+                lazy: guardedBy(
+                  fleetTabRoles("/fleet"),
+                  () => import("@/features/fleet/components/pages/VehiclesPage"),
+                ),
               },
               {
                 path: "schedules",
                 // ponytail: the design's 2nd tab is Trips. MaintenanceProfilesTab is unmounted (the reference doesn't mount it either) — re-add a route here to bring it back.
-                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/TripsTab")).TripsTab }),
+                lazy: guardedByNamed(
+                  fleetTabRoles("/fleet/schedules"),
+                  () => import("@/features/fleet/components/ui/TripsTab"),
+                  "TripsTab",
+                ),
               },
               {
                 path: "maintenance",
@@ -416,7 +429,11 @@ export const router = createBrowserRouter([
               },
               {
                 path: "compliance",
-                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/ComplianceTab")).ComplianceTab }),
+                lazy: guardedByNamed(
+                  fleetTabRoles("/fleet/compliance"),
+                  () => import("@/features/fleet/components/ui/ComplianceTab"),
+                  "ComplianceTab",
+                ),
               },
               {
                 path: "analytics",

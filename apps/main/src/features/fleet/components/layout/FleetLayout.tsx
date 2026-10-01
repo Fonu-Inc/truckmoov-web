@@ -1,7 +1,8 @@
 import {
   NavLink, Outlet,
 } from "react-router";
-import { FLEET_TABS } from "@/features/fleet/utils/fleetNav";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { getFleetTabsForRole } from "@/features/fleet/utils/fleetNav";
 import { cn } from "@/lib/utils";
 
 /**
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
  * Mirrors SettingsLayout — see docs/design.md § "Tabs are routes, not query params".
  */
 export function FleetLayout() {
+  const role = useAuthStore(s => s.user?.role);
   return (
     <div className="space-y-6">
       <div className="flex w-full justify-center">
@@ -16,7 +18,7 @@ export function FleetLayout() {
           aria-label="Fleet sections"
           className="bg-muted/50 text-muted-foreground flex flex-wrap justify-center gap-1 h-auto rounded-md p-1"
         >
-          {FLEET_TABS.map(tab => (
+          {getFleetTabsForRole(role).map(tab => (
             <NavLink
               key={tab.to}
               to={tab.to}

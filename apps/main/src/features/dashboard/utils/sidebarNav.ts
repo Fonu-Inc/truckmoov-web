@@ -7,7 +7,6 @@ import {
   Cpu,
   CreditCard,
   Database,
-  Gauge,
   Inbox,
   LayoutDashboard,
   Leaf,
@@ -96,6 +95,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Shipments", href: "/jobs", icon: Package,
     labelByRole: {
       ENTERPRISE_ADMIN: "Jobs",
+      OWNER_OPERATOR: "Jobs",
       DISPATCHER: "Dispatch",
       OPERATIONS_MANAGER: "Dispatch",
     },
@@ -140,6 +140,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "DISPATCHER",
+      "OPERATIONS_MANAGER",
     ],
   },
 
@@ -156,14 +157,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
       "FINANCE_VIEWER",
-    ],
-  },
-  {
-    label: "IoT SIMS", href: "/sims", icon: Wifi,
-    hasPermission: [
-      "FLEET_ADMIN",
-      "OWNER_OPERATOR",
-      "FINANCE_VIEWER",
+      "OPERATIONS_MANAGER",
     ],
   },
 
@@ -178,14 +172,26 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
-      "OPERATIONS_MANAGER",
       "DISPATCHER",
+      "OWNER_OPERATOR",
     ],
   },
 
   // ─── Install & bundles ─────────────────────────────────────────
   {
-    label: "Installation", href: "/installation", icon: Wrench, hasPermission: ["FLEET_ADMIN"],
+    label: "Installation", href: "/installation", icon: Wrench,
+    hasPermission: [
+      "FLEET_ADMIN",
+      "OPERATIONS_MANAGER",
+    ],
+  },
+  {
+    label: "IoT SIMS", href: "/sims", icon: Wifi,
+    hasPermission: [
+      "FLEET_ADMIN",
+      "FINANCE_VIEWER",
+      "OPERATIONS_MANAGER",
+    ],
   },
   {
     label: "M2M IoT Bundles", href: "/data-bundles", icon: Database,
@@ -194,7 +200,15 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
+      "OPERATIONS_MANAGER",
     ],
+  },
+  {
+    // ponytail: second /map entry so OPERATIONS_MANAGER gets the map after
+    // bundles (demo order) while enterprise/owner-operator keep it before.
+    // Same trick as the DISPATCHER Communications group below.
+    label: "Live Map & Zones", href: "/map", icon: MapPin, fullWidth: true,
+    hasPermission: ["OPERATIONS_MANAGER"],
   },
 
   // ─── Communications ────────────────────────────────────────────
@@ -235,18 +249,9 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Payouts & Invoicing", href: "/waybill-invoices", icon: Receipt,
     hasPermission: [
-      "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
-      "OWNER_OPERATOR",
-      "FINANCE_VIEWER",
     ],
-  },
-  {
-    label: "Fuel Costs", href: "/fuel", icon: Gauge, hasPermission: ["FINANCE_VIEWER"],
-  },
-  {
-    label: "Maintenance", href: "/maintenance", icon: Settings, hasPermission: ["FINANCE_VIEWER"],
   },
   {
     label: "Wallet & Billing", href: "/wallet", icon: CreditCard, hasPermission: ["FINANCE_VIEWER"],
@@ -259,6 +264,8 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
+      "OWNER_OPERATOR",
+      "OPERATIONS_MANAGER",
     ],
   },
   {
@@ -268,11 +275,15 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
+      "OWNER_OPERATOR",
     ],
   },
   {
     label: "Billing", href: "/subscription", icon: CreditCard,
-    hasPermission: ["ENTERPRISE_ADMIN"],
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "OWNER_OPERATOR",
+    ],
   },
   {
     label: "Sustainability", href: "/sustainability", icon: Leaf, hasPermission: [
@@ -295,7 +306,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     labelByRole: {
       ENTERPRISE_ADMIN: "Settings",
       DISPATCHER: "Profile",
-      OWNER_OPERATOR: "Profile",
+      OWNER_OPERATOR: "Settings",
       FLEET_ADMIN: "Profile",
       OPERATIONS_MANAGER: "Profile",
       FINANCE_VIEWER: "Profile",

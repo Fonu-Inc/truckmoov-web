@@ -187,7 +187,7 @@ markup. Roles:
 | `OWNER_OPERATOR` | `/owner-operator` | My Overview, My Jobs, My Vehicles (single-user) |
 | `OPERATIONS_MANAGER` | see config | Operations subset |
 | `DISPATCHER` | see config | Dispatch subset |
-| `FINANCE_VIEWER` | see config | Read-only financial subset |
+| `FINANCE_VIEWER` | `/fleet/analytics` | Read-only financial subset; `/fleet` shows only Maintenance, Fuel, Financials, Analytics (`hiddenFor` in `fleetNav.ts`) |
 
 In both apps, entries are either a flat `SidebarNavItem` or a
 `SidebarNavGroup` (collapsible, e.g. "Communications" → WhatsApp Setup /

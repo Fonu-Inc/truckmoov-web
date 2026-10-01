@@ -58,7 +58,6 @@ it(
       "Live Tracking",
       "M2M IoT Bundles",
       "Communications",
-      "Payouts & Invoicing",
       "Reports",
       "Analytics",
       "Billing",
@@ -68,8 +67,43 @@ it(
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
     ]));
-    expect(getRolesForHref("/installation")).toEqual(["FLEET_ADMIN"]);
-    expect(getRolesForHref("/subscription")).toEqual(["ENTERPRISE_ADMIN"]);
+    expect(getRolesForHref("/installation")).toEqual([
+      "FLEET_ADMIN",
+      "OPERATIONS_MANAGER",
+    ]);
+    expect(getEntriesForRole("OPERATIONS_MANAGER").map(e => e.label)).toEqual([
+      "Fleet Operations",
+      "Dispatch",
+      "Vehicles",
+      "Drivers",
+      "Devices",
+      "Installation",
+      "IoT SIMS",
+      "M2M IoT Bundles",
+      "Live Map & Zones",
+      "Communications",
+      "Reports",
+      "Analytics",
+      "Profile",
+    ]);
+    expect(getRolesForHref("/subscription")).toEqual([
+      "ENTERPRISE_ADMIN",
+      "OWNER_OPERATOR",
+    ]);
+    expect(getEntriesForRole("OWNER_OPERATOR").map(e => e.label)).toEqual([
+      "Overview",
+      "Jobs",
+      "My Vehicles",
+      "My Drivers",
+      "My Devices",
+      "Live Tracking",
+      "M2M IoT Bundles",
+      "Communications",
+      "Reports",
+      "Analytics",
+      "Billing",
+      "Settings",
+    ]);
   },
 );
 
