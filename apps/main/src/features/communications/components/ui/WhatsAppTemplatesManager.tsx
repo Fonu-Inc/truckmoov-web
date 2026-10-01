@@ -106,7 +106,7 @@ const LANGUAGES = [
   },
 ];
 
-export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerProps) {
+export function WhatsAppTemplatesManager({ tenantId: _tenantId }: WhatsAppTemplatesManagerProps) {
   const [templates] = useState<WhatsAppTemplate[]>([]);
   const [isLoading] = useState(false);
   const [
@@ -147,36 +147,6 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
     header_content: "",
     footer_text: "",
   });
-
-  const DEMO_TEMPLATES: WhatsAppTemplate[] = [
-    {
-      id: "demo-1", tenant_id: tenantId, name: "job_offer_notification", language: "en", category: "UTILITY", status: "APPROVED", meta_template_id: "MT_001", body_text: "Hi {{1}}, you have a new job offer from {{2}} to {{3}}. Reply YES to accept.", header_type: "TEXT", header_content: "New Job Offer", footer_text: "FleetPro Dispatch", buttons: null, variables: null, created_at: new Date(Date.now() - 86400000 * 12).toISOString(), updated_at: new Date(Date.now() - 86400000 * 2).toISOString(), last_synced_at: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: "demo-2", tenant_id: tenantId, name: "delivery_confirmation", language: "en", category: "UTILITY", status: "APPROVED", meta_template_id: "MT_002", body_text: "Your delivery {{1}} has been confirmed. ETA: {{2}}.", header_type: null, header_content: null, footer_text: null, buttons: null, variables: null, created_at: new Date(Date.now() - 86400000 * 20).toISOString(), updated_at: new Date(Date.now() - 86400000 * 5).toISOString(), last_synced_at: new Date(Date.now() - 7200000).toISOString(),
-    },
-    {
-      id: "demo-3", tenant_id: tenantId, name: "monthly_promo_blast", language: "en_US", category: "MARKETING", status: "SUBMITTED", meta_template_id: null, body_text: "Save 15% on all premium routes this month. Use code FLEET15.", header_type: "IMAGE", header_content: "promo_banner.jpg", footer_text: "Offer ends Apr 30", buttons: null, variables: null, created_at: new Date(Date.now() - 86400000 * 3).toISOString(), updated_at: new Date(Date.now() - 86400000 * 1).toISOString(), last_synced_at: null,
-    },
-    {
-      id: "demo-4", tenant_id: tenantId, name: "otp_verification", language: "en", category: "AUTHENTICATION", status: "APPROVED", meta_template_id: "MT_004", body_text: "Your verification code is {{1}}. Valid for 10 minutes.", header_type: null, header_content: null, footer_text: null, buttons: null, variables: null, created_at: new Date(Date.now() - 86400000 * 45).toISOString(), updated_at: new Date(Date.now() - 86400000 * 30).toISOString(), last_synced_at: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: "demo-5", tenant_id: tenantId, name: "trip_completed_summary", language: "en", category: "UTILITY", status: "APPROVED", meta_template_id: "MT_005", body_text: "Trip {{1}} completed. Distance: {{2}} km. Duration: {{3}}.", header_type: "TEXT", header_content: "Trip Summary", footer_text: null, buttons: null, variables: null, created_at: new Date(Date.now() - 86400000 * 18).toISOString(), updated_at: new Date(Date.now() - 86400000 * 4).toISOString(), last_synced_at: new Date(Date.now() - 1800000).toISOString(),
-    },
-    {
-      id: "demo-6", tenant_id: tenantId, name: "payment_reminder", language: "en", category: "UTILITY", status: "REJECTED", meta_template_id: null, body_text: "Reminder: Invoice {{1}} of {{2}} is overdue. Please settle promptly.", header_type: null, header_content: null, footer_text: null, buttons: null, variables: null, created_at: new Date(Date.now() - 86400000 * 7).toISOString(), updated_at: new Date(Date.now() - 86400000 * 6).toISOString(), last_synced_at: null,
-    },
-    {
-      id: "demo-7", tenant_id: tenantId, name: "driver_shift_reminder", language: "en_GB", category: "UTILITY", status: "DRAFT", meta_template_id: null, body_text: "Your shift starts at {{1}}. Please report to {{2}}.", header_type: null, header_content: null, footer_text: null, buttons: null, variables: null, created_at: new Date(Date.now() - 86400000 * 1).toISOString(), updated_at: new Date(Date.now() - 86400000 * 1).toISOString(), last_synced_at: null,
-    },
-    {
-      id: "demo-8", tenant_id: tenantId, name: "weekend_special_offer", language: "en_US", category: "MARKETING", status: "APPROVED", meta_template_id: "MT_008", body_text: "Book a weekend trip and get free fuel allowance up to ₦20,000.", header_type: "IMAGE", header_content: "weekend_offer.jpg", footer_text: "Limited time only", buttons: null, variables: null, created_at: new Date(Date.now() - 86400000 * 25).toISOString(), updated_at: new Date(Date.now() - 86400000 * 8).toISOString(), last_synced_at: new Date(Date.now() - 14400000).toISOString(),
-    },
-  ];
-
-  const useDemo = !isLoading && templates.length === 0;
-  const displayTemplates = useDemo ? DEMO_TEMPLATES : templates;
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, {
@@ -251,7 +221,7 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
     toast.info("Coming soon");
   };
 
-  const filteredTemplates = displayTemplates.filter((t) => {
+  const filteredTemplates = templates.filter((t) => {
     const matchesSearch
       = t.name.toLowerCase().includes(searchQuery.toLowerCase())
         || t.category?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -308,14 +278,6 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
             <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-4 w-4" />
               Templates
-              {useDemo && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px]"
-                >
-                  Demo data
-                </Badge>
-              )}
             </CardTitle>
             <ExportButton
               filename="whatsapp-templates"

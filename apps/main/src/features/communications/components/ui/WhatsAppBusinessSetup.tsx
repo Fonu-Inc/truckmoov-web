@@ -53,7 +53,6 @@ export function WhatsAppBusinessSetup() {
   const accounts: any[] = [];
   const isLoading = false;
   const canSend = false;
-  const tenantStatus = null;
   const isConnecting = false;
   const isDisconnecting = false;
   const refetch = async (..._args: any[]) => {};
@@ -141,20 +140,6 @@ export function WhatsAppBusinessSetup() {
 
   return (
     <div className="space-y-6">
-      {/* KYC Warning */}
-      {tenantStatus !== "active" && (
-        <Alert
-          variant="destructive"
-          className="border-destructive/30 bg-destructive/5"
-        >
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Your business verification (KYC) is not complete. You can connect WhatsApp, but messaging
-            will be blocked until verification is approved.
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Tabs
         defaultValue="connection"
         className="space-y-6"
