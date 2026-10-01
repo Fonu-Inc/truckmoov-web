@@ -1,4 +1,4 @@
-import type { WaybillRecord } from "@/features/payouts-invoicing/utils/demoData";
+import type { WaybillRecord } from "@/features/payouts-invoicing/types";
 import {
   Calendar, CheckCircle2, DollarSign, Download, FileText, ImageIcon, Loader2, MapPin, MessageSquare, Package, Pencil, Save, Scan, Truck, User,
 } from "lucide-react";

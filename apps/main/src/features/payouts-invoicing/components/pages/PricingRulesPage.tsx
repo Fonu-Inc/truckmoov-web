@@ -9,7 +9,6 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { PricingRulesPanel } from "@/features/payouts-invoicing/components/ui/PricingRulesPanel";
 import { TabKpiCards } from "@/features/payouts-invoicing/components/ui/TabKpiCards";
 import { useWaybillInvoice } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
-import { DEMO_PRICING_RULES } from "@/features/payouts-invoicing/utils/demoData";
 
 export default function PricingRulesPage() {
   const {
@@ -21,7 +20,7 @@ export default function PricingRulesPage() {
   } = useWaybillInvoice();
   const { format: formatAmount } = useCurrency();
 
-  const displayPricingRules = pricingRules.length > 0 ? pricingRules : DEMO_PRICING_RULES;
+  const displayPricingRules = pricingRules;
 
   const [
     showPricingDialog,

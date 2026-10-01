@@ -1,4 +1,4 @@
-import type { PricingRule } from "@/features/payouts-invoicing/utils/demoData";
+import type { PricingRule } from "@/features/payouts-invoicing/types";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowRight, DollarSign, MoreHorizontal, Pencil, Search, SlidersHorizontal, ToggleLeft, ToggleRight, Trash2,

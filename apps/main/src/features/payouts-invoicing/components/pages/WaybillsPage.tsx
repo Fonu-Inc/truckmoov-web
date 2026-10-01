@@ -1,4 +1,4 @@
-import type { WaybillRecord } from "@/features/payouts-invoicing/utils/demoData";
+import type { WaybillRecord } from "@/features/payouts-invoicing/types";
 import {
   formatWithPattern, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -43,7 +43,6 @@ import {
 import {
   useWaybillInvoice, useWaybillRealtimeEvents,
 } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
-import { DEMO_WAYBILLS } from "@/features/payouts-invoicing/utils/demoData";
 import { statusConfig } from "@/features/payouts-invoicing/utils/statusConfig";
 import {
   inferVehicleType, VEHICLE_TYPE_OPTIONS,
@@ -62,7 +61,7 @@ export default function WaybillsPage() {
   } = useWaybillInvoice();
   const { format: formatAmount } = useCurrency();
 
-  const displayWaybills = waybills.length > 0 ? waybills : DEMO_WAYBILLS;
+  const displayWaybills = waybills;
 
   const [
     selectedWaybill,

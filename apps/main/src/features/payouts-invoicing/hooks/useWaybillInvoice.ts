@@ -1,6 +1,6 @@
 import type {
   PricingRule, WaybillInvoice, WaybillRecord,
-} from "@/features/payouts-invoicing/utils/demoData";
+} from "@/features/payouts-invoicing/types";
 
 export type InvoiceConfig = {
   tax_enabled: boolean; tax_rate_percent: number; tax_label: string; invoice_prefix: string; company_name?: string; company_address?: string; company_phone?: string; company_email?: string; bank_name?: string; bank_account_name?: string; bank_account_number?: string; payment_terms_days: number; notes_template?: string; auto_send_enabled?: boolean;

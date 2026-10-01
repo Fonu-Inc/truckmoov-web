@@ -1,5 +1,5 @@
 import type { InvoiceConfig } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
-import type { WaybillInvoice } from "@/features/payouts-invoicing/utils/demoData";
+import type { WaybillInvoice } from "@/features/payouts-invoicing/types";
 import {
   CheckCircle2, FileText, Loader2, Mail, MessageSquare, Pencil, Receipt,
 } from "lucide-react";

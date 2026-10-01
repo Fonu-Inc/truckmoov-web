@@ -71,6 +71,7 @@ export function InvoiceSettingsPanel({
           <div>
             <Label>Company Name</Label>
             <Input
+              placeholder="e.g. Acme Logistics Ltd"
               value={form.company_name}
               onChange={e => setForm(f => ({
                 ...f, company_name: e.target.value,
@@ -80,6 +81,7 @@ export function InvoiceSettingsPanel({
           <div>
             <Label>Address</Label>
             <Textarea
+              placeholder="e.g. 12 Marina Road, Lagos Island, Lagos"
               value={form.company_address}
               onChange={e => setForm(f => ({
                 ...f, company_address: e.target.value,
@@ -90,6 +92,7 @@ export function InvoiceSettingsPanel({
             <div>
               <Label>Phone</Label>
               <Input
+                placeholder="e.g. +234 801 234 5678"
                 value={form.company_phone}
                 onChange={e => setForm(f => ({
                   ...f, company_phone: e.target.value,
@@ -99,6 +102,7 @@ export function InvoiceSettingsPanel({
             <div>
               <Label>Email</Label>
               <Input
+                placeholder="e.g. billing@company.com"
                 value={form.company_email}
                 onChange={e => setForm(f => ({
                   ...f, company_email: e.target.value,
@@ -128,6 +132,7 @@ export function InvoiceSettingsPanel({
               <div>
                 <Label>Tax Label</Label>
                 <Input
+                  placeholder="e.g. VAT"
                   value={form.tax_label}
                   onChange={e => setForm(f => ({
                     ...f, tax_label: e.target.value,
@@ -139,6 +144,7 @@ export function InvoiceSettingsPanel({
                 <Input
                   type="number"
                   step="0.1"
+                  placeholder="e.g. 7.5"
                   value={form.tax_rate_percent}
                   onChange={e => setForm(f => ({
                     ...f, tax_rate_percent: Number(e.target.value),
@@ -159,6 +165,7 @@ export function InvoiceSettingsPanel({
           <div>
             <Label>Bank Name</Label>
             <Input
+              placeholder="e.g. Access Bank"
               value={form.bank_name}
               onChange={e => setForm(f => ({
                 ...f, bank_name: e.target.value,
@@ -169,6 +176,7 @@ export function InvoiceSettingsPanel({
             <div>
               <Label>Account Name</Label>
               <Input
+                placeholder="e.g. Acme Logistics Ltd"
                 value={form.bank_account_name}
                 onChange={e => setForm(f => ({
                   ...f, bank_account_name: e.target.value,
@@ -178,6 +186,7 @@ export function InvoiceSettingsPanel({
             <div>
               <Label>Account Number</Label>
               <Input
+                placeholder="e.g. 0123456789"
                 value={form.bank_account_number}
                 onChange={e => setForm(f => ({
                   ...f, bank_account_number: e.target.value,
@@ -197,6 +206,7 @@ export function InvoiceSettingsPanel({
             <div>
               <Label>Invoice Prefix</Label>
               <Input
+                placeholder="e.g. INV"
                 value={form.invoice_prefix}
                 onChange={e => setForm(f => ({
                   ...f, invoice_prefix: e.target.value,
@@ -207,6 +217,7 @@ export function InvoiceSettingsPanel({
               <Label>Payment Terms (days)</Label>
               <Input
                 type="number"
+                placeholder="e.g. 30"
                 value={form.payment_terms_days}
                 onChange={e => setForm(f => ({
                   ...f, payment_terms_days: Number(e.target.value),

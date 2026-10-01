@@ -1,4 +1,4 @@
-import type { WaybillInvoice } from "@/features/payouts-invoicing/utils/demoData";
+import type { WaybillInvoice } from "@/features/payouts-invoicing/types";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, ArrowRight, CheckCircle2, Clock, Download, Eye, MoreHorizontal, Search, Share2, SlidersHorizontal, Trash2,
@@ -41,7 +41,6 @@ import { TabKpiCards } from "@/features/payouts-invoicing/components/ui/TabKpiCa
 import {
   useWaybillInvoice, useWaybillRealtimeEvents,
 } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
-import { DEMO_INVOICES } from "@/features/payouts-invoicing/utils/demoData";
 import { invoiceStatusConfig } from "@/features/payouts-invoicing/utils/statusConfig";
 import {
   inferVehicleType, VEHICLE_TYPE_OPTIONS,
@@ -56,7 +55,7 @@ export default function InvoicesPage() {
   const { format: formatAmount } = useCurrency();
   const canDeleteAssets = true;
 
-  const displayInvoices = invoices.length > 0 ? invoices : DEMO_INVOICES;
+  const displayInvoices = invoices;
 
   const [
     selectedInvoice,
@@ -496,10 +495,6 @@ export default function InvoicesPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={async () => {
-                                    if (inv.id.startsWith("demo-")) {
-                                      toast.success("Download downloaded");
-                                      return;
-                                    }
                                     let path = inv.pdf_storage_path;
                                     if (!path) {
                                       const res = await generateInvoicePDF(inv.id);
