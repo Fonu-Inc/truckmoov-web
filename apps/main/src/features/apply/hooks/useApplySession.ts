@@ -96,6 +96,8 @@ export function useApplySession() {
       setOnboardingToken(null);
       writeStoredCustomerType(null);
       resetDraft();
+      // After reset: reset's set() re-writes the persisted key, this drops it from localStorage.
+      useApplyDraftStore.persist.clearStorage();
       setApplicationId(null);
     },
     [resetDraft],
