@@ -1071,7 +1071,7 @@ export function useSendDriverMessage() {
 export function useMarkGeofenceAlertsRead() {
   return useMutation({
     mutationFn: markGeofenceAlertsRead,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fleet', 'driversBehavior', 'geofenceAlerts'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fleet', 'driversBehavior'] }),
   })
 }
 

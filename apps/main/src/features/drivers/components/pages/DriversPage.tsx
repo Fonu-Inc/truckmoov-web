@@ -2,13 +2,12 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type {
   DriverCommunicationPreference, DriverInput, DriverStatus, FleetDriver,
 } from "@truckmoov/api/fleet";
-import type { Driver } from "@/types";
 import type { DriverBulkUploadItem } from "@/components/drivers/DriverBulkUploadDialog";
 import type { DriverFormData } from "@/components/drivers/DriverFormDialog";
+import type { Driver } from "@/types";
 import {
-  useCreateDriver, useDrivers, useDriversFilters, useDriversSummary, useImportDrivers, useUpdateDriver,
+  useCreateDriver, useDrivers, useDriversFilters, useDriversSummary, useImportDrivers, useReinstateDriver, useSuspendDriver, useUpdateDriver,
 } from "@truckmoov/api/fleet";
-import { cn } from "@/lib/utils";
 import { useAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useSendNotifyMessage } from "@truckmoov/api/notification";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
@@ -17,7 +16,7 @@ import {
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, Ban, Clock, Eye, Mail, MessageSquare,
-  MoreHorizontal, Phone, Plus, Search, Send, SlidersHorizontal,
+  MoreHorizontal, Phone, Plus, RotateCcw, Search, Send, SlidersHorizontal,
   Upload, UserCheck, Users, UserX,
 } from "lucide-react";
 import {
@@ -29,6 +28,16 @@ import { DriverBulkUploadDialog } from "@/components/drivers/DriverBulkUploadDia
 import { DriverDetailsSheet } from "@/components/drivers/DriverDetailsSheet";
 import { DriverFormDialog } from "@/components/drivers/DriverFormDialog";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -54,7 +63,8 @@ import {
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
-import { getDriverPerformanceScore, getPerformanceBand } from "@/features/drivers/utils/driverPerformance";
+import { getPerformanceBand } from "@/features/drivers/utils/driverPerformance";
+import { cn } from "@/lib/utils";
 
 const DRIVER_STATUSES: DriverStatus[] = [
   "active",
@@ -138,20 +148,27 @@ function toDriverInput(data: DriverFormData): DriverInput {
   };
 }
 
-/**
- * ponytail: prefer TRU-FE-3 § 1 server fields when present; seed dummy values
- * only when the server omits them (empty tenants, drivers with no telemetry).
- * Drop the fallback once every row carries real values.
- */
+function formatScore(score: number | null) {
+  return score === null ? "Unscored" : `${Math.round(score)}%`;
+}
+
+/** Server score (0–100) or null when the driver hasn't been scored yet. */
+function driverScore(row: DriverRow): number | null {
+  return row.performanceScore ?? row.behaviorScore ?? null;
+}
+
+// Legacy `Driver` shape for DriverDetailsSheet. Values come from the server only —
+// unscored drivers get rating 0 rather than an invented one.
 function toLocalDriver(row: DriverRow): Driver {
-  const seed = Array.from(row.id ?? "").reduce(
-    (acc, ch) => acc + ch.charCodeAt(0),
+  const score = driverScore(row);
+  const rating = score === null ? 0 : Math.max(
     0,
-  );
-  const rating = row.behaviorScore != null
-    ? Math.max(0, Math.min(5, row.behaviorScore / 20)) // 0–100 → 0–5
-    : 3 + (seed % 20) / 10;
-  const totalTrips = row.trips ?? 20 + (seed % 250);
+    Math.min(
+      5,
+      score / 20,
+    ),
+  ); // 0–100 → 0–5
+  const totalTrips = row.trips ?? 0;
   return {
     id: row.id,
     name: row.name,
@@ -179,6 +196,12 @@ export default function DriversPage() {
   const summary = driversSummaryQuery.data?.data ?? null;
   const createDriver = useCreateDriver();
   const updateDriver = useUpdateDriver();
+  const suspendDriver = useSuspendDriver();
+  const reinstateDriver = useReinstateDriver();
+  const [
+    driverPendingSuspend,
+    setDriverPendingSuspend,
+  ] = useState<DriverRow | null>(null);
   const importDrivers = useImportDrivers();
   const sendMessage = useSendNotifyMessage();
   const {
@@ -264,7 +287,10 @@ export default function DriversPage() {
         suspended: drivers.filter(d => d.status === "suspended").length,
       };
     },
-    [drivers, summary],
+    [
+      drivers,
+      summary,
+    ],
   );
 
   const filteredDrivers = useMemo(
@@ -279,15 +305,16 @@ export default function DriversPage() {
         const matchesChannel = commFilter === "all"
           || driver.communicationPreference === commFilter;
 
-        const local = toLocalDriver(driver);
-        const score = getDriverPerformanceScore(local);
+        const score = driverScore(driver);
         const matchesRating = ratingFilter === "all"
-          || (ratingFilter === "5" && score >= 85)
-          || (ratingFilter === "4" && score >= 70 && score < 85)
-          || (ratingFilter === "3" && score >= 50 && score < 70)
-          || (ratingFilter === "below3" && score < 50);
+          || (score !== null && (
+            (ratingFilter === "5" && score >= 85)
+            || (ratingFilter === "4" && score >= 70 && score < 85)
+            || (ratingFilter === "3" && score >= 50 && score < 70)
+            || (ratingFilter === "below3" && score < 50)
+          ));
 
-        const trips = local.totalTrips;
+        const trips = driver.trips ?? 0;
         const matchesTrips = tripsFilter === "all"
           || (tripsFilter === "100plus" && trips >= 100)
           || (tripsFilter === "50to99" && trips >= 50 && trips < 100)
@@ -377,17 +404,27 @@ export default function DriversPage() {
     }
   };
 
-  const handleSuspend = async (driver: DriverRow) => {
-    try {
-      await updateDriver.mutateAsync({
-        id: driver.id,
-        data: { status: "suspended" },
-      });
-      toast.success(`${driver.name} suspended`);
-    }
-    catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to suspend driver");
-    }
+  const handleSuspend = (driver: DriverRow) => {
+    suspendDriver.mutate(
+      { id: driver.id },
+      {
+        onSuccess: () => {
+          toast.success(`${driver.name} suspended`);
+          setDriverPendingSuspend(null);
+        },
+        onError: error => toast.error(error.message),
+      },
+    );
+  };
+
+  const handleReinstate = (driver: DriverRow) => {
+    reinstateDriver.mutate(
+      { id: driver.id },
+      {
+        onSuccess: () => toast.success(`${driver.name} reinstated`),
+        onError: error => toast.error(error.message),
+      },
+    );
   };
 
   const handleCall = async (driver: DriverRow) => {
@@ -467,6 +504,7 @@ export default function DriversPage() {
     {
       accessorKey: "name",
       header: "Driver",
+      enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-medium text-primary-foreground">
@@ -479,8 +517,21 @@ export default function DriversPage() {
       ),
     },
     {
+      id: "driverId",
+      header: "Driver ID",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.original.id.slice(
+            0,
+            8,
+          )}
+        </span>
+      ),
+    },
+    {
       accessorKey: "phone",
       header: "Contact",
+      enableSorting: false,
       cell: ({ row }) => (
         <div className="text-sm">
           <p>{row.original.phone || "—"}</p>
@@ -493,6 +544,7 @@ export default function DriversPage() {
     {
       accessorKey: "licenseNumber",
       header: "License",
+      enableSorting: false,
       cell: ({ row }) => {
         const remainingDays = daysUntil(row.original.licenseExpiryDate);
         const warning = remainingDays !== null && remainingDays <= 30;
@@ -512,6 +564,7 @@ export default function DriversPage() {
     {
       accessorKey: "status",
       header: "Status",
+      enableSorting: false,
       cell: ({ row }) => row.original.status
         ? (
             <Badge className={statusColors[row.original.status]}>
@@ -527,14 +580,15 @@ export default function DriversPage() {
       id: "performance",
       header: "Performance Score",
       cell: ({ row }) => {
-        const local = toLocalDriver(row.original);
-        const score = getDriverPerformanceScore(local);
+        const score = driverScore(row.original);
+        if (score === null)
+          return <span className="text-sm text-muted-foreground">Unscored</span>;
         const band = getPerformanceBand(score);
         return (
           <div className="min-w-[120px] space-y-1">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold">
-                {score}
+                {Math.round(score)}
                 %
               </span>
               <Badge
@@ -548,13 +602,6 @@ export default function DriversPage() {
               value={score}
               className="h-1.5"
             />
-            <p className="text-[10px] text-muted-foreground">
-              {local.totalTrips}
-              {" "}
-              trips ·
-              {" "}
-              {row.original.status ?? "unknown"}
-            </p>
           </div>
         );
       },
@@ -562,11 +609,12 @@ export default function DriversPage() {
     {
       id: "trips",
       header: "Trips",
-      cell: ({ row }) => toLocalDriver(row.original).totalTrips,
+      cell: ({ row }) => row.original.trips ?? 0,
     },
     {
       accessorKey: "communicationPreference",
       header: "Preferred",
+      enableSorting: false,
       cell: ({ row }) => {
         const channel = row.original.communicationPreference;
         return (
@@ -639,13 +687,22 @@ export default function DriversPage() {
                   View Details
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => void handleSuspend(driver)}
-                >
-                  <Ban className="mr-2 h-4 w-4" />
-                  Suspend Driver
-                </DropdownMenuItem>
+                {driver.status === "suspended"
+                  ? (
+                      <DropdownMenuItem onClick={() => handleReinstate(driver)}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reinstate Driver
+                      </DropdownMenuItem>
+                    )
+                  : (
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => setDriverPendingSuspend(driver)}
+                      >
+                        <Ban className="mr-2 h-4 w-4" />
+                        Suspend Driver
+                      </DropdownMenuItem>
+                    )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -668,9 +725,9 @@ export default function DriversPage() {
 
   return (
     <div className="space-y-6">
-      {/* ponytail: 5 cards step at md/xl/2xl. Measured: the fixed w-64 sidebar leaves
-          only ~336px here at a 640px viewport, so sm:grid-cols-2 still clips. */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+      {/* ponytail: the reference uses md:grid-cols-5; the fixed w-64 sidebar leaves too
+          little room for that below xl, so step 1 → 2 → 3 → 5 instead. */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -707,7 +764,12 @@ export default function DriversPage() {
                                   ? "bg-destructive"
                                   : (summary.allowance.usedPercent ?? 0) >= 75 ? "bg-warning" : "bg-primary",
                               )}
-                              style={{ width: `${Math.min(summary.allowance.usedPercent ?? 0, 100)}%` }}
+                              style={{
+                                width: `${Math.min(
+                                  summary.allowance.usedPercent ?? 0,
+                                  100,
+                                )}%`,
+                              }}
                             />
                           </div>
                         </div>
@@ -777,7 +839,7 @@ export default function DriversPage() {
           onClick={() => setIsBulkUploadOpen(true)}
         >
           <Upload className="mr-2 h-4 w-4" />
-          Bulk Upload
+          Upload Driver
         </Button>
         <Button
           variant="gradient"
@@ -824,10 +886,10 @@ export default function DriversPage() {
                   header: "Status", accessor: row => row.status ?? "",
                 },
                 {
-                  header: "Performance Score", accessor: row => `${getDriverPerformanceScore(toLocalDriver(row))}%`,
+                  header: "Performance Score", accessor: row => formatScore(driverScore(row)),
                 },
                 {
-                  header: "Total Trips", accessor: row => toLocalDriver(row).totalTrips,
+                  header: "Total Trips", accessor: row => row.trips ?? 0,
                 },
                 {
                   header: "Preferred Channel", accessor: row => row.communicationPreference ?? "",
@@ -1113,6 +1175,39 @@ export default function DriversPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={Boolean(driverPendingSuspend)}
+        onOpenChange={(open) => {
+          if (!open && !suspendDriver.isPending)
+            setDriverPendingSuspend(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Suspend this driver?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {driverPendingSuspend?.name}
+              {" "}
+              will be set to suspended and cannot be assigned to new jobs.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={suspendDriver.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={suspendDriver.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (driverPendingSuspend)
+                  handleSuspend(driverPendingSuspend);
+              }}
+            >
+              Suspend Driver
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

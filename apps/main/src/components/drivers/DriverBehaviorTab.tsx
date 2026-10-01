@@ -290,7 +290,7 @@ export function DriverBehaviorTab() {
   const behaviorConnected = !summaryQuery.isError;
   const refreshBehavior = () => { summaryQuery.refetch(); eventsQuery.refetch(); };
 
-  const realAlerts: GeofenceAlert[] = geofenceQuery.data?.data ?? [];
+  const realAlerts: GeofenceAlert[] = geofenceQuery.data?.data?.items ?? [];
   const realGeofenceStats = {
     entries: realAlerts.filter((a: any) => a.type === "entry").length,
     exits: realAlerts.filter((a: any) => a.type === "exit").length,

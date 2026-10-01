@@ -1,10 +1,23 @@
+import type {
+  DriverBehaviorBand, DriverBehaviorEvent, DriverBehaviorRankingItem, DriverGeofenceAlert,
+} from "@truckmoov/api/fleet";
+import {
+  useDriverBehaviorEvents,
+  useDriverBehaviorRanking,
+  useDriverBehaviorSummary,
+  useDriverGeofenceAlerts,
+  useGeofences,
+  useMarkGeofenceAlertsRead,
+  useVehicles,
+} from "@truckmoov/api/fleet";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Activity, AlertTriangle, Bell, Car, Gauge, MapPin, Minus,
-  RefreshCw, RotateCcw, Shield, TrendingDown, TrendingUp,
+  Activity, AlertTriangle, Bell, Car, Gauge, Loader2, MapPin,
+  RefreshCw, RotateCcw, Shield,
   User, Zap,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -15,51 +28,26 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 
-type EventType = "harsh_braking" | "harsh_acceleration" | "harsh_cornering" | "overspeeding";
-type Severity = "low" | "medium" | "high" | "critical";
-type Trend = "improving" | "stable" | "declining";
-type AlertType = "entry" | "exit" | "dwell";
-
-type DriverScore = {
-  driverId: string;
-  driverName: string;
-  overallScore: number;
-  brakingScore: number;
-  accelerationScore: number;
-  corneringScore: number;
-  speedingScore: number;
-  totalEvents: number;
-  eventBreakdown: {
-    harshBraking: number;
-    harshAcceleration: number;
-    harshCornering: number;
-    overspeeding: number;
-  };
-  trend: Trend;
+const BAND_BADGE: Record<DriverBehaviorBand, {
+  label: string; className: string;
+}> = {
+  excellent: {
+    label: "Excellent", className: "bg-success text-success-foreground",
+  },
+  good: {
+    label: "Good", className: "bg-primary text-primary-foreground",
+  },
+  fair: {
+    label: "Fair", className: "bg-warning text-warning-foreground",
+  },
+  poor: {
+    label: "Poor", className: "",
+  },
 };
 
-type BehaviorEvent = {
-  id: string;
-  deviceId: string;
-  driverId: string;
-  eventType: EventType;
-  severity: Severity;
-  speed?: number;
-  createdAt: Date;
-};
-
-type GeofenceAlert = {
-  id: string;
-  deviceId: string;
-  geofenceName: string;
-  alertType: AlertType;
-  triggeredAt: Date;
-};
-
-// ponytail: empty until the driver-behaviour + geofence APIs land.
-const DRIVER_SCORES: DriverScore[] = [];
-const BEHAVIOR_EVENTS: BehaviorEvent[] = [];
-const GEOFENCE_ALERTS: GeofenceAlert[] = [];
+function StateMessage({ children }: { children: React.ReactNode }) {
+  return <div className="py-6 text-center text-sm text-muted-foreground">{children}</div>;
+}
 
 function ScoreGauge({
   score, label,
@@ -102,29 +90,11 @@ function ScoreGauge({
 function DriverScoreCard({
   score, rank,
 }: {
-  score: DriverScore; rank: number;
+  score: DriverBehaviorRankingItem; rank: number;
 }) {
-  const trendIcon = score.trend === "improving"
-    ? <TrendingUp className="h-4 w-4 text-success" />
-    : score.trend === "declining"
-      ? <TrendingDown className="h-4 w-4 text-destructive" />
-      : <Minus className="h-4 w-4 text-muted-foreground" />;
-
-  const badge = score.overallScore >= 90
-    ? {
-        label: "Excellent", className: "bg-success text-success-foreground",
-      }
-    : score.overallScore >= 80
-      ? {
-          label: "Good", className: "bg-primary text-primary-foreground",
-        }
-      : score.overallScore >= 60
-        ? {
-            label: "Fair", className: "bg-warning text-warning-foreground",
-          }
-        : {
-            label: "Poor", className: "",
-          };
+  // ponytail: fleetflow shows a trend arrow here; the ranking API has no trend field yet.
+  const badge = BAND_BADGE[score.band] ?? BAND_BADGE.poor;
+  const { scores } = score;
 
   return (
     <Card className="transition-colors hover:border-primary/50">
@@ -138,52 +108,51 @@ function DriverScoreCard({
             <div className="min-w-0">
               <p className="font-semibold">{score.driverName}</p>
               <p className="text-xs text-muted-foreground">
-                {score.totalEvents}
+                {score.eventsRecorded}
                 {" "}
                 events recorded
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {trendIcon}
             <Badge className={badge.className}>{badge.label}</Badge>
           </div>
         </div>
 
-        <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="mb-4 grid grid-cols-4 gap-2">
           <ScoreGauge
-            score={score.brakingScore}
+            score={scores.braking}
             label="Braking"
           />
           <ScoreGauge
-            score={score.accelerationScore}
+            score={scores.acceleration}
             label="Accel"
           />
           <ScoreGauge
-            score={score.corneringScore}
+            score={scores.cornering}
             label="Cornering"
           />
           <ScoreGauge
-            score={score.speedingScore}
+            score={scores.speed}
             label="Speed"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+        <div className="grid grid-cols-4 gap-2 text-center text-xs">
           <div className="rounded-lg bg-destructive/10 p-2">
-            <p className="font-semibold text-destructive">{score.eventBreakdown.harshBraking}</p>
+            <p className="font-semibold text-destructive">{scores.counts.hardBrake}</p>
             <p className="text-muted-foreground">Hard Brake</p>
           </div>
           <div className="rounded-lg bg-warning/10 p-2">
-            <p className="font-semibold text-warning">{score.eventBreakdown.harshAcceleration}</p>
+            <p className="font-semibold text-warning">{scores.counts.hardAccel}</p>
             <p className="text-muted-foreground">Hard Accel</p>
           </div>
           <div className="rounded-lg bg-primary/10 p-2">
-            <p className="font-semibold text-primary">{score.eventBreakdown.harshCornering}</p>
+            <p className="font-semibold text-primary">{scores.counts.sharpTurn}</p>
             <p className="text-muted-foreground">Sharp Turn</p>
           </div>
           <div className="rounded-lg bg-accent/10 p-2">
-            <p className="font-semibold text-accent">{score.eventBreakdown.overspeeding}</p>
+            <p className="font-semibold text-accent">{scores.counts.speeding}</p>
             <p className="text-muted-foreground">Speeding</p>
           </div>
         </div>
@@ -192,12 +161,12 @@ function DriverScoreCard({
   );
 }
 
-function EventItem({ event }: { event: BehaviorEvent }) {
-  const eventIcon = event.eventType === "harsh_braking"
+function EventItem({ event }: { event: DriverBehaviorEvent }) {
+  const eventIcon = event.type === "harsh_braking"
     ? <Car className="h-4 w-4" />
-    : event.eventType === "harsh_acceleration"
+    : event.type === "harsh_acceleration"
       ? <Zap className="h-4 w-4" />
-      : event.eventType === "harsh_cornering"
+      : event.type === "harsh_cornering"
         ? <RotateCcw className="h-4 w-4" />
         : <Gauge className="h-4 w-4" />;
 
@@ -215,7 +184,7 @@ function EventItem({ event }: { event: BehaviorEvent }) {
         <div className="flex items-center gap-2">
           {eventIcon}
           <span className="text-sm font-medium capitalize">
-            {event.eventType.replace(
+            {event.type.replace(
               /_/g,
               " ",
             )}
@@ -228,14 +197,14 @@ function EventItem({ event }: { event: BehaviorEvent }) {
           </Badge>
         </div>
         <span className="text-xs text-muted-foreground">
-          {formatRelative(event.createdAt)}
+          {formatRelative(new Date(event.occurredAt))}
         </span>
       </div>
-      {event.speed && (
+      {event.speedKph !== null && (
         <p className="mt-1 text-xs text-muted-foreground">
           Speed:
           {" "}
-          {event.speed}
+          {event.speedKph}
           {" "}
           km/h
         </p>
@@ -244,23 +213,21 @@ function EventItem({ event }: { event: BehaviorEvent }) {
   );
 }
 
-function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
-  const isEntry = alert.alertType === "entry";
+function GeofenceAlertItem({
+  alert, zoneName, vehicleName,
+}: {
+  alert: DriverGeofenceAlert; zoneName: string; vehicleName: string;
+}) {
+  const isEntry = alert.type === "entry";
   return (
     <div className={`rounded-lg border p-3 ${isEntry ? "bg-success/10 border-success/30" : "bg-warning/10 border-warning/30"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MapPin className={`h-4 w-4 ${isEntry ? "text-success" : "text-warning"}`} />
           <div>
-            <p className="text-sm font-medium">{alert.geofenceName}</p>
+            <p className="text-sm font-medium">{zoneName}</p>
             <p className="text-xs text-muted-foreground">
-              Device
-              {" "}
-              {alert.deviceId.slice(
-                0,
-                8,
-              )}
-              ...
+              {vehicleName}
             </p>
           </div>
         </div>
@@ -269,10 +236,10 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
             variant={isEntry ? "default" : "secondary"}
             className="text-xs"
           >
-            {alert.alertType.toUpperCase()}
+            {alert.type.toUpperCase()}
           </Badge>
           <p className="mt-1 text-xs text-muted-foreground">
-            {formatRelative(alert.triggeredAt)}
+            {formatRelative(new Date(alert.at))}
           </p>
         </div>
       </div>
@@ -285,30 +252,54 @@ export default function BehaviourPage() {
     activeTab,
     setActiveTab,
   ] = useState("scores");
-  const [
-    unreadCount,
-    setUnreadCount,
-  ] = useState(0);
+  const summaryQuery = useDriverBehaviorSummary();
+  const rankingQuery = useDriverBehaviorRanking();
+  const eventsQuery = useDriverBehaviorEvents({ params: { limit: 50 } });
+  const alertsQuery = useDriverGeofenceAlerts();
+  const geofencesQuery = useGeofences();
+  const vehiclesQuery = useVehicles();
+  const markReadMutation = useMarkGeofenceAlertsRead();
 
-  const driverScores = DRIVER_SCORES;
-  const events = BEHAVIOR_EVENTS;
-  const alerts = GEOFENCE_ALERTS;
+  const summary = summaryQuery.data?.data;
+  const driverScores = rankingQuery.data?.data?.items ?? [];
+  const events = eventsQuery.data?.data?.items ?? [];
+  const eventsTotal = eventsQuery.data?.data?.total ?? 0;
+  const criticalCount = eventsQuery.data?.data?.criticalCount ?? 0;
+  const alerts = alertsQuery.data?.data?.items ?? [];
+  const unreadIds = alerts.filter(alert => !alert.read).map(alert => alert.id);
+  const unreadCount = alertsQuery.data?.data?.unread ?? unreadIds.length;
 
-  const behaviorStats = {
-    averageScore: driverScores.length
-      ? Math.round(driverScores.reduce(
-          (s, d) => s + d.overallScore,
-          0,
-        ) / driverScores.length)
-      : 0,
-    last24h: events.length,
-    total: events.length,
-    critical: events.filter(e => e.severity === "critical").length,
+  // Alerts carry ids only — names come from the geofence and vehicle lists.
+  const zoneName = (id: string) => (geofencesQuery.data?.data ?? []).find(g => g.id === id)?.name ?? "Geofence zone";
+  const vehicleName = (id: string) => {
+    const vehicle = (vehiclesQuery.data?.data ?? []).find(v => v.id === id);
+    return vehicle ? vehicle.plateNumber : `Vehicle ${id.slice(
+      0,
+      8,
+    )}...`;
   };
 
-  const geofenceStats = {
-    entries: alerts.filter(a => a.alertType === "entry").length,
-    exits: alerts.filter(a => a.alertType === "exit").length,
+  const queries = [
+    summaryQuery,
+    rankingQuery,
+    eventsQuery,
+    alertsQuery,
+  ];
+  const isRefreshing = queries.some(q => q.isFetching);
+  const refreshAll = () => queries.forEach(q => void q.refetch());
+
+  const markRead = () => markReadMutation.mutate(
+    { data: { alertIds: unreadIds } },
+    { onError: error => toast.error(error.message) },
+  );
+
+  const behaviorStats = {
+    averageScore: summary?.averageScore ?? null,
+    last24h: summary?.eventsLast24h ?? 0,
+    drivers: summary?.driversTotal ?? 0,
+    critical: criticalCount,
+    entries: summary?.zoneEntries ?? 0,
+    exits: summary?.zoneExits ?? 0,
   };
 
   return (
@@ -317,18 +308,20 @@ export default function BehaviourPage() {
         <Button
           variant="outline"
           size="sm"
+          onClick={refreshAll}
+          disabled={isRefreshing}
         >
-          <RefreshCw className="mr-1 h-3 w-3" />
+          <RefreshCw className={`mr-1 h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 2xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         <Card>
           <CardContent className="p-4 text-center">
             <Activity className="mx-auto mb-1 h-5 w-5 text-primary" />
-            <p className="text-2xl font-bold">{behaviorStats.averageScore}</p>
+            <p className="text-2xl font-bold">{behaviorStats.averageScore ?? "—"}</p>
             <p className="text-xs text-muted-foreground">Avg Score</p>
           </CardContent>
         </Card>
@@ -342,21 +335,21 @@ export default function BehaviourPage() {
         <Card>
           <CardContent className="p-4 text-center">
             <User className="mx-auto mb-1 h-5 w-5 text-accent" />
-            <p className="text-2xl font-bold">{driverScores.length}</p>
+            <p className="text-2xl font-bold">{behaviorStats.drivers}</p>
             <p className="text-xs text-muted-foreground">Drivers</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Shield className="mx-auto mb-1 h-5 w-5 text-success" />
-            <p className="text-2xl font-bold">{geofenceStats.entries}</p>
+            <p className="text-2xl font-bold">{behaviorStats.entries}</p>
             <p className="text-xs text-muted-foreground">Zone Entries</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Bell className="mx-auto mb-1 h-5 w-5 text-destructive" />
-            <p className="text-2xl font-bold">{geofenceStats.exits}</p>
+            <p className="text-2xl font-bold">{behaviorStats.exits}</p>
             <p className="text-xs text-muted-foreground">Zone Exits</p>
           </CardContent>
         </Card>
@@ -403,14 +396,24 @@ export default function BehaviourPage() {
                   Drivers are ranked by performance score — braking (30%), speeding (30%),
                   acceleration (20%) and cornering (20%), calculated from recorded telemetry events.
                 </p>
-                {driverScores.length === 0 && (
-                  <p className="py-6 text-center text-sm text-muted-foreground">No drivers scored yet.</p>
+                {rankingQuery.isLoading && <StateMessage><Loader2 className="mx-auto h-5 w-5 animate-spin" /></StateMessage>}
+                {rankingQuery.isError && (
+                  <StateMessage>
+                    <span className="text-destructive">{rankingQuery.error.message}</span>
+                    <Button
+                      variant="link"
+                      onClick={() => void rankingQuery.refetch()}
+                    >
+                      Try again
+                    </Button>
+                  </StateMessage>
                 )}
-                {driverScores.map((score, index) => (
+                {rankingQuery.isSuccess && driverScores.length === 0 && <StateMessage>No drivers scored yet.</StateMessage>}
+                {driverScores.map(score => (
                   <DriverScoreCard
                     key={score.driverId}
                     score={score}
-                    rank={index + 1}
+                    rank={score.rank}
                   />
                 ))}
               </div>
@@ -424,7 +427,7 @@ export default function BehaviourPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">Recent Behavior Events</CardTitle>
                   <CardDescription>
-                    {behaviorStats.total}
+                    {eventsTotal}
                     {" "}
                     total events recorded
                   </CardDescription>
@@ -432,13 +435,10 @@ export default function BehaviourPage() {
                 <CardContent>
                   <ScrollArea className="h-[500px] pr-4">
                     <div className="space-y-2">
-                      {events.length === 0 && (
-                        <p className="py-6 text-center text-sm text-muted-foreground">No behaviour events recorded.</p>
-                      )}
-                      {events.slice(
-                        0,
-                        50,
-                      ).map(event => (
+                      {eventsQuery.isLoading && <StateMessage><Loader2 className="mx-auto h-5 w-5 animate-spin" /></StateMessage>}
+                      {eventsQuery.isError && <StateMessage><span className="text-destructive">{eventsQuery.error.message}</span></StateMessage>}
+                      {eventsQuery.isSuccess && events.length === 0 && <StateMessage>No behaviour events recorded.</StateMessage>}
+                      {events.map(event => (
                         <EventItem
                           key={event.id}
                           event={event}
@@ -472,7 +472,8 @@ export default function BehaviourPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setUnreadCount(0)}
+                    onClick={markRead}
+                    disabled={markReadMutation.isPending || unreadIds.length === 0}
                   >
                     Mark read
                   </Button>
@@ -485,13 +486,15 @@ export default function BehaviourPage() {
             <CardContent>
               <ScrollArea className="h-[550px] pr-4">
                 <div className="space-y-2">
-                  {alerts.length === 0 && (
-                    <p className="py-6 text-center text-sm text-muted-foreground">No geofence alerts.</p>
-                  )}
+                  {alertsQuery.isLoading && <StateMessage><Loader2 className="mx-auto h-5 w-5 animate-spin" /></StateMessage>}
+                  {alertsQuery.isError && <StateMessage><span className="text-destructive">{alertsQuery.error.message}</span></StateMessage>}
+                  {alertsQuery.isSuccess && alerts.length === 0 && <StateMessage>No geofence alerts.</StateMessage>}
                   {alerts.map(alert => (
                     <GeofenceAlertItem
                       key={alert.id}
                       alert={alert}
+                      zoneName={zoneName(alert.geofenceId)}
+                      vehicleName={vehicleName(alert.vehicleId)}
                     />
                   ))}
                 </div>

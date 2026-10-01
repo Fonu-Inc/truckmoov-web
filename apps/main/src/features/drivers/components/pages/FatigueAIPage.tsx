@@ -1,9 +1,17 @@
-import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
+import type { DriverFatigue } from "@truckmoov/api/fleet";
+import { useQueries } from "@tanstack/react-query";
+import {
+  getDriverFatigueByIdQueryOptions,
+  useDriverFatigueSummary,
+  useDrivers,
+  useRunDriverFatigue,
+} from "@truckmoov/api/fleet";
 import {
   Activity, AlertTriangle, Brain, ChevronDown, ChevronUp,
-  Clock, Coffee, Eye, Shield,
+  Clock, Coffee, Eye, Loader2, RefreshCw,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -15,17 +23,10 @@ import { Separator } from "@/components/shadcn/separator";
 
 type RiskLevel = "low" | "medium" | "high" | "critical";
 
-type FatigueAlert = {
-  id: string;
-  driver_name: string;
-  fatigue_score: number;
-  risk_level: RiskLevel;
-  driving_duration_minutes: number;
-  rest_compliance_score: number;
-  indicators: string[];
-  recommendations: string[];
-  ai_analysis: string;
-  created_at: string;
+type FatigueAlert = DriverFatigue & {
+  driverId: string;
+  driverName: string;
+  band: RiskLevel;
 };
 
 const riskLevelColors: Record<RiskLevel, string> = {
@@ -41,9 +42,6 @@ const riskLevelBg: Record<RiskLevel, string> = {
   high: "from-warning/10 to-transparent",
   critical: "from-destructive/10 to-transparent",
 };
-
-// ponytail: empty until the fatigue-analysis API lands.
-const FATIGUE_ALERTS: FatigueAlert[] = [];
 
 function FatigueScoreGauge({ score }: { score: number }) {
   const percentage = (score / 10) * 100;
@@ -95,26 +93,40 @@ function AlertCard({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const runMutation = useRunDriverFatigue();
+  const rerun = () => runMutation.mutate(
+    {
+      id: alert.driverId,
+      data: {
+        drivingMinutes: alert.drivingMinutes ?? 0,
+        breakMinutes: alert.breakMinutes ?? undefined,
+      },
+    },
+    {
+      onSuccess: () => toast.success(`Fatigue analysis re-run for ${alert.driverName}`),
+      onError: error => toast.error(error.message),
+    },
+  );
   return (
-    <Card className={`bg-gradient-to-r border-border/50 ${riskLevelBg[alert.risk_level]}`}>
+    <Card className={`bg-gradient-to-r border-border/50 ${riskLevelBg[alert.band]}`}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <FatigueScoreGauge score={alert.fatigue_score} />
+            <FatigueScoreGauge score={alert.score ?? 0} />
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                {alert.driver_name}
+                {alert.driverName}
                 <Badge
                   variant="outline"
-                  className={riskLevelColors[alert.risk_level]}
+                  className={riskLevelColors[alert.band]}
                 >
-                  {alert.risk_level}
+                  {alert.band}
                 </Badge>
               </CardTitle>
               <CardDescription className="mt-1 flex items-center gap-4">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {alert.driving_duration_minutes}
+                  {alert.drivingMinutes ?? "—"}
                   {" "}
                   min driving
                 </span>
@@ -122,15 +134,14 @@ function AlertCard({
                   <Coffee className="h-3 w-3" />
                   Rest compliance:
                   {" "}
-                  {alert.rest_compliance_score}
+                  {alert.restCompliance ?? "—"}
                   /10
                 </span>
               </CardDescription>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {formatWithPattern(
-                  alert.created_at,
-                  "PPpp",
-                )}
+              <p className="mt-1 text-xs capitalize text-muted-foreground">
+                Data quality:
+                {" "}
+                {alert.dataQuality}
               </p>
             </div>
           </div>
@@ -147,54 +158,30 @@ function AlertCard({
       {expanded && (
         <CardContent className="pt-0">
           <Separator className="my-3" />
-          <div className="grid gap-4 md:grid-cols-2">
+          {/* ponytail: fleetflow lists indicators and recommendations here; the fatigue API
+              returns only analysisText. Add the lists when the response carries them. */}
+          {alert.analysisText && (
             <div>
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
-                <AlertTriangle className="h-4 w-4 text-warning" />
-                Fatigue Indicators
-              </h4>
-              <ul className="space-y-1">
-                {alert.indicators.map((indicator, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-start gap-2 text-sm text-muted-foreground"
-                  >
-                    <span className="mt-1 text-warning">•</span>
-                    {indicator}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
-                <Shield className="h-4 w-4 text-success" />
-                Recommendations
-              </h4>
-              <ul className="space-y-1">
-                {alert.recommendations.map((rec, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-start gap-2 text-sm text-muted-foreground"
-                  >
-                    <span className="mt-1 text-success">✓</span>
-                    {rec}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {alert.ai_analysis && (
-            <div className="mt-4">
               <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
                 <Brain className="h-4 w-4 text-primary" />
                 AI Analysis
               </h4>
               <p className="rounded-lg bg-muted/30 p-3 text-sm text-muted-foreground">
-                {alert.ai_analysis}
+                {alert.analysisText}
               </p>
             </div>
           )}
+          <div className="mt-4 flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={rerun}
+              disabled={runMutation.isPending}
+            >
+              {runMutation.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-2 h-3.5 w-3.5" />}
+              Re-run analysis
+            </Button>
+          </div>
         </CardContent>
       )}
     </Card>
@@ -207,21 +194,48 @@ export default function FatigueAIPage() {
     setExpandedId,
   ] = useState<string | null>(null);
 
-  const alerts = FATIGUE_ALERTS;
-  const avg = (pick: (a: FatigueAlert) => number) => alerts.length
-    ? Math.round(alerts.reduce(
-        (s, a) => s + pick(a),
-        0,
-      ) / alerts.length)
-    : 0;
+  const summaryQuery = useDriverFatigueSummary();
+  // The fatigue feature can be switched off per deployment: every fatigue route then
+  // answers 503 FeatureDisabled. Don't fan out per-driver calls in that case.
+  const isDisabled = summaryQuery.error?.statusCode === 503;
+  const driversQuery = useDrivers();
+  const drivers = driversQuery.data?.data ?? [];
+  const fatigueQueries = useQueries({
+    queries: drivers.map(d => ({
+      ...getDriverFatigueByIdQueryOptions(d.id),
+      enabled: summaryQuery.isSuccess,
+    })),
+  });
+
+  const alerts: FatigueAlert[] = fatigueQueries
+    .map((q, i) => {
+      const fatigue = q.data?.data;
+      const driver = drivers[i];
+      if (!fatigue || fatigue.score === null || !fatigue.band || !driver)
+        return null;
+      return {
+        ...fatigue, band: fatigue.band, driverId: driver.id, driverName: driver.name,
+      };
+    })
+    .filter((alert): alert is FatigueAlert => alert !== null)
+    .sort((x, y) => (y.score ?? 0) - (x.score ?? 0));
+  const isListLoading = summaryQuery.isLoading || fatigueQueries.some(q => q.isLoading);
+
+  const avg = (pick: (a: FatigueAlert) => number | null) => {
+    const values = alerts.map(pick).filter((v): v is number => v !== null);
+    return values.length ? Math.round(values.reduce(
+      (sum, v) => sum + v,
+      0,
+    ) / values.length) : 0;
+  };
   const stats = {
-    total: alerts.length,
-    critical: alerts.filter(a => a.risk_level === "critical").length,
-    high: alerts.filter(a => a.risk_level === "high").length,
-    medium: alerts.filter(a => a.risk_level === "medium").length,
-    low: alerts.filter(a => a.risk_level === "low").length,
-    avgFatigueScore: avg(a => a.fatigue_score),
-    avgRestCompliance: avg(a => a.rest_compliance_score),
+    total: summaryQuery.data?.data?.driversAnalyzed ?? alerts.length,
+    critical: alerts.filter(a => a.band === "critical").length,
+    high: alerts.filter(a => a.band === "high").length,
+    medium: alerts.filter(a => a.band === "medium").length,
+    low: alerts.filter(a => a.band === "low").length,
+    avgFatigueScore: Math.round(summaryQuery.data?.data?.averageScore ?? avg(a => a.score)),
+    avgRestCompliance: avg(a => a.restCompliance),
   };
 
   return (
@@ -248,7 +262,7 @@ export default function FatigueAIPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {stats.avgFatigueScore}
+              {isDisabled ? "—" : stats.avgFatigueScore}
               /10
             </div>
             <Progress
@@ -267,7 +281,7 @@ export default function FatigueAIPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {stats.avgRestCompliance}
+              {isDisabled ? "—" : stats.avgRestCompliance}
               /10
             </div>
             <Progress
@@ -285,7 +299,7 @@ export default function FatigueAIPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-destructive">{stats.critical}</div>
+            <div className="text-3xl font-bold text-destructive">{isDisabled ? "—" : stats.critical}</div>
             <p className="mt-1 text-xs text-muted-foreground">
               +
               {" "}
@@ -304,7 +318,7 @@ export default function FatigueAIPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.total}</div>
+            <div className="text-3xl font-bold">{isDisabled ? "—" : stats.total}</div>
             <div className="mt-2 flex gap-2">
               <Badge
                 variant="outline"
@@ -340,15 +354,36 @@ export default function FatigueAIPage() {
         <CardContent>
           <ScrollArea className="h-[500px] pr-4">
             <div className="space-y-4">
-              {alerts.length === 0 && (
+              {isDisabled && (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Fatigue detection isn't enabled for this account yet.
+                </p>
+              )}
+              {!isDisabled && summaryQuery.isError && (
+                <div className="py-6 text-center text-sm">
+                  <p className="text-destructive">{summaryQuery.error.message}</p>
+                  <Button
+                    variant="link"
+                    onClick={() => void summaryQuery.refetch()}
+                  >
+                    Try again
+                  </Button>
+                </div>
+              )}
+              {isListLoading && (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {summaryQuery.isSuccess && !isListLoading && alerts.length === 0 && (
                 <p className="py-6 text-center text-sm text-muted-foreground">No fatigue analyses yet.</p>
               )}
               {alerts.map(alert => (
                 <AlertCard
-                  key={alert.id}
+                  key={alert.driverId}
                   alert={alert}
-                  expanded={expandedId === alert.id}
-                  onToggle={() => setExpandedId(expandedId === alert.id ? null : alert.id)}
+                  expanded={expandedId === alert.driverId}
+                  onToggle={() => setExpandedId(expandedId === alert.driverId ? null : alert.driverId)}
                 />
               ))}
             </div>

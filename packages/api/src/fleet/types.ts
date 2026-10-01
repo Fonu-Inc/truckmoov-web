@@ -581,30 +581,60 @@ export type DriverDetail = {
 
 // § 9
 export type DriverBehaviorSeverity = 'low' | 'medium' | 'high' | 'critical'
+// ponytail: the spec documents no response bodies for /fleet/drivers/behavior/*;
+// these shapes are from dev responses (2026-10-01). Geofence alerts were empty there,
+// so DriverGeofenceAlert is unverified.
 export type DriverBehaviorSummary = {
   averageScore: number | null
+  eventsLast24h: number
+  criticalLast24h: number
   driversScored: number
   driversTotal: number
-  criticalLast24h: number
+  zoneEntries: number
+  zoneExits: number
+  unreadGeofenceAlerts: number
+  periodDays: number
 }
+export type DriverBehaviorCounts = {
+  hardBrake: number
+  hardAccel: number
+  sharpTurn: number
+  speeding: number
+  total: number
+  critical: number
+}
+export type DriverBehaviorScores = {
+  overall: number | null
+  braking: number
+  acceleration: number
+  cornering: number
+  speed: number
+  counts: DriverBehaviorCounts
+}
+export type DriverBehaviorBand = 'excellent' | 'good' | 'fair' | 'poor'
 export type DriverBehaviorRankingItem = {
   driverId: string
   driverName: string
-  score: number
-  events: number
-  dimensions: DriverScoreDimension[]
+  rank: number
+  eventsRecorded: number
+  scores: DriverBehaviorScores
+  band: DriverBehaviorBand
 }
 export type DriverBehaviorRanking = {
+  periodDays: number
   weights: Record<string, number>
   items: DriverBehaviorRankingItem[]
 }
 export type DriverBehaviorEvent = {
   id: string
   driverId: string
+  vehicleId: string | null
   severity: DriverBehaviorSeverity
   type: string
   speedKph: number | null
-  at: string
+  latitude: number | null
+  longitude: number | null
+  occurredAt: string
 }
 export type DriverBehaviorEventsResult = {
   total: number
@@ -624,17 +654,22 @@ export type DriverGeofenceAlert = {
   vehicleId: string
   driverId: string | null
   geofenceId: string
-  type: 'entry' | 'exit'
+  type: 'entry' | 'exit' | 'dwell'
   at: string
   read: boolean
+}
+export type DriverGeofenceAlertsResult = {
+  total: number
+  unread: number
+  items: DriverGeofenceAlert[]
 }
 export type MarkGeofenceAlertsReadPayload = { data: { alertIds: string[] } }
 export type MarkGeofenceAlertsReadResult = { markedRead: number, ignored: number }
 export type DriverBehavior = {
-  overall: number | null
-  windowDays: number
-  dimensions: DriverScoreDimension[]
-  recentEvents: DriverBehaviorEvent[]
+  periodDays: number
+  eventsRecorded: number
+  scores: DriverBehaviorScores
+  recentEvents: Omit<DriverBehaviorEvent, 'driverId' | 'vehicleId' | 'latitude' | 'longitude'>[]
 }
 
 // § 10
@@ -1813,7 +1848,7 @@ export type DriverDetailResponse = ServerResponse<DriverDetail>
 export type DriverBehaviorSummaryResponse = ServerResponse<DriverBehaviorSummary>
 export type DriverBehaviorRankingResponse = ServerResponse<DriverBehaviorRanking>
 export type DriverBehaviorEventsResponse = ServerResponse<DriverBehaviorEventsResult>
-export type DriverGeofenceAlertsResponse = ServerResponse<DriverGeofenceAlert[]>
+export type DriverGeofenceAlertsResponse = ServerResponse<DriverGeofenceAlertsResult>
 export type MarkGeofenceAlertsReadResponse = ServerResponse<MarkGeofenceAlertsReadResult>
 export type DriverBehaviorResponse = ServerResponse<DriverBehavior>
 export type DriverFatigueSummaryResponse = ServerResponse<DriverFatigueSummary>

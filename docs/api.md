@@ -263,6 +263,21 @@ devDependencies so its peers don't resolve to the landing page's React 19.
   (`supersededById`) rather than updating it in place.
 - Financials "Cost per KM" is total cost ÷ `kmDriven` summed over `POST /fleet/financials/profitability`.
 
+### Drivers page (`/drivers/*`)
+
+`apps/main/src/features/drivers/` — NavLink tabs from `utils/driversNav.ts`.
+
+- **Drivers**: performance comes from the server (`performanceScore ?? behaviorScore`); `null`
+  renders "Unscored" — nothing is derived client-side. Suspend/reinstate use the dedicated
+  `POST /fleet/drivers/:id/suspend|reinstate` routes, not a status PATCH.
+- **Behaviour**: `/fleet/drivers/behavior/{summary,ranking,events,geofence-alerts}`. The spec has
+  no response bodies for these; `types.ts` follows the dev payloads. Geofence alerts carry ids only
+  — zone names come from `/fleet/geofences`, plates from `/fleet/vehicles`.
+- **Fatigue AI**: there is no list route — the page reads `/fleet/drivers/fatigue/summary`, then
+  `GET /fleet/drivers/:id/fatigue` per driver (`useQueries`). When the deployment has fatigue
+  switched off every fatigue route answers **503 `FeatureDisabled`**; the page shows a
+  "not enabled" state and skips the per-driver calls.
+
 ### Login / logout mutations
 
 `useLogin` and `useSystemLogin` call `setSession` automatically on success. `useLogout` calls `logout()` automatically on success. Components do not need to manage the store directly for these flows.
