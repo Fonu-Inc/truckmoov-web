@@ -1,4 +1,3 @@
-import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@truckmoov/app-core/utils/time-utils";
 import {
@@ -83,8 +82,7 @@ export default function PlatformWhatsAppSetup() {
   const accountQuery = useQuery(getSystemWhatsAppAccountQueryOptions());
   const account = accountQuery.data?.data;
   const isConnected = Boolean(account?.phone_number_id);
-  // A 404 only means nothing is linked yet.
-  const loadFailed = accountQuery.isError && (accountQuery.error as unknown as ServerErrorResponse).statusCode !== 404;
+  const loadFailed = accountQuery.isError;
 
   const templatesQuery = useQuery({
     ...getSystemWhatsAppTemplatesQueryOptions(),

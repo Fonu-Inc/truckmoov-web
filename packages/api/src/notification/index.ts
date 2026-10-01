@@ -1,6 +1,7 @@
 import { keepPreviousData, queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { queryClient } from '../lib/query-client'
+import type { ServerErrorResponse } from '../lib/types'
 import {
   connectWhatsAppAccount,
   createWhatsAppTemplate,
@@ -98,8 +99,19 @@ export function getWhatsAppAccountQueryOptions() {
 export function getSystemWhatsAppAccountQueryOptions() {
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEY.systemWhatsappAccount,
-    queryFn: getSystemWhatsAppAccount,
-    // 404 means nothing is connected yet, which is an answer, not a failure.
+    // 404 means nothing is connected yet. Answering null keeps that a result:
+    // a query left in error has no data, so every refetch on focus would
+    // bring the loading state back.
+    queryFn: async () => {
+      try {
+        return await getSystemWhatsAppAccount()
+      }
+      catch (error) {
+        if ((error as ServerErrorResponse).statusCode === 404)
+          return null
+        throw error
+      }
+    },
     retry: false,
   })
 }
