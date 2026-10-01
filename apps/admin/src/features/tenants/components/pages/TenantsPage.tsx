@@ -75,6 +75,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { SuspendAccessDialog } from "@/features/security/components/payments-access/SuspendAccessDialog";
 import { TenantDetailsSheet } from "@/features/tenants/components/ui/TenantDetailsSheet";
 import { TenantOnboardingPanel } from "@/features/tenants/components/ui/TenantOnboardingPanel";
 import { TerminateTenantDialog } from "@/features/tenants/components/ui/TerminateTenantDialog";
@@ -290,6 +291,8 @@ export default function TenantsPage() {
     isDbDetailsSheetOpen,
     setIsDbDetailsSheetOpen,
   ] = useState(false);
+
+  const [suspendDbTenant, setSuspendDbTenant] = useState<SystemTenant | null>(null);
 
   const [
     deleteConfirmDbTenant,
@@ -541,10 +544,7 @@ export default function TenantsPage() {
                   )
                 : (
                     <DropdownMenuItem
-                      onClick={() => handleDbTenantStatusChange(
-                        tenant,
-                        "suspended",
-                      )}
+                      onClick={() => setSuspendDbTenant(tenant)}
                       className="text-warning"
                     >
                       <XCircle className="h-4 w-4 mr-2" />
@@ -782,6 +782,8 @@ export default function TenantsPage() {
         open={isDbDetailsSheetOpen}
         onOpenChange={setIsDbDetailsSheetOpen}
       />
+
+      <SuspendAccessDialog tenant={suspendDbTenant} onClose={() => setSuspendDbTenant(null)} />
 
       {/* Terminate DB Tenant Confirmation */}
       {deleteConfirmDbTenant && (

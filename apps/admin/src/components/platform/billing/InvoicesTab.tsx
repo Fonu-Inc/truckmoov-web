@@ -1,5 +1,5 @@
-import type { InvoiceRow, InvoiceStatus } from "@truckmoov/api/billing";
-import { getBillingInvoicesQueryOptions } from "@truckmoov/api/billing";
+import type { InvoiceKind, InvoiceRow, InvoiceStatus } from "@truckmoov/api/billing";
+import { getBillingInvoicesQueryOptions, useEnforcementSettings } from "@truckmoov/api/billing";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, FileText, MailCheck, Search } from "lucide-react";
 import { useState } from "react";
@@ -32,20 +32,23 @@ import {
   formatNgn,
   INVOICE_STATUS_LABEL,
   InvoiceStatusBadge,
+  DueStateText,
+  RenewalBadge,
 } from "@/components/platform/billing/billingUi";
 import { InvoiceDetailsDialog } from "@/components/platform/billing/InvoiceDetailsDialog";
 import { useBillingList } from "@/components/platform/billing/useBillingList";
 
 const PAGE_SIZE = 10;
-const COLUMNS = 11;
+const COLUMNS = 12;
 
-type Filters = { status: "all" | InvoiceStatus };
+type Filters = { status: "all" | InvoiceStatus; kind: "all" | InvoiceKind };
 
 const EXPORT_COLUMNS = [
   { header: "Invoice", accessor: "number" as const },
   { header: "Quotation", accessor: (row: InvoiceRow) => row.quotationNumber ?? "-" },
   { header: "Customer", accessor: "customerName" as const },
   { header: "Customer Type", accessor: (row: InvoiceRow) => customerTypeLabel(row.customerType) },
+  { header: "Type", accessor: (row: InvoiceRow) => (row.isRenewal ? "Renewal" : "First purchase") },
   { header: "Status", accessor: (row: InvoiceRow) => INVOICE_STATUS_LABEL[row.status] },
   { header: "Issue Date", accessor: (row: InvoiceRow) => formatDateOnly(row.issueDate) },
   { header: "Due Date", accessor: (row: InvoiceRow) => formatDateOnly(row.dueDate) },
@@ -56,15 +59,17 @@ const EXPORT_COLUMNS = [
 ];
 
 export function InvoicesTab() {
-  const list = useBillingList<Filters>({ status: "all" });
+  const list = useBillingList<Filters>({ status: "all", kind: "all" });
   const [viewingId, setViewingId] = useState<string | null>(null);
   const { filters, page } = list;
+  const graceDays = useEnforcementSettings().data?.data.graceDays ?? null;
 
   const { data, isLoading, isError, error, refetch } = useQuery(
     getBillingInvoicesQueryOptions({
       params: {
         q: list.debouncedSearch || undefined,
         status: filters.status === "all" ? undefined : filters.status,
+        kind: filters.kind === "all" ? undefined : filters.kind,
         page,
         limit: PAGE_SIZE,
       },
@@ -85,8 +90,8 @@ export function InvoicesTab() {
               Invoices
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Invoices are generated and emailed to the customer automatically once their payment
-              completes. This register is for reference only.
+              First purchase invoices are created and emailed once the customer pays. Renewal invoices are
+              issued automatically before a licence expires and are due on its expiry date. This register is for reference only.
             </p>
           </div>
           <ExportButton
@@ -121,6 +126,19 @@ export function InvoicesTab() {
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={filters.kind}
+              onValueChange={v => list.setFilter("kind", v as Filters["kind"])}
+            >
+              <SelectTrigger className="w-[170px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All invoices</SelectItem>
+                <SelectItem value="first">First purchase</SelectItem>
+                <SelectItem value="renewal">Renewal</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {isError && rows.length > 0 && (
@@ -134,6 +152,7 @@ export function InvoicesTab() {
                   <TableHead>Invoice Number</TableHead>
                   <TableHead>Quotation</TableHead>
                   <TableHead>Customer</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Issue Date</TableHead>
                   <TableHead>Due Date</TableHead>
@@ -155,7 +174,13 @@ export function InvoicesTab() {
                     <TableCell className="font-medium">{row.number}</TableCell>
                     <TableCell className="text-muted-foreground">{row.quotationNumber ?? "-"}</TableCell>
                     <TableCell>{row.customerName}</TableCell>
-                    <TableCell><InvoiceStatusBadge status={row.status} /></TableCell>
+                    <TableCell>{row.isRenewal ? <RenewalBadge /> : <span className="text-sm text-muted-foreground">First purchase</span>}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col items-start gap-1">
+                        <InvoiceStatusBadge status={row.status} />
+                        <DueStateText invoice={row} graceDays={graceDays} />
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{formatDateOnly(row.issueDate)}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDateOnly(row.dueDate)}</TableCell>
                     <TableCell className="font-medium tabular-nums">{formatNgn(row.totalNgn)}</TableCell>

@@ -26,6 +26,15 @@ import {
 } from './requests'
 
 export type * from './types'
+export type * from './messaging-types'
+export { createPlatformMessagingSocket } from './messaging-socket'
+export type { PlatformMessagingSocket, PlatformMessagingSocketOptions } from './messaging-socket'
+export {
+  getMessagingCapabilities,
+  getMessagingConversation,
+  getMessagingConversations,
+  getMessagingMessages,
+} from './messaging-requests'
 
 import type { DeliveryLogQuery, WhatsAppConversationsQuery } from './types'
 

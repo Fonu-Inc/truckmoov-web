@@ -34,6 +34,8 @@ export type SidebarNavItem = {
   fullWidth?: boolean;
   /** Roles allowed to see this entry. */
   hasPermission?: UserRole[];
+  /** Permission key the signed-in user must hold, on top of the role check. */
+  requiredPermission?: string;
 };
 
 /** A collapsible parent row. Has no href of its own — it opens onto `items`. */
@@ -105,7 +107,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
         label: "WhatsApp Setup", href: "/whatsapp", icon: Send,
       },
       {
-        label: "Messaging Center", href: "/inbox", icon: Inbox,
+        label: "Messaging Center", href: "/inbox", icon: Inbox, requiredPermission: "admin.messaging.read",
       },
     ],
     hasPermission: ADMIN_ROLES,
@@ -123,6 +125,25 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Settings", href: "/settings", icon: Settings, hasPermission: ADMIN_ROLES,
   },
 ];
+
+export function filterByPermission(entries: SidebarEntry[], permissions: string[]): SidebarEntry[] {
+  const allowed = (item: SidebarNavItem) =>
+    !item.requiredPermission || permissions.includes(item.requiredPermission);
+  const visible: SidebarEntry[] = [];
+  for (const entry of entries) {
+    if (!isNavGroup(entry)) {
+      if (allowed(entry))
+        visible.push(entry);
+      continue;
+    }
+    const items = entry.items.filter(allowed);
+    if (items.length === entry.items.length)
+      visible.push(entry);
+    else if (items.length)
+      visible.push({ ...entry, items });
+  }
+  return visible;
+}
 
 const entriesByRole = new Map<UserRole, SidebarEntry[]>();
 

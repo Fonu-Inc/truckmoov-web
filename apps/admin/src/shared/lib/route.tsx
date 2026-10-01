@@ -10,6 +10,7 @@ import AuthPage from "@/features/auth/components/pages/AuthPage";
 import InvitePage from "@/features/auth/components/pages/InvitePage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { ADMIN_ROLES } from "@/features/dashboard/utils/sidebarNav";
+import { ComplianceAuditLayout } from "@/pages/platform/ComplianceAuditLayout";
 import { SecurityLayout } from "@/features/security/components/layout/SecurityLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { useAuthStore } from "@/stores/authStore";
@@ -45,6 +46,10 @@ const GuardedDashboardLayout = withGuard(
 const GuardedSettingsLayout = withGuard(
   ADMIN_ROLES,
   SettingsLayout,
+);
+const GuardedAuditLayout = withGuard(
+  ADMIN_ROLES,
+  ComplianceAuditLayout,
 );
 const GuardedSecurityLayout = withGuard(
   ADMIN_ROLES,
@@ -166,28 +171,24 @@ export const router = createBrowserRouter([
                 index: true, lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityOverviewPage")).default }),
               },
               {
-                path: "login-history", lazy: async () => ({ Component: (await import("@/features/security/components/pages/LoginHistoryPage")).default }),
+                path: "payments-access", lazy: async () => ({ Component: (await import("@/features/security/components/pages/PaymentsAccessPage")).default }),
               },
               {
-                path: "failed-attempts", lazy: async () => ({ Component: (await import("@/features/security/components/pages/FailedAttemptsPage")).default }),
-              },
-              {
-                path: "blocked-ips", lazy: async () => ({ Component: (await import("@/features/security/components/pages/BlockedIpsPage")).default }),
-              },
-              {
-                path: "notifications", lazy: async () => ({ Component: (await import("@/features/security/components/pages/NotificationsPage")).default }),
-              },
-              {
-                path: "events", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityEventsPage")).default }),
-              },
-              {
-                path: "sim-audit", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SimAuditPage")).default }),
+                path: "devices-sims", lazy: async () => ({ Component: (await import("@/features/security/components/pages/DevicesSimsPage")).default }),
               },
             ],
           },
           {
             path: "/compliance-audit",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformComplianceAudit")).default }),
+            Component: GuardedAuditLayout,
+            children: [
+              {
+                index: true, lazy: async () => ({ Component: (await import("@/pages/platform/PlatformComplianceAudit")).default }),
+              },
+              {
+                path: "sign-ins", lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSignIns")).default }),
+              },
+            ],
           },
           // Settings is a pathful layout route: SettingsLayout owns the tab bar
           // and the Outlet, one child route per tab. The tab list it renders is

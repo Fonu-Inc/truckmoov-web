@@ -549,6 +549,8 @@ export type SystemInstallationJob = {
   /** When it was completed or cancelled. */
   completedAt: string | null
   installer: { id: string, code: string, fullName: string } | null
+  /** Newest issue report, only while status is issue_reported. */
+  issueTicket: { id: string, displayId: string } | null
 }
 
 export type SystemInstallationJobsQuery = {
@@ -920,6 +922,8 @@ export type UpdateTenantStatusPayload = {
   id: string
   data: {
     status: string
+    /** 5..500 chars. Required for any status other than 'active'; optional on reinstate. */
+    reason?: string
   }
 }
 
@@ -1916,7 +1920,13 @@ export type SystemTenantQuotas = {
   sims: number | null
 }
 
-export type SystemTenant = {
+export type SystemTenantSuspension = {
+  suspendedAt: string | null
+  suspendedByName: string | null
+  suspensionReason: string | null
+}
+
+export type SystemTenant = SystemTenantSuspension & {
   id: string
   name: string
   slug: string
@@ -1971,6 +1981,8 @@ export type SystemTenantsSummary = {
   totalVehicles: number
   totalSims: number
   overdueInvoices: number | null
+  inGraceTenants?: number
+  pastGraceTenants?: number
   monthlyRevenueNgn: number
   generatedAt: string
 }
@@ -2615,7 +2627,7 @@ export type SystemDeviceSetupRequestResponse = ServerResponse<SystemDeviceSetupR
 export type SystemDeviceSetupSummaryResponse = ServerResponse<SystemDeviceSetupSummary>
 export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
 export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
-export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown>>
+export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown> & Partial<SystemTenantSuspension>>
 export type SystemTenantDeleteResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantOnboardingResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantOnboardingReferenceDataResponse = ServerResponse<Record<string, unknown>>
@@ -2627,6 +2639,28 @@ export type SystemDeviceCatalogReferenceDataResponse = ServerResponse<Record<str
 export type SystemDeviceInventoryListResponse = ServerResponse<SystemDeviceInventoryList>
 export type SystemDeviceDetailResponse = ServerResponse<SystemDeviceDetail>
 export type SystemDeviceSummaryResponse = ServerResponse<SystemDevicesSummary>
+
+export type StillReportingDevice = {
+  deviceId: string | null
+  imei: string
+  deviceName: string
+  tenantId: string
+  companyName: string
+  blockedReason: 'tenant' | 'device'
+  suspendedAt: string | null
+  lastSeenAt: string
+  droppedToday: number
+  droppedTotal: number
+}
+
+export type StillReportingDevices = {
+  gateReachable: boolean
+  countsSince: string | null
+  devices: StillReportingDevice[]
+  generatedAt: string
+}
+
+export type StillReportingDevicesResponse = ServerResponse<StillReportingDevices>
 export type SystemSimsListResponse = ServerResponse<SystemSimsList>
 export type SystemSimResponse = ServerResponse<SystemSimItem>
 export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
@@ -3210,8 +3244,32 @@ export type PlatformWalletCreditSettingsPayload = {
   }
 }
 
-// ponytail: spec ships no response schema — tighten when @ApiResponse lands
+export type PlatformWalletStatus = 'healthy' | 'low' | 'negative'
+
+/** GET /auth/system/wallets row. Amounts are kobo (divide by 100 for naira). No tenant name: join on tenantId. */
+export type PlatformWalletRow = {
+  tenantId: string
+  balanceKobo: number
+  currency: string
+  updatedAt: string
+  creditEnabled: boolean
+  creditLimitKobo: number | null
+  lowBalanceThresholdKobo: number
+  status: PlatformWalletStatus
+}
+
+export type PlatformWalletsData = {
+  summary: {
+    totalWallets: number
+    totalBalanceKobo: number
+    lowBalance: number
+    negativeBalance: number
+  }
+  wallets: PlatformWalletRow[]
+}
+
 export type PlatformWalletsResponse = ServerResponse<unknown>
+export type SystemWalletsResponse = ServerResponse<PlatformWalletsData>
 export type PlatformWalletLedgerResponse = ServerResponse<unknown>
 export type PlatformTopUpResponse = ServerResponse<unknown>
 export type PlatformWalletCreditSettingsResponse = ServerResponse<unknown>
@@ -4116,6 +4174,7 @@ export type SystemAuditLogEntry = {
   ipAddress: string | null
   source: string
   summary: string | null
+  reason?: string | null
 }
 
 export type SystemAuditLogQuery = {
@@ -4160,6 +4219,13 @@ export type SystemAuditLogVerification = {
     firstBreak: { seq: number; id: string; reason: 'hash_mismatch' | 'broken_link' }
   }[]
   verifiedAt: string
+}
+
+export type SystemActionHistoryQuery = {
+  /** Action prefixes such as 'system.sim.' or 'system.device.' */
+  prefixes: string[]
+  tenantId?: string
+  limit?: number
 }
 
 export type SystemAuditLogVerifyResponse = ServerResponse<SystemAuditLogVerification>

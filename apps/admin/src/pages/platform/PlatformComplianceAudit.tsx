@@ -278,14 +278,8 @@ export default function PlatformComplianceAudit() {
           return (
             <>
               <div className="text-sm font-medium">{e.actorName || "-"}</div>
-              <div
-                className="text-xs text-muted-foreground font-mono"
-                title={e.actorId ?? undefined}
-              >
-                {e.actorEmail || e.actorId?.slice(
-                  0,
-                  8,
-                ) || "-"}
+              <div className="text-xs text-muted-foreground">
+                {e.actorEmail || "-"}
               </div>
               {e.actorRole && <div className="text-xs text-muted-foreground">{e.actorRole}</div>}
             </>
@@ -307,17 +301,6 @@ export default function PlatformComplianceAudit() {
           return (
             <>
               <div className="text-sm">{e.resourceType}</div>
-              {e.resourceId && (
-                <div
-                  className="text-xs text-muted-foreground font-mono"
-                  title={e.resourceId}
-                >
-                  {e.resourceId.slice(
-                    0,
-                    8,
-                  )}
-                </div>
-              )}
             </>
           );
         },
@@ -329,13 +312,6 @@ export default function PlatformComplianceAudit() {
           <span className="text-sm">
             {tenantLabel(row.original)}
           </span>
-        ),
-      },
-      {
-        id: "ip",
-        header: "IP Address",
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.ipAddress || "-"}</span>
         ),
       },
       {
@@ -363,7 +339,7 @@ export default function PlatformComplianceAudit() {
             Compliance & Audit
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Cross-tenant audit log for platform compliance, support, and security investigations.
+            Audit log across all companies, for platform compliance, support, and security investigations.
           </p>
         </div>
       </div>
@@ -391,9 +367,9 @@ export default function PlatformComplianceAudit() {
               <Lock className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">Hash chain</div>
+              <div className="text-xs text-muted-foreground">Audit trail</div>
               <div className="text-xl font-bold break-words">
-                {verification ? (verification.intact ? "Intact" : "Broken") : verifyQuery.isError ? "Unverified" : "Checking…"}
+                {verification ? (verification.intact ? "Verified" : "Could not be verified") : verifyQuery.isError ? "Not checked" : "Checking…"}
               </div>
             </div>
           </CardContent>
@@ -414,24 +390,15 @@ export default function PlatformComplianceAudit() {
             </CardTitle>
             <CardDescription>
               Immutable cross-tenant audit trail.
-              {verification && ` Verified ${verification.entriesChecked.toLocaleString()} entries across ${verification.chainsChecked} chains at ${formatWithPattern(
+              {verification?.intact && ` Checked ${verification.entriesChecked.toLocaleString()} entries on ${formatWithPattern(
                 verification.verifiedAt,
-                "yyyy-MM-dd HH:mm",
+                "d MMM yyyy, HH:mm",
               )}.`}
             </CardDescription>
             {verification && !verification.intact && (
-              <ul className="text-xs text-destructive space-y-0.5">
-                {verification.brokenChains.map(c => (
-                  <li
-                    key={c.tenantId}
-                    className="font-mono"
-                  >
-                    {`${tenantLabel({
-                      tenantId: c.tenantId, tenantName: null,
-                    })}: first break at seq ${c.firstBreak.seq} (${c.firstBreak.reason === "hash_mismatch" ? "row edited" : "row removed or inserted"}) · ${c.firstBreak.id}`}
-                  </li>
-                ))}
-              </ul>
+              <p className="text-xs text-destructive">
+                The audit trail could not be verified. Contact engineering.
+              </p>
             )}
           </div>
           <Button
@@ -713,7 +680,7 @@ function VerifyBadge({
           variant={isError ? "destructive" : "outline"}
           className="text-xs font-normal"
         >
-          {isLoading ? "Verifying…" : isError ? "Verification failed" : "Not verified"}
+          {isLoading ? "Verifying…" : isError ? "Could not check" : "Not checked"}
         </Badge>
         {isError && !isLoading && (
           <Button
@@ -721,7 +688,7 @@ function VerifyBadge({
             size="sm"
             className="h-6 px-1.5"
             onClick={onRefresh}
-            title="Retry verification"
+            title="Check again"
           >
             <RefreshCw className="h-3 w-3" />
           </Button>
@@ -730,20 +697,13 @@ function VerifyBadge({
     );
   }
   const label = verification.intact
-    ? `Chain intact · ${verification.chainsChecked} chains`
-    : `Chain broken · ${verification.brokenChains.length} chain(s)`;
+    ? "Audit trail verified"
+    : "Could not be verified, contact engineering";
   return (
     <span className="inline-flex items-center gap-1">
       <Badge
         variant={verification.intact ? "outline" : "destructive"}
         className="text-xs font-normal"
-        title={
-          verification.intact
-            ? undefined
-            : verification.brokenChains
-                .map(c => `${c.tenantId}: seq ${c.firstBreak.seq} (${c.firstBreak.reason})`)
-                .join(", ")
-        }
       >
         {verification.intact ? (
           <ShieldCheck className="h-3 w-3 mr-1" />
@@ -758,7 +718,7 @@ function VerifyBadge({
         className="h-6 px-1.5"
         onClick={onRefresh}
         disabled={isLoading}
-        title="Re-verify chain"
+        title="Check again"
       >
         <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
       </Button>

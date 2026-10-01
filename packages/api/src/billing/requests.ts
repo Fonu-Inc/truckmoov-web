@@ -4,10 +4,21 @@ import type {
   BillingIdPayload,
   BillingSummaryResponse,
   CreatePlanPayload,
+  EnforcementListResponse,
+  EnforcementPreviewResponse,
+  EnforcementQuery,
+  EnforcementSettingsResponse,
+  EnforcementSettingsUpdate,
   InstallationPriceResponse,
   InvoiceResponse,
   InvoicesQuery,
   InvoicesResponse,
+  TenantInvoiceDetailResponse,
+  TenantInvoiceListResponse,
+  TenantInvoicePayCardResponse,
+  TenantInvoicePayWalletResponse,
+  TenantInvoicesQuery,
+  TenantLicenceResponse,
   PaymentResponse,
   PaymentsQuery,
   PaymentsResponse,
@@ -126,5 +137,58 @@ export async function getBillingPayments(payload?: PaymentsQuery) {
 
 export async function getBillingPayment({ id }: BillingIdPayload) {
   const { data } = await axiosInstance.get<PaymentResponse>(`${BASE}/payments/${id}`)
+  return data
+}
+
+// ─── Payment enforcement ──────────────────────────────────────────────────────
+
+export async function getEnforcementSettings() {
+  const { data } = await axiosInstance.get<EnforcementSettingsResponse>(`${BASE}/enforcement-settings`)
+  return data
+}
+
+export async function updateEnforcementSettings(payload: EnforcementSettingsUpdate) {
+  const { data } = await axiosInstance.put<EnforcementSettingsResponse>(`${BASE}/enforcement-settings`, payload)
+  return data
+}
+
+export async function listEnforcement(payload?: EnforcementQuery) {
+  const { data } = await axiosInstance.get<EnforcementListResponse>(`${BASE}/enforcement`, { params: payload?.params })
+  return data
+}
+
+export async function getEnforcementPreview() {
+  const { data } = await axiosInstance.get<EnforcementPreviewResponse>(`${BASE}/enforcement/preview`)
+  return data
+}
+
+// ─── Tenant billing ───────────────────────────────────────────────────────────
+
+const TENANT_BASE = '/auth/billing'
+
+export async function getTenantInvoices(payload?: TenantInvoicesQuery) {
+  const { data } = await axiosInstance.get<TenantInvoiceListResponse>(`${TENANT_BASE}/invoices`, {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getTenantInvoice({ id }: BillingIdPayload) {
+  const { data } = await axiosInstance.get<TenantInvoiceDetailResponse>(`${TENANT_BASE}/invoices/${id}`)
+  return data
+}
+
+export async function getTenantLicence() {
+  const { data } = await axiosInstance.get<TenantLicenceResponse>(`${TENANT_BASE}/licence`)
+  return data
+}
+
+export async function payTenantInvoiceFromWallet({ id }: BillingIdPayload) {
+  const { data } = await axiosInstance.post<TenantInvoicePayWalletResponse>(`${TENANT_BASE}/invoices/${id}/pay-wallet`)
+  return data
+}
+
+export async function payTenantInvoiceByCard({ id }: BillingIdPayload) {
+  const { data } = await axiosInstance.post<TenantInvoicePayCardResponse>(`${TENANT_BASE}/invoices/${id}/pay-card`)
   return data
 }
