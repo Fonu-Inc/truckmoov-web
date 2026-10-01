@@ -1,5 +1,5 @@
-// Tracking responses are NOT wrapped in the `{ status, message, data }` envelope —
-// this service returns bare payloads.
+// These are the `data` payloads; every tracking route wraps them in ServerResponse
+// (requests.ts returns `data.data`).
 
 export type DeviceHealth = 'online' | 'degraded' | 'offline' | 'unknown'
 

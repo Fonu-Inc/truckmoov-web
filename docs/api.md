@@ -296,8 +296,9 @@ devDependencies so its peers don't resolve to the landing page's React 19.
 - **Request Device** (`ui/RequestDeviceDialog.tsx`) posts `/fleet/device-setup-requests`. The API
   requires `manufacturer` and `trackerType`, which the design's form lacks, so step 1 adds them.
   Fulfilment (pickup store / delivery street) has no API field and is appended to `notes`.
-- **Tracking routes** are wrapped in `ServerResponse`; `tracking/requests.ts` unwraps them (and
-  still accepts a bare body).
+  When a SIM is picked, `carrierId` / `bundleId` must be ids from `/fleet/carriers` and
+  `/fleet/data-bundles` (400 otherwise). This dialog sends no SIM pick today.
+- **Tracking routes** are wrapped in `ServerResponse`; `tracking/requests.ts` returns `data.data`.
 
 ### Data bundles page (`/data-bundles/*`)
 
@@ -309,7 +310,8 @@ devDependencies so its peers don't resolve to the landing page's React 19.
   `/auth/data-bundles/allocations`. The carrier-filtered `/allocations/sims` route requires a
   carrier before searching, so the SIM-first picker uses `/auth/sims` instead.
 - Purchase retries reuse an `idempotencyKey` for the same SIM and plan while the dialog stays
-  open. The canonical SIM mobile number is sent; row actions accept local or international formatting.
+  open. A short wallet is 402 ("Wallet balance does not cover …"); unknown carrier, bundle or
+  SIM is a 400 with `field`, checked before any charge. The canonical SIM mobile number is sent; row actions accept local or international formatting.
 - Allocation rows join SIM devices by normalized mobile number. The API supplies device type,
   not the reference's hardware model. Missing bundle/device values render a dash.
 - Exports use the three server CSV routes, preserving the current filters.

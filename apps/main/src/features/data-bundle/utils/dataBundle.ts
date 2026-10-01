@@ -1,6 +1,8 @@
 import type { DataBundleAnalyticsRangeQuery } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
-import { getDataBundleRatesQueryOptions } from "@truckmoov/api/auth";
+import {
+  getDataBundleCarriersQueryOptions, getDataBundleRatesQueryOptions,
+} from "@truckmoov/api/auth";
 import {
   subDays, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -142,6 +144,9 @@ export type CatalogItem = {
   id: string;
   code: string;
   name: string;
+  /** Catalog carrier id (e.g. "carrier-mtn"); what filters and allocations take. */
+  carrierId: string;
+  /** Carrier name for display and for matching a SIM's operator. */
   carrier: string;
   data_mb: number;
   validity_days: number;
@@ -156,21 +161,43 @@ export function useDataBundleCatalog() {
       page: 1, limit: 100,
     },
   }));
+  const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
+  const carrierName = useCarrierName(carriersQuery.data?.data.carriers);
   const catalog = useMemo<CatalogItem[]>(
     () => (catalogQuery.data?.data.items ?? []).map(rate => ({
       id: rate.id,
       code: rate.code,
       name: rate.name,
-      carrier: rate.carrier,
+      carrierId: rate.carrier,
+      carrier: carrierName(rate.carrier),
       data_mb: rate.dataAmountGb * 1024,
       validity_days: rate.validityDays,
       price_ngn: rate.price,
       billing_cycle: rate.billingCycle,
       is_active: rate.active,
     })),
-    [catalogQuery.data],
+    [
+      catalogQuery.data,
+      carrierName,
+    ],
   );
   return {
     catalog, catalogQuery,
   };
+}
+
+/** Rates carry the carrier id; resolve it to the carrier's name (falls back to the id). */
+export function useCarrierName(carriers: Array<{
+  id: string; name: string;
+}> | undefined) {
+  return useMemo(
+    () => {
+      const byId = new Map((carriers ?? []).map(c => [
+        c.id,
+        c.name,
+      ]));
+      return (id: string) => byId.get(id) ?? id;
+    },
+    [carriers],
+  );
 }

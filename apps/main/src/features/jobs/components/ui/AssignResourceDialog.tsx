@@ -110,7 +110,6 @@ export function AssignResourceDialog({
 
   const pickupLat = job?.pickup?.latitude;
   const pickupLng = job?.pickup?.longitude;
-  const requiredTonnes = job?.load_weight_kg ? job.load_weight_kg / 1000 : undefined;
   const vehicleType = job?.required_vehicle_type as Vehicle["type"] | undefined;
 
   const driversQuery = useDrivers();
@@ -120,7 +119,7 @@ export function AssignResourceDialog({
       params: {
         pickupLat,
         pickupLng,
-        requiredCapacity: requiredTonnes,
+        requiredWeightKg: job?.load_weight_kg || undefined,
         vehicleType: vehicleType ?? undefined,
         limit: 50,
       },

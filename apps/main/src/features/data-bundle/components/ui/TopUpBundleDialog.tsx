@@ -100,14 +100,7 @@ export function TopUpBundleDialog({
     sim.operator,
   )));
   const plan = plans.find(b => b.code === bundleCode);
-  const carrier = (carriersQuery.data?.data?.carriers ?? []).find(c =>
-    plan && (sameCarrier(
-      c.name,
-      plan.carrier,
-    ) || sameCarrier(
-      c.displayName,
-      plan.carrier,
-    )));
+  const carrier = (carriersQuery.data?.data?.carriers ?? []).find(c => plan && c.id === plan.carrierId);
 
   const submit = () => {
     if (!plan || !sim || allocate.isPending)

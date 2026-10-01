@@ -737,7 +737,9 @@ export type DispatchSearchQuery = {
 
 export type RecommendDriversQuery = {
   params?: {
+    /** Tonnes. Prefer requiredWeightKg, which wins when both are sent. */
     requiredCapacity?: number
+    requiredWeightKg?: number
     vehicleType?: VehicleType
     pickupLat?: number
     pickupLng?: number

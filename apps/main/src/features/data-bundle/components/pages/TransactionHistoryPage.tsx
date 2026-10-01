@@ -100,13 +100,18 @@ export function TransactionHistoryPage() {
       const liveCarriers = carriersQuery.data?.data.carriers ?? [];
       if (liveCarriers.length > 0) {
         return liveCarriers.filter(carrier => carrier.active).map(carrier => ({
-          value: carrier.name,
+          value: carrier.id,
           label: carrier.displayName || carrier.name,
         }));
       }
-      return Array.from(new Set(catalog.map(b => b.carrier))).map(carrier => ({
-        value: carrier,
-        label: carrier,
+      return Array.from(new Map(catalog.map(b => [
+        b.carrierId,
+        b.carrier,
+      ]))).map(([
+        value,
+        label,
+      ]) => ({
+        value, label,
       }));
     },
     [

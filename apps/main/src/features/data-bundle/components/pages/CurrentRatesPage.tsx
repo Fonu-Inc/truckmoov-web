@@ -29,6 +29,7 @@ import {
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   formatBundleSize,
+  useCarrierName,
   useDataBundleCatalog,
   useDebouncedValue,
 } from "@/features/data-bundle/utils/dataBundle";
@@ -67,13 +68,15 @@ export function CurrentRatesPage() {
   );
 
   const ratesQuery = useQuery(getDataBundleRatesQueryOptions(ratesQueryPayload));
+  const carrierName = useCarrierName(carriersQuery.data?.data.carriers);
   const ratesLive = useMemo(
     () => {
       return (ratesQuery.data?.data.items ?? []).map(rate => ({
         id: rate.id,
         code: rate.code,
         name: rate.name,
-        carrier: rate.carrier,
+        carrierId: rate.carrier,
+        carrier: carrierName(rate.carrier),
         data_mb: rate.dataAmountGb * 1024,
         validity_days: rate.validityDays,
         price_ngn: rate.price,
@@ -81,7 +84,10 @@ export function CurrentRatesPage() {
         is_active: rate.active,
       }));
     },
-    [ratesQuery.data],
+    [
+      ratesQuery.data,
+      carrierName,
+    ],
   );
   const filteredRates = ratesQuery.data ? ratesLive : catalog.filter(b => b.is_active);
 
@@ -90,13 +96,18 @@ export function CurrentRatesPage() {
       const liveCarriers = carriersQuery.data?.data.carriers ?? [];
       if (liveCarriers.length > 0) {
         return liveCarriers.filter(carrier => carrier.active).map(carrier => ({
-          value: carrier.name,
+          value: carrier.id,
           label: carrier.displayName || carrier.name,
         }));
       }
-      return Array.from(new Set(catalog.map(b => b.carrier))).map(carrier => ({
-        value: carrier,
-        label: carrier,
+      return Array.from(new Map(catalog.map(b => [
+        b.carrierId,
+        b.carrier,
+      ]))).map(([
+        value,
+        label,
+      ]) => ({
+        value, label,
       }));
     },
     [
