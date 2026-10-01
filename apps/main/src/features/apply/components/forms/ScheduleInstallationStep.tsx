@@ -203,14 +203,6 @@ export function ScheduleInstallationStep({
         );
         return;
       }
-      // Date rules come back without a field key.
-      if (err.statusCode === 400 && /date|booked/i.test(message)) {
-        form.setError(
-          "date",
-          { message },
-        );
-        return;
-      }
       setBookingError({
         message,
         conflict: err.statusCode === 409,
