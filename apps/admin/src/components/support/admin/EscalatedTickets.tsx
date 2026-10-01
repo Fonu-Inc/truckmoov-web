@@ -6,7 +6,6 @@ import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowUpRight,
   Building2,
-  Loader2,
   Wifi,
   Wrench,
 } from "lucide-react";
@@ -23,6 +22,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import { AdminTicketSheet } from "./AdminTicketSheet";
 import { toSheetTicket } from "./toSheetTicket";
 
@@ -56,6 +57,45 @@ const priorityStyles: Record<string, string> = {
   high: "bg-chart-5/10 text-chart-5",
   critical: "bg-destructive/10 text-destructive",
 };
+
+function EscalatedTicketsSkeleton() {
+  return (
+    <div
+      className="space-y-6"
+      aria-hidden
+    >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
+        {Array.from(
+          { length: 3 },
+          (_, index) => (
+            <Card key={index}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-5" />
+                  <Skeleton className="h-5 w-8 rounded-full" />
+                </div>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-3 w-28" />
+              </CardContent>
+            </Card>
+          ),
+        )}
+      </div>
+
+      <Card>
+        <CardHeader className="space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent>
+          <ListSkeleton rows={3} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function titleCase(value: string) {
   return value
@@ -107,11 +147,7 @@ export function EscalatedTickets() {
     ticket.tenantName || `Tenant #${shortId(ticket.tenantId || ticket.id)}`;
 
   if (escalatedQuery.isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <EscalatedTicketsSkeleton />;
   }
 
   if (escalatedQuery.isError) {

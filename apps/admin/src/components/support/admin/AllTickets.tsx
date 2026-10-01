@@ -56,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { AdminTicketSheet } from "./AdminTicketSheet";
 import { toSheetTicket } from "./toSheetTicket";
 
@@ -459,26 +460,31 @@ export function AllTickets() {
           <StatCard
             label="Total Tickets"
             value={counts.total}
+            loading={ticketsQuery.isLoading}
             icon={<TicketIcon className="h-4 w-4 text-foreground" />}
           />
           <StatCard
             label="Open"
             value={counts.open}
+            loading={ticketsQuery.isLoading}
             icon={<CircleDot className="h-4 w-4 text-chart-5" />}
           />
           <StatCard
             label="In Progress"
             value={counts.inProgress}
+            loading={ticketsQuery.isLoading}
             icon={<Loader2 className="h-4 w-4 text-primary" />}
           />
           <StatCard
             label="Escalated"
             value={counts.escalated}
+            loading={ticketsQuery.isLoading}
             icon={<ArrowUpRight className="h-4 w-4 text-destructive" />}
           />
           <StatCard
             label="Closed"
             value={counts.closed}
+            loading={ticketsQuery.isLoading}
             icon={<CheckCircle2 className="h-4 w-4 text-muted-foreground" />}
           />
         </div>
@@ -703,10 +709,12 @@ function StatCard({
   label,
   value,
   icon,
+  loading = false,
 }: {
   label: string;
   value: number;
   icon: ReactNode;
+  loading?: boolean;
 }) {
   return (
     <Card>
@@ -714,7 +722,9 @@ function StatCard({
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">{icon}</div>
         <div className="min-w-0">
           <p className="break-words text-xs text-muted-foreground">{label}</p>
-          <p className="text-xl font-semibold leading-tight">{value}</p>
+          {loading
+            ? <Skeleton className="mt-1 h-6 w-10" />
+            : <p className="text-xl font-semibold leading-tight">{value}</p>}
         </div>
       </CardContent>
     </Card>

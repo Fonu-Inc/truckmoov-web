@@ -134,6 +134,30 @@ export async function disconnectWhatsAppAccount({ phoneNumberId }: DisconnectWha
   return data
 }
 
+// ─── Platform WhatsApp account (platform admin, held under the system tenant) ──
+
+export async function getSystemWhatsAppAccount() {
+  const { data } = await axiosInstance.get<WhatsAppAccountResponse>('/notify/system/whatsapp/settings')
+  return data
+}
+
+export async function connectSystemWhatsAppAccount({ data: body }: ConnectWhatsAppAccountPayload) {
+  const { data } = await axiosInstance.post<WhatsAppAccountResponse>('/notify/system/whatsapp/settings', body)
+  return data
+}
+
+export async function disconnectSystemWhatsAppAccount({ phoneNumberId }: DisconnectWhatsAppAccountPayload) {
+  const { data } = await axiosInstance.delete<DisconnectWhatsAppAccountResponse>(
+    `/notify/system/whatsapp/settings/${phoneNumberId}`,
+  )
+  return data
+}
+
+export async function getSystemWhatsAppTemplates() {
+  const { data } = await axiosInstance.get<WhatsAppTemplateListResponse>('/notify/system/whatsapp/templates')
+  return data
+}
+
 // ─── Delivery log ─────────────────────────────────────────────────────────────
 
 export async function getDeliveryLog(payload?: DeliveryLogQuery) {

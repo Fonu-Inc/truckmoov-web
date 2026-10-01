@@ -44,6 +44,7 @@ import { Checkbox } from "@/components/shadcn/checkbox";
 import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
+import { describeAction } from "@/utils/auditActions";
 import {
   Popover,
   PopoverContent,
@@ -93,8 +94,6 @@ type DraftFilters = {
   action: string;
   enableResource: boolean;
   resourceType: string;
-  enableSource: boolean;
-  source: string;
 };
 
 const emptyDraft: DraftFilters = {
@@ -109,8 +108,6 @@ const emptyDraft: DraftFilters = {
   action: "",
   enableResource: false,
   resourceType: "",
-  enableSource: false,
-  source: "",
 };
 
 export default function PlatformComplianceAudit() {
@@ -219,8 +216,6 @@ export default function PlatformComplianceAudit() {
       next.action = draft.action;
     if (draft.enableResource && draft.resourceType)
       next.resourceType = draft.resourceType;
-    if (draft.enableSource && draft.source)
-      next.source = draft.source;
     setApplied(next);
   };
 
@@ -301,12 +296,7 @@ export default function PlatformComplianceAudit() {
         id: "action",
         header: "Action",
         cell: ({ row }) => (
-          <Badge
-            variant="outline"
-            className="text-xs"
-          >
-            {row.original.action}
-          </Badge>
+          <span className="text-sm">{describeAction(row.original.action)}</span>
         ),
       },
       {
@@ -358,19 +348,6 @@ export default function PlatformComplianceAudit() {
           >
             {row.original.summary || "-"}
           </span>
-        ),
-      },
-      {
-        id: "source",
-        header: "Source",
-        cell: ({ row }) => (
-          // ponytail: source is which service recorded the entry, not a severity — plain tag.
-          <Badge
-            variant="outline"
-            className="text-xs"
-          >
-            {row.original.source}
-          </Badge>
         ),
       },
     ],
@@ -596,7 +573,7 @@ export default function PlatformComplianceAudit() {
                           key={a}
                           value={a}
                         >
-                          {a}
+                          {describeAction(a)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -632,34 +609,7 @@ export default function PlatformComplianceAudit() {
                   </Select>
                 </FilterRow>
 
-                <FilterRow
-                  id="f-source"
-                  label="By service (source)"
-                  checked={draft.enableSource}
-                  onCheckedChange={v => setDraft({
-                    ...draft, enableSource: v,
-                  })}
-                >
-                  <Select
-                    disabled={!draft.enableSource}
-                    value={draft.source}
-                    onValueChange={v => setDraft({
-                      ...draft, source: v,
-                    })}
-                  >
-                    <SelectTrigger><SelectValue placeholder="Select service" /></SelectTrigger>
-                    <SelectContent>
-                      {availableFilters?.services.map(s => (
-                        <SelectItem
-                          key={s}
-                          value={s}
-                        >
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FilterRow>
+
 
                 <div className="flex gap-2 pt-2">
                   <Button

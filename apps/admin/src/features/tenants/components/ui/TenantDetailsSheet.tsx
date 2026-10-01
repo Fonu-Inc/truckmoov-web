@@ -56,6 +56,8 @@ import { DataExportPanel } from "@/components/platform/DataExportPanel";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import {
   Dialog as Sheet,
   DialogContent as SheetContent,
@@ -171,7 +173,7 @@ function ResourceState({
   payload, isLoading, empty,
 }: ResourceStateProps) {
   if (isLoading)
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <ListSkeleton rows={3} />;
   if (!payload)
     return null;
   if (!payload.available) {
@@ -655,7 +657,7 @@ export function TenantDetailsSheet({
                     <p className="text-xs text-muted-foreground">Subscription Plan</p>
                     {detailQuery.isLoading && !detail
                       ? (
-                          <div className="h-5 w-20 rounded bg-muted animate-pulse" />
+                          <Skeleton className="h-5 w-20" />
                         )
                       : (
                           <Badge className={planDetails[(detail?.plan as keyof typeof planDetails) ?? tenant.plan]?.color ?? planDetails[tenant.plan].color}>
@@ -667,7 +669,7 @@ export function TenantDetailsSheet({
                     <p className="text-xs text-muted-foreground">Tenant Status</p>
                     {detailQuery.isLoading && !detail
                       ? (
-                          <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                          <Skeleton className="h-5 w-16" />
                         )
                       : (
                           getStatusBadge(String(detail?.status ?? tenant.status))
@@ -1323,7 +1325,7 @@ export function TenantDetailsSheet({
                   )
                 </h4>
                 {documentsQuery.isLoading
-                  ? <p className="text-sm text-muted-foreground">Loading documents…</p>
+                  ? <ListSkeleton rows={3} />
                   : documents.length === 0
                     ? (
                         <Card className="p-6 text-center text-sm text-muted-foreground">
@@ -1723,7 +1725,7 @@ export function TenantDetailsSheet({
                   )
                 </h4>
                 {loadingAudit
-                  ? <p className="text-sm text-muted-foreground">Loading audit log…</p>
+                  ? <ListSkeleton rows={4} />
                   : auditEntries.length === 0
                     ? (
                         <Card className="p-6 text-center text-sm text-muted-foreground">

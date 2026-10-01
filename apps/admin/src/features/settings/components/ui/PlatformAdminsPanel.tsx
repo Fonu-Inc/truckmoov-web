@@ -202,13 +202,13 @@ export function PlatformAdminsPanel() {
     {
       accessorKey: "role",
       header: "Role",
-      cell: () => (
+      cell: ({ row }) => (
         <Badge
           variant="outline"
           className="border-primary/30 text-primary"
         >
           <Shield className="h-3 w-3 mr-1" />
-          Platform Admin
+          {row.original.role === "SUPER_ADMIN" ? "Super Admin" : "Platform Admin"}
         </Badge>
       ),
     },
@@ -230,6 +230,8 @@ export function PlatformAdminsPanel() {
         const isSelf = admin.userId === user?.id;
         if (isSelf)
           return <span className="text-xs text-muted-foreground">You</span>;
+        if (admin.role === "SUPER_ADMIN")
+          return <span className="text-xs text-muted-foreground">Protected</span>;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

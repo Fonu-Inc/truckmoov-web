@@ -1,7 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   Building2,
-  Loader2,
   MessageSquare,
   MoreHorizontal,
   Phone,
@@ -51,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useTenants } from "@/hooks/useTenants";
@@ -537,10 +537,10 @@ export function PhoneNumberManagement() {
                       <Label>Select Phone Number</Label>
                       {loadingAvailable
                         ? (
-                            <div className="flex items-center justify-center py-4">
-                              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                              <span className="ml-2 text-sm text-muted-foreground">Loading available numbers...</span>
-                            </div>
+                            <Skeleton
+                              className="h-10 w-full"
+                              aria-hidden
+                            />
                           )
                         : (
                             <Select

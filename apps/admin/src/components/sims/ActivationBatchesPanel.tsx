@@ -58,6 +58,8 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { PlatformFilterPopover } from "@/components/shadcn/platform-filter-popover";
 import { Progress } from "@/components/shadcn/progress";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { DetailSkeleton } from "@/components/ui/skeletons";
 
 const emptyValue = "-";
 
@@ -440,7 +442,9 @@ export function ActivationBatchesPanel() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.pendingActivation ?? "—"}</div>
+            {summaryQuery.isLoading
+              ? <Skeleton className="h-8 w-16" />
+              : <div className="text-2xl font-bold">{summary?.pendingActivation ?? "—"}</div>}
             <p className="text-xs text-muted-foreground">Awaiting auto-activation</p>
           </CardContent>
         </Card>
@@ -450,7 +454,9 @@ export function ActivationBatchesPanel() {
             <Loader2 className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{summary?.inProgress ?? "—"}</div>
+            {summaryQuery.isLoading
+              ? <Skeleton className="h-8 w-16" />
+              : <div className="text-2xl font-bold text-warning">{summary?.inProgress ?? "—"}</div>}
             <p className="text-xs text-muted-foreground">Currently activating</p>
           </CardContent>
         </Card>
@@ -460,7 +466,9 @@ export function ActivationBatchesPanel() {
             <Zap className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{summary?.totalSimsQueued ?? "—"}</div>
+            {summaryQuery.isLoading
+              ? <Skeleton className="h-8 w-16" />
+              : <div className="text-2xl font-bold text-warning">{summary?.totalSimsQueued ?? "—"}</div>}
             <p className="text-xs text-muted-foreground">Awaiting activation</p>
           </CardContent>
         </Card>
@@ -470,7 +478,9 @@ export function ActivationBatchesPanel() {
             <Info className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.needsAttention ?? "—"}</div>
+            {summaryQuery.isLoading
+              ? <Skeleton className="h-8 w-16" />
+              : <div className="text-2xl font-bold">{summary?.needsAttention ?? "—"}</div>}
             <p className="text-xs text-muted-foreground">No device linking issues</p>
           </CardContent>
         </Card>
@@ -592,8 +602,13 @@ export function ActivationBatchesPanel() {
 
           {batchDetailQuery.isLoading
             ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <div
+                  className="space-y-5"
+                  aria-hidden
+                >
+                  <DetailSkeleton items={6} />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-2 w-full" />
                 </div>
               )
             : selectedBatch

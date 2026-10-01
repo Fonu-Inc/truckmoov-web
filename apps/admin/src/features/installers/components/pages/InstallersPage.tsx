@@ -57,6 +57,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { TableSkeleton } from "@/components/ui/skeletons";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { AddInstallerDialog } from "@/features/installers/components/ui/AddInstallerDialog";
 import { InstallerProfileDialog } from "@/features/installers/components/ui/InstallerProfileDialog";
 import { InstallerStatusBadge } from "@/features/installers/components/ui/InstallerStatusBadge";
@@ -172,23 +174,27 @@ export default function InstallersPage() {
           <StatCard
             title="Total Installers"
             value={summary?.total ?? 0}
+            loading={isLoading}
             icon={HardHat}
           />
           <StatCard
             title="Active"
             value={summary?.active ?? 0}
+            loading={isLoading}
             icon={CheckCircle2}
             variant="success"
           />
           <StatCard
             title="Invitation Sent"
             value={summary?.invited ?? 0}
+            loading={isLoading}
             icon={Clock}
             variant="warning"
           />
           <StatCard
             title="Suspended"
             value={summary?.suspended ?? 0}
+            loading={isLoading}
             icon={PauseCircle}
             variant="danger"
           />
@@ -237,7 +243,7 @@ export default function InstallersPage() {
             </div>
 
             <div className="overflow-x-auto rounded-2xl border">
-              <Table>
+              <Table className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Installer Name</TableHead>
@@ -256,37 +262,47 @@ export default function InstallersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {isLoading && (
+                    <TableSkeleton
+                      rows={PAGE_SIZE}
+                      columns={13}
+                    />
+                  )}
                   {installers.map(i => (
                     <TableRow key={i.id}>
                       <TableCell className="font-medium">{installerName(i)}</TableCell>
                       <TableCell className="text-muted-foreground">{i.code}</TableCell>
                       <TableCell>{i.phoneNumber}</TableCell>
                       <TableCell className="text-muted-foreground">{i.email}</TableCell>
-                      <TableCell>{i.serviceAreas.map(fromApiState).join(", ")}</TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {i.capabilities.slice(
-                            0,
-                            2,
-                          ).map(c => (
-                            <Badge
-                              key={c}
-                              variant="secondary"
-                              className="rounded-full"
-                            >
-                              {capabilityLabel(c)}
-                            </Badge>
-                          ))}
-                          {i.capabilities.length > 2 && (
-                            <Badge
-                              variant="secondary"
-                              className="rounded-full"
-                            >
-                              +
-                              {i.capabilities.length - 2}
-                            </Badge>
-                          )}
-                        </div>
+                        <TooltipWrapper content={i.serviceAreas.map(fromApiState).join(", ")}>
+                          <span className="block max-w-[180px] truncate">
+                            {i.serviceAreas.map(fromApiState).join(", ")}
+                          </span>
+                        </TooltipWrapper>
+                      </TableCell>
+                      <TableCell>
+                        <TooltipWrapper content={i.capabilities.map(capabilityLabel).join(", ")}>
+                          <div className="flex items-center gap-1">
+                            {i.capabilities[0] && (
+                              <Badge
+                                variant="secondary"
+                                className="max-w-[200px] rounded-full"
+                              >
+                                <span className="truncate">{capabilityLabel(i.capabilities[0])}</span>
+                              </Badge>
+                            )}
+                            {i.capabilities.length > 1 && (
+                              <Badge
+                                variant="secondary"
+                                className="shrink-0 rounded-full"
+                              >
+                                +
+                                {i.capabilities.length - 1}
+                              </Badge>
+                            )}
+                          </div>
+                        </TooltipWrapper>
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -379,13 +395,12 @@ export default function InstallersPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {installers.length === 0 && (
+                  {installers.length === 0 && !isLoading && (
                     <TableRow>
                       <TableCell
                         colSpan={13}
                         className="py-12 text-center"
                       >
-                        {isLoading && <p className="text-sm text-muted-foreground">Loading installers…</p>}
                         {isError && (
                           <>
                             <p className="text-sm font-medium">Couldn't load installers</p>
@@ -400,7 +415,7 @@ export default function InstallersPage() {
                             </Button>
                           </>
                         )}
-                        {!isLoading && !isError && (
+                        {!isError && (
                           <>
                             <p className="text-sm font-medium">No installers found</p>
                             <p className="text-xs text-muted-foreground">

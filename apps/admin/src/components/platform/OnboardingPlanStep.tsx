@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
-  Loader2,
   MessageSquare,
   Phone,
   Wifi,
@@ -22,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -180,9 +180,34 @@ export function OnboardingPlanStep({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Loading plans...</span>
+      <div
+        className="space-y-5"
+        aria-hidden
+      >
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-64" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
+          {Array.from(
+            { length: 3 },
+            (_, i) => (
+              <div
+                key={i}
+                className="space-y-4 rounded-xl border p-5"
+              >
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-8 w-32" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                  <Skeleton className="h-4 w-4/6" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ),
+          )}
+        </div>
       </div>
     );
   }
@@ -504,11 +529,17 @@ function UsageRatesStrip() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {loadingSummary
           ? (
-              <div className="col-span-4 flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                {" "}
-                Loading...
-              </div>
+              <>
+                {Array.from(
+                  { length: 4 },
+                  (_, i) => (
+                    <Skeleton
+                      key={i}
+                      className="h-4 w-full"
+                    />
+                  ),
+                )}
+              </>
             )
           : summaryItems.map((item, idx) => {
               const Icon = ICON_MAP[item.icon_key] || Wifi;
@@ -536,11 +567,11 @@ function UsageRatesStrip() {
         <div className="pt-2 border-t border-border space-y-1.5">
           {loadingRates
             ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  {" "}
-                  Loading rates...
-                </div>
+                <>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </>
               )
             : rates.length === 0
               ? (

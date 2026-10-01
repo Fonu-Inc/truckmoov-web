@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -647,8 +648,26 @@ export function AdminTicketSheet({
                 <div className="h-80 space-y-3 overflow-y-auto rounded-md border bg-background/40 p-4">
                   {messagesQuery.isLoading
                     ? (
-                        <div className="flex h-full items-center justify-center text-muted-foreground">
-                          <Loader2 className="h-6 w-6 animate-spin" />
+                        <div
+                          className="space-y-3"
+                          aria-hidden
+                        >
+                          {Array.from(
+                            { length: 3 },
+                            (_, index) => (
+                              <div
+                                key={index}
+                                className="space-y-2 rounded-md border p-3"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <Skeleton className="h-4 w-28" />
+                                  <Skeleton className="h-3 w-20" />
+                                </div>
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-2/3" />
+                              </div>
+                            ),
+                          )}
                         </div>
                       )
                     : messages.length === 0

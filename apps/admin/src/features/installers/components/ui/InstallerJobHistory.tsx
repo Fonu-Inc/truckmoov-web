@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { TableSkeleton } from "@/components/ui/skeletons";
 import { fromApiState } from "@/features/installers/installerOptions";
 import { JobStatusBadge } from "./InstallerStatusBadge";
 
@@ -65,6 +66,12 @@ export function InstallerJobHistory({ installerId }: { installerId: string }) {
             </TableRow>
           </TableHeader>
           <TableBody>
+            {isLoading && (
+              <TableSkeleton
+                rows={4}
+                columns={8}
+              />
+            )}
             {jobs.map(job => (
               <TableRow key={job.id}>
                 <TableCell className="font-medium">{job.jobNumber}</TableCell>
@@ -88,13 +95,12 @@ export function InstallerJobHistory({ installerId }: { installerId: string }) {
                 <TableCell>{fmt(job.completedAt)}</TableCell>
               </TableRow>
             ))}
-            {jobs.length === 0 && (
+            {jobs.length === 0 && !isLoading && (
               <TableRow>
                 <TableCell
                   colSpan={8}
                   className="py-8 text-center text-muted-foreground"
                 >
-                  {isLoading && "Loading installation history…"}
                   {isError && (
                     <>
                       {error.message}
@@ -108,7 +114,7 @@ export function InstallerJobHistory({ installerId }: { installerId: string }) {
                       </Button>
                     </>
                   )}
-                  {!isLoading && !isError && "No installation history for this installer."}
+                  {!isError && "No installation history for this installer."}
                 </TableCell>
               </TableRow>
             )}

@@ -1,6 +1,6 @@
 import type {
-  DemoConversation, DemoMessage,
-} from "@/features/communications/demoData";
+  InboxConversation, InboxMessage,
+} from "@/features/communications/types";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDayMonthTime, formatRelative,
@@ -28,9 +28,6 @@ import {
 } from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import {
-  DEMO_CONVERSATIONS, DEMO_MESSAGES,
-} from "@/features/communications/demoData";
 import { cn } from "@/lib/utils";
 
 function statusIcon(status: string | undefined) {
@@ -48,36 +45,31 @@ function statusIcon(status: string | undefined) {
   }
 }
 
-function conversationName(c: DemoConversation) {
+function conversationName(c: InboxConversation) {
   return c.driver_name || c.driver_phone || "Unknown";
 }
+
+const NO_CONVERSATIONS: InboxConversation[] = [];
+const NO_THREADS: Record<string, InboxMessage[]> = {};
 
 export default function PlatformInbox() {
   const [
     search,
     setSearch,
   ] = useState("");
-  // Open the first thread on arrival rather than the "select a conversation"
-  // prompt — with demo data there is always something to show.
   const [
     selectedId,
     setSelectedId,
-  ] = useState<string | null>(DEMO_CONVERSATIONS[0]?.id ?? null);
+  ] = useState<string | null>(null);
   const [
     draft,
     setDraft,
   ] = useState("");
 
-  // Demo data — see features/communications/demoData.ts for why there is no
-  // request here. Threads are state because the composer appends to them.
-  const [
-    threads,
-    setThreads,
-  ] = useState<Record<string, DemoMessage[]>>(DEMO_MESSAGES);
-
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const conversations = DEMO_CONVERSATIONS;
+  const conversations = NO_CONVERSATIONS;
+  const threads = NO_THREADS;
 
   const filtered = useMemo(
     () => {
@@ -119,28 +111,6 @@ export default function PlatformInbox() {
    */
   const isLocked = Boolean(selected?.is_locked);
 
-  /** Appends locally. Nothing is sent — there is no endpoint this app may call. */
-  const handleSend = () => {
-    const text = draft.trim();
-    if (!text || !selectedId)
-      return;
-
-    setThreads(prev => ({
-      ...prev,
-      [selectedId]: [
-        ...prev[selectedId] ?? [],
-        {
-          id: `local-${Date.now()}`,
-          direction: "outbound",
-          status: "sent",
-          text,
-          created_at: new Date().toISOString(),
-        },
-      ],
-    }));
-    setDraft("");
-  };
-
   return (
     <div className="grid gap-4 lg:grid-cols-3 h-[calc(100vh-9rem)]">
       {/* ── Conversation list ─────────────────────────────────────────── */}
@@ -161,7 +131,7 @@ export default function PlatformInbox() {
           {filtered.length === 0
             ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">
-                  No conversations match your search.
+                  {conversations.length === 0 ? "No conversations yet." : "No conversations match your search."}
                 </div>
               )
             : (
@@ -250,12 +220,6 @@ export default function PlatformInbox() {
                       h left
                     </Badge>
                   )}
-                  <Badge
-                    variant="outline"
-                    className="text-[10px]"
-                  >
-                    Demo data
-                  </Badge>
                 </div>
 
                 <div
@@ -315,16 +279,13 @@ export default function PlatformInbox() {
                             value={draft}
                             onChange={e => setDraft(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
+                              if (e.key === "Enter" && !e.shiftKey)
                                 e.preventDefault();
-                                handleSend();
-                              }
                             }}
                           />
                           <Button
                             size="icon"
-                            onClick={handleSend}
-                            disabled={!draft.trim()}
+                            disabled
                           >
                             <Send className="h-4 w-4" />
                           </Button>

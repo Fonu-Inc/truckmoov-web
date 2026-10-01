@@ -2,7 +2,6 @@ import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
   Building2,
   Cpu,
-  Loader2,
   Network,
   Sparkles,
   Truck,
@@ -25,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 const ORG_TYPE_ICONS: Record<string, typeof Building2> = {
   ENTERPRISE: Building2,
@@ -81,8 +81,41 @@ export function StakeholderOverviewTab() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div
+        className="space-y-6"
+        aria-hidden
+      >
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
+          {Array.from(
+            { length: 4 },
+            (_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-8 w-12" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                    <Skeleton className="h-12 w-12 rounded-lg" />
+                  </div>
+                </CardContent>
+              </Card>
+            ),
+          )}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-64 w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-64 w-full" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

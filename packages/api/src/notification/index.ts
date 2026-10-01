@@ -4,9 +4,13 @@ import { queryClient } from '../lib/query-client'
 import {
   connectWhatsAppAccount,
   createWhatsAppTemplate,
+  connectSystemWhatsAppAccount,
+  disconnectSystemWhatsAppAccount,
   disconnectWhatsAppAccount,
   getDeliveryLog,
   getNotifyHealth,
+  getSystemWhatsAppAccount,
+  getSystemWhatsAppTemplates,
   getWhatsAppAccount,
   getWhatsAppConversation,
   getWhatsAppConversationMessages,
@@ -44,6 +48,8 @@ export const NOTIFICATION_QUERY_KEY = {
   ],
   whatsappTemplates: ['notification', 'whatsapp', 'templates'],
   whatsappAccount: ['notification', 'whatsapp', 'account'],
+  systemWhatsappAccount: ['notification', 'system', 'whatsapp', 'account'],
+  systemWhatsappTemplates: ['notification', 'system', 'whatsapp', 'templates'],
   deliveryLog: (payload?: DeliveryLogQuery) =>
     payload ? ['notification', 'deliveryLog', payload] : ['notification', 'deliveryLog'],
   notifyHealth: ['notification', 'health'],
@@ -86,6 +92,22 @@ export function getWhatsAppAccountQueryOptions() {
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEY.whatsappAccount,
     queryFn: getWhatsAppAccount,
+  })
+}
+
+export function getSystemWhatsAppAccountQueryOptions() {
+  return queryOptions({
+    queryKey: NOTIFICATION_QUERY_KEY.systemWhatsappAccount,
+    queryFn: getSystemWhatsAppAccount,
+    // 404 means nothing is connected yet, which is an answer, not a failure.
+    retry: false,
+  })
+}
+
+export function getSystemWhatsAppTemplatesQueryOptions() {
+  return queryOptions({
+    queryKey: NOTIFICATION_QUERY_KEY.systemWhatsappTemplates,
+    queryFn: getSystemWhatsAppTemplates,
   })
 }
 
@@ -183,6 +205,24 @@ export function useConnectWhatsAppAccount() {
     mutationFn: connectWhatsAppAccount,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEY.whatsappAccount })
+    },
+  })
+}
+
+export function useConnectSystemWhatsAppAccount() {
+  return useMutation({
+    mutationFn: connectSystemWhatsAppAccount,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification', 'system', 'whatsapp'] })
+    },
+  })
+}
+
+export function useDisconnectSystemWhatsAppAccount() {
+  return useMutation({
+    mutationFn: disconnectSystemWhatsAppAccount,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification', 'system', 'whatsapp'] })
     },
   })
 }

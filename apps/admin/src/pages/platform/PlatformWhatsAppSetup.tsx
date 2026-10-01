@@ -1,5 +1,12 @@
-import type { DemoAccount } from "@/features/communications/demoData";
+import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
+import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  getSystemWhatsAppAccountQueryOptions,
+  getSystemWhatsAppTemplatesQueryOptions,
+  useConnectSystemWhatsAppAccount,
+  useDisconnectSystemWhatsAppAccount,
+} from "@truckmoov/api/notification";
 import {
   CheckCircle2,
   Info,
@@ -8,6 +15,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import {
   Alert, AlertDescription,
@@ -32,8 +40,10 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import {
-  DEMO_ACCOUNT, DEMO_TEMPLATES,
-} from "@/features/communications/demoData";
+  EmbeddedSignupCancelled,
+  useMetaEmbeddedSignup,
+} from "@/features/communications/useMetaEmbeddedSignup";
+import { DetailSkeleton } from "@/components/ui/skeletons";
 
 /**
  * Meta's template review states. Anything unrecognised falls through to the
@@ -62,24 +72,58 @@ function ConnectionDetail({
 }
 
 export default function PlatformWhatsAppSetup() {
-  // Demo data — see features/communications/demoData.ts for why there is no
-  // request here. Disconnecting clears it locally so both halves of the UI
-  // (connected and not-connected) stay reachable.
-  const [
-    account,
-    setAccount,
-  ] = useState<DemoAccount | null>(DEMO_ACCOUNT);
   const [
     confirmOpen,
     setConfirmOpen,
   ] = useState(false);
+  const signup = useMetaEmbeddedSignup();
+  const connectAccount = useConnectSystemWhatsAppAccount();
+  const disconnectAccount = useDisconnectSystemWhatsAppAccount();
 
+  const accountQuery = useQuery(getSystemWhatsAppAccountQueryOptions());
+  const account = accountQuery.data?.data;
   const isConnected = Boolean(account?.phone_number_id);
-  const templates = DEMO_TEMPLATES;
+  // A 404 only means nothing is linked yet.
+  const loadFailed = accountQuery.isError && (accountQuery.error as unknown as ServerErrorResponse).statusCode !== 404;
+
+  const templatesQuery = useQuery({
+    ...getSystemWhatsAppTemplatesQueryOptions(),
+    enabled: isConnected,
+  });
+  const templates = templatesQuery.data?.data.data ?? [];
+
+  const handleConnect = async () => {
+    try {
+      const result = await signup.launch();
+      await connectAccount.mutateAsync({
+        data: {
+          code: result.code,
+          phone_number_id: result.phoneNumberId,
+          business_account_id: result.businessAccountId,
+        },
+      });
+      toast.success("WhatsApp number connected.");
+    }
+    catch (error) {
+      if (error instanceof EmbeddedSignupCancelled)
+        return;
+      toast.error((error as { message?: string }).message || "Couldn't connect the WhatsApp number.");
+    }
+  };
 
   const handleDisconnect = () => {
-    setAccount(null);
-    setConfirmOpen(false);
+    if (!account?.phone_number_id)
+      return;
+    disconnectAccount.mutate(
+      { phoneNumberId: account.phone_number_id },
+      {
+        onSuccess: () => {
+          setConfirmOpen(false);
+          toast.success("WhatsApp number disconnected.");
+        },
+        onError: error => toast.error(error.message),
+      },
+    );
   };
 
   return (
@@ -116,8 +160,21 @@ export default function PlatformWhatsAppSetup() {
           </CardHeader>
 
           <CardContent>
-            {!isConnected
-              ? (
+            {accountQuery.isLoading && <DetailSkeleton items={6} />}
+            {loadFailed && (
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <p className="text-base font-semibold text-foreground">Couldn&apos;t load the WhatsApp account</p>
+                <p className="text-sm text-muted-foreground">{accountQuery.error.message}</p>
+                <Button
+                  variant="outline"
+                  onClick={() => void accountQuery.refetch()}
+                >
+                  Try again
+                </Button>
+              </div>
+            )}
+            {!accountQuery.isLoading && !loadFailed && !isConnected
+              && (
                   <div className="flex flex-col items-center gap-3 py-10 text-center">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
                       <WhatsAppIcon className="h-7 w-7 text-primary" />
@@ -127,15 +184,30 @@ export default function PlatformWhatsAppSetup() {
                         No WhatsApp number connected
                       </p>
                       <p className="mx-auto max-w-md text-sm text-muted-foreground">
-                        Linking a number requires Meta&apos;s embedded signup,
-                        which runs outside this dashboard. Once a number is
-                        linked to the platform, its status and templates
-                        appear here.
+                        Connect the platform&apos;s WhatsApp Business number with
+                        Meta&apos;s embedded signup. You&apos;ll sign in to
+                        Facebook, choose or create a WhatsApp Business account
+                        and verify the number. The access token is stored
+                        encrypted at platform level.
                       </p>
                     </div>
+                    <Button
+                      onClick={() => void handleConnect()}
+                      loading={signup.launching || connectAccount.isPending}
+                      disabled={!signup.configured}
+                    >
+                      <WhatsAppIcon className="mr-2 h-4 w-4" />
+                      Connect WhatsApp Business
+                    </Button>
+                    {!signup.configured && (
+                      <p className="text-xs text-muted-foreground">
+                        Signup isn&apos;t configured: set VITE_META_APP_ID and VITE_META_CONFIG_ID for this app.
+                      </p>
+                    )}
                   </div>
-                )
-              : (
+                )}
+            {isConnected
+              && (
                   <div className="space-y-6">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge className="bg-success/10 text-success border-success/30">
@@ -151,12 +223,6 @@ export default function PlatformWhatsAppSetup() {
                           Webhook active
                         </Badge>
                       )}
-                      <Badge
-                        variant="outline"
-                        className="text-[10px]"
-                      >
-                        Demo data
-                      </Badge>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -208,12 +274,6 @@ export default function PlatformWhatsAppSetup() {
             <CardTitle className="flex items-center gap-2">
               <Phone className="h-5 w-5 text-primary" />
               Message Templates
-              <Badge
-                variant="outline"
-                className="text-[10px] font-normal"
-              >
-                Demo data
-              </Badge>
             </CardTitle>
             <CardDescription>
               Templates approved by Meta. A template is required to open a
@@ -268,6 +328,7 @@ export default function PlatformWhatsAppSetup() {
                 },
               ]}
               data={templates}
+              isLoading={templatesQuery.isLoading}
             />
           </CardContent>
         </Card>
@@ -291,6 +352,7 @@ export default function PlatformWhatsAppSetup() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              disabled={disconnectAccount.isPending}
               onClick={(e) => {
                 e.preventDefault();
                 handleDisconnect();
