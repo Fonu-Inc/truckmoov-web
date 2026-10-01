@@ -139,11 +139,6 @@ const NO_BOUNDS: JobsFilterBounds = {
   weightMin: 0, weightMax: 0, amountMin: 0, amountMax: 0,
 };
 
-/** Picks held while the other half of an assignment is chosen (the assign endpoint needs both ids). */
-type PendingAssignment = {
-  jobId: string; driverId?: string; vehicleId?: string;
-};
-
 function useDebouncedValue<T>(value: T, delayMs = 400) {
   const [
     debouncedValue,
@@ -249,10 +244,6 @@ export default function JobsPage() {
     selectedJob,
     setSelectedJob,
   ] = useState<DispatchJob | null>(null);
-  const [
-    pendingAssignment,
-    setPendingAssignment,
-  ] = useState<PendingAssignment | null>(null);
   const [
     jobAction,
     setJobAction,
@@ -473,38 +464,22 @@ export default function JobsPage() {
   };
   const isJobActionPending = cancelJobMutation.isPending || deleteJobMutation.isPending;
 
-  // POST /dispatch/jobs/{id}/assign requires driver_id AND vehicle_id. Assigning one
-  // side keeps the job's current other side; if the job has none yet, the pick is held
-  // and the other dialog opens so both go in one request.
+  // POST /dispatch/jobs/{id}/assign takes either side alone; the server keeps the other.
   const handleAssignResource = (kind: AssignResourceKind, resourceId: string) => {
     if (!selectedJob?.id)
       return;
-    const pending = pendingAssignment?.jobId === selectedJob.id ? pendingAssignment : null;
-    const driverId = kind === "driver" ? resourceId : pending?.driverId ?? selectedJob.assigned_driver_id;
-    const vehicleId = kind === "vehicle" ? resourceId : pending?.vehicleId ?? selectedJob.assigned_vehicle_id;
-
-    if (!driverId || !vehicleId) {
-      setPendingAssignment({
-        jobId: selectedJob.id, driverId, vehicleId,
-      });
-      toast.info(kind === "driver" ? "Driver selected — now pick a vehicle" : "Vehicle selected — now pick a driver");
-      setMatchingKind(kind === "driver" ? "vehicle" : "driver");
-      return;
-    }
-
     assignJobMutation.mutate(
       {
         jobId: selectedJob.id,
-        data: {
-          driver_id: driverId,
-          vehicle_id: vehicleId,
-          driver_phone: driverById.get(driverId)?.phone,
-        },
+        data: kind === "driver"
+          ? {
+              driver_id: resourceId, driver_phone: driverById.get(resourceId)?.phone,
+            }
+          : { vehicle_id: resourceId },
       },
       {
         onSuccess: () => {
-          toast.success(pending ? "Driver and vehicle assigned to job" : kind === "driver" ? "Driver assigned to job" : "Vehicle assigned to job");
-          setPendingAssignment(null);
+          toast.success(kind === "driver" ? "Driver assigned to job" : "Vehicle assigned to job");
           setMatchingKind(null);
         },
         onError: error => toast.error(error.message),
@@ -885,10 +860,8 @@ export default function JobsPage() {
       <AssignResourceDialog
         open={matchingKind !== null}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open)
             setMatchingKind(null);
-            setPendingAssignment(null);
-          }
         }}
         kind={matchingKind ?? "driver"}
         job={selectedJob}

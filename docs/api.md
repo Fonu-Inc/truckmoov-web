@@ -239,9 +239,9 @@ devDependencies so its peers don't resolve to the landing page's React 19.
 - Job responses carry only `assigned_driver_id` / `assigned_vehicle_id` reliably; the
   `assigned_driver_name` / `assigned_vehicle_reg` fields are undocumented and not always sent.
   Names come from `useDrivers()` / `useVehicles()` by id.
-- `POST /dispatch/jobs/{id}/assign` requires **both** `driver_id` and `vehicle_id` (400 otherwise).
-  Assigning one side sends the job's current other side; an unassigned job holds the first pick
-  and opens the other picker.
+- `POST /dispatch/jobs/{id}/assign` takes `driver_id`, `vehicle_id` or both (400 if neither).
+  The side not sent keeps its current value; a vehicle alone leaves the job's status unchanged.
+  The page sends only the side that was picked.
 - Driver ranking is `GET /fleet/dispatch/recommend-drivers` (`score`, `reasons`, `distanceKm`).
   Fleet has no vehicle-recommend route, so vehicles are ranked client-side; proximity comes from
   `GET /fleet/vehicles/nearest`.

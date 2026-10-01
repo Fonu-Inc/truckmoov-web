@@ -148,9 +148,10 @@ export type AcknowledgeJobPayload = {
 
 export type AssignJobPayload = {
   jobId: string
+  // At least one of driver_id / vehicle_id; the side not sent keeps its current value.
   data: {
-    driver_id: string
-    vehicle_id: string
+    driver_id?: string
+    vehicle_id?: string
     driver_phone?: string
     reason?: string
   }
