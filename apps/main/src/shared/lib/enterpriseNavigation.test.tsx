@@ -1,3 +1,4 @@
+import type { Invoice } from "@/features/billing/utils/enterpriseBillingData";
 import {
   cleanup, fireEvent, render, screen,
 } from "@testing-library/react";
@@ -7,7 +8,7 @@ import {
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { BillingInvoicesTab } from "@/features/billing/components/ui/BillingInvoicesTab";
 import {
-  currentPlan, invoiceOutstanding, invoices, invoiceTotal,
+  currentPlan, invoiceOutstanding, invoiceTotal,
 } from "@/features/billing/utils/enterpriseBillingData";
 import {
   getEntriesForRole, getRolesForHref,
@@ -129,18 +130,31 @@ it(
 );
 
 it(
-  "opens billing invoice details and keeps totals consistent",
+  "shows an empty invoice history and keeps totals consistent",
   () => {
     render(<CurrencyProvider><BillingInvoicesTab /></CurrencyProvider>);
-    fireEvent.click(screen.getAllByRole(
-      "button",
-      { name: "View" },
-    )[0]);
-    expect(screen.getByRole("dialog")).toHaveTextContent(invoices[0].number);
-    expect(invoiceTotal(invoices[0])).toBe(1540000);
+    expect(screen.getByText("No invoices match your filters.")).toBeInTheDocument();
+    expect(currentPlan()).toBeUndefined();
+
+    const invoice: Invoice = {
+      id: "i1",
+      number: "INV-1",
+      billingPeriod: "Sep 2026",
+      invoiceDate: "2026-09-01",
+      dueDate: "2026-09-15",
+      amountPaid: 0,
+      status: "pending",
+      taxRate: 0.1,
+      paymentRefs: [],
+      lines: [
+        {
+          id: "l1", name: "M2M STANDARD", category: "Licensing", quantity: 2, unitCharge: 50000,
+        },
+      ],
+    };
+    expect(invoiceTotal(invoice)).toBe(110000);
     expect(invoiceOutstanding({
-      ...invoices[0], amountPaid: 2000000,
+      ...invoice, amountPaid: 200000,
     })).toBe(0);
-    expect(currentPlan()?.renewalDate).toBe("2027-09-02");
   },
 );
