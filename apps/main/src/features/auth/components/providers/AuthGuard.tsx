@@ -3,6 +3,7 @@ import {
   Navigate, useLocation,
 } from "react-router";
 import { useAuthStore } from "@/features/auth/stores/authStore";
+import { getPostLoginRedirectPath } from "@/features/auth/utils/authRedirect";
 import {
   OPEN_ROUTE_PREFIXES, PUBLIC_ROUTES,
 } from "@/features/auth/utils/publicRoutes";
@@ -16,7 +17,7 @@ import {
 export function AuthGuard({ children }: { children: ReactNode }) {
   const location = useLocation();
   const {
-    isAuthenticated, isAuthReady,
+    user, isAuthenticated, isAuthReady,
   } = useAuthStore();
 
   // Open pages don't depend on a session at all — don't even wait for bootstrap.
@@ -41,12 +42,12 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  // Signed in and sitting on the login screen — send them home. "/" resolves
-  // the role-specific landing page.
+  // Signed in and sitting on the login screen — send them to their role's
+  // home. "/" is only open to some roles; the rest would land on a 403.
   if (isAuthenticated && isPublic) {
     return (
       <Navigate
-        to="/"
+        to={user ? getPostLoginRedirectPath(user.role) : "/"}
         replace
       />
     );

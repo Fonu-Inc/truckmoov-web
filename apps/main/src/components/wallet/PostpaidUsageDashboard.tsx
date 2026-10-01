@@ -77,61 +77,17 @@ export function PostpaidUsageDashboard(_props: PostpaidUsageDashboardProps) {
     );
   }
 
-  // ── Demo fallbacks ──
-  const demoUsageSummary: Record<string, {
-    count: number; total: number;
-  }> = {
-    sms: {
-      count: 1284, total: 5_136,
-    },
-    voice_minute: {
-      count: 642, total: 14_124,
-    },
-    whatsapp: {
-      count: 980, total: 7_840,
-    },
-    ai_request: {
-      count: 312, total: 4_680,
-    },
-    iot_sim_active: {
-      count: 48, total: 24_000,
-    },
-  };
-  const displayUsageSummary = Object.keys(usageSummary).length > 0 ? usageSummary : demoUsageSummary;
-  const displayTotalCurrentUsage = totalCurrentUsage > 0
-    ? totalCurrentUsage
-    : Object.values(demoUsageSummary).reduce(
-        (s, v) => s + v.total,
-        0,
-      );
-
-  const demoInvoices = [
-    {
-      id: "demo-inv-1", invoice_number: "INV-2025-0042", billing_period: "Mar 2026", total_usage_ngn: 142_500, wallet_deducted_ngn: 100_000, invoice_balance_ngn: 42_500, due_date: "2026-04-15", status: "paid",
-    },
-    {
-      id: "demo-inv-2", invoice_number: "INV-2025-0041", billing_period: "Feb 2026", total_usage_ngn: 128_300, wallet_deducted_ngn: 128_300, invoice_balance_ngn: 0, due_date: "2026-03-15", status: "paid",
-    },
-    {
-      id: "demo-inv-3", invoice_number: "INV-2025-0040", billing_period: "Jan 2026", total_usage_ngn: 156_800, wallet_deducted_ngn: 90_000, invoice_balance_ngn: 66_800, due_date: "2026-02-15", status: "overdue",
-    },
-    {
-      id: "demo-inv-4", invoice_number: "INV-2025-0039", billing_period: "Dec 2025", total_usage_ngn: 174_200, wallet_deducted_ngn: 150_000, invoice_balance_ngn: 24_200, due_date: "2026-01-15", status: "pending",
-    },
-  ];
-  const displayInvoices = postpaidInvoices.length > 0 ? postpaidInvoices : (demoInvoices as typeof postpaidInvoices);
-
   const creditUtilization = creditLimit && Number(creditLimit.credit_limit_ngn) > 0
     ? (Number(creditLimit.current_usage_ngn) / Number(creditLimit.credit_limit_ngn)) * 100
-    : 42;
+    : 0;
 
   return (
     <div className="space-y-6">
       {/* Current Period Usage */}
       <CurrentUsageCard
         currentPeriod={currentPeriod}
-        displayUsageSummary={displayUsageSummary}
-        displayTotalCurrentUsage={displayTotalCurrentUsage}
+        displayUsageSummary={usageSummary}
+        displayTotalCurrentUsage={totalCurrentUsage}
         creditLimit={creditLimit}
         creditUtilization={creditUtilization}
       />
@@ -139,7 +95,7 @@ export function PostpaidUsageDashboard(_props: PostpaidUsageDashboardProps) {
       <Separator />
 
       {/* Past Invoices */}
-      <PostpaidInvoicesTable invoices={displayInvoices as any} />
+      <PostpaidInvoicesTable invoices={postpaidInvoices} />
     </div>
   );
 }
@@ -238,10 +194,12 @@ function CurrentUsageCard({
               <Shield className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold text-foreground mt-1">
-              {formatCurrency(
-                Number(creditLimit?.credit_limit_ngn ?? 250_000),
-                "NGN",
-              )}
+              {creditLimit
+                ? formatCurrency(
+                    Number(creditLimit.credit_limit_ngn),
+                    "NGN",
+                  )
+                : "—"}
             </p>
             <Progress
               value={creditUtilization}
@@ -270,7 +228,7 @@ function CurrentUsageCard({
                       colSpan={3}
                       className="text-center text-muted-foreground py-6"
                     >
-                      No usage for this service
+                      {serviceFilter === "all" ? "No usage this period" : "No usage for this service"}
                     </TableCell>
                   </TableRow>
                 )
@@ -462,7 +420,7 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
                       colSpan={8}
                       className="text-center text-muted-foreground py-8"
                     >
-                      No invoices match your filters
+                      {invoices.length === 0 ? "No invoices yet" : "No invoices match your filters"}
                     </TableCell>
                   </TableRow>
                 )

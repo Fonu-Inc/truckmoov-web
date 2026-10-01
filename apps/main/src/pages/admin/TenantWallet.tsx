@@ -377,88 +377,8 @@ export default function TenantWallet() {
     100000,
   ];
 
-  // ── Demo transactions fallback so wallet UI is always populated ──
-  const demoTransactions: Transaction[] = (() => {
-    const channels = [
-      "call",
-      "sms",
-      "whatsapp",
-    ] as const;
-    const descriptions: Record<string, string[]> = {
-      call: [
-        "Driver dispatch call",
-        "Customer follow-up call",
-        "IVR job offer",
-        "Support callback",
-      ],
-      sms: [
-        "Job assignment SMS",
-        "ETA update SMS",
-        "OTP verification",
-        "Delivery confirmation",
-      ],
-      whatsapp: [
-        "Waybill confirmation",
-        "Job offer broadcast",
-        "Delivery photo request",
-        "Driver check-in",
-      ],
-    };
-    let balance = 250_000;
-    const out: Transaction[] = [];
-    for (let i = 0; i < 60; i++) {
-      const ch = channels[i % channels.length];
-      const isTopup = i % 11 === 0;
-      const minutesAgo = i * 73 + Math.floor(Math.random() * 40);
-      const created = new Date(Date.now() - minutesAgo * 60_000).toISOString();
-      if (isTopup) {
-        const amt = [
-          5000,
-          10000,
-          25000,
-          50000,
-        ][i % 4];
-        balance += amt;
-        out.push({
-          id: `demo-tx-${i}`,
-          transaction_type: "topup",
-          communication_type: null,
-          quantity: null,
-          unit_rate_ngn: null,
-          amount_ngn: amt,
-          balance_before_ngn: balance - amt,
-          balance_after_ngn: balance,
-          description: "MTN Mobile Money top-up",
-          created_at: created,
-        });
-      }
-      else {
-        const rate = ch === "call" ? 22 : ch === "sms" ? 4 : 8;
-        const qty = ch === "call" ? 1 + (i % 6) : 1 + (i % 4);
-        const amt = rate * qty;
-        balance -= amt;
-        const desc = descriptions[ch][i % 4];
-        out.push({
-          id: `demo-tx-${i}`,
-          transaction_type: "debit",
-          communication_type: ch,
-          quantity: qty,
-          unit_rate_ngn: rate,
-          amount_ngn: amt,
-          balance_before_ngn: balance + amt,
-          balance_after_ngn: balance,
-          description: desc,
-          created_at: created,
-        });
-      }
-    }
-    return out;
-  })();
-
-  const displayTransactions = transactions.length > 0 ? transactions : demoTransactions;
-
   // Calculate usage stats (this-month for KPIs at the top)
-  const thisMonthTransactions = displayTransactions.filter((tx) => {
+  const thisMonthTransactions = transactions.filter((tx) => {
     const txDate = new Date(tx.created_at);
     const now = new Date();
     return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
@@ -473,7 +393,7 @@ export default function TenantWallet() {
 
   // Range-filtered usage breakdown (driven by date dropdown on the Usage card)
   const usageRangeBounds = getUsageRangeBounds(usageRange);
-  const usageByType = displayTransactions
+  const usageByType = transactions
     .filter((tx) => {
       if (tx.transaction_type !== "debit" || !tx.communication_type)
         return false;
@@ -692,7 +612,7 @@ export default function TenantWallet() {
                     Top Up
                   </Button>
                 </div>
-                {(walletInfo?.balance || 0) < (walletInfo?.low_balance_threshold || 1000) && (
+                {walletInfo && walletInfo.balance < walletInfo.low_balance_threshold && (
                   <div className="mt-4 flex items-center gap-2 text-warning bg-warning/10 rounded-lg px-3 py-2">
                     <AlertTriangle className="h-4 w-4" />
                     <span className="text-sm">Low balance - top up to continue sending messages</span>
@@ -743,7 +663,7 @@ export default function TenantWallet() {
           </div>
 
           {/* Usage Analytics Charts */}
-          <UsageAnalyticsChart transactions={displayTransactions} />
+          <UsageAnalyticsChart transactions={transactions} />
 
           {/* Usage Breakdown & Rates */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -864,6 +784,9 @@ export default function TenantWallet() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  {rates.length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">No rates configured</p>
+                  )}
                   {rates
                     .filter(r => rateFilter === "all" || r.communication_type === rateFilter)
                     .map(rate => (
@@ -1158,7 +1081,7 @@ export default function TenantWallet() {
                     const amtTo = txAmountEnabled && txAmountTo !== "" ? Number.parseFloat(txAmountTo) : null;
                     const dateFrom = txDateEnabled && txDateFrom ? new Date(txDateFrom) : null;
                     const dateTo = txDateEnabled && txDateTo ? new Date(`${txDateTo}T23:59:59`) : null;
-                    const filtered = displayTransactions.filter((tx) => {
+                    const filtered = transactions.filter((tx) => {
                       const type = (tx.transaction_type || "").toLowerCase();
                       if (txTypeEnabled && txTypeValue !== "all" && type !== txTypeValue)
                         return false;

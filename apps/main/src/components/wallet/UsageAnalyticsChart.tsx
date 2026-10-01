@@ -128,6 +128,17 @@ function DateRangeSelect({
   );
 }
 
+function EmptyChart({ height }: { height: number }) {
+  return (
+    <div
+      className="flex items-center justify-center text-sm text-muted-foreground"
+      style={{ height }}
+    >
+      No spending data for the selected range
+    </div>
+  );
+}
+
 export function UsageAnalyticsChart({ transactions }: UsageAnalyticsChartProps) {
   const [
     dailyRange,
@@ -284,52 +295,7 @@ export function UsageAnalyticsChart({ transactions }: UsageAnalyticsChartProps) 
     ],
   );
 
-  // ── Demo fallbacks so charts always look populated ──
-  const dailyDataDisplay = useMemo(
-    () => {
-      if (dailyData.some(d => d.total > 0))
-        return dailyData;
-      return dailyData.map((d, i) => {
-        const call = Math.round(800 + Math.sin(i / 3) * 350 + Math.random() * 220);
-        const sms = Math.round(180 + Math.cos(i / 4) * 90 + Math.random() * 80);
-        const whatsapp = Math.round(420 + Math.sin(i / 2) * 180 + Math.random() * 140);
-        return {
-          ...d, call, sms, whatsapp, total: call + sms + whatsapp,
-        };
-      });
-    },
-    [dailyData],
-  );
-
-  const weeklyBreakdownDisplay = useMemo(
-    () => {
-      if (weeklyBreakdown.some(w => w.call + w.sms + w.whatsapp > 0))
-        return weeklyBreakdown;
-      return weeklyBreakdown.map((b, i) => ({
-        ...b,
-        call: Math.round(2200 + Math.sin(i) * 600 + Math.random() * 400),
-        sms: Math.round(550 + Math.cos(i) * 180 + Math.random() * 150),
-        whatsapp: Math.round(1100 + Math.sin(i / 2) * 350 + Math.random() * 240),
-      }));
-    },
-    [weeklyBreakdown],
-  );
-
-  const channelDistributionDisplay = channelDistribution.length > 0
-    ? channelDistribution
-    : [
-        {
-          name: "Call", value: 84500, color: COLORS.call,
-        },
-        {
-          name: "Sms", value: 21300, color: COLORS.sms,
-        },
-        {
-          name: "Whatsapp", value: 47800, color: COLORS.whatsapp,
-        },
-      ];
-
-  const totalSpent = channelDistributionDisplay.reduce(
+  const totalSpent = channelDistribution.reduce(
     (sum, item) => sum + item.value,
     0,
   );
@@ -360,127 +326,129 @@ export function UsageAnalyticsChart({ transactions }: UsageAnalyticsChartProps) 
           </div>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer
-            width="100%"
-            height={250}
-          >
-            <AreaChart
-              data={dailyDataDisplay}
-              margin={{
-                top: 10, right: 30, left: 0, bottom: 0,
-              }}
+          {!dailyData.some(d => d.total > 0) ? <EmptyChart height={250} /> : (
+            <ResponsiveContainer
+              width="100%"
+              height={250}
             >
-              <defs>
-                <linearGradient
-                  id="colorCall"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="5%"
-                    stopColor={COLORS.call}
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor={COLORS.call}
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-                <linearGradient
-                  id="colorSms"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="5%"
-                    stopColor={COLORS.sms}
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor={COLORS.sms}
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-                <linearGradient
-                  id="colorWhatsapp"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="5%"
-                    stopColor={COLORS.whatsapp}
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor={COLORS.whatsapp}
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                className="stroke-muted"
-              />
-              <XAxis
-                dataKey="date"
-                className="text-xs"
-                tick={{ fill: "hsl(var(--muted-foreground))" }}
-              />
-              <YAxis
-                className="text-xs"
-                tick={{ fill: "hsl(var(--muted-foreground))" }}
-                tickFormatter={v => `₦${v}`}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
+              <AreaChart
+                data={dailyData}
+                margin={{
+                  top: 10, right: 30, left: 0, bottom: 0,
                 }}
-                labelStyle={{ color: "hsl(var(--foreground))" }}
-                formatter={(value: number) => [
-                  `₦${value.toLocaleString()}`,
-                  "",
-                ]}
-              />
-              <Area
-                type="monotone"
-                dataKey="call"
-                stackId="1"
-                stroke={COLORS.call}
-                fillOpacity={1}
-                fill="url(#colorCall)"
-                name="Calls"
-              />
-              <Area
-                type="monotone"
-                dataKey="sms"
-                stackId="1"
-                stroke={COLORS.sms}
-                fillOpacity={1}
-                fill="url(#colorSms)"
-                name="SMS"
-              />
-              <Area
-                type="monotone"
-                dataKey="whatsapp"
-                stackId="1"
-                stroke={COLORS.whatsapp}
-                fillOpacity={1}
-                fill="url(#colorWhatsapp)"
-                name="WhatsApp"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+              >
+                <defs>
+                  <linearGradient
+                    id="colorCall"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor={COLORS.call}
+                      stopOpacity={0.8}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={COLORS.call}
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  <linearGradient
+                    id="colorSms"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor={COLORS.sms}
+                      stopOpacity={0.8}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={COLORS.sms}
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  <linearGradient
+                    id="colorWhatsapp"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor={COLORS.whatsapp}
+                      stopOpacity={0.8}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={COLORS.whatsapp}
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-muted"
+                />
+                <XAxis
+                  dataKey="date"
+                  className="text-xs"
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                />
+                <YAxis
+                  className="text-xs"
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={v => `₦${v}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                  }}
+                  labelStyle={{ color: "hsl(var(--foreground))" }}
+                  formatter={(value: number) => [
+                    `₦${value.toLocaleString()}`,
+                    "",
+                  ]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="call"
+                  stackId="1"
+                  stroke={COLORS.call}
+                  fillOpacity={1}
+                  fill="url(#colorCall)"
+                  name="Calls"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="sms"
+                  stackId="1"
+                  stroke={COLORS.sms}
+                  fillOpacity={1}
+                  fill="url(#colorSms)"
+                  name="SMS"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="whatsapp"
+                  stackId="1"
+                  stroke={COLORS.whatsapp}
+                  fillOpacity={1}
+                  fill="url(#colorWhatsapp)"
+                  name="WhatsApp"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
@@ -502,80 +470,82 @@ export function UsageAnalyticsChart({ transactions }: UsageAnalyticsChartProps) 
           </div>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer
-            width="100%"
-            height={200}
-          >
-            <BarChart
-              data={weeklyBreakdownDisplay}
-              margin={{
-                top: 10, right: 10, left: -10, bottom: 0,
-              }}
+          {!weeklyBreakdown.some(w => w.call + w.sms + w.whatsapp > 0) ? <EmptyChart height={200} /> : (
+            <ResponsiveContainer
+              width="100%"
+              height={200}
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                className="stroke-muted"
-              />
-              <XAxis
-                dataKey="label"
-                className="text-xs"
-                tick={{
-                  fill: "hsl(var(--muted-foreground))", fontSize: 11,
+              <BarChart
+                data={weeklyBreakdown}
+                margin={{
+                  top: 10, right: 10, left: -10, bottom: 0,
                 }}
-              />
-              <YAxis
-                className="text-xs"
-                tick={{
-                  fill: "hsl(var(--muted-foreground))", fontSize: 10,
-                }}
-                tickFormatter={v => `₦${v}`}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                }}
-                formatter={(value: number) => [
-                  `₦${value.toLocaleString()}`,
-                  "",
-                ]}
-              />
-              <Bar
-                dataKey="call"
-                fill={COLORS.call}
-                radius={[
-                  4,
-                  4,
-                  0,
-                  0,
-                ]}
-                name="Calls"
-              />
-              <Bar
-                dataKey="sms"
-                fill={COLORS.sms}
-                radius={[
-                  4,
-                  4,
-                  0,
-                  0,
-                ]}
-                name="SMS"
-              />
-              <Bar
-                dataKey="whatsapp"
-                fill={COLORS.whatsapp}
-                radius={[
-                  4,
-                  4,
-                  0,
-                  0,
-                ]}
-                name="WhatsApp"
-              />
-            </BarChart>
-          </ResponsiveContainer>
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-muted"
+                />
+                <XAxis
+                  dataKey="label"
+                  className="text-xs"
+                  tick={{
+                    fill: "hsl(var(--muted-foreground))", fontSize: 11,
+                  }}
+                />
+                <YAxis
+                  className="text-xs"
+                  tick={{
+                    fill: "hsl(var(--muted-foreground))", fontSize: 10,
+                  }}
+                  tickFormatter={v => `₦${v}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                  }}
+                  formatter={(value: number) => [
+                    `₦${value.toLocaleString()}`,
+                    "",
+                  ]}
+                />
+                <Bar
+                  dataKey="call"
+                  fill={COLORS.call}
+                  radius={[
+                    4,
+                    4,
+                    0,
+                    0,
+                  ]}
+                  name="Calls"
+                />
+                <Bar
+                  dataKey="sms"
+                  fill={COLORS.sms}
+                  radius={[
+                    4,
+                    4,
+                    0,
+                    0,
+                  ]}
+                  name="SMS"
+                />
+                <Bar
+                  dataKey="whatsapp"
+                  fill={COLORS.whatsapp}
+                  radius={[
+                    4,
+                    4,
+                    0,
+                    0,
+                  ]}
+                  name="WhatsApp"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
@@ -597,68 +567,70 @@ export function UsageAnalyticsChart({ transactions }: UsageAnalyticsChartProps) 
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
-            <ResponsiveContainer
-              width="50%"
-              height={180}
-            >
-              <PieChart>
-                <Pie
-                  data={channelDistributionDisplay}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {channelDistributionDisplay.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                  formatter={(value: number) => [
-                    `₦${value.toLocaleString()}`,
-                    "",
-                  ]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex-1 space-y-3">
-              {channelDistributionDisplay.map(item => (
-                <div
-                  key={item.name}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-sm">{item.name}</span>
+          {channelDistribution.length === 0 ? <EmptyChart height={180} /> : (
+            <div className="flex items-center gap-4">
+              <ResponsiveContainer
+                width="50%"
+                height={180}
+              >
+                <PieChart>
+                  <Pie
+                    data={channelDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {channelDistribution.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                    formatter={(value: number) => [
+                      `₦${value.toLocaleString()}`,
+                      "",
+                    ]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 space-y-3">
+                {channelDistribution.map(item => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-sm">{item.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        ₦
+                        {item.value.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {totalSpent > 0 ? ((item.value / totalSpent) * 100).toFixed(0) : 0}
+                        %
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      ₦
-                      {item.value.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {totalSpent > 0 ? ((item.value / totalSpent) * 100).toFixed(0) : 0}
-                      %
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

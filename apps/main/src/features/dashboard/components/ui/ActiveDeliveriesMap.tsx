@@ -1,5 +1,7 @@
 import L from "leaflet";
-import { Map, MapPin, Maximize2, Minimize2, Truck } from "lucide-react";
+import {
+  Map, MapPin, Maximize2, Minimize2, Truck,
+} from "lucide-react";
 import {
   useEffect, useMemo, useRef, useState,
 } from "react";
@@ -8,16 +10,18 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Dialog, DialogContent } from "@/components/shadcn/dialog";
+import {
+  Dialog, DialogContent,
+} from "@/components/shadcn/dialog";
 import "leaflet/dist/leaflet.css";
 
-export interface DeliveryPoint {
+export type DeliveryPoint = {
   id: string;
   ref: string;
   pickup: [number, number];
   delivery: [number, number];
   label: string;
-}
+};
 
 const DEFAULT_POINTS: DeliveryPoint[] = [
   {
@@ -76,11 +80,40 @@ const DEFAULT_POINTS: DeliveryPoint[] = [
   },
 ];
 
-interface ActiveDeliveriesMapProps {
+type ActiveDeliveriesMapProps = {
   points?: DeliveryPoint[];
   className?: string;
   height?: string;
   description?: string;
+};
+
+// Same public OSRM demo server RoutePreviewMap uses.
+// ponytail: one request per delivery, no cache — fine for a handful of jobs; move
+// to a backend route endpoint (or self-hosted OSRM) before this shows many deliveries.
+const OSRM_ROUTE_URL = "https://router.project-osrm.org/route/v1/driving";
+
+async function fetchRoadRoute(
+  from: [number, number],
+  to: [number, number],
+  signal: AbortSignal,
+): Promise<[number, number][] | null> {
+  const res = await fetch(
+    `${OSRM_ROUTE_URL}/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`,
+    { signal },
+  );
+  if (!res.ok)
+    return null;
+  const data = (await res.json()) as {
+    code: string; routes?: { geometry: { coordinates: [number, number][] } }[];
+  };
+  const coords = data.code === "Ok" ? data.routes?.[0]?.geometry.coordinates : undefined;
+  return coords ? coords.map(([
+    lng,
+    lat,
+  ]) => [
+    lat,
+    lng,
+  ]) : null;
 }
 
 // ponytail: markers go straight on the map — no clustering. Add
@@ -128,16 +161,39 @@ function initMap(container: HTMLDivElement, deliveryPoints: DeliveryPoint[]) {
     ],
   });
 
+  // Leaflet fires "unload" on map.remove(); abort in-flight route requests so they don't draw on a dead map.
+  const controller = new AbortController();
+  map.on(
+    "unload",
+    () => controller.abort(),
+  );
+
   deliveryPoints.forEach((p) => {
-    L.polyline(
+    // Dashed straight line until the road route arrives (or if routing fails).
+    const line = L.polyline(
       [
         p.pickup,
         p.delivery,
       ],
       {
-        color: "hsl(var(--primary))", weight: 2, opacity: 0.4, dashArray: "6,6",
+        // SVG stroke attributes can't resolve var(); currentColor picks up the container's text-primary.
+        color: "currentColor", weight: 3, opacity: 0.8, dashArray: "6,6",
       },
     ).addTo(map);
+
+    fetchRoadRoute(
+      p.pickup,
+      p.delivery,
+      controller.signal,
+    )
+      .then((coords) => {
+        if (coords) {
+          line.setLatLngs(coords).setStyle({
+            dashArray: undefined, opacity: 0.9,
+          });
+        }
+      })
+      .catch(() => { /* keep the straight line */ });
 
     L.marker(
       p.pickup,
@@ -152,6 +208,23 @@ function initMap(container: HTMLDivElement, deliveryPoints: DeliveryPoint[]) {
       .bindPopup(`<b>${p.ref}</b><br/>Delivery: ${p.label.split(" → ")[1]}`)
       .addTo(map);
   });
+
+  // Frame every pickup and drop-off on load; the Nigeria-wide default above stays for an empty list.
+  if (deliveryPoints.length > 0) {
+    map.fitBounds(
+      deliveryPoints.flatMap(p => [
+        p.pickup,
+        p.delivery,
+      ]),
+      {
+        padding: [
+          40,
+          40,
+        ],
+        maxZoom: 14,
+      },
+    );
+  }
 
   return map;
 }
@@ -255,7 +328,7 @@ export function ActiveDeliveriesMap({
             <div
               ref={mapRef}
               style={{ height }}
-              className="w-full rounded-lg overflow-hidden border border-border"
+              className="w-full rounded-lg overflow-hidden border border-border text-primary"
             />
 
             <div className="absolute top-3 right-3 z-[400] rounded-md bg-background/90 backdrop-blur border border-border px-2.5 py-1.5 text-[11px] shadow-sm">
@@ -319,7 +392,7 @@ export function ActiveDeliveriesMap({
           <div className="flex-1 p-3 min-h-0 relative">
             <div
               ref={enlargedMapRef}
-              className="h-full w-full rounded-lg overflow-hidden border border-border"
+              className="h-full w-full rounded-lg overflow-hidden border border-border text-primary"
             />
 
             <div className="absolute top-6 right-6 z-[400] rounded-md bg-background/90 backdrop-blur border border-border px-3 py-2 text-xs shadow-sm">

@@ -24,7 +24,6 @@ import {
   Clock,
   DollarSign,
   Eye,
-  Inbox,
   Loader2,
   MapPin,
   MoreHorizontal,
@@ -43,7 +42,6 @@ import { toast } from "sonner";
 import { AssignResourceDialog } from "@/components/jobs/AssignResourceDialog";
 import { JobDetailsSheet } from "@/components/jobs/JobDetailsSheet";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
-import { JobOffersInbox } from "@/components/jobs/JobOffersInbox";
 import {
   buildDefaultFilterValue,
   countActiveFilters,
@@ -80,9 +78,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 
@@ -263,10 +258,6 @@ export default function JobDispatch() {
   const isOperationsManager = false;
   const recommendOnly = isEnterprise || isAggregator || isOperationsManager;
 
-  const [
-    tab,
-    setTab,
-  ] = useState<"my-jobs" | "job-offers">("my-jobs");
   const [
     searchQuery,
     setSearchQuery,
@@ -731,177 +722,144 @@ export default function JobDispatch() {
 
   return (
     <>
-      <Tabs
-        value={tab}
-        onValueChange={v => setTab(v as typeof tab)}
-        className="space-y-6"
-      >
-        <TabsList className="mx-auto grid w-full max-w-md grid-cols-2">
-          <TabsTrigger
-            value="my-jobs"
-            className="gap-2"
-          >
-            <Package className="h-4 w-4" />
-            My Jobs
-          </TabsTrigger>
-          <TabsTrigger
-            value="job-offers"
-            className="gap-2"
-          >
-            <Inbox className="h-4 w-4" />
-            Job Offers
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent
-          value="my-jobs"
-          className="space-y-6"
-        >
-          {!isAggregatorAdmin && (
-            <div className="flex justify-end">
-              <Button
-                variant="gradient"
-                onClick={() => {
-                  setSelectedJob(null);
-                  setIsFormOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Job
-              </Button>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2"><Package className="h-5 w-5 text-primary" /></div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Total Jobs</p>
-                  <p className="text-xl font-bold">{stats.total}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="rounded-lg bg-warning/10 p-2"><Clock className="h-5 w-5 text-warning" /></div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Unassigned Jobs</p>
-                  <p className="text-xl font-bold">{stats.unassigned}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2"><Truck className="h-5 w-5 text-primary" /></div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Jobs In Progress</p>
-                  <p className="text-xl font-bold">{stats.inProgress}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="rounded-lg bg-success/10 p-2"><CheckCircle className="h-5 w-5 text-success" /></div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Completed Jobs</p>
-                  <p className="text-xl font-bold">{stats.completed}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="rounded-lg bg-success/10 p-2"><DollarSign className="h-5 w-5 text-success" /></div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Total Job Value</p>
-                  <p className="text-xl font-bold">{formatCurrency(stats.totalValue)}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by reference, pickup, or delivery..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-10 bg-card/50 border-border/50"
-              />
-              {jobsQuery.isFetching && !jobsQuery.isLoading && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-            </div>
-            <Select
-              value={statusFilter}
-              onValueChange={value => setStatusFilter(value as JobStatusFilter)}
+      <div className="space-y-6">
+        {!isAggregatorAdmin && (
+          <div className="flex justify-end">
+            <Button
+              variant="gradient"
+              onClick={() => {
+                setSelectedJob(null);
+                setIsFormOpen(true);
+              }}
             >
-              <SelectTrigger className="w-full sm:w-[170px] bg-card/50 border-border/50">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                {JOB_STATUS_OPTIONS.map(option => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <JobsFilterDialog
-              open={isFilterOpen}
-              onOpenChange={setIsFilterOpen}
-              bounds={filterBounds}
-              value={filterValue}
-              onApply={value => setFilterValue(value)}
-              onReset={() => setFilterValue(buildDefaultFilterValue(filterBounds))}
-              trigger={(
-                <Button
-                  variant="outline"
-                  className="bg-card/50 border-border/50 relative"
-                >
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filter
-                  {activeFilterCount > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="ml-2 h-5 min-w-5 px-1.5 text-[10px] bg-primary/20 text-primary border border-primary/30"
-                    >
-                      {activeFilterCount}
-                    </Badge>
-                  )}
-                </Button>
-              )}
-            />
+              <Plus className="h-4 w-4 mr-2" />
+              Create Job
+            </Button>
           </div>
+        )}
 
-          <Card className="bg-card/50 border-border/50">
-            <CardContent className="p-0 overflow-x-auto">
-              <DataTable
-                columns={columns}
-                data={jobs}
-                isLoading={jobsQuery.isLoading}
-                isError={jobsQuery.isError}
-                errorMessage={jobsQuery.error?.message ?? "Unable to load jobs"}
-                onRetry={() => void jobsQuery.refetch()}
-                hasActiveFilters={Boolean(debouncedSearchQuery) || statusFilter !== "all" || activeFilterCount > 0}
-                emptyState="No jobs yet. Create your first job to get started."
-                filteredEmptyState="No jobs match your filters."
-              />
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2"><Package className="h-5 w-5 text-primary" /></div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Jobs</p>
+                <p className="text-xl font-bold">{stats.total}</p>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-lg bg-warning/10 p-2"><Clock className="h-5 w-5 text-warning" /></div>
+              <div>
+                <p className="text-xs text-muted-foreground">Unassigned Jobs</p>
+                <p className="text-xl font-bold">{stats.unassigned}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2"><Truck className="h-5 w-5 text-primary" /></div>
+              <div>
+                <p className="text-xs text-muted-foreground">Jobs In Progress</p>
+                <p className="text-xl font-bold">{stats.inProgress}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-lg bg-success/10 p-2"><CheckCircle className="h-5 w-5 text-success" /></div>
+              <div>
+                <p className="text-xs text-muted-foreground">Completed Jobs</p>
+                <p className="text-xl font-bold">{stats.completed}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-lg bg-success/10 p-2"><DollarSign className="h-5 w-5 text-success" /></div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Job Value</p>
+                <p className="text-xl font-bold">{formatCurrency(stats.totalValue)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-        <TabsContent
-          value="job-offers"
-          className="space-y-6"
-        >
-          <JobOffersInbox />
-        </TabsContent>
-      </Tabs>
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by reference, pickup, or delivery..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-10 bg-card/50 border-border/50"
+            />
+            {jobsQuery.isFetching && !jobsQuery.isLoading && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={value => setStatusFilter(value as JobStatusFilter)}
+          >
+            <SelectTrigger className="w-full sm:w-[170px] bg-card/50 border-border/50">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              {JOB_STATUS_OPTIONS.map(option => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <JobsFilterDialog
+            open={isFilterOpen}
+            onOpenChange={setIsFilterOpen}
+            bounds={filterBounds}
+            value={filterValue}
+            onApply={value => setFilterValue(value)}
+            onReset={() => setFilterValue(buildDefaultFilterValue(filterBounds))}
+            trigger={(
+              <Button
+                variant="outline"
+                className="bg-card/50 border-border/50 relative"
+              >
+                <SlidersHorizontal className="h-4 w-4 mr-2" />
+                Filter
+                {activeFilterCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 h-5 min-w-5 px-1.5 text-[10px] bg-primary/20 text-primary border border-primary/30"
+                  >
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
+          />
+        </div>
+
+        <Card className="bg-card/50 border-border/50">
+          <CardContent className="p-0 overflow-x-auto">
+            <DataTable
+              columns={columns}
+              data={jobs}
+              isLoading={jobsQuery.isLoading}
+              isError={jobsQuery.isError}
+              errorMessage={jobsQuery.error?.message ?? "Unable to load jobs"}
+              onRetry={() => void jobsQuery.refetch()}
+              hasActiveFilters={Boolean(debouncedSearchQuery) || statusFilter !== "all" || activeFilterCount > 0}
+              emptyState="No jobs yet. Create your first job to get started."
+              filteredEmptyState="No jobs match your filters."
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       <JobFormDialog
         open={isFormOpen}

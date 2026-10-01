@@ -41,9 +41,11 @@ export default function AuthPage() {
                     challengeToken, code,
                   },
                 });
+                // Resolve before syncing, same reason as SignInForm.
+                const to = await resolvePostLoginPath(res.data.user.role);
                 useAuthStore.getState().syncFromSession();
                 navigate(
-                  await resolvePostLoginPath(res.data.user.role),
+                  to,
                   { replace: true },
                 );
               }}

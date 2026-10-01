@@ -65,10 +65,12 @@ export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: stri
             onChallenge(res.data.challengeToken);
             return;
           }
+          // Resolve before syncing: once the store says "authenticated", AuthGuard redirects off /auth on its own.
+          const to = await resolvePostLoginPath(res.data.user.role);
           useAuthStore.getState().syncFromSession();
           toast.success("Login request completed.");
           navigate(
-            await resolvePostLoginPath(res.data.user.role),
+            to,
             { replace: true },
           );
         },

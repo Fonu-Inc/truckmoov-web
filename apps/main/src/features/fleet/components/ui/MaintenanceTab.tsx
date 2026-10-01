@@ -18,7 +18,6 @@ import {
   useUpdateMaintenanceRecord,
   useUpsertMaintenanceReminderSchedule,
   useVehicles,
-  useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
   daysUntil, formatDate, toDateParam,
@@ -92,7 +91,6 @@ import {
 import { Skeleton } from "@/components/shadcn/skeleton";
 
 import { Textarea } from "@/components/shadcn/textarea";
-import { TabSummaryStrip } from "@/features/fleet/components/ui/TabSummaryStrip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { cn } from "@/lib/utils";
 
@@ -313,9 +311,6 @@ export function MaintenanceTab() {
   const recordsQuery = useMaintenanceRecords(recordsQueryParams);
   const summaryQuery = useMaintenanceRecordsSummary();
   const vehiclesQuery = useVehicles();
-  // ponytail: page-shell tabbed summary — rendered via TabSummaryStrip; filtering
-  // stays on useMaintenanceRecords above.
-  const tabSummaryQuery = useVehiclesByTab("maintenance");
   const createRecordMutation = useCreateMaintenanceRecord();
   const updateRecordMutation = useUpdateMaintenanceRecord();
   const deleteRecordMutation = useDeleteMaintenanceRecord();
@@ -865,7 +860,6 @@ export function MaintenanceTab() {
 
   return (
     <div className="space-y-6">
-      <TabSummaryStrip query={tabSummaryQuery} />
       <div className="flex items-center justify-end gap-2">
         <Button
           variant="outline"

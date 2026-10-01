@@ -46,79 +46,6 @@ type TenantInvoice = {
   }[];
 };
 
-const DEMO_INVOICES: TenantInvoice[] = [
-  {
-    id: "inv-t-001",
-    invoiceNumber: "INV-2025-0042",
-    plan: "Professional",
-    period: "April 2026",
-    amount: 149900,
-    status: "paid",
-    dueDate: "2026-04-15",
-    paidDate: "2026-04-10",
-    paymentMethod: "mtn_momo",
-    items: [
-      {
-        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
-      },
-      {
-        description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000,
-      },
-    ],
-  },
-  {
-    id: "inv-t-002",
-    invoiceNumber: "INV-2025-0031",
-    plan: "Professional",
-    period: "March 2026",
-    amount: 129900,
-    status: "paid",
-    dueDate: "2026-03-15",
-    paidDate: "2026-03-12",
-    paymentMethod: "mtn_momo",
-    items: [
-      {
-        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
-      },
-    ],
-  },
-  {
-    id: "inv-t-003",
-    invoiceNumber: "INV-2025-0024",
-    plan: "Professional",
-    period: "February 2026",
-    amount: 129900,
-    status: "paid",
-    dueDate: "2026-02-15",
-    paidDate: "2026-02-14",
-    paymentMethod: "bank_transfer",
-    items: [
-      {
-        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
-      },
-    ],
-  },
-  {
-    id: "inv-t-004",
-    invoiceNumber: "INV-2025-0051",
-    plan: "Professional",
-    period: "May 2026",
-    amount: 149900,
-    status: "pending",
-    dueDate: "2026-05-15",
-    paidDate: null,
-    paymentMethod: null,
-    items: [
-      {
-        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
-      },
-      {
-        description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000,
-      },
-    ],
-  },
-];
-
 function statusBadge(status: TenantInvoice["status"]) {
   switch (status) {
     case "paid":
@@ -162,7 +89,8 @@ export function SubscriptionInvoicesCard({ tenantName }: Props) {
     open,
     setOpen,
   ] = useState(false);
-  const invoices = DEMO_INVOICES;
+  // ponytail: no subscription invoices endpoint yet
+  const invoices: TenantInvoice[] = [];
 
   const handleDownload = (inv: TenantInvoice) => {
     if (inv.status !== "paid" || !inv.paidDate) {
@@ -252,6 +180,16 @@ export function SubscriptionInvoicesCard({ tenantName }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {invoices.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No invoices yet
+                  </TableCell>
+                </TableRow>
+              )}
               {invoices.map(inv => (
                 <TableRow
                   key={inv.id}
