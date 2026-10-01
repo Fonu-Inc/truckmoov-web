@@ -279,27 +279,7 @@ function FuelConsumptionReport({
   );
   const avgEfficiency = totalLiters > 0 ? (totalKm / totalLiters).toFixed(1) : "—";
 
-  const demoFuelData = [
-    {
-      vehicle: "LAG-421-AB", type: "Truck", totalKm: 4820, liters: 802, cost: 521_300, efficiency: "6.0", trips: 18,
-    },
-    {
-      vehicle: "LAG-118-CD", type: "Van", totalKm: 3950, liters: 658, cost: 427_700, efficiency: "6.0", trips: 22,
-    },
-    {
-      vehicle: "LAG-902-EF", type: "Truck", totalKm: 3210, liters: 642, cost: 417_300, efficiency: "5.0", trips: 14,
-    },
-    {
-      vehicle: "LAG-557-GH", type: "Pickup", totalKm: 2680, liters: 446, cost: 289_900, efficiency: "6.0", trips: 19,
-    },
-    {
-      vehicle: "LAG-310-IJ", type: "Van", totalKm: 2340, liters: 390, cost: 253_500, efficiency: "6.0", trips: 16,
-    },
-    {
-      vehicle: "LAG-744-KL", type: "Truck", totalKm: 1980, liters: 396, cost: 257_400, efficiency: "5.0", trips: 9,
-    },
-  ];
-  const displayFuelData = vehicleFuelData.length > 0 ? vehicleFuelData : demoFuelData;
+  const displayFuelData = vehicleFuelData;
   const top5 = displayFuelData.slice(
     0,
     5,

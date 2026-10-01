@@ -192,44 +192,14 @@ function FleetUtilizationReport({
         (s, v) => s + v.utilization,
         0,
       ) / vehicleUtilization.length)
-    : 54;
-  const idleVehicles = vehicleUtilization.length > 0
-    ? vehicleUtilization.filter(v => v.totalJobs === 0).length
-    : 1;
-  const totalFleetRevenue = vehicleUtilization.length > 0
-    ? vehicleUtilization.reduce(
-        (s, v) => s + v.revenue,
-        0,
-      )
-    : 5_260_000;
+    : 0;
+  const idleVehicles = vehicleUtilization.filter(v => v.totalJobs === 0).length;
+  const totalFleetRevenue = vehicleUtilization.reduce(
+    (s, v) => s + v.revenue,
+    0,
+  );
 
-  const demoVehicleUtilization = [
-    {
-      vehicle: "LAG-421-AB", type: "Truck", status: "active", completedJobs: 18, activeJobs: 2, totalJobs: 20, revenue: 1_245_000, utilization: 92,
-    },
-    {
-      vehicle: "LAG-118-CD", type: "Van", status: "active", completedJobs: 22, activeJobs: 1, totalJobs: 23, revenue: 1_120_000, utilization: 88,
-    },
-    {
-      vehicle: "LAG-902-EF", type: "Truck", status: "active", completedJobs: 14, activeJobs: 1, totalJobs: 15, revenue: 980_000, utilization: 76,
-    },
-    {
-      vehicle: "LAG-557-GH", type: "Pickup", status: "active", completedJobs: 12, activeJobs: 0, totalJobs: 12, revenue: 720_000, utilization: 64,
-    },
-    {
-      vehicle: "LAG-310-IJ", type: "Van", status: "active", completedJobs: 9, activeJobs: 1, totalJobs: 10, revenue: 540_000, utilization: 48,
-    },
-    {
-      vehicle: "LAG-744-KL", type: "Truck", status: "maintenance", completedJobs: 6, activeJobs: 0, totalJobs: 6, revenue: 360_000, utilization: 32,
-    },
-    {
-      vehicle: "LAG-228-MN", type: "Van", status: "active", completedJobs: 4, activeJobs: 0, totalJobs: 4, revenue: 230_000, utilization: 22,
-    },
-    {
-      vehicle: "LAG-635-OP", type: "Pickup", status: "idle", completedJobs: 1, activeJobs: 0, totalJobs: 1, revenue: 65_000, utilization: 8,
-    },
-  ];
-  const displayVehicleUtilization = vehicleUtilization.length > 0 ? vehicleUtilization : demoVehicleUtilization;
+  const displayVehicleUtilization = vehicleUtilization;
 
   const utilizationBuckets = [
     {

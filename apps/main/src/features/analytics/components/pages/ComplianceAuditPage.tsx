@@ -92,7 +92,7 @@ function ComplianceAuditReport({
     },
   ];
 
-  const rawPieData = [
+  const pieData = [
     {
       name: "Compliant", value: insuredVehicles, color: "hsl(var(--success))",
     },
@@ -103,18 +103,6 @@ function ComplianceAuditReport({
       name: "Expiring Soon", value: expiringSoon, color: "hsl(var(--warning))",
     },
   ].filter(d => d.value > 0);
-  const demoPieData = [
-    {
-      name: "Compliant", value: 38, color: "hsl(var(--success))",
-    },
-    {
-      name: "Non-Compliant", value: 6, color: "hsl(var(--destructive))",
-    },
-    {
-      name: "Expiring Soon", value: 9, color: "hsl(var(--warning))",
-    },
-  ];
-  const pieData = rawPieData.length > 0 ? rawPieData : demoPieData;
 
   const [
     search,

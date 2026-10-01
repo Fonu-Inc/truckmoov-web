@@ -123,22 +123,7 @@ function ProfitLossReport({
     },
   );
 
-  const hasRealMonthly = monthlyData.some(m => m.revenue > 0 || m.costs > 0);
-  const demoMonthlyData = Array.from(
-    { length: 6 },
-    (_, i) => {
-      const monthDate = subMonths(
-        new Date(),
-        5 - i,
-      );
-      const base = 850_000 + Math.round(Math.sin(i * 0.9) * 180_000) + i * 35_000;
-      const cost = Math.round(base * (0.55 + Math.cos(i * 1.1) * 0.07));
-      return {
-        month: formatMonthYear(monthDate), revenue: base, costs: cost, profit: base - cost,
-      };
-    },
-  );
-  const displayMonthlyData = hasRealMonthly ? monthlyData : demoMonthlyData;
+  const displayMonthlyData = monthlyData;
 
   const [
     tableSearch,
