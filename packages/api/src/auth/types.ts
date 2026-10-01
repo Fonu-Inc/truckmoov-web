@@ -3256,17 +3256,6 @@ export type SystemFailedLoginsResponse = ServerResponse<{
   total: number
 }>
 
-export type BlockSystemIpPayload = {
-  data: {
-    ipAddress: string
-    reason: string
-    expiresAt?: string
-  }
-}
-
-// ponytail: response record shape not published — treat as opaque, tighten when spec lands
-export type BlockSystemIpResponse = ServerResponse<unknown>
-
 export type SystemAuthEvent = {
   id: string
   tenantId?: string | null
@@ -3297,39 +3286,6 @@ export type SystemAuthEventsResponse = ServerResponse<{
   items: SystemAuthEvent[]
   total: number
 }>
-
-// ponytail: LIST endpoint currently returns only { id, reason } per item.
-// The extra fields are on the create/unblock response — kept optional so
-// we can render them the moment the server includes them.
-export type SystemBlockedIp = {
-  id: string
-  reason?: string | null
-  ipAddress?: string | null
-  blockType?: 'permanent' | 'temporary' | string | null
-  blockedAt?: string | null
-  expiresAt?: string | null
-  blockedBy?: string | null
-  unblockedAt?: string | null
-  unblockedBy?: string | null
-}
-
-export type SystemBlockedIpsQuery = {
-  params?: {
-    offset?: number
-    limit?: number
-    // ponytail: server currently ignores these — kept for when it doesn't
-    search?: string
-    active?: boolean
-  }
-}
-
-export type SystemBlockedIpsResponse = ServerResponse<{
-  items: SystemBlockedIp[]
-  total: number
-}>
-
-export type UnblockSystemIpPayload = { id: string }
-export type UnblockSystemIpResponse = ServerResponse<SystemBlockedIp>
 
 export type SystemAutoBlockRule = {
   id: string

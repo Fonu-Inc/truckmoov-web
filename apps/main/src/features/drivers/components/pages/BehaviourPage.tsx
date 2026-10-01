@@ -34,14 +34,17 @@ const BAND_BADGE: Record<DriverBehaviorBand, {
   excellent: {
     label: "Excellent", className: "bg-success text-success-foreground",
   },
-  good: {
-    label: "Good", className: "bg-primary text-primary-foreground",
+  strong: {
+    label: "Strong", className: "bg-primary text-primary-foreground",
   },
   fair: {
     label: "Fair", className: "bg-warning text-warning-foreground",
   },
   poor: {
     label: "Poor", className: "",
+  },
+  unscored: {
+    label: "Unscored", className: "bg-muted text-muted-foreground",
   },
 };
 
@@ -90,7 +93,7 @@ function ScoreGauge({
 function DriverScoreCard({
   score, rank,
 }: {
-  score: DriverBehaviorRankingItem; rank: number;
+  score: DriverBehaviorRankingItem; rank: number | null;
 }) {
   // ponytail: fleetflow shows a trend arrow here; the ranking API has no trend field yet.
   const badge = BAND_BADGE[score.band] ?? BAND_BADGE.poor;
@@ -102,8 +105,7 @@ function DriverScoreCard({
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent font-bold text-primary-foreground">
-              #
-              {rank}
+              {rank === null ? "—" : `#${rank}`}
             </div>
             <div className="min-w-0">
               <p className="font-semibold">{score.driverName}</p>

@@ -4,10 +4,7 @@ import type {
   FilterField, FilterValues,
 } from "@/components/shadcn/table-toolbar";
 import { useQuery } from "@tanstack/react-query";
-import {
-  getSystemFailedLoginsQueryOptions,
-  useBlockSystemIp,
-} from "@truckmoov/api/auth";
+import { getSystemFailedLoginsQueryOptions } from "@truckmoov/api/auth";
 import {
   formatDateInTimezone,
   TIMEZONES,
@@ -19,12 +16,10 @@ import {
   Download,
   Eye,
   Key,
-  Loader2,
   Lock,
   MapPin,
   MoreHorizontal,
   Shield,
-  Unlock,
   UserX,
 } from "lucide-react";
 import {
@@ -45,7 +40,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -55,8 +49,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { usePreferences } from "@/contexts/PreferencesContext";
 
@@ -172,16 +164,6 @@ export default function FailedAttemptsPage() {
     selected,
     setSelected,
   ] = useState<SystemFailedLogin | null>(null);
-  const [
-    blockDialogOpen,
-    setBlockDialogOpen,
-  ] = useState(false);
-  const [
-    newBlock,
-    setNewBlock,
-  ] = useState({
-    ipAddress: "", reason: "",
-  });
 
   const debouncedSearch = useDebouncedValue(
     search,
@@ -220,41 +202,6 @@ export default function FailedAttemptsPage() {
     ? rawItems
     : rawItems.filter(i => (status === "blocked" ? i.blocked : !i.blocked));
   const total = failedQuery.data?.data.total ?? 0;
-  const blockMutation = useBlockSystemIp();
-
-  const openBlockDialogForRow = (row: SystemFailedLogin) => {
-    setNewBlock({
-      ipAddress: row.ipAddress ?? "",
-      reason: `Suspicious activity from ${row.location || row.ipAddress || "unknown"}`,
-    });
-    setBlockDialogOpen(true);
-  };
-
-  const handleBlockIP = () => {
-    if (!newBlock.ipAddress || !newBlock.reason) {
-      toast.error("Please enter IP address and reason");
-      return;
-    }
-    blockMutation.mutate(
-      {
-        data: {
-          ipAddress: newBlock.ipAddress, reason: newBlock.reason,
-        },
-      },
-      {
-        onSuccess: () => {
-          toast.success(`IP ${newBlock.ipAddress} blocked`);
-          setBlockDialogOpen(false);
-          setNewBlock({
-            ipAddress: "", reason: "",
-          });
-        },
-        onError: (error) => {
-          toast.error(error.message);
-        },
-      },
-    );
-  };
 
   const columns = useMemo<ColumnDef<SystemFailedLogin>[]>(
     () => [
@@ -358,29 +305,6 @@ export default function FailedAttemptsPage() {
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              {row.original.blocked
-                ? (
-                    <DropdownMenuItem
-                      onClick={() => {
-                      // ponytail: unblock requires the blocked-IP row id; wire when we can look up by IP
-                        toast.info("Manage from Blocked IPs tab");
-                      }}
-                    >
-                      <Unlock className="h-4 w-4 mr-2" />
-                      Unblock IP
-                    </DropdownMenuItem>
-                  )
-                : row.original.ipAddress
-                  ? (
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => openBlockDialogForRow(row.original)}
-                      >
-                        <Ban className="h-4 w-4 mr-2" />
-                        Block IP
-                      </DropdownMenuItem>
-                    )
-                  : null}
             </DropdownMenuContent>
           </DropdownMenu>
         ),
@@ -453,81 +377,6 @@ export default function FailedAttemptsPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Block IP Dialog */}
-      <Dialog
-        open={blockDialogOpen}
-        onOpenChange={setBlockDialogOpen}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                <Ban className="h-5 w-5 text-destructive" />
-              </div>
-              Block IP Address
-            </DialogTitle>
-            <DialogDescription>
-              Block an IP address from accessing the platform. All login attempts from this IP will be rejected.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="ip_address">IP Address</Label>
-              <Input
-                id="ip_address"
-                value={newBlock.ipAddress}
-                onChange={e => setNewBlock({
-                  ...newBlock, ipAddress: e.target.value,
-                })}
-                placeholder="e.g., 192.168.1.1"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="reason">Reason</Label>
-              <Input
-                id="reason"
-                value={newBlock.reason}
-                onChange={e => setNewBlock({
-                  ...newBlock, reason: e.target.value,
-                })}
-                placeholder="e.g., Suspicious activity, multiple failed attempts"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setBlockDialogOpen(false)}
-              disabled={blockMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleBlockIP}
-              disabled={blockMutation.isPending}
-            >
-              {blockMutation.isPending
-                ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Blocking...
-                    </>
-                  )
-                : (
-                    <>
-                      <Ban className="h-4 w-4 mr-2" />
-                      Block IP
-                    </>
-                  )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Details Dialog */}
       <Dialog

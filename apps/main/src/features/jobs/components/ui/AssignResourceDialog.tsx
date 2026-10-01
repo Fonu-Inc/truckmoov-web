@@ -49,7 +49,7 @@ type AssignResourceDialogProps = {
 const UNSCORED_BAND = "bg-muted text-muted-foreground border-border";
 
 function driverPerformance(d: FleetDriver) {
-  return d.performanceScore ?? d.behaviorScore ?? null;
+  return d.behaviorScore ?? d.performanceScore ?? null;
 }
 
 function vehicleCapacityTonnes(v: Vehicle) {

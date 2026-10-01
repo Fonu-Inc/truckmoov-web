@@ -615,11 +615,13 @@ export type DriverBehaviorScores = {
   speed: number
   counts: DriverBehaviorCounts
 }
-export type DriverBehaviorBand = 'excellent' | 'good' | 'fair' | 'poor'
+/** Same bands as the roster's scoreBand; drivers with no events are `unscored`. */
+export type DriverBehaviorBand = 'excellent' | 'strong' | 'fair' | 'poor' | 'unscored'
 export type DriverBehaviorRankingItem = {
   driverId: string
   driverName: string
-  rank: number
+  /** Null for unscored drivers, who are listed after the scored ones. */
+  rank: number | null
   eventsRecorded: number
   scores: DriverBehaviorScores
   band: DriverBehaviorBand
@@ -1058,11 +1060,12 @@ export type FleetAnalyticsShortPeriodQuery = {
   }
 }
 
+/** Each axis is null when nothing was scored in the period. */
 export type VehicleSafetyRadar = {
-  braking: number
-  acceleration: number
-  speedControl: number
-  cornering: number
+  braking: number | null
+  acceleration: number | null
+  speedControl: number | null
+  cornering: number | null
   periodDays: number
 }
 
@@ -1739,7 +1742,8 @@ export type FleetCostBreakdown = {
   other: number
 }
 
-export type FleetProfitabilityTier = 'excellent' | 'good' | 'marginal' | 'loss_making'
+/** `unscored`: no revenue and no cost in the period; score is null and it is left out of avgScore. */
+export type FleetProfitabilityTier = 'excellent' | 'good' | 'marginal' | 'loss_making' | 'unscored'
 
 export type FleetTierDistribution = Record<FleetProfitabilityTier, number>
 
@@ -1748,7 +1752,7 @@ export type FleetFinancialSummary = {
   totalCost: number
   totalProfit: number
   avgMarginPercent: number
-  avgScore: number
+  avgScore: number | null
   vehicleCount: number
   costBreakdown: FleetCostBreakdown
   tierDistribution: FleetTierDistribution
@@ -1767,7 +1771,7 @@ export type FleetProfitabilityVehicle = {
   marginPercent: number
   tier: FleetProfitabilityTier
   status: FleetProfitabilityTier
-  score: number
+  score: number | null
   costBreakdown: FleetCostBreakdown
   jobCount: number
   kmDriven: number
@@ -1842,9 +1846,15 @@ export type MaintenanceProfilesSummaryResponse = ServerResponse<MaintenanceProfi
 export type MaintenanceServiceCategoriesResponse = ServerResponse<string[]>
 /** Deletes and "send reminders" routes reply with the standard envelope. */
 export type MaintenanceStatusResponse = ServerResponse<Record<string, unknown> | null>
+/** POST /fleet/compliance/reminders/send — mails the caller's expiring/expired documents. */
+export type SendComplianceRemindersPayload = {
+  data: { recipientEmail: string, leadDays?: MaintenanceReminderLeadDays }
+}
+
 export type ReminderSendResponse = ServerResponse<{
   queued: number
   message: string
+  recipient?: string
   /** Vehicles due within the schedule's leadDays window right now. */
   dueInWindow?: number
 }>

@@ -49,8 +49,7 @@ export function AnalyticsPage() {
   const spendTrendQuery = useQuery(getDataBundleSpendTrendQueryOptions(toAnalyticsRange(spendRange)));
   const spendBreakdownQuery = useQuery(getDataBundleSpendBreakdownQueryOptions(toAnalyticsRange(breakdownRange)));
   const carrierDistributionQuery = useQuery(getDataBundleCarrierDistributionQueryOptions(toAnalyticsRange(channelRange)));
-  // ponytail: subscription-usage has no date filter; wire this select when the API accepts a range.
-  const subscriptionUsageQuery = useQuery(getDataBundleSubscriptionUsageQueryOptions());
+  const subscriptionUsageQuery = useQuery(getDataBundleSubscriptionUsageQueryOptions(toAnalyticsRange(usageRange)));
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
 
   const dailySpend = spendTrendQuery.data

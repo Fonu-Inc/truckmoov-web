@@ -176,9 +176,10 @@ export function FleetFinancialsLayout() {
         "good": "bg-info/20 text-info",
         "marginal": "bg-warning/20 text-warning",
         "loss-making": "bg-destructive/20 text-destructive",
+        "unscored": "bg-muted text-muted-foreground",
       };
       return (
-        <Badge className={colors[tier] || colors.marginal}>
+        <Badge className={colors[normalizeTier(tier)] || colors.marginal}>
           {TIER_LABELS[normalizeTier(tier)] || tier}
         </Badge>
       );

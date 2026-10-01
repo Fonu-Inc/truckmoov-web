@@ -24,9 +24,6 @@ export const SECURITY_TABS: SecurityTab[] = [
     to: "/security/failed-attempts", label: "Failed Attempts",
   },
   {
-    to: "/security/blocked-ips", label: "Blocked IPs",
-  },
-  {
     to: "/security/notifications", label: "Notifications",
   },
   {

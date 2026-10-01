@@ -4,13 +4,14 @@ import {
   useEffect, useState,
 } from "react";
 
-export type ProfitabilityTierKey = "excellent" | "good" | "marginal" | "loss-making";
+export type ProfitabilityTierKey = "excellent" | "good" | "marginal" | "loss-making" | "unscored";
 
 export const ORDERED_PROFITABILITY_TIERS: ProfitabilityTierKey[] = [
   "excellent",
   "good",
   "marginal",
   "loss-making",
+  "unscored",
 ];
 
 export const TIER_COLORS: Record<ProfitabilityTierKey, string> = {
@@ -18,6 +19,7 @@ export const TIER_COLORS: Record<ProfitabilityTierKey, string> = {
   "good": "#3b82f6",
   "marginal": "#f59e0b",
   "loss-making": "#ef4444",
+  "unscored": "#94a3b8",
 };
 
 export const TIER_LABELS: Record<ProfitabilityTierKey, string> = {
@@ -25,6 +27,7 @@ export const TIER_LABELS: Record<ProfitabilityTierKey, string> = {
   "good": "Good",
   "marginal": "Marginal",
   "loss-making": "Loss-Making",
+  "unscored": "Unscored",
 };
 
 export type ProfitabilityAnalysisRow = {
@@ -53,7 +56,7 @@ export type ProfitabilityAnalysisRow = {
   profitability: {
     net_profit: number;
     margin_percent: number;
-    score: number;
+    score: number | null;
     tier: string;
   };
 };
@@ -82,7 +85,7 @@ export function normalizeTier(tier: string | undefined): ProfitabilityTierKey {
     "_",
     "-",
   );
-  if (normalized === "excellent" || normalized === "good" || normalized === "marginal" || normalized === "loss-making") {
+  if (normalized === "excellent" || normalized === "good" || normalized === "marginal" || normalized === "loss-making" || normalized === "unscored") {
     return normalized;
   }
   return "marginal";
@@ -178,7 +181,7 @@ export function normalizeProfitabilityRow(row: FleetProfitabilityVehicle): Profi
     profitability: {
       net_profit: row.profit ?? 0,
       margin_percent: row.marginPercent ?? 0,
-      score: row.score ?? 0,
+      score: row.score ?? null,
       tier: normalizeTier(row.tier),
     },
   };

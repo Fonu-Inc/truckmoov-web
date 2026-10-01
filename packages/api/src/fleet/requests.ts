@@ -145,6 +145,7 @@ import type {
   RegisterGeofencePayload,
   RegisterGpsDevicePayload,
   ReminderSendResponse,
+  SendComplianceRemindersPayload,
   RenewComplianceDocumentPayload,
   ReportLocationPayload,
   SetGeofenceVehiclesPayload,
@@ -1160,8 +1161,8 @@ export async function setComplianceDocReminder(id: string, reminderDays: number)
   return data
 }
 
-export async function sendComplianceReminders() {
-  const { data } = await axiosInstance.post<ReminderSendResponse>('/fleet/compliance/reminders/send')
+export async function sendComplianceReminders({ data: body }: SendComplianceRemindersPayload) {
+  const { data } = await axiosInstance.post<ReminderSendResponse>('/fleet/compliance/reminders/send', body)
   return data
 }
 

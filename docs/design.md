@@ -444,8 +444,10 @@ The hook fetches in server batches of 500 by default and slices client-side into
 Reset the page when filters change; the hook can't watch external state.
 
 Do **not** hand-write `useState({ page, pageSize })` + `useQuery({ offset, limit })`
-in a new page. Three existing security pages (LoginHistory, SecurityEvents,
-BlockedIps) predate the hook and should migrate the next time they're touched.
+in a new page. Two existing security pages (LoginHistory, SecurityEvents)
+predate the hook and should migrate the next time they're touched. (There is no
+Blocked IPs tab any more: IP blocks are automatic server-side, expire on their
+own, and engineering clears them when needed.)
 
 Non-table data (cards, lists, dialogs) gets the same three states from
 `QueryState` (`apps/installer/src/components/QueryState.tsx`): skeleton while

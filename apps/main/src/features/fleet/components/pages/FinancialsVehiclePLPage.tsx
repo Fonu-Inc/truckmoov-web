@@ -513,10 +513,10 @@ export default function FinancialsVehiclePLPage() {
                 cell: ({ row }) => (
                   <div className="flex items-center gap-2 justify-end">
                     <Progress
-                      value={row.original.profitability?.score || 0}
+                      value={row.original.profitability?.score ?? 0}
                       className="w-16 h-2"
                     />
-                    <span className="text-sm">{row.original.profitability?.score || 0}</span>
+                    <span className="text-sm">{row.original.profitability?.score ?? "—"}</span>
                   </div>
                 ),
               },

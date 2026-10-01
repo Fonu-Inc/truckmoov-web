@@ -259,8 +259,8 @@ devDependencies so its peers don't resolve to the landing page's React 19.
 - `GET /fleet/vehicles` with a `tabs` header (`useVehiclesByTab`) is no longer rendered — its
   summary payload isn't part of the design.
 - Compliance "Set Reminder" is `PATCH /fleet/compliance/documents/:id/reminder` (`reminderDays`
-  only); `POST /fleet/compliance/reminders/send` takes no body, so the recipient email the dialog
-  collects is not sent.
+  only). "Send Reminders" posts `/fleet/compliance/reminders/send` with `{ recipientEmail,
+  leadDays }` (7/14/30/60/90, default 30) and mails that address the tenant's expiring/expired docs.
 - Renewing a compliance document creates a new record and supersedes the old one
   (`supersededById`) rather than updating it in place.
 - Financials "Cost per KM" is total cost ÷ `kmDriven` summed over `POST /fleet/financials/profitability`.

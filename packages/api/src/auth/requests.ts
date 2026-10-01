@@ -183,16 +183,10 @@ import type {
   RejectSystemDeviceSetupRequestPayload,
   RejectSIMRequestPayload,
   RemoveOrganizationUserResponse,
-  BlockSystemIpPayload,
-  BlockSystemIpResponse,
   SystemFailedLoginsQuery,
   SystemFailedLoginsResponse,
   SystemAuthEventsQuery,
   SystemAuthEventsResponse,
-  SystemBlockedIpsQuery,
-  SystemBlockedIpsResponse,
-  UnblockSystemIpPayload,
-  UnblockSystemIpResponse,
   SystemAutoBlockRulesResponse,
   UpdateSystemAutoBlockRulePayload,
   UpdateSystemAutoBlockRuleResponse,
@@ -1476,8 +1470,10 @@ export async function getDataBundleCarrierDistribution(payload?: DataBundleAnaly
   return data
 }
 
-export async function getDataBundleSubscriptionUsage() {
-  const { data } = await axiosInstance.get<DataBundleSubscriptionUsageResponse>('/auth/data-bundles/analytics/subscription-usage')
+export async function getDataBundleSubscriptionUsage(payload?: DataBundleAnalyticsRangeQuery) {
+  const { data } = await axiosInstance.get<DataBundleSubscriptionUsageResponse>('/auth/data-bundles/analytics/subscription-usage', {
+    params: payload?.params,
+  })
   return data
 }
 
@@ -1960,29 +1956,10 @@ export async function getSystemFailedLogins(payload?: SystemFailedLoginsQuery) {
   return data
 }
 
-export async function blockSystemIp({ data: body }: BlockSystemIpPayload) {
-  const { data } = await axiosInstance.post<BlockSystemIpResponse>('/auth/system/security/blocked-ips', body)
-  return data
-}
-
 export async function getSystemAuthEvents(payload?: SystemAuthEventsQuery) {
   const { data } = await axiosInstance.get<SystemAuthEventsResponse>('/auth/system/security/auth-events', {
     params: payload?.params,
   })
-  return data
-}
-
-export async function getSystemBlockedIps(payload?: SystemBlockedIpsQuery) {
-  const { data } = await axiosInstance.get<SystemBlockedIpsResponse>('/auth/system/security/blocked-ips', {
-    params: payload?.params,
-  })
-  return data
-}
-
-export async function unblockSystemIp({ id }: UnblockSystemIpPayload) {
-  const { data } = await axiosInstance.patch<UnblockSystemIpResponse>(
-    `/auth/system/security/blocked-ips/${id}/unblock`,
-  )
   return data
 }
 

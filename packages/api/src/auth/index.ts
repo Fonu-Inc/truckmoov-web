@@ -112,13 +112,10 @@ import {
   getSystemRefDataTenantOnboarding,
   getSystemFailedLogins,
   getSystemAuthEvents,
-  getSystemBlockedIps,
-  unblockSystemIp,
   getSystemAutoBlockRules,
   updateSystemAutoBlockRule,
   getSystemSecurityEvents,
   getSystemSecurityOverview,
-  blockSystemIp,
   getSystemSettings,
   getSystemSim,
   getSystemSims,
@@ -372,7 +369,6 @@ import type {
   GetSimRequestPayload,
   SystemFailedLoginsQuery,
   SystemAuthEventsQuery,
-  SystemBlockedIpsQuery,
   SystemSecurityEventsQuery,
   BundleCatalogQuery,
   CommunicationsWalletRangeQuery,
@@ -431,8 +427,6 @@ export const AUTH_QUERY_KEY = {
     payload ? ['systemFailedLogins', payload] : ['systemFailedLogins'],
   systemAuthEvents: (payload?: SystemAuthEventsQuery) =>
     payload ? ['systemAuthEvents', payload] : ['systemAuthEvents'],
-  systemBlockedIps: (payload?: SystemBlockedIpsQuery) =>
-    payload ? ['systemBlockedIps', payload] : ['systemBlockedIps'],
   systemAutoBlockRules: ['systemAutoBlockRules'] as const,
   systemSecurityEvents: (payload?: SystemSecurityEventsQuery) =>
     payload ? ['systemSecurityEvents', payload] : ['systemSecurityEvents'],
@@ -507,7 +501,7 @@ export const AUTH_QUERY_KEY = {
   dataBundleSpendTrend: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleSpendTrend', payload],
   dataBundleSpendBreakdown: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleSpendBreakdown', payload],
   dataBundleCarrierDistribution: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleCarrierDistribution', payload],
-  dataBundleSubscriptionUsage: ['dataBundleSubscriptionUsage'],
+  dataBundleSubscriptionUsage: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleSubscriptionUsage', payload],
   dataBundleRates: (payload?: DataBundleRatesQuery) => ['dataBundleRates', payload],
   dataBundleCarriers: ['dataBundleCarriers'],
   dataBundleDashboardSummary: ['dataBundleDashboardSummary'],
@@ -1120,36 +1114,6 @@ export function getSystemAuthEventsQueryOptions(payload?: SystemAuthEventsQuery)
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemAuthEvents(payload),
     queryFn: () => getSystemAuthEvents(payload),
-  })
-}
-
-export function getSystemBlockedIpsQueryOptions(payload?: SystemBlockedIpsQuery) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemBlockedIps(payload),
-    queryFn: () => getSystemBlockedIps(payload),
-  })
-}
-
-export function useBlockSystemIp() {
-  return useMutation({
-    mutationFn: blockSystemIp,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['systemFailedLogins'] })
-      queryClient.invalidateQueries({ queryKey: ['systemAuthEvents'] })
-      queryClient.invalidateQueries({ queryKey: ['systemBlockedIps'] })
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSecurityOverview })
-    },
-  })
-}
-
-export function useUnblockSystemIp() {
-  return useMutation({
-    mutationFn: unblockSystemIp,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['systemBlockedIps'] })
-      queryClient.invalidateQueries({ queryKey: ['systemFailedLogins'] })
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSecurityOverview })
-    },
   })
 }
 
@@ -1932,10 +1896,10 @@ export function getDataBundleCarrierDistributionQueryOptions(payload?: DataBundl
   })
 }
 
-export function getDataBundleSubscriptionUsageQueryOptions() {
+export function getDataBundleSubscriptionUsageQueryOptions(payload?: DataBundleAnalyticsRangeQuery) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.dataBundleSubscriptionUsage,
-    queryFn: getDataBundleSubscriptionUsage,
+    queryKey: AUTH_QUERY_KEY.dataBundleSubscriptionUsage(payload),
+    queryFn: () => getDataBundleSubscriptionUsage(payload),
   })
 }
 

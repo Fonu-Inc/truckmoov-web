@@ -517,19 +517,26 @@ export function FleetAnalyticsTab() {
     .sort((a, b) => a.level - b.level);
 
   const safetyRadar = safetyRadarQuery.data?.data;
-  const radarChart = safetyRadar
+  // Every axis null = nothing scored in the period; show the empty state, not a 0-score chart.
+  const radarScored = safetyRadar && [
+    safetyRadar.braking,
+    safetyRadar.acceleration,
+    safetyRadar.speedControl,
+    safetyRadar.cornering,
+  ].some(v => v !== null);
+  const radarChart = safetyRadar && radarScored
     ? [
         {
-          metric: "Braking", score: clampScore(safetyRadar.braking), fullMark: 100,
+          metric: "Braking", score: clampScore(safetyRadar.braking ?? 0), fullMark: 100,
         },
         {
-          metric: "Acceleration", score: clampScore(safetyRadar.acceleration), fullMark: 100,
+          metric: "Acceleration", score: clampScore(safetyRadar.acceleration ?? 0), fullMark: 100,
         },
         {
-          metric: "Speed Control", score: clampScore(safetyRadar.speedControl), fullMark: 100,
+          metric: "Speed Control", score: clampScore(safetyRadar.speedControl ?? 0), fullMark: 100,
         },
         {
-          metric: "Cornering", score: clampScore(safetyRadar.cornering), fullMark: 100,
+          metric: "Cornering", score: clampScore(safetyRadar.cornering ?? 0), fullMark: 100,
         },
       ]
     : [];
@@ -671,8 +678,8 @@ export function FleetAnalyticsTab() {
           value={averageSafetyScore || "-"}
           icon={ShieldAlert}
           subtitle={`${summary?.safety.critical ?? 0} critical events`}
-          trend={averageSafetyScore >= 80 ? "up" : averageSafetyScore >= 60 ? "neutral" : "down"}
-          trendValue={averageSafetyScore >= 80 ? "Good" : averageSafetyScore >= 60 ? "Fair" : "Poor"}
+          trend={safetyScores.length === 0 ? "neutral" : averageSafetyScore >= 80 ? "up" : averageSafetyScore >= 60 ? "neutral" : "down"}
+          trendValue={safetyScores.length === 0 ? "Unscored" : averageSafetyScore >= 80 ? "Good" : averageSafetyScore >= 60 ? "Fair" : "Poor"}
         />
         <KPICard
           title="Maintenance"
@@ -905,7 +912,7 @@ export function FleetAnalyticsTab() {
                   )
                 : radarChart.length === 0
                   ? (
-                      <EmptyState message="No safety radar data available." />
+                      <EmptyState message="No driving events scored in this period." />
                     )
                   : (
                       <ResponsiveContainer

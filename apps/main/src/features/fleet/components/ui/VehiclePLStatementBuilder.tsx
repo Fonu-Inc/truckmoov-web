@@ -35,7 +35,7 @@ type VehicleProfitability = {
   profitability?: {
     net_profit?: number;
     margin_percent?: number;
-    score?: number;
+    score?: number | null;
     tier?: string;
   };
 };
@@ -140,7 +140,7 @@ export function VehiclePLStatementBuilder({
         costs: d.costs?.total || 0,
         net_profit: d.profitability?.net_profit || 0,
         margin: d.profitability?.margin_percent || 0,
-        score: d.profitability?.score || 0,
+        score: d.profitability?.score ?? null,
         tier: d.profitability?.tier || "marginal",
         fuel: d.costs?.fuel || 0,
         maintenance: d.costs?.maintenance || 0,

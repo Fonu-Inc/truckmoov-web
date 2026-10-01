@@ -172,9 +172,6 @@ export const router = createBrowserRouter([
                 path: "failed-attempts", lazy: async () => ({ Component: (await import("@/features/security/components/pages/FailedAttemptsPage")).default }),
               },
               {
-                path: "blocked-ips", lazy: async () => ({ Component: (await import("@/features/security/components/pages/BlockedIpsPage")).default }),
-              },
-              {
                 path: "notifications", lazy: async () => ({ Component: (await import("@/features/security/components/pages/NotificationsPage")).default }),
               },
               {

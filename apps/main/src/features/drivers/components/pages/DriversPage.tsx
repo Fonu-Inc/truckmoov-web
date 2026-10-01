@@ -152,9 +152,9 @@ function formatScore(score: number | null) {
   return score === null ? "Unscored" : `${Math.round(score)}%`;
 }
 
-/** Server score (0–100) or null when the driver hasn't been scored yet. */
+/** Behaviour score (0–100, last 30 days of events); performanceScore is on-time delivery and is usually null. */
 function driverScore(row: DriverRow): number | null {
-  return row.performanceScore ?? row.behaviorScore ?? null;
+  return row.behaviorScore ?? row.performanceScore ?? null;
 }
 
 // Legacy `Driver` shape for DriverDetailsSheet. Values come from the server only —

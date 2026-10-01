@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type {
-  ComplianceDocument, ComplianceDocumentStatus,
+  ComplianceDocument, ComplianceDocumentStatus, MaintenanceReminderLeadDays,
 } from "@truckmoov/api/fleet";
 import { uploadMedia } from "@truckmoov/api/auth";
 import {
@@ -573,13 +573,18 @@ export function ComplianceTab() {
       return;
     }
     try {
-      await sendRemindersMutation.mutateAsync();
+      const res = await sendRemindersMutation.mutateAsync({
+        data: {
+          recipientEmail,
+          leadDays: Number(reminderDaysBefore) as MaintenanceReminderLeadDays,
+        },
+      });
       setIsSendRemindersDialogOpen(false);
       setRecipientEmail("");
-      toast.success("Reminders queued");
+      toast.success(res.data.message);
     }
-    catch {
-      toast.error("Failed to send reminders");
+    catch (error) {
+      toast.error((error as { message?: string }).message || "Failed to send reminders");
     }
   };
 
