@@ -10,7 +10,6 @@ import AuthPage from "@/features/auth/components/pages/AuthPage";
 import InvitePage from "@/features/auth/components/pages/InvitePage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { ADMIN_ROLES } from "@/features/dashboard/utils/sidebarNav";
-import { ComplianceAuditLayout } from "@/pages/platform/ComplianceAuditLayout";
 import { SecurityLayout } from "@/features/security/components/layout/SecurityLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { useAuthStore } from "@/stores/authStore";
@@ -46,10 +45,6 @@ const GuardedDashboardLayout = withGuard(
 const GuardedSettingsLayout = withGuard(
   ADMIN_ROLES,
   SettingsLayout,
-);
-const GuardedAuditLayout = withGuard(
-  ADMIN_ROLES,
-  ComplianceAuditLayout,
 );
 const GuardedSecurityLayout = withGuard(
   ADMIN_ROLES,
@@ -180,15 +175,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/compliance-audit",
-            Component: GuardedAuditLayout,
-            children: [
-              {
-                index: true, lazy: async () => ({ Component: (await import("@/pages/platform/PlatformComplianceAudit")).default }),
-              },
-              {
-                path: "sign-ins", lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSignIns")).default }),
-              },
-            ],
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformComplianceAudit")).default }),
           },
           // Settings is a pathful layout route: SettingsLayout owns the tab bar
           // and the Outlet, one child route per tab. The tab list it renders is
