@@ -58,7 +58,8 @@ to reach for it. This is the quick index:
 
 **Timezones** — `TIMEZONES`, `DEFAULT_TIMEZONE`, `getTimezoneLabel`,
 `formatDateInTimezone`, `formatTimeInTimezone`, `formatDateOnlyInTimezone`,
-`getCurrentTimeInTimezone`. The three `format*InTimezone` helpers take a
+`formatTime12InTimezone` ("9:30 AM"), `formatScheduleInTimezone`
+("02 Oct 2026 · 9:30 AM"), `getCurrentTimeInTimezone`. The `format*InTimezone` helpers take a
 `Timezone` key or a raw IANA name (a user's saved preference, e.g. the
 installer portal's Display Preferences) — never hardcode `Africa/Lagos` when a
 preference exists.

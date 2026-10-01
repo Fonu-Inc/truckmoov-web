@@ -34,7 +34,7 @@ const TYPES = [
   [
     "newInstallationOffers",
     "New installation offers",
-    "Alert me when a job is offered to me.",
+    "Alert me when the system offers an installation job.",
   ],
   [
     "scheduleReminders",
@@ -44,12 +44,12 @@ const TYPES = [
   [
     "jobAndIssueUpdates",
     "Job and issue updates",
-    "Changes, cancellations, resolved issues and device verification.",
+    "Updates on accepted or rejected offers, job progress, and installation issues.",
   ],
   [
     "supportTicketUpdates",
     "Support ticket updates",
-    "Replies and status changes on my support tickets.",
+    "Notify me when Fleet Pro responds to a support ticket.",
   ],
 ] as const;
 
@@ -58,12 +58,12 @@ const CHANNELS = [
   [
     "emailAlerts",
     "Email alerts",
-    "Send each alert to my email too.",
+    "Receive alerts by email.",
   ],
   [
     "inPlatformAlerts",
     "In-platform alerts",
-    "Show each alert in the notification bell.",
+    "Show operational updates in the notification bell.",
   ],
 ] as const;
 

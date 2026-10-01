@@ -7,17 +7,34 @@ import {
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   Bell,
+  Keyboard,
   PanelLeftClose,
   PanelLeftOpen,
+  Search,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import { useNavigate } from "react-router";
+import { QueryState } from "@/components/QueryState";
 import { Button } from "@/components/shadcn/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/shadcn/popover";
+import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/shared/hooks/useIsMobile";
@@ -29,10 +46,8 @@ type DashboardHeaderProps = {
 };
 
 /**
- * ponytail: the collapse toggle, the page title, the notification bell and the
- * profile menu. Admin's header also carries global search and a
- * keyboard-shortcut dialog; neither has a backing feature here, so they stayed
- * behind rather than arriving as dead chrome.
+ * The collapse toggle, the page title, job search, the shortcut sheet, the
+ * notification bell and the profile menu — the appdemo installer header.
  */
 export function DashboardHeader({ title }: DashboardHeaderProps) {
   const collapsed = useSidebarStore(s => s.collapsed);
@@ -60,10 +75,201 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
       </div>
 
       <div className="flex items-center gap-1.5">
+        <HeaderSearch />
+        <ShortcutsButton />
         <NotificationBell />
         <UserProfileDropdown />
       </div>
     </header>
+  );
+}
+
+function isTyping(e: KeyboardEvent) {
+  const t = e.target as HTMLElement;
+  return t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable;
+}
+
+/**
+ * ponytail: jobs are the only searchable thing in this portal, so Enter hands
+ * the query to /jobs (JobsPage seeds its search box from `?search=`).
+ */
+function HeaderSearch() {
+  const navigate = useNavigate();
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+  const [
+    value,
+    setValue,
+  ] = useState("");
+
+  useEffect(
+    () => {
+      const onKey = (e: KeyboardEvent) => {
+        if (isTyping(e))
+          return;
+        if ((e.key === "k" && (e.ctrlKey || e.metaKey)) || e.key === "/") {
+          e.preventDefault();
+          setOpen(true);
+        }
+      };
+      window.addEventListener(
+        "keydown",
+        onKey,
+      );
+      return () => window.removeEventListener(
+        "keydown",
+        onKey,
+      );
+    },
+    [],
+  );
+
+  const close = () => {
+    setOpen(false);
+    setValue("");
+  };
+
+  return (
+    <div className="hidden md:flex items-center">
+      {open
+        ? (
+            <div className="relative animate-in fade-in slide-in-from-right-2 duration-150">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                placeholder="Search jobs..."
+                value={value}
+                onChange={e => setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape")
+                    close();
+                  if (e.key === "Enter" && value.trim()) {
+                    navigate(`/jobs?search=${encodeURIComponent(value.trim())}`);
+                    close();
+                  }
+                }}
+                className="w-64 h-8 bg-secondary/50 border-border/50 pl-8 pr-8 text-sm focus:bg-background focus:border-primary/50"
+              />
+              <button
+                onClick={close}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Close search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )
+        : (
+            <ShortcutTooltip
+              content="Search"
+              shortcut="Ctrl+K"
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={() => setOpen(true)}
+                aria-label="Search"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </ShortcutTooltip>
+          )}
+    </div>
+  );
+}
+
+const SHORTCUTS = [
+  [
+    "Ctrl+K",
+    "Search jobs",
+  ],
+  [
+    "/",
+    "Search jobs",
+  ],
+  [
+    "Esc",
+    "Close dialog / Cancel",
+  ],
+  [
+    "Shift+?",
+    "Show keyboard shortcuts",
+  ],
+] as const;
+
+function ShortcutsButton() {
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+
+  useEffect(
+    () => {
+      const onKey = (e: KeyboardEvent) => {
+        if (!isTyping(e) && e.shiftKey && e.key === "?") {
+          e.preventDefault();
+          setOpen(true);
+        }
+      };
+      window.addEventListener(
+        "keydown",
+        onKey,
+      );
+      return () => window.removeEventListener(
+        "keydown",
+        onKey,
+      );
+    },
+    [],
+  );
+
+  return (
+    <>
+      <ShortcutTooltip
+        content="Keyboard shortcuts"
+        shortcut="Shift + ?"
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={() => setOpen(true)}
+          aria-label="Keyboard shortcuts"
+        >
+          <Keyboard className="h-4 w-4" />
+        </Button>
+      </ShortcutTooltip>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <DialogDescription>Use these shortcuts to navigate faster</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 pt-2">
+            {SHORTCUTS.map(([
+              keys,
+              label,
+            ]) => (
+              <div
+                key={keys}
+                className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+              >
+                <span className="text-sm">{label}</span>
+                <kbd className="inline-flex h-6 min-w-[24px] items-center justify-center gap-1 rounded border border-border bg-muted px-2 font-mono text-xs font-medium text-muted-foreground">
+                  {keys}
+                </kbd>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -95,17 +301,15 @@ function NotificationBell() {
       onOpenChange={setOpen}
     >
       <PopoverTrigger asChild>
-        <button
-          className="relative rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-          aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-9 w-9"
+          aria-label={unread ? `Installer notifications, ${unread} unread` : "Installer notifications"}
         >
           <Bell className="h-4 w-4" />
-          {unread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          )}
-        </button>
+          {unread > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive ring-2 ring-background" />}
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         align="end"
@@ -126,34 +330,41 @@ function NotificationBell() {
           )}
         </div>
         <div className="max-h-80 overflow-y-auto">
-          {page?.items.length
-            ? page.items.map(n => (
-                <button
-                  key={n.id}
-                  onClick={() => openNotification(n)}
-                  className={cn(
-                    "block w-full border-b px-4 py-3 text-left last:border-b-0 hover:bg-accent",
-                    !n.read && "bg-primary/5",
+          <QueryState
+            query={notifications}
+            isEmpty={!page?.items.length}
+            empty="No notifications yet."
+            errorMessage="Unable to load notifications."
+            skeleton={(
+              <div className="space-y-2 p-3">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            )}
+          >
+            {page?.items.map(n => (
+              <button
+                key={n.id}
+                onClick={() => openNotification(n)}
+                className={cn(
+                  "block w-full border-b px-4 py-3 text-left last:border-b-0 hover:bg-accent",
+                  !n.read && "bg-primary/5",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className={cn(
+                    "truncate text-sm",
+                    !n.read && "font-medium",
                   )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={cn(
-                      "truncate text-sm",
-                      !n.read && "font-medium",
-                    )}
-                    >
-                      {n.title}
-                    </p>
-                    <span className="shrink-0 text-xs text-muted-foreground">{formatRelative(n.createdAt)}</span>
-                  </div>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
-                </button>
-              ))
-            : (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  {notifications.isLoading ? "Loading…" : "No notifications yet."}
-                </p>
-              )}
+                  >
+                    {n.title}
+                  </p>
+                  <span className="shrink-0 text-xs text-muted-foreground">{formatRelative(n.createdAt)}</span>
+                </div>
+                <p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
+              </button>
+            ))}
+          </QueryState>
         </div>
         <div className="border-t p-2">
           <Button

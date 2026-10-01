@@ -1,12 +1,12 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   InstallerIssueType,
   InstallerOptionItem,
+  InstallerSupportTicket,
+  InstallerSupportTicketStatus,
   SupportTicketPriority,
 } from "@truckmoov/api/auth";
-import type {
-  ElementType,
-  ReactNode,
-} from "react";
+import type { ElementType } from "react";
 import {
   getInstallerSupportTicketAttachmentLink,
   useCreateInstallerSupportTicket,
@@ -17,21 +17,40 @@ import {
   useInstallerSupportTicket,
   useInstallerSupportTickets,
 } from "@truckmoov/api/auth";
-import { formatDateInTimezone } from "@truckmoov/app-core/utils/time-utils";
+import { debounce } from "@truckmoov/app-core/utils/general-utils";
+import {
+  formatDateInTimezone,
+  formatDateOnlyInTimezone,
+} from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowLeft,
+  CheckCircle2,
+  CircleDot,
+  ClipboardList,
   Cpu,
   Download,
+  Eye,
   HelpCircle,
+  LifeBuoy,
   Lightbulb,
+  Loader,
   MapPin,
+  Plus,
+  Search,
+  SlidersHorizontal,
   Truck,
   Wifi,
   Wrench,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { QueryState } from "@/components/QueryState";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -41,6 +60,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -51,20 +71,18 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/shadcn/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -87,7 +105,7 @@ const CATEGORIES: SupportCategory[] = [
   {
     key: "device_hardware",
     label: "Device & Hardware",
-    description: "Faulty, damaged or unresponsive devices.",
+    description: "Faulty unit, damaged wiring harness, device will not power up.",
     icon: Cpu,
     issues: [
       "Device will not power on",
@@ -99,7 +117,7 @@ const CATEGORIES: SupportCategory[] = [
   {
     key: "configuration_setup",
     label: "Configuration & Setup",
-    description: "Problems configuring or verifying a device.",
+    description: "Device will not accept configuration or stays in the queue.",
     icon: Wrench,
     issues: [
       "Configuration keeps failing",
@@ -111,7 +129,7 @@ const CATEGORIES: SupportCategory[] = [
   {
     key: "sim_connectivity",
     label: "SIM & Connectivity",
-    description: "SIM activation and network problems.",
+    description: "No network, SIM not active, device not reporting after install.",
     icon: Wifi,
     issues: [
       "SIM will not activate",
@@ -123,7 +141,7 @@ const CATEGORIES: SupportCategory[] = [
   {
     key: "job_scheduling",
     label: "Job & Scheduling",
-    description: "Job details, timing or assignment.",
+    description: "Job details wrong, customer unavailable, need to reschedule.",
     icon: Truck,
     issues: [
       "Wrong job details",
@@ -135,7 +153,7 @@ const CATEGORIES: SupportCategory[] = [
   {
     key: "site_access_safety",
     label: "Site Access & Safety",
-    description: "Access, safety or on-site obstruction.",
+    description: "Cannot reach the site, access denied, unsafe working conditions.",
     icon: MapPin,
     issues: [
       "Cannot access the site",
@@ -147,7 +165,7 @@ const CATEGORIES: SupportCategory[] = [
   {
     key: "account_tools",
     label: "My Account & Tools",
-    description: "Sign-in, profile or portal problems.",
+    description: "Portal access, notifications, profile or capability changes.",
     icon: HelpCircle,
     issues: [
       "Cannot sign in",
@@ -180,36 +198,67 @@ export default function SupportPage() {
   ] = useState("report");
 
   return (
-    <Tabs
-      value={tab}
-      onValueChange={setTab}
-      className="space-y-6"
-    >
-      <TabsList>
-        <TabsTrigger value="report">Report an Issue</TabsTrigger>
-        <TabsTrigger value="tickets">My Tickets</TabsTrigger>
-      </TabsList>
-
-      <TabsContent
-        value="report"
-        className="space-y-6"
+    <div className="space-y-6">
+      <Tabs
+        value={tab}
+        onValueChange={setTab}
       >
-        <ReportIssue onSubmitted={() => setTab("tickets")} />
-      </TabsContent>
+        <TabsList>
+          <TabsTrigger
+            value="report"
+            className="gap-2"
+          >
+            <LifeBuoy className="h-4 w-4" />
+            {" "}
+            Report an Issue
+          </TabsTrigger>
+          <TabsTrigger
+            value="tickets"
+            className="gap-2"
+          >
+            <Wrench className="h-4 w-4" />
+            {" "}
+            My Tickets
+          </TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="tickets">
-        <MyTickets />
-      </TabsContent>
-    </Tabs>
+        <TabsContent
+          value="report"
+          className="mt-3 space-y-6"
+        >
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+            <p className="font-semibold">Support Tickets are for broader help and escalation.</p>
+            <p className="mt-1 text-muted-foreground">For a problem affecting an active job, use Report Issue inside that installation so it remains linked to the work.</p>
+          </div>
+          <ReportIssue onSubmitted={() => setTab("tickets")} />
+        </TabsContent>
+
+        <TabsContent
+          value="tickets"
+          className="mt-3 space-y-4"
+        >
+          <div className="flex justify-end">
+            <Button onClick={() => setTab("report")}>
+              <Plus className="mr-2 h-4 w-4" />
+              {" "}
+              Log Ticket
+            </Button>
+          </div>
+          <MyTickets />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
 /** POST /auth/installer/support/tickets. */
 function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
-  const options = useInstallerOptions().data?.data;
+  const optionsQuery = useInstallerOptions();
+  const options = optionsQuery.data?.data;
   const phone = useInstallerProfile().data?.data.personal.phoneNumber ?? "";
   // ponytail: first 100 active jobs; a search box when installers carry more.
-  const jobs = useInstallerJobs({ limit: 100 }).data?.data.items ?? [];
+  const jobsQuery = useInstallerJobs({ limit: 100 });
+  const jobs = jobsQuery.data?.data.items ?? [];
   const createTicket = useCreateInstallerSupportTicket();
 
   const [
@@ -290,32 +339,38 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
     );
   };
 
-  if (selected) {
+  const Icon = selected?.icon;
+  if (selected && Icon) {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="surface-sleek rounded-2xl">
+        <CardHeader className="p-6 pb-4 space-y-1.5">
           <Button
             variant="ghost"
-            className="w-fit gap-2 px-0"
+            size="sm"
+            className="w-fit gap-2"
             onClick={reset}
           >
             <ArrowLeft className="h-4 w-4" />
             {" "}
-            All categories
+            Back to categories
           </Button>
-          <CardTitle>{serverCategory?.label ?? selected.label}</CardTitle>
-          <CardDescription>{selected.description}</CardDescription>
+          <CardTitle className="font-display flex items-center gap-2">
+            <Icon className="h-4 w-4 text-primary" />
+            {" "}
+            {serverCategory?.label ?? selected.label}
+          </CardTitle>
+          <CardDescription>{serverCategory?.description ?? selected.description}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-6 pt-0 space-y-5">
           {chips.length > 0 && (
-            <div className="space-y-1.5">
-              <Label>What went wrong?</Label>
+            <div className="space-y-2">
+              <Label>What is happening?</Label>
               <div className="flex flex-wrap gap-2">
                 {chips.map(c => (
                   <Badge
                     key={c.key}
                     variant={issue === c.key ? "default" : "outline"}
-                    className="cursor-pointer rounded-full"
+                    className="cursor-pointer rounded-full px-3 py-1.5"
                     onClick={() => setIssue(c.key)}
                   >
                     {c.label}
@@ -325,17 +380,27 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label>Related job</Label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Related installation job (optional)</Label>
               <Select
-                value={jobId}
-                onValueChange={setJobId}
+                value={jobId || "none"}
+                onValueChange={v => setJobId(v === "none" ? "" : v)}
+                disabled={jobsQuery.isLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a job (optional)" />
+                  {jobsQuery.isLoading ? <span className="text-muted-foreground">Loading jobs…</span> : <SelectValue />}
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Not related to a job</SelectItem>
+                  {jobsQuery.isError && (
+                    <SelectItem
+                      value="error"
+                      disabled
+                    >
+                      Unable to load your jobs
+                    </SelectItem>
+                  )}
                   {jobs.map(j => (
                     <SelectItem
                       key={j.id}
@@ -348,7 +413,7 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Urgency</Label>
               <Select
                 value={priority}
@@ -375,28 +440,29 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Details</Label>
+          <div className="space-y-2">
+            <Label>Details from the field</Label>
             <Textarea
               rows={5}
               maxLength={4000}
               value={details}
               onChange={e => setDetails(e.target.value)}
-              placeholder="Tell us what happened on site"
+              placeholder="Device IMEI, vehicle registration, what you tried on site, readings you took..."
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Callback number</Label>
+          <div className="space-y-2">
+            <Label>Your callback number</Label>
             <Input
               value={phone}
-              disabled
+              readOnly
+              className="bg-muted/40"
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex justify-end gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={reset}
             >
               Cancel
@@ -404,8 +470,9 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
             <Button
               onClick={submit}
               loading={createTicket.isPending}
+              disabled={!details.trim()}
             >
-              Submit Ticket
+              Submit to installation desk
             </Button>
           </div>
         </CardContent>
@@ -414,193 +481,407 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
   }
 
   return (
-    <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {CATEGORIES.map(c => (
-          <Card
-            key={c.key}
-            className="cursor-pointer transition-colors hover:border-primary/50"
-            onClick={() => setSelected(c)}
-          >
-            <CardContent className="flex items-start gap-3 p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <c.icon className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{options?.supportCategories.find(o => o.key === c.key)?.label ?? c.label}</p>
-                <p className="text-xs text-muted-foreground">{c.description}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+    <QueryState
+      query={optionsQuery}
+      errorMessage="Unable to load the support categories."
+      skeleton={(
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {CATEGORIES.map(c => (
+            <Skeleton
+              key={c.key}
+              className="h-40 rounded-2xl"
+            />
+          ))}
+        </div>
+      )}
+    >
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {CATEGORIES.map((c) => {
+          const server = options?.supportCategories.find(o => o.key === c.key);
+          return (
+            <Card
+              key={c.key}
+              className="surface-sleek rounded-2xl cursor-pointer transition-colors hover:border-primary/50"
+              onClick={() => setSelected(c)}
+            >
+              <CardHeader className="p-6 pb-4 space-y-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <c.icon className="h-5 w-5 text-primary" />
+                </div>
+                <CardTitle className="font-display">{server?.label ?? c.label}</CardTitle>
+                <CardDescription>{server?.description ?? c.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          );
+        })}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+      <Card className="surface-sleek rounded-2xl">
+        <CardHeader className="p-6 pb-4">
+          <CardTitle className="font-display flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-primary" />
             {" "}
-            Field tips
+            Field tips before you raise a ticket
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          {(options?.fieldTips ?? []).map(tip => <p key={tip}>{tip}</p>)}
+        <CardContent className="p-6 pt-0 space-y-2 text-sm text-muted-foreground">
+          {options?.fieldTips.length
+            ? options.fieldTips.map(tip => (
+                <p key={tip}>
+                  •
+                  {" "}
+                  {tip}
+                </p>
+              ))
+            : <p>No field tips yet.</p>}
         </CardContent>
       </Card>
-    </>
+    </QueryState>
   );
 }
 
-/** GET /auth/installer/support/tickets. ponytail: first page only; add paging and filters when needed. */
+/** GET /auth/installer/support/tickets — every filter goes to the server. ponytail: first page only; add paging when installers carry more. */
 function MyTickets() {
   const options = useInstallerOptions().data?.data;
   const zone = useInstallerDisplayPreferences().data?.data.timezone;
-  const ticketsQuery = useInstallerSupportTickets();
+  const [
+    searchInput,
+    setSearchInput,
+  ] = useState("");
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    status,
+    setStatus,
+  ] = useState<"all" | InstallerSupportTicketStatus>("all");
+  const [
+    filters,
+    setFilters,
+  ] = useState<TicketFilters>({});
+  const applySearch = useMemo(
+    () => debounce(
+      (v: string) => setSearch(v.trim()),
+      400,
+    ),
+    [],
+  );
+  useEffect(
+    () => () => applySearch.cancel(),
+    [applySearch],
+  );
+
+  const ticketsQuery = useInstallerSupportTickets({
+    params: {
+      ...(status !== "all" && { status }),
+      ...(search && { search }),
+      ...filters,
+    },
+  });
   const page = ticketsQuery.data?.data;
   const tickets = page?.items ?? [];
   const [
     openId,
     setOpenId,
   ] = useState<string>();
+  const filtering = !!(search || status !== "all" || filters.category || filters.priority);
 
-  const counts = [
-    [
-      "Total",
-      page?.counts.total,
+  const columns = useMemo<ColumnDef<InstallerSupportTicket>[]>(
+    () => [
+      {
+        header: "Ticket ID",
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.displayId}</span>,
+      },
+      {
+        header: "Title",
+        cell: ({ row }) => <span className="font-medium">{row.original.title}</span>,
+      },
+      {
+        header: "Message",
+        cell: ({ row }) => (
+          <span
+            className="block max-w-[260px] truncate text-muted-foreground"
+            title={row.original.message}
+          >
+            {row.original.message}
+          </span>
+        ),
+      },
+      {
+        header: "Category",
+        cell: ({ row }) => row.original.categoryLabel,
+      },
+      {
+        header: "Status",
+        cell: ({ row }) => (
+          <Badge
+            variant="outline"
+            className="rounded-full px-2.5"
+          >
+            {row.original.statusLabel}
+          </Badge>
+        ),
+      },
+      {
+        header: "Priority",
+        cell: ({ row }) => <span className="capitalize">{row.original.priority}</span>,
+      },
+      {
+        header: "Date Submitted",
+        cell: ({ row }) => formatDateOnlyInTimezone(
+          row.original.createdAt,
+          zone,
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        meta: { className: "text-right" },
+        cell: ({ row }) => (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setOpenId(row.original.id)}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
+          </Button>
+        ),
+      },
     ],
-    [
-      "Open",
-      page?.counts.open,
-    ],
-    [
-      "In progress",
-      page?.counts.inProgress,
-    ],
-    [
-      "Escalated",
-      page?.counts.escalated,
-    ],
-    [
-      "Closed",
-      page?.counts.closed,
-    ],
-  ] as const;
+    [zone],
+  );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Tickets</CardTitle>
-        <CardDescription>Support tickets you have raised. Every status change arrives as a notification.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {counts.map(([
-            label,
-            value,
-          ]) => (
-            <div
-              key={label}
-              className="rounded-xl border p-3"
-            >
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-lg font-semibold">{value ?? "—"}</p>
-            </div>
-          ))}
-        </div>
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          title="Total Tickets"
+          value={page?.counts.total ?? 0}
+          icon={ClipboardList}
+          loading={ticketsQuery.isLoading}
+        />
+        <StatCard
+          title="Open"
+          value={page?.counts.open ?? 0}
+          icon={CircleDot}
+          loading={ticketsQuery.isLoading}
+        />
+        <StatCard
+          title="In Progress"
+          value={page?.counts.inProgress ?? 0}
+          icon={Loader}
+          variant="warning"
+          loading={ticketsQuery.isLoading}
+        />
+        <StatCard
+          title="Resolved"
+          value={page?.counts.closed ?? 0}
+          icon={CheckCircle2}
+          variant="success"
+          loading={ticketsQuery.isLoading}
+        />
+      </div>
 
-        <div className="overflow-x-auto rounded-2xl border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ticket</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Raised</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ticketsQuery.isLoading && (
-                <MessageRow>
-                  <p className="text-muted-foreground">Loading tickets…</p>
-                </MessageRow>
-              )}
-              {ticketsQuery.isError && (
-                <MessageRow>
-                  <p className="text-muted-foreground">Unable to load your tickets.</p>
-                  <Button
-                    variant="link"
-                    onClick={() => ticketsQuery.refetch()}
+      <Card className="surface-sleek rounded-2xl">
+        <CardHeader className="p-6 pb-4 space-y-4">
+          <CardTitle className="font-display">My Support Tickets</CardTitle>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  applySearch(e.target.value);
+                }}
+                placeholder="Search tickets..."
+                className="pl-9"
+              />
+            </div>
+            <Select
+              value={status}
+              onValueChange={v => setStatus(v as typeof status)}
+            >
+              <SelectTrigger className="sm:w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {(options?.ticketStatuses ?? []).map(s => (
+                  <SelectItem
+                    key={s.key}
+                    value={s.key}
                   >
-                    Try again
-                  </Button>
-                </MessageRow>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <TicketFilter
+              value={filters}
+              onApply={setFilters}
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-0">
+          <div className="overflow-x-auto rounded-xl border">
+            <DataTable
+              columns={columns}
+              data={tickets}
+              isLoading={ticketsQuery.isLoading}
+              isError={ticketsQuery.isError}
+              errorMessage={ticketsQuery.error?.message || "Unable to load your tickets."}
+              onRetry={() => ticketsQuery.refetch()}
+              hasActiveFilters={filtering}
+              emptyState={(
+                <div className="py-4">
+                  <p className="text-sm font-medium text-foreground">No tickets yet</p>
+                  <p className="text-xs">Report an issue and it will appear here.</p>
+                </div>
               )}
-              {!ticketsQuery.isLoading && !ticketsQuery.isError && tickets.map(t => (
-                <TableRow
-                  key={t.id}
-                  className="cursor-pointer"
-                  onClick={() => setOpenId(t.id)}
-                >
-                  <TableCell className="font-medium">{t.displayId}</TableCell>
-                  <TableCell className="capitalize">
-                    {labelOf(
-                      options?.supportCategories,
-                      t.category,
-                    )}
-                  </TableCell>
-                  <TableCell className="capitalize">
-                    {labelOf(
-                      options?.priorities,
-                      t.priority,
-                    )}
-                  </TableCell>
-                  <TableCell className="capitalize">
-                    {labelOf(
-                      options?.ticketStatuses,
-                      t.status,
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {formatDateInTimezone(
-                      t.createdAt,
-                      zone,
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!ticketsQuery.isLoading && !ticketsQuery.isError && tickets.length === 0 && (
-                <MessageRow>
-                  <p className="font-medium">No tickets yet</p>
-                  <p className="text-xs text-muted-foreground">
-                    Report an issue and it will appear here.
-                  </p>
-                </MessageRow>
+              filteredEmptyState={(
+                <div className="py-4">
+                  <p className="text-sm font-medium text-foreground">No matching tickets</p>
+                  <p className="text-xs">Nothing matches these filters.</p>
+                </div>
               )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <TicketDialog
         id={openId}
         zone={zone}
         onClose={() => setOpenId(undefined)}
       />
-    </Card>
+    </div>
   );
 }
 
-function MessageRow({ children }: { children: ReactNode }) {
+type TicketFilters = {
+  category?: string; priority?: SupportTicketPriority;
+};
+
+function TicketFilter({
+  value, onApply,
+}: {
+  value: TicketFilters;
+  onApply: (v: TicketFilters) => void;
+}) {
+  const options = useInstallerOptions().data?.data;
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+  const [
+    draft,
+    setDraft,
+  ] = useState(value);
+  const active = Object.values(value).filter(Boolean).length;
+
   return (
-    <TableRow>
-      <TableCell
-        colSpan={5}
-        className="py-12 text-center text-sm"
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o)
+          setDraft(value);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="gap-2"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Filter
+          {active > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{active}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="w-80 p-4 space-y-4"
       >
-        {children}
-      </TableCell>
-    </TableRow>
+        <h4 className="text-xs font-medium text-foreground px-0.5">Only show tickets by...</h4>
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <Select
+            value={draft.category ?? "all"}
+            onValueChange={v => setDraft(d => ({
+              ...d,
+              category: v === "all" ? undefined : v,
+            }))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {(options?.supportCategories ?? []).map(c => (
+                <SelectItem
+                  key={c.key}
+                  value={c.key}
+                >
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Priority</Label>
+          <Select
+            value={draft.priority ?? "all"}
+            onValueChange={v => setDraft(d => ({
+              ...d,
+              priority: v === "all" ? undefined : v as SupportTicketPriority,
+            }))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All priorities</SelectItem>
+              {PRIORITIES.map(p => (
+                <SelectItem
+                  key={p}
+                  value={p}
+                >
+                  {labelOf(
+                    options?.priorities,
+                    p,
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex gap-2 pt-2 border-t border-border">
+          <Button
+            className="flex-1"
+            onClick={() => {
+              onApply(draft);
+              setOpen(false);
+            }}
+          >
+            Apply
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              onApply({});
+              setOpen(false);
+            }}
+          >
+            Show All
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -654,78 +935,86 @@ function TicketDialog({
           <DialogTitle>{ticket?.displayId ?? "Ticket"}</DialogTitle>
           <DialogDescription>
             {ticket
-              ? `${labelOf(
-                options?.supportCategories,
-                ticket.category,
-              )} · raised ${formatDateInTimezone(
+              ? `${ticket.categoryLabel} · raised ${formatDateInTimezone(
                 ticket.createdAt,
                 zone,
               )}`
-              : ticketQuery.isError ? "Unable to load this ticket." : "Loading…"}
+              : "Support ticket details"}
           </DialogDescription>
         </DialogHeader>
 
-        {ticket && (
-          <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap gap-2">
-              <Badge
-                variant="outline"
-                className="capitalize"
-              >
-                {labelOf(
-                  options?.ticketStatuses,
-                  ticket.status,
-                )}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="capitalize"
-              >
-                {labelOf(
-                  options?.priorities,
-                  ticket.priority,
-                )}
-              </Badge>
+        <QueryState
+          query={ticketQuery}
+          errorMessage="Unable to load this ticket."
+          skeleton={(
+            <div className="space-y-3">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-20 w-full rounded-xl" />
             </div>
-
-            <p className="whitespace-pre-wrap">{ticket.description}</p>
-
-            {ticket.relatedJob && (
-              <p>
-                <span className="text-muted-foreground">Related job: </span>
-                <Link
-                  to={`/jobs/${ticket.relatedJob.id}`}
-                  className="font-medium text-primary hover:underline"
+          )}
+        >
+          {ticket && (
+            <div className="space-y-4 text-sm">
+              <div className="flex flex-wrap gap-2">
+                <Badge
+                  variant="outline"
+                  className="capitalize"
                 >
-                  {ticket.relatedJob.jobNumber}
-                </Link>
-              </p>
-            )}
-
-            {ticket.attachments.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-muted-foreground">Attachments</p>
-                {ticket.attachments.map(a => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between gap-2 rounded-xl border p-2 pl-3"
-                  >
-                    <span className="truncate">{a.fileName}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => download(a.id)}
-                      loading={downloading === a.id}
-                      aria-label={`Download ${a.fileName}`}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                  {labelOf(
+                    options?.ticketStatuses,
+                    ticket.status,
+                  )}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="capitalize"
+                >
+                  {labelOf(
+                    options?.priorities,
+                    ticket.priority,
+                  )}
+                </Badge>
               </div>
-            )}
-          </div>
-        )}
+
+              <p className="whitespace-pre-wrap">{ticket.description}</p>
+
+              {ticket.relatedJob && (
+                <p>
+                  <span className="text-muted-foreground">Related job: </span>
+                  <Link
+                    to={`/jobs/${ticket.relatedJob.id}`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {ticket.relatedJob.jobNumber}
+                  </Link>
+                </p>
+              )}
+
+              {ticket.attachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground">Attachments</p>
+                  {ticket.attachments.map(a => (
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between gap-2 rounded-xl border p-2 pl-3"
+                    >
+                      <span className="truncate">{a.fileName}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => download(a.id)}
+                        loading={downloading === a.id}
+                        aria-label={`Download ${a.fileName}`}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </QueryState>
       </DialogContent>
     </Dialog>
   );

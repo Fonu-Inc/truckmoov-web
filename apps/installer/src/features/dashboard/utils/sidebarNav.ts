@@ -2,13 +2,9 @@ import type { UserRole } from "@truckmoov/api/auth";
 import type { ElementType } from "react";
 import {
   Bell,
-  BookOpen,
-  ClipboardList,
   LayoutDashboard,
   LifeBuoy,
-  ListChecks,
   Settings,
-  User,
   Wrench,
 } from "lucide-react";
 
@@ -52,28 +48,23 @@ export const SIDEBAR_ENTRIES: (SidebarNavItem & { hasPermission: UserRole[] })[]
     label: "Dashboard", href: "/", icon: LayoutDashboard, hasPermission: INSTALLER_ROLES,
   },
   {
-    label: "My Installation Hub", href: "/jobs", icon: Wrench, hasPermission: INSTALLER_ROLES,
-  },
-  {
-    label: "Configuration Queue", href: "/config-queue", icon: ListChecks, hasPermission: INSTALLER_ROLES,
-  },
-  {
-    label: "Installer Guide", href: "/guide", icon: BookOpen, hasPermission: INSTALLER_ROLES,
-  },
-  {
-    label: "Installation History", href: "/history", icon: ClipboardList, hasPermission: INSTALLER_ROLES,
-  },
-  {
-    label: "Notifications", href: "/notifications", icon: Bell, hasPermission: INSTALLER_ROLES,
+    label: "Installation Jobs", href: "/jobs", icon: Wrench, hasPermission: INSTALLER_ROLES,
   },
   {
     label: "Support", href: "/support", icon: LifeBuoy, hasPermission: INSTALLER_ROLES,
   },
   {
-    label: "Profile", href: "/profile", icon: User, hasPermission: INSTALLER_ROLES,
-  },
-  {
     label: "Settings", href: "/settings", icon: Settings, hasPermission: INSTALLER_ROLES,
+  },
+];
+
+/**
+ * Routes that need a top-bar title but no sidebar link — `/notifications` is
+ * reached from the header bell's "View all", as on appdemo.
+ */
+const TITLE_ONLY_ENTRIES: SidebarNavItem[] = [
+  {
+    label: "Notifications", href: "/notifications", icon: Bell,
   },
 ];
 
@@ -110,7 +101,10 @@ export function getEntriesForRole(role: UserRole): SidebarEntry[] {
 export function matchNavEntry(pathname: string): SidebarNavItem | undefined {
   let best: SidebarNavItem | undefined;
 
-  for (const item of SIDEBAR_ENTRIES) {
+  for (const item of [
+    ...SIDEBAR_ENTRIES,
+    ...TITLE_ONLY_ENTRIES,
+  ]) {
     // "/" would prefix-match everything, so the home entry needs an exact hit.
     const matches = item.href === "/"
       ? pathname === "/"

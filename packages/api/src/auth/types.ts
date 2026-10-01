@@ -162,14 +162,21 @@ export type InstallerSupportTicketStatus =
   | 'resolved'
   | 'closed'
 
+// Confirmed on dev 2026-10-01: the list carries `title` (built server-side from category and chip)
+// and `message`; only the detail carries `description`.
 export type InstallerSupportTicket = {
   id: string
-  /** e.g. "#TKT-1000" */
+  /** e.g. "#tkt-1000" */
   displayId: string
+  title: string
+  message: string
+  reporter: string
+  channel: string
   category: string
+  categoryLabel: string
   priority: SupportTicketPriority
   status: InstallerSupportTicketStatus
-  description: string
+  statusLabel: string
   createdAt: string
 }
 
@@ -182,9 +189,10 @@ export type InstallerSupportTicketsPage = {
   total: number
 }
 
-export type InstallerSupportTicketDetail = InstallerSupportTicket & {
-  issueCode: string | null
-  callbackPhone: string | null
+export type InstallerSupportTicketDetail = Omit<InstallerSupportTicket, 'message'> & {
+  description: string
+  issueCode?: string | null
+  callbackPhone?: string | null
   relatedJob: { id: string, jobNumber: string } | null
   attachments: { id: string, fileName: string, size: number, createdAt: string }[]
 }

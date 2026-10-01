@@ -5,6 +5,7 @@ import {
 } from "@truckmoov/api/auth";
 import { Bell } from "lucide-react";
 import { useNavigate } from "react-router";
+import { QueryState } from "@/components/QueryState";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -13,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn } from "@/lib/utils";
 
 function fmt(iso: string) {
@@ -53,64 +55,79 @@ export default function NotificationsPage() {
           Mark all as read
         </Button>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {items.map(n => (
-          <div
-            key={n.id}
-            className={cn(
-              "flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4",
-              !n.read && "border-primary/40 bg-primary/5",
-            )}
-          >
-            <div className="flex gap-3">
-              <Bell className="mt-0.5 h-4 w-4 text-primary" />
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">{n.title}</p>
-                  {!n.read && (
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full"
+      <CardContent>
+        <QueryState
+          query={notifications}
+          isEmpty={!items.length}
+          empty="You have no notifications."
+          hint="Job offers, schedule changes and ticket updates appear here."
+          errorMessage="Unable to load your notifications."
+          skeleton={(
+            <div className="space-y-3">
+              {[
+                0,
+                1,
+                2,
+              ].map(i => (
+                <Skeleton
+                  key={i}
+                  className="h-20 w-full rounded-2xl"
+                />
+              ))}
+            </div>
+          )}
+        >
+          <div className="space-y-3">
+            {items.map(n => (
+              <div
+                key={n.id}
+                className={cn(
+                  "flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4",
+                  !n.read && "border-primary/40 bg-primary/5",
+                )}
+              >
+                <div className="flex gap-3">
+                  <Bell className="mt-0.5 h-4 w-4 text-primary" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">{n.title}</p>
+                      {!n.read && (
+                        <Badge
+                          variant="secondary"
+                          className="rounded-full"
+                        >
+                          New
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{n.body}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{fmt(n.createdAt)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {n.jobId && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/jobs/${n.jobId}`)}
                     >
-                      New
-                    </Badge>
+                      View Job
+                    </Button>
+                  )}
+                  {!n.read && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => markRead.mutate({ id: n.id })}
+                    >
+                      Mark read
+                    </Button>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">{n.body}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{fmt(n.createdAt)}</p>
               </div>
-            </div>
-            <div className="flex gap-2">
-              {n.jobId && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate(`/jobs/${n.jobId}`)}
-                >
-                  View Job
-                </Button>
-              )}
-              {!n.read && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => markRead.mutate({ id: n.id })}
-                >
-                  Mark read
-                </Button>
-              )}
-            </div>
+            ))}
           </div>
-        ))}
-        {items.length === 0 && (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            {notifications.isLoading
-              ? "Loading…"
-              : notifications.isError
-                ? "Unable to load your notifications."
-                : "You have no notifications."}
-          </p>
-        )}
+        </QueryState>
       </CardContent>
     </Card>
   );

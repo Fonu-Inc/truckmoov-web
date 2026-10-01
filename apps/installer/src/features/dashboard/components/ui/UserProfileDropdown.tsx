@@ -75,8 +75,8 @@ export function UserProfileDropdown() {
             <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">
               {name}
             </span>
-            <span className="text-[10px] font-medium text-primary truncate max-w-[160px]">
-              {user?.email || "user@example.com"}
+            <span className="text-[10px] font-medium text-primary truncate max-w-[140px]">
+              {roleLabel}
             </span>
           </span>
         </Button>

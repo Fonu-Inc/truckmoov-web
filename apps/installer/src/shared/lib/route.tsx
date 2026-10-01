@@ -98,28 +98,12 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/features/jobs/components/pages/JobDetailPage")).default }),
           },
           {
-            path: "/config-queue",
-            lazy: async () => ({ Component: (await import("@/features/devices/components/pages/ConfigQueuePage")).default }),
-          },
-          {
-            path: "/guide",
-            lazy: async () => ({ Component: (await import("@/features/devices/components/pages/GuidePage")).default }),
-          },
-          {
-            path: "/history",
-            lazy: async () => ({ Component: (await import("@/features/jobs/components/pages/HistoryPage")).default }),
-          },
-          {
             path: "/notifications",
             lazy: async () => ({ Component: (await import("@/features/jobs/components/pages/NotificationsPage")).default }),
           },
           {
             path: "/support",
             lazy: async () => ({ Component: (await import("@/features/support/components/pages/SupportPage")).default }),
-          },
-          {
-            path: "/profile",
-            lazy: async () => ({ Component: (await import("@/features/profile/components/pages/ProfilePage")).default }),
           },
           {
             path: "/settings",

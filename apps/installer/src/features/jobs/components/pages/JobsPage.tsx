@@ -1,9 +1,13 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
-  InstallerJobCounters, InstallerJobListItem, InstallerJobsQuery, InstallerJobStatus,
+  InstallerJobCounters, InstallerJobListItem, InstallerJobsQuery,
 } from "@truckmoov/api/auth";
-import type { ElementType } from "react";
+import type {
+  ElementType, ReactNode,
+} from "react";
 import {
   exportInstallerJobs,
+  useAcceptInstallerJob,
   useInstallerDisplayPreferences,
   useInstallerJobs,
 } from "@truckmoov/api/auth";
@@ -12,29 +16,30 @@ import {
   downloadBlob,
 } from "@truckmoov/app-core/utils/general-utils";
 import {
-  formatDateOnlyInTimezone,
-  formatTimeInTimezone,
+  formatDateInTimezone,
+  formatTime12InTimezone,
 } from "@truckmoov/app-core/utils/time-utils";
-import { DeviceTroubleshooting } from "@truckmoov/reusables/components/installation/DeviceTroubleshooting";
-import { VerificationMonitor } from "@truckmoov/reusables/components/installation/VerificationMonitor";
 import {
   AlertTriangle,
+  Ban,
   CalendarClock,
   CheckCircle2,
   ClipboardList,
-  Clock,
   Download,
+  Eye,
   Loader,
-  Radio,
   Search,
-  Wrench,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { useNavigate } from "react-router";
+import {
+  useNavigate,
+  useSearchParams,
+} from "react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -43,7 +48,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/shadcn/popover";
 import {
   Select,
   SelectContent,
@@ -52,274 +65,881 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
-import {
-  useDeviceCatalog,
-  useDeviceConfig,
-} from "@/features/devices/hooks/useDeviceConfig";
+import { RejectOfferForm } from "@/features/jobs/components/forms/RejectOfferForm";
 import { InstallerJobStatusBadge } from "@/features/jobs/components/ui/InstallerJobStatusBadge";
 
 // Display Preferences default (TRU-FE-21) until the installer picks another zone.
 const DEFAULT_ZONE = "Africa/Lagos";
 const PAGE_SIZE = 20;
 
-/** The ticket's three list tabs (TRU-FE-20). */
-type JobsView = "installations" | "issues" | "history";
+type JobsTab = "installations" | "issues" | "history";
+const TABS: JobsTab[] = [
+  "installations",
+  "issues",
+  "history",
+];
 
-/** Statuses the Installations tab (scope=active) can narrow to. */
-const ACTIVE_STATUS_OPTIONS: {
-  id: "all" | InstallerJobStatus; label: string;
+/** appdemo's "All Status" select, mapped onto the jobs query. */
+type StatusFilter = "all" | "scheduled" | "in_progress" | "completed" | "cancelled" | "issue_reported";
+const STATUS_OPTIONS: {
+  id: StatusFilter; label: string;
 }[] = [
   {
-    id: "all", label: "All open jobs",
-  },
-  {
-    id: "assigned", label: "Offers",
+    id: "all", label: "All Status",
   },
   {
     id: "scheduled", label: "Scheduled",
   },
   {
-    id: "in_progress", label: "In progress",
+    id: "in_progress", label: "In Progress",
   },
   {
-    id: "overdue", label: "Overdue",
+    id: "completed", label: "Completed",
+  },
+  {
+    id: "cancelled", label: "Cancelled",
+  },
+  {
+    id: "issue_reported", label: "Issues Reported",
   },
 ];
+
+function statusQuery(s: StatusFilter): InstallerJobsQuery {
+  if (s === "all")
+    return { scope: "active" };
+  if (s === "completed")
+    return { scope: "history" };
+  return { status: s };
+}
 
 type Counter = {
   id: keyof InstallerJobCounters;
   label: string;
   icon: ElementType;
-  view: JobsView;
-  status?: InstallerJobStatus;
+  tab: JobsTab;
+  status?: StatusFilter;
 };
 
 const COUNTERS: Counter[] = [
   {
-    id: "total", label: "All Installation Jobs", icon: ClipboardList, view: "installations",
+    id: "total", label: "Total Installation Jobs", icon: ClipboardList, tab: "installations",
   },
   {
-    id: "scheduled", label: "Scheduled", icon: CalendarClock, view: "installations", status: "scheduled",
+    id: "scheduled", label: "Scheduled", icon: CalendarClock, tab: "installations", status: "scheduled",
   },
   {
-    id: "inProgress", label: "In Progress", icon: Loader, view: "installations", status: "in_progress",
+    id: "inProgress", label: "In Progress", icon: Loader, tab: "installations", status: "in_progress",
   },
   {
-    id: "overdue", label: "Overdue", icon: Clock, view: "installations", status: "overdue",
+    id: "completed", label: "Completed", icon: CheckCircle2, tab: "history",
   },
   {
-    id: "issueReported", label: "Issue Reported", icon: AlertTriangle, view: "issues",
+    id: "cancelled", label: "Cancelled", icon: Ban, tab: "installations", status: "cancelled",
   },
   {
-    id: "completed", label: "Completed", icon: CheckCircle2, view: "history",
+    id: "issueReported", label: "Issue Reported", icon: AlertTriangle, tab: "issues",
   },
 ];
 
+const SEARCH_INPUT = "pl-9 h-9 w-full border-border bg-transparent font-semibold placeholder:font-normal hover:bg-secondary";
+
+const companyColumn: ColumnDef<InstallerJobListItem> = {
+  header: "Company Name",
+  meta: { className: "font-medium" },
+  cell: ({ row }) => (
+    <>
+      {row.original.companyName || "—"}
+      <span className="block text-xs text-muted-foreground">{row.original.jobNumber}</span>
+    </>
+  ),
+};
+
+const locationColumn: ColumnDef<InstallerJobListItem> = {
+  header: "Installation Location",
+  cell: ({ row }) => [
+    row.original.city,
+    row.original.state,
+  ].filter(Boolean).join(", ") || "—",
+};
+
+const statusColumn: ColumnDef<InstallerJobListItem> = {
+  header: "Status",
+  cell: ({ row }) => <InstallerJobStatusBadge status={row.original.status} />,
+};
+
+/**
+ * GET /auth/installer/jobs — Installations / Issues Reported / Installation
+ * History, as on appdemo. The tab lives in `?tab=` and the header search
+ * hands its query over in `?search=`.
+ */
 export default function JobsPage() {
   const [
-    section,
-    setSection,
-  ] = useState("jobs");
+    params,
+    setParams,
+  ] = useSearchParams();
+  const tab = TABS.find(t => t === params.get("tab")) ?? "installations";
   const [
-    selectedDeviceId,
-    setSelectedDeviceId,
-  ] = useState<string | null>(null);
+    status,
+    setStatus,
+  ] = useState<StatusFilter>("all");
 
-  const {
-    configQueueDevices,
-    loading,
-    refetch,
-    resetToConfigPending,
-    canResetDevices,
-  } = useDeviceConfig();
-  useDeviceCatalog();
-
-  const handleOpenTroubleshooting = (deviceId: string) => {
-    setSelectedDeviceId(deviceId);
-    setSection("troubleshooting");
-  };
+  function openTab(next: JobsTab, nextStatus: StatusFilter = "all") {
+    setStatus(nextStatus);
+    setParams(
+      p => ({
+        ...Object.fromEntries(p),
+        tab: next,
+      }),
+      { replace: true },
+    );
+  }
 
   return (
     <div className="space-y-6">
       <Tabs
-        value={section}
-        onValueChange={setSection}
+        value={tab}
+        onValueChange={v => openTab(v as JobsTab)}
       >
         <div className="flex justify-center">
           <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
             <TabsTrigger
-              value="jobs"
+              value="installations"
               className="flex items-center gap-2"
             >
               <CalendarClock className="h-4 w-4" />
               <span className="hidden sm:inline">Installations</span>
             </TabsTrigger>
             <TabsTrigger
-              value="verification"
+              value="issues"
               className="flex items-center gap-2"
             >
-              <Radio className="h-4 w-4" />
-              <span className="hidden sm:inline">Verification</span>
+              <AlertTriangle className="h-4 w-4" />
+              <span className="hidden sm:inline">Issues Reported</span>
             </TabsTrigger>
             <TabsTrigger
-              value="troubleshooting"
+              value="history"
               className="flex items-center gap-2"
             >
-              <Wrench className="h-4 w-4" />
-              <span className="hidden sm:inline">Troubleshooting</span>
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Installation History</span>
             </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent
-          value="jobs"
+          value="installations"
           className="mt-6 space-y-6"
         >
-          <InstallationJobs />
-        </TabsContent>
-
-        <TabsContent
-          value="verification"
-          className="mt-6"
-        >
-          <VerificationMonitor
-            devices={configQueueDevices}
-            loading={loading}
-            onRefresh={refetch}
-            onTroubleshoot={handleOpenTroubleshooting}
+          <InstallationsTab
+            status={status}
+            setStatus={setStatus}
+            onCounter={c => openTab(
+              c.tab,
+              c.status,
+            )}
           />
         </TabsContent>
 
         <TabsContent
-          value="troubleshooting"
+          value="issues"
           className="mt-6"
         >
-          <DeviceTroubleshooting
-            devices={configQueueDevices}
-            selectedDeviceId={selectedDeviceId}
-            onSelectDevice={setSelectedDeviceId}
-            onReset={canResetDevices() ? resetToConfigPending : undefined}
+          <JobsTable
+            title="Issues Reported"
+            query={{ status: "issue_reported" }}
+            empty={{
+              title: "No issues reported",
+              hint: "Jobs you report an issue on are listed here until it is resolved.",
+            }}
           />
+        </TabsContent>
+
+        <TabsContent
+          value="history"
+          className="mt-6"
+        >
+          <HistoryTable />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-const EMPTY: Record<JobsView, {
-  title: string; hint: string;
-}> = {
-  installations: {
-    title: "No open installation jobs",
-    hint: "New jobs appear automatically once the system offers them to you.",
-  },
-  issues: {
-    title: "No issues reported",
-    hint: "Jobs you report an issue on are listed here until it is resolved.",
-  },
-  history: {
-    title: "No completed installations yet",
-    hint: "Jobs appear here once you complete them.",
-  },
-};
+function InstallationsTab({
+  status, setStatus, onCounter,
+}: {
+  status: StatusFilter;
+  setStatus: (s: StatusFilter) => void;
+  onCounter: (c: Counter) => void;
+}) {
+  // The counters are the same on every jobs response; the offers query carries them.
+  const offers = useInstallerJobs({
+    scope: "active",
+    status: "assigned",
+    limit: 100,
+  });
+  const counters = offers.data?.data.counters;
 
-/**
- * GET /auth/installer/jobs — the page counters and one page of jobs. Every
- * filter goes to the server; nothing is filtered here.
- */
-function InstallationJobs() {
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {COUNTERS.map(c => (
+          <Card
+            key={c.id}
+            className="rounded-2xl surface-sleek cursor-pointer transition-colors hover:border-primary/50"
+            onClick={() => onCounter(c)}
+          >
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <c.icon className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-xs text-muted-foreground">{c.label}</p>
+                <p className="truncate text-xl font-semibold">{offers.isLoading ? "–" : (counters?.[c.id] ?? 0)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <OffersTable query={offers} />
+
+      <JobsTable
+        title="Installation Jobs"
+        query={statusQuery(status)}
+        searchPlaceholder="Search company, job, location or vehicle"
+        statusFilter={{
+          value: status,
+          onChange: setStatus,
+        }}
+        dateFilter="scheduled"
+        empty={{
+          title: "No installation jobs",
+          hint: "New jobs appear automatically once the system offers them to you.",
+        }}
+      />
+    </>
+  );
+}
+
+function SectionCard({
+  title, action, children, toolbar,
+}: {
+  title: string;
+  action?: ReactNode;
+  toolbar?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="rounded-2xl surface-sleek">
+      <CardHeader className={toolbar ? "p-6 pb-4 space-y-4" : "p-6 pb-4 space-y-1.5"}>
+        {action
+          ? (
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="font-display">{title}</CardTitle>
+                {action}
+              </div>
+            )
+          : <CardTitle className="font-display">{title}</CardTitle>}
+        {toolbar}
+      </CardHeader>
+      <CardContent className="p-6 pt-0 space-y-4">{children}</CardContent>
+    </Card>
+  );
+}
+
+function OffersTable({ query }: { query: ReturnType<typeof useInstallerJobs> }) {
   const navigate = useNavigate();
-  const zone = useInstallerDisplayPreferences().data?.data.timezone ?? DEFAULT_ZONE;
+  const zone = useZone();
+  const accept = useAcceptInstallerJob();
+  const [
+    rejecting,
+    setRejecting,
+  ] = useState<InstallerJobListItem | null>(null);
 
+  const columns = useMemo<ColumnDef<InstallerJobListItem>[]>(
+    () => [
+      {
+        header: "Company Name",
+        cell: ({ row }) => row.original.companyName || "—",
+        meta: { className: "font-medium" },
+      },
+      {
+        header: "Site Contact Name", accessorKey: "siteContactName", enableSorting: false,
+      },
+      {
+        header: "Site Contact Phone No.", accessorKey: "siteContactPhone", enableSorting: false,
+      },
+      {
+        header: "Installation Address",
+        cell: ({ row }) => [
+          row.original.address,
+          row.original.city,
+        ].filter(Boolean).join(", "),
+      },
+      {
+        header: "Scheduled",
+        cell: ({ row }) => `${row.original.scheduledDate} · ${formatTime12InTimezone(
+          row.original.scheduledAt,
+          zone,
+        )}`,
+      },
+      {
+        header: "Status",
+        cell: ({ row }) => <InstallerJobStatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        meta: { className: "text-right" },
+        cell: ({ row: { original: j } }) => (
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`/jobs/${j.id}`)}
+            >
+              View Details
+            </Button>
+            <Button
+              size="sm"
+              loading={accept.isPending && accept.variables?.jobId === j.id}
+              disabled={accept.isPending}
+              onClick={() => accept.mutate(
+                { jobId: j.id },
+                {
+                  onSuccess: () => toast.success(
+                    `Job ${j.jobNumber} accepted.`,
+                    { description: "It is now scheduled." },
+                  ),
+                  onError: error => toast.error(error.statusCode === 409
+                    ? "This job changed. The list has been refreshed."
+                    : error.message),
+                },
+              )}
+            >
+              Accept
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={accept.isPending}
+              onClick={() => setRejecting(j)}
+            >
+              Reject
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [
+      zone,
+      navigate,
+      accept,
+    ],
+  );
+
+  return (
+    <SectionCard title="Installation Offers">
+      <div className="overflow-x-auto rounded-2xl border">
+        <DataTable
+          columns={columns}
+          data={query.data?.data.items ?? []}
+          isLoading={query.isLoading}
+          isError={query.isError}
+          errorMessage={query.error?.message || "Unable to load your offers."}
+          onRetry={() => query.refetch()}
+          emptyState={(
+            <EmptyText
+              title="No offers waiting"
+              hint="New installation jobs offered to you appear here."
+            />
+          )}
+        />
+      </div>
+      <RejectOfferForm
+        offer={rejecting && {
+          jobId: rejecting.id,
+          jobNumber: rejecting.jobNumber,
+        }}
+        onClose={() => setRejecting(null)}
+      />
+    </SectionCard>
+  );
+}
+
+function useZone() {
+  return useInstallerDisplayPreferences().data?.data.timezone ?? DEFAULT_ZONE;
+}
+
+/** A page number that falls back to 1 whenever `filterKey` changes. */
+function usePageFor(filterKey: string) {
   const [
-    view,
-    setView,
-  ] = useState<JobsView>("installations");
+    state,
+    setState,
+  ] = useState({
+    filterKey, page: 1,
+  });
+  const page = state.filterKey === filterKey ? state.page : 1;
+  return [
+    page,
+    (next: number) => setState({
+      filterKey, page: next,
+    }),
+  ] as const;
+}
+
+/** Search box state: debounced into the query, seeded from `?search=`. */
+function useSearch() {
+  const [params] = useSearchParams();
+  const initial = params.get("search") ?? "";
   const [
-    status,
-    setStatus,
-  ] = useState<"all" | InstallerJobStatus>("all");
-  const [
-    searchInput,
-    setSearchInput,
-  ] = useState("");
+    input,
+    setInput,
+  ] = useState(initial);
   const [
     search,
     setSearch,
-  ] = useState("");
+  ] = useState(initial);
   const [
-    completedFrom,
-    setCompletedFrom,
-  ] = useState("");
-  const [
-    completedTo,
-    setCompletedTo,
-  ] = useState("");
-  const [
-    page,
-    setPage,
-  ] = useState(1);
-  const [
-    exporting,
-    setExporting,
-  ] = useState(false);
+    seed,
+    setSeed,
+  ] = useState(initial);
 
-  // Typing refetches once the installer pauses, and always from page 1.
-  const applySearch = useMemo(
+  // The header search can hand over a new query while this page is open —
+  // reset during render (React's "adjust state on prop change"), not in an effect.
+  if (seed !== initial) {
+    setSeed(initial);
+    setInput(initial);
+    setSearch(initial);
+  }
+
+  const apply = useMemo(
     () => debounce(
-      (value: string) => {
-        setSearch(value.trim());
-        setPage(1);
-      },
+      (value: string) => setSearch(value.trim()),
       400,
     ),
     [],
   );
   useEffect(
-    () => () => applySearch.cancel(),
-    [applySearch],
+    () => () => apply.cancel(),
+    [apply],
   );
 
-  const query: InstallerJobsQuery = {
-    ...(view === "installations" && {
-      scope: "active",
-      ...(status !== "all" && { status }),
-    }),
-    ...(view === "issues" && { status: "issue_reported" }),
-    ...(view === "history" && {
-      scope: "history",
-      ...(completedFrom && { completedFrom }),
-      ...(completedTo && { completedTo }),
-    }),
+  return {
+    input,
+    search,
+    onChange: (value: string) => {
+      setInput(value);
+      apply(value);
+    },
+  };
+}
+
+function SearchBox({
+  value, onChange, placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="relative flex-1 min-w-[200px]">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={SEARCH_INPUT}
+      />
+    </div>
+  );
+}
+
+type DateRange = {
+  from: string; to: string;
+};
+
+/** appdemo's "Only show installations by..." popover — one date range. */
+function DateFilter({
+  label, value, onApply,
+}: {
+  label: string;
+  value: DateRange | null;
+  onApply: (range: DateRange | null) => void;
+}) {
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+  const [
+    enabled,
+    setEnabled,
+  ] = useState(!!value);
+  const [
+    range,
+    setRange,
+  ] = useState<DateRange>(value ?? {
+    from: "", to: "",
+  });
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 gap-2 font-semibold shrink-0"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Filter
+          {value && <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">1</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="w-80 p-4 space-y-4 max-h-[70vh] overflow-y-auto"
+      >
+        <h4 className="text-xs font-medium text-foreground px-0.5">Only show installations by...</h4>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="flt-dateRange"
+              checked={enabled}
+              onCheckedChange={c => setEnabled(c === true)}
+            />
+            <Label
+              htmlFor="flt-dateRange"
+              className="text-sm cursor-pointer"
+            >
+              {label}
+            </Label>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="date"
+              aria-label="From"
+              className="h-9"
+              disabled={!enabled}
+              value={range.from}
+              max={range.to || undefined}
+              onChange={e => setRange(r => ({
+                ...r,
+                from: e.target.value,
+              }))}
+            />
+            <Input
+              type="date"
+              aria-label="To"
+              className="h-9"
+              disabled={!enabled}
+              value={range.to}
+              min={range.from || undefined}
+              onChange={e => setRange(r => ({
+                ...r,
+                to: e.target.value,
+              }))}
+            />
+          </div>
+        </div>
+        <div className="flex gap-2 pt-2 border-t border-border">
+          <Button
+            className="flex-1"
+            onClick={() => {
+              onApply(enabled && (range.from || range.to) ? range : null);
+              setOpen(false);
+            }}
+          >
+            Apply
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              setEnabled(false);
+              setRange({
+                from: "", to: "",
+              });
+              onApply(null);
+              setOpen(false);
+            }}
+          >
+            Show All
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function JobsTable({
+  title, query, searchPlaceholder, statusFilter, dateFilter, empty,
+}: {
+  title: string;
+  query: InstallerJobsQuery;
+  searchPlaceholder?: string;
+  statusFilter?: {
+    value: StatusFilter; onChange: (s: StatusFilter) => void;
+  };
+  dateFilter?: "scheduled";
+  empty: {
+    title: string; hint: string;
+  };
+}) {
+  const navigate = useNavigate();
+  const zone = useZone();
+  const {
+    input, search, onChange,
+  } = useSearch();
+  const [
+    range,
+    setRange,
+  ] = useState<DateRange | null>(null);
+  const [
+    page,
+    setPage,
+  ] = usePageFor(JSON.stringify([
+    query,
+    search,
+  ]));
+
+  const jobs = useInstallerJobs({
+    ...query,
     ...(search && { search }),
     page,
     limit: PAGE_SIZE,
-  };
-  const jobs = useInstallerJobs(query);
+  });
   const data = jobs.data?.data;
-  const pageCount = Math.max(
-    1,
-    Math.ceil((data?.total ?? 0) / PAGE_SIZE),
+  // ponytail: the jobs API filters by completion date only, so the scheduled-date
+  // range narrows the loaded page here. Move to the server once it takes
+  // scheduledFrom/scheduledTo.
+  const items = (data?.items ?? []).filter(j => !range
+    || ((!range.from || j.scheduledDate >= range.from) && (!range.to || j.scheduledDate <= range.to)));
+
+  const columns = useMemo<ColumnDef<InstallerJobListItem>[]>(
+    () => [
+      companyColumn,
+      {
+        header: "Site Contact Name", accessorKey: "siteContactName", enableSorting: false,
+      },
+      {
+        header: "Site Contact Phone No.", accessorKey: "siteContactPhone", enableSorting: false,
+      },
+      locationColumn,
+      {
+        header: "Vehicles", accessorKey: "vehicleCount", enableSorting: false,
+      },
+      {
+        header: "Devices", accessorKey: "deviceCount", enableSorting: false,
+      },
+      {
+        header: "Date", accessorKey: "scheduledDate", enableSorting: false,
+      },
+      {
+        header: "Time",
+        cell: ({ row }) => formatTime12InTimezone(
+          row.original.scheduledAt,
+          zone,
+        ),
+      },
+      statusColumn,
+      {
+        id: "action",
+        header: "Action",
+        meta: { className: "text-right" },
+        // List items carry no allowed actions; Start/Complete live on the job page, driven by `actions`.
+        cell: ({ row }) => (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate(`/jobs/${row.original.id}`)}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
+          </Button>
+        ),
+      },
+    ],
+    [
+      zone,
+      navigate,
+    ],
   );
 
-  function openView(next: JobsView, nextStatus: "all" | InstallerJobStatus = "all") {
-    setView(next);
-    setStatus(nextStatus);
-    setPage(1);
-  }
+  return (
+    <SectionCard title={title}>
+      {searchPlaceholder && (
+        <div className="flex flex-wrap items-center gap-2 w-full px-1">
+          <SearchBox
+            value={input}
+            onChange={onChange}
+            placeholder={searchPlaceholder}
+          />
+          {statusFilter && (
+            <Select
+              value={statusFilter.value}
+              onValueChange={v => statusFilter.onChange(v as StatusFilter)}
+            >
+              <SelectTrigger className="h-9 w-[150px] shrink-0 border-border bg-transparent font-semibold hover:bg-secondary">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map(o => (
+                  <SelectItem
+                    key={o.id}
+                    value={o.id}
+                  >
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {dateFilter && (
+            <DateFilter
+              label="Scheduled date"
+              value={range}
+              onApply={setRange}
+            />
+          )}
+        </div>
+      )}
+
+      <div className="overflow-x-auto rounded-2xl border">
+        <DataTable
+          columns={columns}
+          data={items}
+          isLoading={jobs.isLoading}
+          isError={jobs.isError}
+          errorMessage={jobs.error?.message || "Unable to load your jobs."}
+          onRetry={() => jobs.refetch()}
+          hasActiveFilters={!!(search || range || statusFilter?.value !== "all")}
+          emptyState={(
+            <EmptyText
+              title={empty.title}
+              hint={empty.hint}
+            />
+          )}
+          filteredEmptyState={(
+            <EmptyText
+              title={empty.title}
+              hint="Nothing matches these filters."
+            />
+          )}
+          pagination={{
+            page,
+            pageSize: PAGE_SIZE,
+            total: data?.total ?? 0,
+            onPageChange: setPage,
+          }}
+        />
+      </div>
+    </SectionCard>
+  );
+}
+
+function HistoryTable() {
+  const navigate = useNavigate();
+  const zone = useZone();
+  const {
+    input, search, onChange,
+  } = useSearch();
+  const [
+    range,
+    setRange,
+  ] = useState<DateRange | null>(null);
+  const [
+    page,
+    setPage,
+  ] = usePageFor(JSON.stringify([
+    search,
+    range,
+  ]));
+  const [
+    exporting,
+    setExporting,
+  ] = useState(false);
+
+  const dates = {
+    ...(range?.from && { completedFrom: range.from }),
+    ...(range?.to && { completedTo: range.to }),
+  };
+
+  const jobs = useInstallerJobs({
+    scope: "history",
+    ...dates,
+    ...(search && { search }),
+    page,
+    limit: PAGE_SIZE,
+  });
+  const data = jobs.data?.data;
+
+  const columns = useMemo<ColumnDef<InstallerJobListItem>[]>(
+    () => [
+      companyColumn,
+      {
+        header: "Site Contact Name", accessorKey: "siteContactName", enableSorting: false,
+      },
+      {
+        header: "Contact Phone", accessorKey: "siteContactPhone", enableSorting: false,
+      },
+      locationColumn,
+      {
+        header: "Devices", accessorKey: "deviceCount", enableSorting: false,
+      },
+      {
+        header: "Vehicles", accessorKey: "vehicleCount", enableSorting: false,
+      },
+      {
+        header: "Completion Date",
+        cell: ({ row }) => formatDateInTimezone(
+          row.original.completedAt,
+          zone,
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: undefined,
+            minute: undefined,
+          },
+        ),
+      },
+      {
+        header: "Completion Time",
+        cell: ({ row }) => formatTime12InTimezone(
+          row.original.completedAt,
+          zone,
+        ),
+      },
+      statusColumn,
+      {
+        id: "actions",
+        header: "Actions",
+        meta: { className: "text-right" },
+        cell: ({ row }) => (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate(`/jobs/${row.original.id}`)}
+          >
+            View Details
+          </Button>
+        ),
+      },
+    ],
+    [
+      zone,
+      navigate,
+    ],
+  );
 
   async function exportHistory() {
     setExporting(true);
@@ -327,8 +947,7 @@ function InstallationJobs() {
       // The zone makes the CSV's completion date/time match what this screen shows.
       const blob = await exportInstallerJobs({
         ...(search && { search }),
-        ...(completedFrom && { completedFrom }),
-        ...(completedTo && { completedTo }),
+        ...dates,
         timezone: zone,
       });
       downloadBlob(
@@ -345,293 +964,78 @@ function InstallationJobs() {
   }
 
   return (
-    <>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-        {COUNTERS.map(c => (
-          <Card
-            key={c.id}
-            className="cursor-pointer transition-colors hover:border-primary/50"
-            onClick={() => openView(
-              c.view,
-              c.status,
-            )}
-          >
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <c.icon className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-xs text-muted-foreground">{c.label}</p>
-                <p className="truncate text-xl font-semibold">{jobs.isLoading ? "–" : (data?.counters[c.id] ?? 0)}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader className="space-y-4">
-          <CardTitle>Installation Jobs</CardTitle>
-          <Tabs
-            value={view}
-            onValueChange={v => openView(v as JobsView)}
-          >
-            <TabsList>
-              <TabsTrigger value="installations">Installations</TabsTrigger>
-              <TabsTrigger value="issues">Issues Reported</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchInput}
-                onChange={(e) => {
-                  setSearchInput(e.target.value);
-                  applySearch(e.target.value);
-                }}
-                placeholder="Search job number, company, address or vehicle registration"
-                className="pl-9"
-              />
-            </div>
-
-            {view === "installations" && (
-              <Select
-                value={status}
-                onValueChange={v => openView(
-                  "installations",
-                  v as "all" | InstallerJobStatus,
-                )}
-              >
-                <SelectTrigger className="w-full lg:w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACTIVE_STATUS_OPTIONS.map(o => (
-                    <SelectItem
-                      key={o.id}
-                      value={o.id}
-                    >
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            {view === "history" && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  type="date"
-                  aria-label="Completed from"
-                  value={completedFrom}
-                  max={completedTo || undefined}
-                  onChange={(e) => {
-                    setCompletedFrom(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-auto"
-                />
-                <span className="text-sm text-muted-foreground">to</span>
-                <Input
-                  type="date"
-                  aria-label="Completed to"
-                  value={completedTo}
-                  min={completedFrom || undefined}
-                  onChange={(e) => {
-                    setCompletedTo(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-auto"
-                />
-                <Button
-                  variant="outline"
-                  onClick={exportHistory}
-                  loading={exporting}
-                >
-                  <Download className="h-4 w-4" />
-                  Export CSV
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <div className="overflow-x-auto rounded-2xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Job No.</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Device</TableHead>
-                  <TableHead>Installation Location</TableHead>
-                  <TableHead>Vehicles</TableHead>
-                  <TableHead>Devices</TableHead>
-                  <TableHead>{view === "history" ? "Completed" : "Scheduled Date"}</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.items.map(j => (
-                  <JobRow
-                    key={j.id}
-                    job={j}
-                    zone={zone}
-                    history={view === "history"}
-                    onOpen={() => navigate(`/jobs/${j.id}`)}
-                  />
-                ))}
-                {!data?.items.length && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={11}
-                      className="py-12 text-center"
-                    >
-                      {jobs.isLoading
-                        ? <p className="text-sm text-muted-foreground">Loading jobs…</p>
-                        : jobs.isError
-                          ? (
-                              <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Unable to load your jobs.</p>
-                                <Button
-                                  variant="link"
-                                  onClick={() => jobs.refetch()}
-                                >
-                                  Try again
-                                </Button>
-                              </div>
-                            )
-                          : (
-                              <>
-                                <p className="text-sm font-medium">{EMPTY[view].title}</p>
-                                <p className="text-xs text-muted-foreground">{search || completedFrom || completedTo ? "Nothing matches these filters." : EMPTY[view].hint}</p>
-                              </>
-                            )}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {(data?.total ?? 0) > PAGE_SIZE && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                Page
-                {" "}
-                {page}
-                {" "}
-                of
-                {" "}
-                {pageCount}
-                {" · "}
-                {data?.total}
-                {" "}
-                jobs
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page <= 1 || jobs.isFetching}
-                  onClick={() => setPage(p => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page >= pageCount || jobs.isFetching}
-                  onClick={() => setPage(p => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </>
-  );
-}
-
-function JobRow({
-  job, zone, history, onOpen,
-}: {
-  job: InstallerJobListItem;
-  zone: string;
-  history: boolean;
-  onOpen: () => void;
-}) {
-  const when = history ? job.completedAt : job.scheduledAt;
-
-  return (
-    <TableRow>
-      <TableCell className="font-medium">{job.jobNumber}</TableCell>
-      <TableCell>
-        {job.companyName || "—"}
-        <span className="block text-xs text-muted-foreground">{job.siteContactName}</span>
-      </TableCell>
-      <TableCell>
-        {job.firstVehicle?.registrationNumber ?? "—"}
-        {job.firstVehicle && (
-          <span className="block text-xs text-muted-foreground">
-            {job.firstVehicle.make}
-            {" "}
-            {job.firstVehicle.model}
-          </span>
-        )}
-      </TableCell>
-      <TableCell>
-        {job.firstDevice?.manufacturer ?? "—"}
-        {job.firstDevice && <span className="block text-xs text-muted-foreground">{job.firstDevice.model}</span>}
-      </TableCell>
-      <TableCell>
-        {[
-          job.city,
-          job.state,
-        ].filter(Boolean).join(", ") || "—"}
-      </TableCell>
-      <TableCell>{job.vehicleCount}</TableCell>
-      <TableCell>{job.deviceCount}</TableCell>
-      <TableCell>
-        {formatDateOnlyInTimezone(
-          when,
-          zone,
-        )}
-      </TableCell>
-      <TableCell>
-        {history
-          ? formatTimeInTimezone(
-              job.completedAt,
-              zone,
-            )
-          : `${formatTimeInTimezone(
-            job.scheduledAt,
-            zone,
-          )} – ${formatTimeInTimezone(
-            job.scheduledUntil,
-            zone,
-          )}`}
-      </TableCell>
-      <TableCell>
-        <InstallerJobStatusBadge status={job.status} />
-      </TableCell>
-      <TableCell className="text-right">
-        {/* List items carry no allowed actions; Start/Complete/Accept live on the job page, driven by `actions`. */}
+    <SectionCard
+      title="Installation History"
+      action={(
         <Button
           size="sm"
           variant="outline"
-          onClick={onOpen}
+          className="bg-transparent border-input"
+          onClick={exportHistory}
+          loading={exporting}
         >
-          {job.status === "assigned" ? "Review offer" : "View Job"}
+          <Download className="h-4 w-4 mr-2" />
+          Export Data
         </Button>
-      </TableCell>
-    </TableRow>
+      )}
+      toolbar={(
+        <div className="flex flex-wrap items-center gap-2 w-full px-1">
+          <SearchBox
+            value={input}
+            onChange={onChange}
+            placeholder="Search completed installations"
+          />
+          <DateFilter
+            label="Completion date"
+            value={range}
+            onApply={setRange}
+          />
+        </div>
+      )}
+    >
+      <div className="overflow-x-auto rounded-2xl border">
+        <DataTable
+          columns={columns}
+          data={data?.items ?? []}
+          isLoading={jobs.isLoading}
+          isError={jobs.isError}
+          errorMessage={jobs.error?.message || "Unable to load your installation history."}
+          onRetry={() => jobs.refetch()}
+          hasActiveFilters={!!(search || range)}
+          emptyState={(
+            <EmptyText
+              title="No completed installations yet"
+              hint="Jobs appear here once you complete them."
+            />
+          )}
+          filteredEmptyState={(
+            <EmptyText
+              title="No completed installations"
+              hint="Nothing matches these filters."
+            />
+          )}
+          pagination={{
+            page,
+            pageSize: PAGE_SIZE,
+            total: data?.total ?? 0,
+            onPageChange: setPage,
+          }}
+        />
+      </div>
+    </SectionCard>
+  );
+}
+
+function EmptyText({
+  title, hint,
+}: {
+  title: string;
+  hint: string;
+}) {
+  return (
+    <div className="py-4">
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    </div>
   );
 }

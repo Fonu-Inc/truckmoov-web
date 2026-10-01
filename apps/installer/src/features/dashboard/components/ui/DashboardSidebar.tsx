@@ -3,9 +3,9 @@ import type {
 } from "@/features/dashboard/utils/sidebarNav";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
+  Building2,
   LogOut,
   Truck,
-  Wrench,
 } from "lucide-react";
 import {
   memo, useEffect,
@@ -58,7 +58,7 @@ function NavRowBase({
   const Icon = item.icon;
 
   // ponytail: only "/" needs `end`; every other entry should light up on its
-  // sub-routes too (`/jobs/FL-1024` → highlights "My Installation Hub").
+  // sub-routes too (`/jobs/FL-1024` → highlights "Installation Jobs").
   const row = (
     <NavLink
       to={item.href}
@@ -138,8 +138,8 @@ function SidebarBody({
 
       {!collapsed && role && (
         <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-2.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-2 ring-primary">
-            <Wrench className="h-5 w-5 text-primary" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-transparent ring-2 ring-primary">
+            <Building2 className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0 flex-1">
             {/* ponytail: static app-identity strings, not signed-in user info

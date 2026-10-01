@@ -1,31 +1,37 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { InstallerProfile } from "@truckmoov/api/auth";
-import type { ReactNode } from "react";
+import type {
+  ElementType, ReactNode,
+} from "react";
 import {
   useInstallerDisplayPreferences,
   useInstallerNotificationPreferences,
   useInstallerProfile,
   useInstallerWorkPreferences,
+  useTwoFactor,
   useUploadInstallerProfilePhoto,
 } from "@truckmoov/api/auth";
-import { formatDateOnlyInTimezone } from "@truckmoov/app-core/utils/time-utils";
 import { TwoFactorSetupCard } from "@truckmoov/reusables/components/auth/TwoFactorSetupCard";
 import {
   Bell,
-  Monitor,
-  ShieldCheck,
+  Database,
+  Globe,
+  Shield,
   Upload,
   User,
   Wrench,
 } from "lucide-react";
-import { useRef } from "react";
+import {
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
+import { QueryState } from "@/components/QueryState";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@/components/shadcn/avatar";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card,
@@ -34,53 +40,36 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
-import { Separator } from "@/components/shadcn/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { Switch } from "@/components/shadcn/switch";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { InstallerStatusBadge } from "@/features/jobs/components/ui/InstallerStatusBadge";
 import { DisplayPreferencesForm } from "../forms/DisplayPreferencesForm";
 import { NotificationPreferencesForm } from "../forms/NotificationPreferencesForm";
 import { PasswordForm } from "../forms/PasswordForm";
 import { ProfileDetailsForm } from "../forms/ProfileDetailsForm";
 import { WorkPreferencesForm } from "../forms/WorkPreferencesForm";
 
-const DEFAULT_ZONE = "Africa/Lagos";
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
-
-const TABS = [
-  [
-    "profile",
-    "Profile",
-    User,
-  ],
-  [
-    "account",
-    "Account & Security",
-    ShieldCheck,
-  ],
-  [
-    "display",
-    "Display",
-    Monitor,
-  ],
-  [
-    "notifications",
-    "Notifications",
-    Bell,
-  ],
-  [
-    "work",
-    "Work Preferences",
-    Wrench,
-  ],
-] as const;
 
 export default function SettingsPage() {
   const profile = useInstallerProfile();
@@ -89,30 +78,36 @@ export default function SettingsPage() {
   const work = useInstallerWorkPreferences();
 
   return (
-    <Tabs
-      defaultValue="profile"
-      className="space-y-6"
-    >
-      <TabsList className="flex w-full flex-wrap justify-start gap-1">
-        {TABS.map(([
-          value,
-          label,
-          Icon,
-        ]) => (
+    <Tabs defaultValue="profile">
+      <div className="flex justify-center">
+        <TabsList>
           <TabsTrigger
-            key={value}
-            value={value}
+            value="profile"
             className="gap-2"
           >
-            <Icon className="h-4 w-4" />
-            {label}
+            <User className="h-4 w-4" />
+            Profile
           </TabsTrigger>
-        ))}
-      </TabsList>
+          <TabsTrigger
+            value="notifications"
+            className="gap-2"
+          >
+            <Bell className="h-4 w-4" />
+            Notification Settings
+          </TabsTrigger>
+          <TabsTrigger
+            value="work"
+            className="gap-2"
+          >
+            <Wrench className="h-4 w-4" />
+            Work Preferences
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent
         value="profile"
-        className="space-y-6"
+        className="mt-6 space-y-6"
       >
         <Loaded query={profile}>
           {({ data }) => (
@@ -124,70 +119,29 @@ export default function SettingsPage() {
               >
                 <ProfileDetailsForm personal={data.personal} />
               </Section>
-              <RecordCard
-                record={data.record}
-                zone={display.data?.data.timezone ?? DEFAULT_ZONE}
-              />
             </>
           )}
         </Loaded>
-      </TabsContent>
-
-      <TabsContent
-        value="account"
-        className="space-y-6"
-      >
+        <AccountSecurity />
         <Section
-          title="Email Address"
-          description="Your sign-in email. Contact the Platform Admin to change it."
-        >
-          <div className="max-w-sm space-y-1.5">
-            <Label htmlFor="installer-email">Email address</Label>
-            {profile.data
-              ? (
-                  <Input
-                    id="installer-email"
-                    value={profile.data.data.personal.email}
-                    disabled
-                  />
-                )
-              : <Skeleton className="h-10" />}
-          </div>
-        </Section>
-        <Section
-          title="Password"
-          description="Use at least 8 characters. Changing it signs you out everywhere else."
-        >
-          <PasswordForm />
-          <Separator className="my-4" />
-          <p className="text-xs text-muted-foreground">
-            If you did not request a change, contact the Platform Admin immediately.
-          </p>
-        </Section>
-        <TwoFactorSetupCard className="surface-sleek rounded-2xl" />
-      </TabsContent>
-
-      <TabsContent
-        value="display"
-        className="space-y-6"
-      >
-        <Section
+          icon={Globe}
           title="Display Preferences"
-          description="How dates, times and default ranges are shown across the portal."
+          description="Time and date defaults used for charts, tables, and reports."
         >
           <Loaded query={display}>
             {({ data }) => <DisplayPreferencesForm preferences={data} />}
           </Loaded>
         </Section>
+        <DataRetention />
       </TabsContent>
 
       <TabsContent
         value="notifications"
-        className="space-y-6"
+        className="mt-6 space-y-6"
       >
         <Section
-          title="Notifications"
-          description="Choose what you are alerted about and where."
+          title="Job Notifications"
+          description="Choose what you want to be alerted about."
         >
           <Loaded query={notifications}>
             {({ data }) => <NotificationPreferencesForm preferences={data} />}
@@ -197,11 +151,11 @@ export default function SettingsPage() {
 
       <TabsContent
         value="work"
-        className="space-y-6"
+        className="mt-6 space-y-6"
       >
         <Section
-          title="Availability"
-          description="Decides which installation offers reach you."
+          title="Work Preferences"
+          description="Helps the system schedule your installations."
         >
           <Loaded query={work}>
             {({ data }) => <WorkPreferencesForm preferences={data} />}
@@ -219,26 +173,39 @@ function Loaded<T>({
   query: UseQueryResult<T, { message: string }>;
   children: (data: T) => ReactNode;
 }) {
-  if (query.data)
-    return <>{children(query.data)}</>;
-  if (query.isError) {
-    return (
-      <div className="flex items-center gap-3 text-sm text-destructive">
-        {query.error.message}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => query.refetch()}
-        >
-          Retry
-        </Button>
-      </div>
-    );
-  }
-  return <Skeleton className="h-40 w-full rounded-2xl" />;
+  return (
+    <QueryState
+      query={query}
+      skeleton={<Skeleton className="h-40 w-full rounded-2xl" />}
+    >
+      {query.data && children(query.data)}
+    </QueryState>
+  );
 }
 
 function Section({
+  icon: Icon, title, description, children,
+}: {
+  icon?: ElementType;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="surface-sleek rounded-2xl">
+      <CardHeader className="p-6 pb-4 space-y-1.5">
+        <CardTitle className="font-display flex items-center gap-2">
+          {Icon && <Icon className="h-5 w-5 text-primary" />}
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="p-6 pt-0">{children}</CardContent>
+    </Card>
+  );
+}
+
+function Row({
   title, description, children,
 }: {
   title: string;
@@ -246,13 +213,208 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <Card className="surface-sleek rounded-2xl">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <div className="flex flex-col justify-between gap-3 rounded-xl border p-4 sm:flex-row sm:items-center">
+      <div>
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Two-factor and password open their real flows in a dialog; the rows only
+ * summarise them, as on appdemo.
+ */
+function AccountSecurity() {
+  const enrolled = !!useTwoFactor().data?.data.enrolled;
+  const [
+    dialog,
+    setDialog,
+  ] = useState<"2fa" | "password" | null>(null);
+  // ponytail: no session-timeout endpoint yet — kept in component state so the row matches appdemo.
+  const [
+    sessionTimeout,
+    setSessionTimeout,
+  ] = useState("60");
+
+  return (
+    <Section
+      icon={Shield}
+      title="Account & Security"
+      description="Manage sign-in protection and account access."
+    >
+      <div className="space-y-4">
+        <Row
+          title="Two-Factor Authentication"
+          description="Require an additional verification step when signing in."
+        >
+          <Switch
+            checked={enrolled}
+            onCheckedChange={() => setDialog("2fa")}
+            aria-label="Two-factor authentication"
+          />
+        </Row>
+        <Row
+          title="Portal Session Timeout"
+          description="Automatically sign out after a period of inactivity."
+        >
+          <Select
+            value={sessionTimeout}
+            onValueChange={setSessionTimeout}
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="15">15 minutes</SelectItem>
+              <SelectItem value="30">30 minutes</SelectItem>
+              <SelectItem value="60">1 hour</SelectItem>
+              <SelectItem value="240">4 hours</SelectItem>
+            </SelectContent>
+          </Select>
+        </Row>
+        <Row
+          title="Change Password"
+          description="Update the password used to sign in to your account."
+        >
+          <Button
+            variant="outline"
+            onClick={() => setDialog("password")}
+          >
+            Change Password
+          </Button>
+        </Row>
+      </div>
+
+      <Dialog
+        open={dialog === "2fa"}
+        onOpenChange={o => !o && setDialog(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Two-factor authentication</DialogTitle>
+            <DialogDescription>Turn two-factor authentication on or off.</DialogDescription>
+          </DialogHeader>
+          <TwoFactorSetupCard className="border-0 shadow-none" />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={dialog === "password"}
+        onOpenChange={o => !o && setDialog(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>Use at least 8 characters. Changing it signs you out everywhere else.</DialogDescription>
+          </DialogHeader>
+          <PasswordForm />
+        </DialogContent>
+      </Dialog>
+    </Section>
+  );
+}
+
+/** ponytail: mock from appdemo parity — no data-retention endpoint for installers; wire to packages/api when one lands. */
+const RETENTION = [
+  {
+    label: "GPS Data Retention",
+    value: "1y",
+    options: [
+      [
+        "90d",
+        "90 Days",
+      ],
+      [
+        "6m",
+        "6 Months",
+      ],
+      [
+        "1y",
+        "1 Year",
+      ],
+      [
+        "2y",
+        "2 Years",
+      ],
+    ],
+  },
+  {
+    label: "Log Retention",
+    value: "30d",
+    options: [
+      [
+        "7d",
+        "7 Days",
+      ],
+      [
+        "30d",
+        "30 Days",
+      ],
+      [
+        "90d",
+        "90 Days",
+      ],
+    ],
+  },
+  {
+    label: "Backup Frequency",
+    value: "daily",
+    options: [
+      [
+        "daily",
+        "Daily",
+      ],
+      [
+        "weekly",
+        "Weekly",
+      ],
+      [
+        "monthly",
+        "Monthly",
+      ],
+    ],
+  },
+] as const;
+
+function DataRetention() {
+  return (
+    <Section
+      icon={Database}
+      title="Data Retention"
+      description="Configure how long data is retained in the system"
+    >
+      <div className="grid gap-4 md:grid-cols-3">
+        {RETENTION.map(r => (
+          <div
+            key={r.label}
+            className="space-y-2"
+          >
+            <Label>{r.label}</Label>
+            <Select defaultValue={r.value}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {r.options.map(([
+                  v,
+                  l,
+                ]) => (
+                  <SelectItem
+                    key={v}
+                    value={v}
+                  >
+                    {l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
+      </div>
+    </Section>
   );
 }
 
@@ -301,7 +463,7 @@ function PhotoCard({ personal }: { personal: InstallerProfile["personal"] }) {
                 />
               )
             : null}
-          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xl">
+          <AvatarFallback className="bg-primary text-primary-foreground text-xl">
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -322,73 +484,9 @@ function PhotoCard({ personal }: { personal: InstallerProfile["personal"] }) {
             <Upload className="h-4 w-4" />
             Upload photo
           </Button>
-          <p className="text-xs text-muted-foreground">JPG or PNG, up to 2 MB.</p>
+          <p className="text-xs text-muted-foreground">JPG or PNG, up to 2MB.</p>
         </div>
       </div>
     </Section>
-  );
-}
-
-function RecordCard({
-  record, zone,
-}: {
-  record: InstallerProfile["record"];
-  zone: string;
-}) {
-  return (
-    <Section
-      title="Installer Record"
-      description="Managed by the Platform Admin."
-    >
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Read
-          label="Installer ID"
-          value={record.code}
-        />
-        <Read
-          label="Account status"
-          value={<InstallerStatusBadge status={record.status === "invited" ? "pending_activation" : record.status} />}
-        />
-        <Read
-          label="Service areas"
-          value={record.serviceAreas.length
-            ? (
-                <div className="flex flex-wrap gap-1">
-                  {record.serviceAreas.map(a => (
-                    <Badge
-                      key={a}
-                      variant="secondary"
-                      className="rounded-full"
-                    >
-                      {a}
-                    </Badge>
-                  ))}
-                </div>
-              )
-            : "—"}
-        />
-        <Read
-          label="Date added"
-          value={formatDateOnlyInTimezone(
-            record.createdAt,
-            zone,
-          )}
-        />
-      </div>
-    </Section>
-  );
-}
-
-function Read({
-  label, value,
-}: {
-  label: string;
-  value: ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border p-3">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-0.5 text-sm font-medium">{value}</div>
-    </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -149,6 +150,16 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
               </FormItem>
             )}
           />
+          {/* The sign-in email — only the Platform Admin can change it. */}
+          <div className="space-y-2">
+            <Label htmlFor="installer-email">Email address</Label>
+            <Input
+              id="installer-email"
+              value={personal.email}
+              readOnly
+              disabled
+            />
+          </div>
           <FormField
             control={form.control}
             name="state"

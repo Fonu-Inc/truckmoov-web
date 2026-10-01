@@ -447,6 +447,16 @@ Do **not** hand-write `useState({ page, pageSize })` + `useQuery({ offset, limit
 in a new page. Three existing security pages (LoginHistory, SecurityEvents,
 BlockedIps) predate the hook and should migrate the next time they're touched.
 
+Non-table data (cards, lists, dialogs) gets the same three states from
+`QueryState` (`apps/installer/src/components/QueryState.tsx`): skeleton while
+loading, the error message + **Try again** on failure, empty copy when there is
+nothing to show. Every component that calls an endpoint renders one of the two.
+
+Server-paged endpoints that take `page` + `limit` (the installer jobs API) pass
+`pagination={{ page, pageSize, total, onPageChange }}` to `DataTable` directly —
+`useBatchedQuery` needs `offset`. Set `enableSorting: false` on their columns:
+sorting one page of a server-paged list is misleading.
+
 ### Card grids step at `sm` / `xl`, not `md`
 
 Tailwind breakpoints are **viewport** media queries, but the content column is

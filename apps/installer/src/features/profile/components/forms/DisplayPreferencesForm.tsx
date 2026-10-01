@@ -9,7 +9,6 @@ import { Button } from "@/components/shadcn/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -46,15 +45,15 @@ const TIME_RANGES = [
   ],
   [
     "last_7_days",
-    "Last 7 days",
+    "Last 7 Days",
   ],
   [
     "last_30_days",
-    "Last 30 days",
+    "Last 30 Days",
   ],
   [
     "last_90_days",
-    "Last 90 days",
+    "Last 90 Days",
   ],
 ] as const;
 
@@ -110,7 +109,7 @@ export function DisplayPreferencesForm({ preferences }: { preferences: Installer
             name="timezone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Time zone</FormLabel>
+                <FormLabel>Default Timezone</FormLabel>
                 <Select
                   name={field.name}
                   value={field.value}
@@ -135,7 +134,6 @@ export function DisplayPreferencesForm({ preferences }: { preferences: Installer
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Every date and time in the portal is shown in this zone.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -145,7 +143,7 @@ export function DisplayPreferencesForm({ preferences }: { preferences: Installer
             name="defaultTimeRange"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Default time range</FormLabel>
+                <FormLabel>Default Time Range</FormLabel>
                 <Select
                   name={field.name}
                   value={field.value}
@@ -170,7 +168,6 @@ export function DisplayPreferencesForm({ preferences }: { preferences: Installer
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Used as the starting filter on dashboards and lists.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

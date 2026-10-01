@@ -518,6 +518,38 @@ export function formatDateOnlyInTimezone(
   })
 }
 
+/** 12-hour time of day in a specific timezone, e.g. "9:30 AM". */
+export function formatTime12InTimezone(
+  value: DateInput,
+  timezone: Timezone | string = DEFAULT_TIMEZONE,
+  fallback = EMPTY_DATE_LABEL,
+): string {
+  const date = toDate(value)
+  if (!date) return fallback
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: toIanaTimezone(timezone),
+  })
+}
+
+/** Schedule slot in a specific timezone, e.g. "02 Oct 2026 · 9:30 AM". */
+export function formatScheduleInTimezone(
+  value: DateInput,
+  timezone: Timezone | string = DEFAULT_TIMEZONE,
+  fallback = EMPTY_DATE_LABEL,
+): string {
+  const date = toDate(value)
+  if (!date) return fallback
+  const day = date.toLocaleDateString('en-NG', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: toIanaTimezone(timezone),
+  })
+  return `${day} · ${formatTime12InTimezone(date, timezone)}`
+}
+
 /** "Now" rendered in a timezone — for clocks and "as of" captions. */
 export function getCurrentTimeInTimezone(timezone: Timezone = DEFAULT_TIMEZONE): string {
   return formatDateInTimezone(new Date(), timezone)

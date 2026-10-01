@@ -38,6 +38,12 @@ Two consequences:
   `bg-card`, don't re-order utilities, don't swap a token for one you'd have
   picked yourself.
 
+> **Exception — the installer portal.** `apps/installer` (:3003) follows the live
+> demo at `https://appdemo.truckmoov.com/installer`, not `fleetflow-pro-main`:
+> the local fleetflow copy's installer pages are older than the demo. Copy
+> `className`s from the demo's rendered DOM (Playwright → `outerHTML`). To sign
+> in there, pick **Quick Demo Access → Installer** on `/auth`.
+
 ## 1. Find the reference page
 
 Fleetflow keeps every role in one app under `src/pages/<role>/`. This repo splits

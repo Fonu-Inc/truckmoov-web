@@ -1,7 +1,10 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   InstallerChecklistItem, InstallerJobDetail,
 } from "@truckmoov/api/auth";
-import type { ReactNode } from "react";
+import type {
+  ElementType, ReactNode,
+} from "react";
 import {
   getInstallerEvidenceLink,
   useAcceptInstallerJob,
@@ -9,23 +12,30 @@ import {
   useInstallerDisplayPreferences,
   useInstallerJob,
   useInstallerOptions,
+  useInstallerSupportTicket,
   useSaveInstallerJobNotes,
   useSetInstallerChecklistItem,
   useStartInstallerJob,
   useUploadInstallerEvidence,
 } from "@truckmoov/api/auth";
-import { debounce } from "@truckmoov/app-core/utils/general-utils";
+import {
+  debounce,
+  downloadBlob,
+} from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDateInTimezone,
-  formatDateOnlyInTimezone,
-  formatTimeInTimezone,
+  formatTime12InTimezone,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
   ArrowLeft,
-  Camera,
-  CheckCircle2,
+  Check,
+  Cpu,
+  Download,
   ExternalLink,
+  Eye,
+  SignalHigh,
+  Truck,
   Upload,
 } from "lucide-react";
 import {
@@ -39,6 +49,7 @@ import {
   useParams,
 } from "react-router";
 import { toast } from "sonner";
+import { QueryState } from "@/components/QueryState";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,23 +65,95 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
 import { Label } from "@/components/shadcn/label";
 import { Progress } from "@/components/shadcn/progress";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
 import { RejectOfferForm } from "@/features/jobs/components/forms/RejectOfferForm";
 import { ReportIssueForm } from "@/features/jobs/components/forms/ReportIssueForm";
 import { InstallerJobStatusBadge } from "@/features/jobs/components/ui/InstallerJobStatusBadge";
+
+type Unit = InstallerJobDetail["units"][number];
+
+const deviceLabel = (u: Unit) => u.device?.name ?? u.device?.imei ?? "—";
+
+const DEVICE_COLUMNS: ColumnDef<Unit>[] = [
+  {
+    header: "Device ID",
+    meta: { className: "font-medium" },
+    cell: ({ row }) => row.original.device?.name ?? "—",
+  },
+  {
+    header: "IMEI",
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.device?.imei}</span>,
+  },
+  {
+    header: "Manufacturer / Model",
+    meta: { className: "whitespace-nowrap" },
+    cell: ({ row }) => `${row.original.device?.manufacturer} ${row.original.device?.model}`,
+  },
+  {
+    header: "SIM attached",
+    cell: ({ row }) => row.original.sim?.iccid ?? <span className="text-muted-foreground">Not attached</span>,
+  },
+  {
+    header: "Vehicle",
+    cell: ({ row }) => row.original.vehicle?.registrationNumber ?? "—",
+  },
+];
+
+const SIM_COLUMNS: ColumnDef<Unit>[] = [
+  {
+    header: "ICCID",
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.sim?.iccid}</span>,
+  },
+  {
+    header: "IMSI",
+    cell: ({ row }) => row.original.sim?.imsi ?? "—",
+  },
+  {
+    header: "Phone number",
+    cell: ({ row }) => row.original.sim?.msisdn ?? "—",
+  },
+  {
+    header: "Carrier",
+    cell: ({ row }) => row.original.sim?.carrier,
+  },
+  {
+    header: "Device attached",
+    cell: ({ row }) => deviceLabel(row.original),
+  },
+  {
+    header: "Vehicle",
+    cell: ({ row }) => row.original.vehicle?.registrationNumber ?? "—",
+  },
+];
 
 // Display Preferences default (TRU-FE-21) until the installer picks another zone.
 const DEFAULT_ZONE = "Africa/Lagos";
@@ -81,10 +164,11 @@ const EVIDENCE_TYPES = [
   "image/png",
   "image/webp",
 ];
-/** Statuses where an issue can still be raised; the server's 409 is the real gate. */
-const CLOSED = [
+/** Statuses where an issue can no longer be raised; the server's 409 is the real gate. */
+const NO_REPORT = [
   "completed",
   "cancelled",
+  "issue_reported",
 ];
 
 const GATE_HINT: Record<NonNullable<InstallerChecklistItem["gated"]>, string> = {
@@ -93,8 +177,9 @@ const GATE_HINT: Record<NonNullable<InstallerChecklistItem["gated"]>, string> = 
 };
 
 /**
- * GET /auth/installer/jobs/:jobId. Every button is driven by `job.actions`
- * (TRU-FE-20) — nothing here decides from `status` what the installer may do.
+ * GET /auth/installer/jobs/:jobId, laid out as appdemo's installer job page.
+ * Every button is driven by `job.actions` (TRU-FE-20) — nothing here decides
+ * from `status` what the installer may do.
  */
 export default function JobDetailPage() {
   const { jobId } = useParams();
@@ -125,9 +210,18 @@ export default function JobDetailPage() {
 
   if (jobQuery.isLoading) {
     return (
-      <Card>
-        <CardContent className="py-16 text-center text-sm text-muted-foreground">Loading job…</CardContent>
-      </Card>
+      <div
+        className="space-y-6"
+        aria-busy="true"
+        aria-label="Loading job"
+      >
+        <div className="flex justify-between">
+          <Skeleton className="h-9 w-32 rounded-xl" />
+          <Skeleton className="h-9 w-48 rounded-xl" />
+        </div>
+        <Skeleton className="h-72 w-full rounded-2xl" />
+        <Skeleton className="h-48 w-full rounded-2xl" />
+      </div>
     );
   }
 
@@ -135,7 +229,7 @@ export default function JobDetailPage() {
   if (!job) {
     const notFound = jobQuery.error?.statusCode === 404;
     return (
-      <Card>
+      <Card className="surface-sleek rounded-2xl">
         <CardContent className="py-16 text-center">
           <p className="text-sm font-medium">{notFound ? "Installation job not found" : "Unable to load this job"}</p>
           <p className="text-xs text-muted-foreground">
@@ -150,7 +244,7 @@ export default function JobDetailPage() {
                 Try again
               </Button>
             )}
-            <Button onClick={() => navigate("/jobs")}>Back to My Installation Jobs</Button>
+            <Button onClick={() => navigate("/jobs")}>Back to jobs</Button>
           </div>
         </CardContent>
       </Card>
@@ -169,22 +263,16 @@ export default function JobDetailPage() {
       },
     );
 
-  const slot = `${formatDateOnlyInTimezone(
+  const time = formatTime12InTimezone(
     job.customer.scheduledAt,
     zone,
-  )}, ${formatTimeInTimezone(
-    job.customer.scheduledAt,
-    zone,
-  )} – ${formatTimeInTimezone(
-    job.customer.scheduledUntil,
-    zone,
-  )}`;
+  );
+  const waiting = job.status === "assigned" || job.status === "scheduled";
 
   return (
     <>
       <div className="space-y-6">
-        {/* `/jobs/:jobId` is off the nav, so it has no top-bar title — this row
-            is the page's own heading. */}
+        {/* `/jobs/:jobId` shares the "Installation Jobs" title — this row is the page's own heading. */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button
             variant="ghost"
@@ -200,11 +288,11 @@ export default function JobDetailPage() {
             {actions.canAccept && (
               <>
                 <Button
-                  variant="outline"
+                  variant="destructive"
                   onClick={() => setRejectOpen(true)}
                   disabled={accept.isPending}
                 >
-                  Reject offer
+                  Reject
                 </Button>
                 <Button
                   loading={accept.isPending}
@@ -214,13 +302,14 @@ export default function JobDetailPage() {
                     "Job accepted. It is now scheduled.",
                   )}
                 >
-                  Accept offer
+                  Accept
                 </Button>
               </>
             )}
-            {actions.canStart && (
+            {job.status === "scheduled" && (
               <Button
                 loading={start.isPending}
+                disabled={!actions.canStart}
                 onClick={() => run(
                   "Start",
                   start,
@@ -230,7 +319,7 @@ export default function JobDetailPage() {
                 Start Installation
               </Button>
             )}
-            {!CLOSED.includes(job.status) && !actions.canAccept && (
+            {!NO_REPORT.includes(job.status) && !actions.canAccept && !waiting && (
               <Button
                 variant="destructive"
                 className="gap-2"
@@ -244,168 +333,86 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight">
-            Installation Profile ·
-            {" "}
-            {job.jobNumber}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {job.customer.customerName}
-            {job.units[0]?.vehicle && ` · ${job.units[0].vehicle.registrationNumber}`}
+        {waiting && (
+          <p className="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+            {`Installation Job Scheduled for: ${job.customer.scheduledDate}, ${time}.`}
           </p>
-        </div>
-
-        {job.issues.length > 0 && (
-          <Card className="border-destructive/40">
-            <CardHeader>
-              <CardTitle className="text-base text-destructive">Reported issues</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {job.issues.map(i => (
-                <div
-                  key={i.ticketId}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3 text-sm"
-                >
-                  <span className="font-medium">{i.displayId}</span>
-                  <span className="text-muted-foreground">
-                    {formatDateInTimezone(
-                      i.createdAt,
-                      zone,
-                    )}
-                  </span>
-                  <Badge variant="outline">{i.status}</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
         )}
 
-        <Section title="Customer & Site Details">
-          <Info
-            label="Customer name"
-            value={job.customer.customerName}
-          />
-          <Info
-            label="Customer type"
-            value={job.customer.customerType}
-          />
-          <Info
-            label="Phone number"
-            value={job.customer.phone}
-          />
-          <Info
-            label="Email"
-            value={job.customer.email}
-          />
-          <Info
-            label="Installation address"
-            value={job.customer.address}
-          />
-          <Info
-            label="Scheduled"
-            value={slot}
-          />
-        </Section>
+        {job.status === "completed"
+          ? (
+              <InstallationReport
+                job={job}
+                time={time}
+              />
+            )
+          : (
+              <div className="space-y-6">
+                {job.issues[0] && <IssueCard ticketId={job.issues[0].ticketId} />}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
-              <span>Submitted Installation Units</span>
-              <Badge
-                variant="secondary"
-                className="rounded-full"
-              >
-                {job.units.length}
-                {" unit"}
-                {job.units.length === 1 ? "" : "s"}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {job.units.map(unit => (
-              <UnitCard
-                key={unit.index}
-                unit={unit}
-              />
-            ))}
-          </CardContent>
-        </Card>
+                <SleekCard title="Customer & Site Details">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Info
+                      label="Company"
+                      value={job.customer.customerName}
+                    />
+                    <Info
+                      label="Customer type"
+                      value={job.customer.customerType}
+                    />
+                    <Info
+                      label="Phone number"
+                      value={job.customer.phone}
+                    />
+                    <Info
+                      label="Email"
+                      value={job.customer.email}
+                    />
+                    <Info
+                      label="Installation address"
+                      value={job.customer.address}
+                    />
+                    <Info
+                      label="Installation date"
+                      value={job.customer.scheduledDate}
+                    />
+                    <Info
+                      label="Installation time"
+                      value={time}
+                    />
+                  </div>
+                </SleekCard>
 
-        <ChecklistCard job={job} />
+                <SleekCard title="Installation Units">
+                  <UnitsTabs units={job.units} />
+                </SleekCard>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Installation Evidence</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <EvidenceSection
-              job={job}
-              zone={zone}
-            />
-            <NotesField job={job} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Installation Completion Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Info
-                label="Customer"
-                value={job.completion.customer}
-              />
-              <Info
-                label="Vehicle"
-                value={job.completion.vehicle}
-              />
-              <Info
-                label="Device"
-                value={job.completion.device}
-              />
-              <Info
-                label="Vehicles"
-                value={job.completion.vehicles}
-              />
-              <Info
-                label="Devices"
-                value={job.completion.devices}
-              />
-              <Info
-                label="Installation date"
-                value={job.completion.installationDate}
-              />
-              <Info
-                label="Installer"
-                value={job.completion.installer}
-              />
-              <Info
-                label="Checklist"
-                value={job.completion.checklist}
-              />
-              <Info
-                label="Evidence"
-                value={`${job.completion.evidenceCount} file(s)`}
-              />
-              <Info
-                label="Notes"
-                value={job.completion.notes}
-              />
-            </div>
-            {job.status === "completed" && (
-              <div className="flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm text-success">
-                <CheckCircle2 className="h-4 w-4" />
-                {" "}
-                Installation completed successfully.
+                {!waiting && (
+                  <>
+                    <ChecklistCard job={job} />
+                    <EvidenceCard
+                      job={job}
+                      zone={zone}
+                    />
+                    <Card className="surface-sleek rounded-2xl">
+                      <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+                        <p className="text-sm text-muted-foreground">
+                          {actions.canComplete
+                            ? "Every checklist item is done. Submit to finish the installation."
+                            : "Complete every checklist item to finish the installation."}
+                        </p>
+                        <Button
+                          disabled={!actions.canComplete}
+                          onClick={() => setCompleteOpen(true)}
+                        >
+                          Complete Installation
+                        </Button>
+                      </div>
+                    </Card>
+                  </>
+                )}
               </div>
             )}
-            {actions.canComplete && (
-              <Button onClick={() => setCompleteOpen(true)}>Complete Installation</Button>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       <ReportIssueForm
@@ -442,6 +449,24 @@ export default function JobDetailPage() {
               Review the summary before submitting. This hands the devices over to the customer's fleet.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="grid gap-2 text-sm sm:grid-cols-2">
+            <Info
+              label="Vehicles · Devices"
+              value={`${job.completion.vehicles} · ${job.completion.devices}`}
+            />
+            <Info
+              label="Checklist"
+              value={job.completion.checklist}
+            />
+            <Info
+              label="Evidence"
+              value={`${job.completion.evidenceCount} file(s)`}
+            />
+            <Info
+              label="Installer"
+              value={job.completion.installer}
+            />
+          </div>
           <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
             <Checkbox
               checked={confirmed}
@@ -470,143 +495,293 @@ export default function JobDetailPage() {
   );
 }
 
-function UnitCard({ unit }: { unit: InstallerJobDetail["units"][number] }) {
+function SleekCard({
+  title, description, action, className, children,
+}: {
+  title: ReactNode;
+  description?: string;
+  action?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="space-y-4 rounded-2xl border p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold">
-          Unit
-          {" "}
-          {unit.index + 1}
-          {unit.vehicle && ` · ${unit.vehicle.registrationNumber}`}
-        </p>
-        {unit.device && (
-          <Badge
-            variant="outline"
-            className="rounded-full"
-          >
-            {unit.device.manufacturer}
-            {" "}
-            {unit.device.model}
-          </Badge>
+    <Card className="surface-sleek rounded-2xl">
+      <CardHeader className="p-6 pb-4">
+        {action
+          ? (
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="font-display text-xl">{title}</CardTitle>
+                  {description && <CardDescription className="mt-1">{description}</CardDescription>}
+                </div>
+                {action}
+              </div>
+            )
+          : (
+              <>
+                <CardTitle className={className ?? "font-display"}>{title}</CardTitle>
+                {description && <CardDescription>{description}</CardDescription>}
+              </>
+            )}
+      </CardHeader>
+      <CardContent className="p-6 pt-0">{children}</CardContent>
+    </Card>
+  );
+}
+
+/** The job's newest issue, read from its support ticket (GET support/tickets/:id). */
+function IssueCard({ ticketId }: { ticketId: string }) {
+  const zone = useInstallerDisplayPreferences().data?.data.timezone ?? DEFAULT_ZONE;
+  const ticketQuery = useInstallerSupportTicket(ticketId);
+  const ticket = ticketQuery.data?.data;
+  const categories = useInstallerOptions().data?.data.supportCategories ?? [];
+  const area = categories.find(c => c.key === ticket?.category)?.chips?.find(c => c.key === ticket?.issueCode)?.label;
+
+  return (
+    <SleekCard
+      title="Issue Reported"
+      className="font-display text-destructive"
+    >
+      <QueryState
+        query={ticketQuery}
+        errorMessage="Unable to load the reported issue."
+        skeleton={(
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              0,
+              1,
+              2,
+              3,
+            ].map(i => (
+              <Skeleton
+                key={i}
+                className="h-16 rounded-xl"
+              />
+            ))}
+          </div>
         )}
-      </div>
+      >
+        {ticket && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Info
+              label="Issue type"
+              value={ticket.categoryLabel}
+            />
+            <Info
+              label="Affected area"
+              value={area}
+            />
+            <Info
+              label="Reported by"
+              value={`${ticket.reporter} · Installer`}
+            />
+            <Info
+              label="Date reported"
+              value={formatDateInTimezone(
+                ticket.createdAt,
+                zone,
+              )}
+            />
+            <div className="sm:col-span-2">
+              <Info
+                label="Issue description"
+                value={ticket.description}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Info
+                label="Attached evidence"
+                value={`${ticket.attachments.length} file(s)`}
+              />
+            </div>
+          </div>
+        )}
+      </QueryState>
+    </SleekCard>
+  );
+}
 
-      <SubSection title="1. Vehicle fitment">
-        {unit.vehicle
-          ? (
-              <>
-                <Info
-                  label="Registration number"
-                  value={unit.vehicle.registrationNumber}
-                />
-                <Info
-                  label="Vehicle type"
-                  value={unit.vehicle.vehicleType}
-                />
-                <Info
-                  label="Make"
-                  value={unit.vehicle.make}
-                />
-                <Info
-                  label="Model"
-                  value={unit.vehicle.model}
-                />
-                <Info
-                  label="Year"
-                  value={unit.vehicle.year}
-                />
-                <Info
-                  label="Engine number"
-                  value={unit.vehicle.engineNumber}
-                />
-                <Info
-                  label="Chassis number"
-                  value={unit.vehicle.chassisNumber}
-                />
-                <Info
-                  label="Colour"
-                  value={unit.vehicle.colour}
-                />
-                <Info
-                  label="Engine capacity"
-                  value={unit.vehicle.engineCapacity}
-                />
-                <Info
-                  label="ODO reading"
-                  value={unit.vehicle.odometer}
-                />
-              </>
-            )
-          : <Empty>No vehicle is attached to this unit.</Empty>}
-      </SubSection>
+function UnitsTabs({ units }: { units: Unit[] }) {
+  const [
+    open,
+    setOpen,
+  ] = useState<Unit | null>(null);
+  const vehicleColumns = useMemo<ColumnDef<Unit>[]>(
+    () => [
+      {
+        header: "Registration",
+        meta: { className: "font-medium" },
+        cell: ({ row }) => row.original.vehicle?.registrationNumber,
+      },
+      {
+        header: "Make / Model",
+        meta: { className: "whitespace-nowrap" },
+        cell: ({ row }) => `${row.original.vehicle?.make} ${row.original.vehicle?.model}`,
+      },
+      {
+        header: "Type",
+        cell: ({ row }) => row.original.vehicle?.vehicleType,
+      },
+      {
+        header: "Device to fit",
+        cell: ({ row }) => deviceLabel(row.original),
+      },
+      {
+        id: "details",
+        header: "Details",
+        meta: { className: "text-right" },
+        cell: ({ row }) => (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setOpen(row.original)}
+          >
+            <Eye className="mr-1.5 h-4 w-4" />
+            {" "}
+            View details
+          </Button>
+        ),
+      },
+    ],
+    [],
+  );
 
-      <SubSection title="2. Device to fit in this vehicle">
-        {unit.device
-          ? (
-              <>
-                <Info
-                  label="IMEI"
-                  value={unit.device.imei}
-                />
-                <Info
-                  label="Manufacturer"
-                  value={unit.device.manufacturer}
-                />
-                <Info
-                  label="Device model"
-                  value={unit.device.model}
-                />
-                <Info
-                  label="Device type"
-                  value={unit.device.deviceType}
-                />
-                <Info
-                  label="Device status"
-                  value={unit.device.statusLabel}
-                />
-                <Info
-                  label="Verification"
-                  value={unit.device.verificationStatus}
-                />
-              </>
-            )
-          : <Empty>No device bound yet. The platform binds it before the installation can start.</Empty>}
-      </SubSection>
+  return (
+    <>
+      <Tabs defaultValue="vehicles">
+        <TabsList className="grid w-full grid-cols-3 sm:inline-grid sm:w-auto">
+          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+          <TabsTrigger value="devices">Devices</TabsTrigger>
+          <TabsTrigger value="sims">SIMs</TabsTrigger>
+        </TabsList>
+        <TabsContent
+          value="vehicles"
+          className="mt-4"
+        >
+          <div className="overflow-x-auto rounded-xl border">
+            <DataTable
+              columns={vehicleColumns}
+              data={units.filter(u => u.vehicle)}
+              emptyState="No vehicles attached to this job."
+            />
+          </div>
+        </TabsContent>
+        <TabsContent
+          value="devices"
+          className="mt-4"
+        >
+          <div className="overflow-x-auto rounded-xl border">
+            <DataTable
+              columns={DEVICE_COLUMNS}
+              data={units.filter(u => u.device)}
+              emptyState="No devices bound yet. The platform binds them before the installation can start."
+            />
+          </div>
+        </TabsContent>
+        <TabsContent
+          value="sims"
+          className="mt-4"
+        >
+          <div className="overflow-x-auto rounded-xl border">
+            <DataTable
+              columns={SIM_COLUMNS}
+              data={units.filter(u => u.sim)}
+              emptyState="No SIMs attached to this job."
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
 
-      <SubSection title="3. SIM installation & connectivity">
-        {unit.sim
-          ? (
-              <>
-                <Info
-                  label="ICCID"
-                  value={unit.sim.iccid}
-                />
-                <Info
-                  label="IMSI"
-                  value={unit.sim.imsi}
-                />
-                <Info
-                  label="Phone number"
-                  value={unit.sim.msisdn}
-                />
-                <Info
-                  label="Carrier"
-                  value={unit.sim.carrier}
-                />
-                <Info
-                  label="Activation status"
-                  value={unit.sim.activationStatus}
-                />
-                <Info
-                  label="Network"
-                  value={unit.sim.network}
-                />
-              </>
-            )
-          : <Empty>No SIM is attached to this unit.</Empty>}
-      </SubSection>
-    </div>
+      <Dialog
+        open={!!open}
+        onOpenChange={o => !o && setOpen(null)}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{open?.vehicle?.registrationNumber}</DialogTitle>
+            <DialogDescription>Vehicle and the device to be fitted in it.</DialogDescription>
+          </DialogHeader>
+          {open && (
+            <div className="space-y-5">
+              <section>
+                <p className="text-sm font-semibold">Vehicle details</p>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <Tile
+                    label="Registration number"
+                    value={open.vehicle?.registrationNumber}
+                  />
+                  <Tile
+                    label="Vehicle type"
+                    value={open.vehicle?.vehicleType}
+                  />
+                  <Tile
+                    label="Make"
+                    value={open.vehicle?.make}
+                  />
+                  <Tile
+                    label="Model"
+                    value={open.vehicle?.model}
+                  />
+                  <Tile
+                    label="Year"
+                    value={open.vehicle?.year}
+                  />
+                  <Tile
+                    label="Colour"
+                    value={open.vehicle?.colour}
+                  />
+                  <Tile
+                    label="Chassis number"
+                    value={open.vehicle?.chassisNumber}
+                  />
+                  <Tile
+                    label="Engine number"
+                    value={open.vehicle?.engineNumber}
+                  />
+                  <Tile
+                    label="Engine capacity"
+                    value={open.vehicle?.engineCapacity}
+                  />
+                  <Tile
+                    label="Odometer reading"
+                    value={open.vehicle?.odometer != null ? `${open.vehicle.odometer.toLocaleString()} km` : null}
+                  />
+                </div>
+              </section>
+              <section>
+                <p className="text-sm font-semibold">Device Attached</p>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <Tile
+                    label="Device ID"
+                    value={open.device?.name}
+                  />
+                  <Tile
+                    label="IMEI"
+                    value={open.device?.imei}
+                  />
+                  <Tile
+                    label="Manufacturer"
+                    value={open.device?.manufacturer}
+                  />
+                  <Tile
+                    label="Model"
+                    value={open.device?.model}
+                  />
+                  <Tile
+                    label="SIM phone number"
+                    value={open.sim?.msisdn}
+                  />
+                  <Tile
+                    label="SIM carrier"
+                    value={open.sim?.carrier}
+                  />
+                </div>
+              </section>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -617,26 +792,25 @@ function ChecklistCard({ job }: { job: InstallerJobDetail }) {
   } = job.checklist;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+    <SleekCard
+      title={(
+        <span className="flex flex-wrap items-center justify-between gap-2">
           <span>Installation Checklist</span>
           <Badge
             variant="secondary"
             className="rounded-full"
           >
-            Installation Progress —
-            {" "}
-            {completed}
-            /
-            {total}
-            {" completed"}
+            {`Installation Progress — ${completed}/${total} completed`}
           </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <Progress value={total ? (completed / total) * 100 : 0} />
-        {!job.actions.canTick && job.status !== "completed" && (
+        </span>
+      )}
+    >
+      <div className="space-y-5">
+        <Progress
+          value={total ? (completed / total) * 100 : 0}
+          className="h-2"
+        />
+        {!job.actions.canTick && (
           <p className="text-xs text-muted-foreground">The checklist opens once the installation is started.</p>
         )}
         {job.checklist.groups.map(group => (
@@ -648,10 +822,9 @@ function ChecklistCard({ job }: { job: InstallerJobDetail }) {
             {group.items.map(item => (
               <label
                 key={item.key}
-                className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm"
+                className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm"
               >
                 <Checkbox
-                  className="mt-0.5"
                   checked={item.checked}
                   disabled={!job.actions.canTick || tick.isPending}
                   onCheckedChange={v => tick.mutate(
@@ -674,12 +847,17 @@ function ChecklistCard({ job }: { job: InstallerJobDetail }) {
             ))}
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </SleekCard>
   );
 }
 
-function EvidenceSection({
+/**
+ * appdemo lists evidence per vehicle. The API keeps it per job with a
+ * category, so "Attach Photos" asks for the category first.
+ * ponytail: the photo count is the job's — per-unit counts need a unit id on evidence.
+ */
+function EvidenceCard({
   job, zone,
 }: {
   job: InstallerJobDetail;
@@ -687,36 +865,31 @@ function EvidenceSection({
 }) {
   const upload = useUploadInstallerEvidence();
   const categories = useInstallerOptions().data?.data.evidenceCategories ?? [];
-  const [
-    category,
-    setCategory,
-  ] = useState("");
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const uploadRef = useRef<HTMLInputElement>(null);
-  const chosen = category || categories[0]?.key || "";
+  const fileRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef("");
 
-  function send(file: File | undefined) {
-    if (!file)
-      return;
-    if (!EVIDENCE_TYPES.includes(file.type)) {
-      toast.error("Use a JPG, PNG or WebP photo.");
-      return;
+  function send(files: FileList | null) {
+    for (const file of files ?? []) {
+      if (!EVIDENCE_TYPES.includes(file.type)) {
+        toast.error(`${file.name}: use a JPG, PNG or WebP photo.`);
+        continue;
+      }
+      if (file.size > MAX_EVIDENCE_BYTES) {
+        toast.error(`${file.name}: the photo must be 10 MB or smaller.`);
+        continue;
+      }
+      upload.mutate(
+        {
+          jobId: job.id,
+          category: categoryRef.current,
+          file,
+        },
+        {
+          onSuccess: () => toast.success("Evidence uploaded."),
+          onError: error => toast.error(error.message),
+        },
+      );
     }
-    if (file.size > MAX_EVIDENCE_BYTES) {
-      toast.error("The photo must be 10 MB or smaller.");
-      return;
-    }
-    upload.mutate(
-      {
-        jobId: job.id,
-        category: chosen,
-        file,
-      },
-      {
-        onSuccess: () => toast.success("Evidence uploaded."),
-        onError: error => toast.error(error.message),
-      },
-    );
   }
 
   async function view(evidenceId: string) {
@@ -737,106 +910,103 @@ function EvidenceSection({
   }
 
   return (
-    <>
-      {job.actions.canUploadEvidence && (
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] space-y-1.5">
-            <Label>Evidence category</Label>
-            <Select
-              value={chosen}
-              onValueChange={setCategory}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(c => (
-                  <SelectItem
-                    key={c.key}
-                    value={c.key}
-                  >
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            variant="outline"
-            className="gap-2"
-            disabled={!chosen || upload.isPending}
-            onClick={() => cameraRef.current?.click()}
+    <SleekCard
+      title="Installation Evidence"
+      description="Upload photos of the completed fitting for each vehicle."
+    >
+      <div className="space-y-3">
+        <input
+          ref={fileRef}
+          type="file"
+          accept={EVIDENCE_TYPES.join(",")}
+          multiple
+          hidden
+          onChange={(e) => {
+            send(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        {job.units.map(u => (
+          <div
+            key={u.index}
+            className="rounded-xl border p-4"
           >
-            <Camera className="h-4 w-4" />
-            {" "}
-            Take Photo
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2"
-            disabled={!chosen}
-            loading={upload.isPending}
-            onClick={() => uploadRef.current?.click()}
-          >
-            <Upload className="h-4 w-4" />
-            {" "}
-            Upload Photo
-          </Button>
-          {[
-            cameraRef,
-            uploadRef,
-          ].map((ref, i) => (
-            <input
-              key={i === 0 ? "camera" : "upload"}
-              ref={ref}
-              type="file"
-              accept={EVIDENCE_TYPES.join(",")}
-              capture={i === 0 ? "environment" : undefined}
-              hidden
-              onChange={(e) => {
-                send(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {job.evidence.length === 0
-        ? (
-            <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-              No evidence uploaded yet.
-            </p>
-          )
-        : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {job.evidence.map(e => (
-                <div
-                  key={e.id}
-                  className="space-y-1 rounded-xl border p-3"
-                >
-                  <p className="truncate text-sm font-medium">{e.label}</p>
-                  <p className="truncate text-xs text-muted-foreground">{e.fileName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDateInTimezone(
-                      e.createdAt,
-                      zone,
-                    )}
-                  </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">{u.vehicle?.registrationNumber ?? `Unit ${u.index + 1}`}</p>
+                <p className="text-xs text-muted-foreground">
+                  {[
+                    u.vehicle && `${u.vehicle.make} ${u.vehicle.model}`,
+                    u.device?.name ?? u.device?.imei,
+                    `${job.evidence.length} photo(s)`,
+                  ].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1 px-2"
-                    onClick={() => view(e.id)}
+                    variant="outline"
+                    className="gap-2"
+                    disabled={!job.actions.canUploadEvidence || !categories.length}
+                    loading={upload.isPending}
                   >
-                    <ExternalLink className="h-3 w-3" />
-                    View photo
+                    <Upload className="h-4 w-4" />
+                    {" "}
+                    Attach Photos
                   </Button>
-                </div>
-              ))}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Photo of…</DropdownMenuLabel>
+                  {categories.map(c => (
+                    <DropdownMenuItem
+                      key={c.key}
+                      onSelect={() => {
+                        categoryRef.current = c.key;
+                        fileRef.current?.click();
+                      }}
+                    >
+                      {c.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          )}
-    </>
+          </div>
+        ))}
+
+        {job.evidence.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {job.evidence.map(e => (
+              <div
+                key={e.id}
+                className="space-y-1 rounded-xl border p-3"
+              >
+                <p className="truncate text-sm font-medium">{e.label}</p>
+                <p className="truncate text-xs text-muted-foreground">{e.fileName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDateInTimezone(
+                    e.createdAt,
+                    zone,
+                  )}
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 px-2"
+                  onClick={() => view(e.id)}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View photo
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <NotesField job={job} />
+      </div>
+    </SleekCard>
   );
 }
 
@@ -883,7 +1053,7 @@ function NotesField({ job }: { job: InstallerJobDetail }) {
   );
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 pt-2">
       <div className="flex items-center justify-between">
         <Label>Installer notes</Label>
         <span className="text-xs text-muted-foreground">
@@ -901,43 +1071,162 @@ function NotesField({ job }: { job: InstallerJobDetail }) {
         placeholder="Add notes about the installation"
         rows={3}
       />
-      <p className="text-right text-xs text-muted-foreground">
-        {notes.length}
-        /
-        {NOTES_MAX}
-      </p>
+      <p className="text-right text-xs text-muted-foreground">{`${notes.length}/${NOTES_MAX}`}</p>
     </div>
   );
 }
 
-function Section({
-  title, children,
+/** Completed jobs: appdemo's "Installation report" summary. */
+function InstallationReport({
+  job, time,
 }: {
-  title: string;
-  children: ReactNode;
+  job: InstallerJobDetail;
+  time: string;
 }) {
+  const c = job.customer;
+  const devices = job.units.filter(u => u.device).length;
+  const sims = job.units.filter(u => u.sim).length;
+  const items = job.checklist.groups.flatMap(g => g.items);
+
+  const fields: [string, ReactNode][] = [
+    [
+      "Company",
+      c.customerName,
+    ],
+    [
+      "Site Contact Phone No.",
+      c.phone,
+    ],
+    [
+      "Site Contact Email",
+      c.email,
+    ],
+    [
+      "Installation location",
+      c.address,
+    ],
+    [
+      "Installation date",
+      c.scheduledDate,
+    ],
+    [
+      "Installation time",
+      time,
+    ],
+    [
+      "Vehicles · Devices",
+      `${job.completion.vehicles} · ${job.completion.devices}`,
+    ],
+  ];
+
+  function download() {
+    // ponytail: client-side text report from the job payload — swap for a server PDF if one lands.
+    const lines = [
+      `Installation report — ${job.jobNumber}`,
+      "",
+      ...fields.map(([
+        k,
+        v,
+      ]) => `${k}: ${typeof v === "string" ? v : "—"}`),
+      `Installer: ${job.completion.installer}`,
+      `Checklist: ${job.completion.checklist}`,
+      `Evidence: ${job.completion.evidenceCount} file(s)`,
+      "",
+      "Units:",
+      ...job.units.map(u => `- ${u.vehicle?.registrationNumber ?? `Unit ${u.index + 1}`} · ${u.device ? `${u.device.manufacturer} ${u.device.model} (${u.device.imei})` : "no device"} · ${u.sim ? `SIM ${u.sim.iccid}` : "no SIM"}`),
+    ];
+    downloadBlob(
+      new Blob(
+        [lines.join("\n")],
+        { type: "text/plain" },
+      ),
+      `installation-report-${job.jobNumber}.txt`,
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-3 sm:grid-cols-2">{children}</CardContent>
-    </Card>
+    <SleekCard
+      title="Installation report"
+      description="Summary of the completed installation."
+      action={(
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={download}
+        >
+          <Download className="h-4 w-4" />
+          {" "}
+          Download Report
+        </Button>
+      )}
+    >
+      <div className="space-y-5">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ReportStat
+            icon={Truck}
+            label="Vehicles fitted"
+            value={job.units.filter(u => u.vehicle).length}
+          />
+          <ReportStat
+            icon={Cpu}
+            label="Devices installed"
+            value={devices}
+          />
+          <ReportStat
+            icon={SignalHigh}
+            label="IoT SIMs activated"
+            value={sims}
+          />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {fields.map(([
+            label,
+            value,
+          ]) => (
+            <Info
+              key={label}
+              label={label}
+              value={value}
+            />
+          ))}
+        </div>
+        <UnitsTabs units={job.units} />
+        <div className="rounded-xl border p-4">
+          <p className="text-sm font-semibold">Installation checklist</p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {items.map(i => (
+              <li
+                key={i.key}
+                className="flex items-start gap-2 text-sm text-muted-foreground"
+              >
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                {" "}
+                {i.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </SleekCard>
   );
 }
 
-function SubSection({
-  title, children,
+function ReportStat({
+  icon: Icon, label, value,
 }: {
-  title: string;
-  children: ReactNode;
+  icon: ElementType;
+  label: string;
+  value: number;
 }) {
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+    <div className="flex items-center gap-3 rounded-xl border bg-muted/20 p-4">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="truncate text-xl font-bold">{value}</p>
+      </div>
     </div>
   );
 }
@@ -956,6 +1245,16 @@ function Info({
   );
 }
 
-function Empty({ children }: { children: ReactNode }) {
-  return <p className="text-sm text-muted-foreground sm:col-span-2 lg:col-span-3">{children}</p>;
+function Tile({
+  label, value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border p-3">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-0.5 break-words text-sm font-medium">{value || "—"}</p>
+    </div>
+  );
 }
