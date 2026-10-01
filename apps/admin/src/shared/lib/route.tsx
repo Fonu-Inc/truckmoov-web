@@ -156,7 +156,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/subscription",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformBilling")).default }),
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformCommercialBilling")).default }),
           },
           {
             path: "/security",

@@ -35,10 +35,12 @@ export function DashboardLayout() {
       <div
         role="presentation"
         className={cn(
-          "fixed inset-x-0 top-0 z-50 h-0.5 bg-primary transition-opacity duration-150 motion-reduce:transition-none",
-          navigating ? "animate-pulse opacity-100" : "opacity-0",
+          "pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden transition-opacity duration-150 motion-reduce:transition-none",
+          navigating ? "opacity-100" : "opacity-0",
         )}
-      />
+      >
+        <div className="h-full w-2/5 animate-loading-bar bg-primary motion-reduce:w-full motion-reduce:animate-none" />
+      </div>
       <ErrorBoundary><DashboardSidebar /></ErrorBoundary>
       <div
         className={cn(
