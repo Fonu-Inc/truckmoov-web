@@ -168,8 +168,8 @@ function toApiPriority(priority: JobFormSubmitData["priority"]): DispatchJobPrio
   return priority === "medium" ? "normal" : priority;
 }
 
-// The create route reads `cargoWeight` as tonnes, but the form's default unit is kg —
-// always send `load_weight_kg`. ponytail: cbm/pallets/boxes aren't weights; sent as-is.
+// The API takes kg (`cargoWeight` / `load_weight_kg`); the form lets the user pick a unit.
+// ponytail: cbm/pallets/boxes aren't weights; sent as-is.
 const KG_PER_UNIT: Record<string, number> = {
   kg: 1, tons: 1000, lbs: 0.453592,
 };

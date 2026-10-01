@@ -15,53 +15,54 @@ import type {
 
 // ─── Device detail — queries ──────────────────────────────────────────────────
 
-// ponytail: the device-detail routes are documented unwrapped, but dev answered with the
-// ServerResponse envelope on 2026-10-01 (and bare earlier the same day). Accept both
-// until the backend settles on one.
-function unwrap<T extends object>(body: T | { status: boolean, message: string, data: T }): T {
+type Enveloped<T> = T | { status: boolean, message: string, data: T }
+
+// Tracking is enveloped like every other service (services-go, 2026-10-01).
+// ponytail: still accepts a bare body in case an older deploy answers; drop once settled.
+function unwrap<T extends object>(body: Enveloped<T>): T {
   return 'data' in body && 'status' in body ? body.data : body as T
 }
 
 export async function getDeviceOverview({ deviceId }: { deviceId: string }) {
-  const { data } = await axiosInstance.get<DeviceOverviewResponse | { status: boolean, message: string, data: DeviceOverviewResponse }>(`/tracking/devices/${deviceId}/overview`)
+  const { data } = await axiosInstance.get<Enveloped<DeviceOverviewResponse>>(`/tracking/devices/${deviceId}/overview`)
   return unwrap(data)
 }
 
 export async function getDeviceConnectivity({ deviceId }: { deviceId: string }) {
-  const { data } = await axiosInstance.get<DeviceConnectivityResponse | { status: boolean, message: string, data: DeviceConnectivityResponse }>(`/tracking/devices/${deviceId}/connectivity`)
+  const { data } = await axiosInstance.get<Enveloped<DeviceConnectivityResponse>>(`/tracking/devices/${deviceId}/connectivity`)
   return unwrap(data)
 }
 
 export async function getDeviceTelemetry({ deviceId, limit }: DeviceTelemetryQuery) {
-  const { data } = await axiosInstance.get<DeviceTelemetryResponse | { status: boolean, message: string, data: DeviceTelemetryResponse }>(`/tracking/devices/${deviceId}/telemetry`, {
+  const { data } = await axiosInstance.get<Enveloped<DeviceTelemetryResponse>>(`/tracking/devices/${deviceId}/telemetry`, {
     params: { limit },
   })
   return unwrap(data)
 }
 
 export async function getDeviceFirmware({ deviceId }: { deviceId: string }) {
-  const { data } = await axiosInstance.get<DeviceFirmwareResponse | { status: boolean, message: string, data: DeviceFirmwareResponse }>(`/tracking/devices/${deviceId}/firmware`)
+  const { data } = await axiosInstance.get<Enveloped<DeviceFirmwareResponse>>(`/tracking/devices/${deviceId}/firmware`)
   return unwrap(data)
 }
 
 // ─── Vehicle locations — queries ──────────────────────────────────────────────
 
 export async function getVehicleLocations() {
-  const { data } = await axiosInstance.get<VehicleLocationsResponse>('/tracking/vehicles')
-  return data
+  const { data } = await axiosInstance.get<Enveloped<VehicleLocationsResponse>>('/tracking/vehicles')
+  return unwrap(data)
 }
 
 export async function getVehicleLocationHistory({ vehicleId, limit }: VehicleLocationHistoryQuery) {
-  const { data } = await axiosInstance.get<VehicleLocationHistoryResponse>(
+  const { data } = await axiosInstance.get<Enveloped<VehicleLocationHistoryResponse>>(
     `/tracking/vehicles/${vehicleId}/history`,
     { params: { limit } },
   )
-  return data
+  return unwrap(data)
 }
 
 // ─── Alerts — mutations ───────────────────────────────────────────────────────
 
 export async function publishTrackingAlert({ data: body }: PublishTrackingAlertPayload) {
-  const { data } = await axiosInstance.post<PublishTrackingAlertResponse>('/tracking/alerts', body)
-  return data
+  const { data } = await axiosInstance.post<Enveloped<PublishTrackingAlertResponse>>('/tracking/alerts', body)
+  return unwrap(data)
 }

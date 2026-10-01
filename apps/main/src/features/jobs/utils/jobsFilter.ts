@@ -30,7 +30,7 @@ export function countActiveFilters(value: JobsFilterValue): number {
   ].filter(Boolean).length;
 }
 
-/** Maps the popover value onto the GET /dispatch/jobs filter params (weight_from/to are tonnes, verified against dev). */
+/** Maps the popover value onto the GET /dispatch/jobs filter params. The slider is tonnes; weight_from/to are kg. */
 export function toJobsQueryParams(value: JobsFilterValue): NonNullable<JobsQuery["params"]> {
   const params: NonNullable<JobsQuery["params"]> = {};
   if (value.weightEnabled) {
@@ -39,9 +39,9 @@ export function toJobsQueryParams(value: JobsFilterValue): NonNullable<JobsQuery
       to,
     ] = value.weightRange;
     if (from)
-      params.weight_from = from;
+      params.weight_from = from * 1000;
     if (to)
-      params.weight_to = to;
+      params.weight_to = to * 1000;
   }
   if (value.amountEnabled) {
     const [

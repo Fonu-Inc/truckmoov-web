@@ -79,8 +79,8 @@ All served from `https://dev-api.truckmoov.com`.
 
 Three conventions fall out of those documents:
 
-- **Envelope.** Every service wraps responses in `ServerResponse<T>` **except
-  `tracking`**, and except `POST /notify/messages/send` and
+- **Envelope.** Every service wraps responses in `ServerResponse<T>` (tracking too, since
+  2026-10-01), except `POST /notify/messages/send` and
   `POST /notify/messages/retry/{id}` — those return the record unwrapped. Type
   them as bare payloads, not `ServerResponse<T>`.
 - **Casing.** Several `notification` and `dispatch` bodies accept both a
@@ -236,18 +236,18 @@ devDependencies so its peers don't resolve to the landing page's React 19.
 
 `apps/main/src/features/jobs/` — behaviour verified against dev, where it differs from the spec:
 
-- Job responses carry only `assigned_driver_id` / `assigned_vehicle_id` reliably; the
-  `assigned_driver_name` / `assigned_vehicle_reg` fields are undocumented and not always sent.
-  Names come from `useDrivers()` / `useVehicles()` by id.
+- Every job response carries `assigned_driver_name` / `assigned_vehicle_reg` / `_make` / `_model`
+  (null when unassigned or fleet can't be read). The page still prefers `useDrivers()` /
+  `useVehicles()` by id and falls back to these.
 - `POST /dispatch/jobs/{id}/assign` takes `driver_id`, `vehicle_id` or both (400 if neither).
   The side not sent keeps its current value; a vehicle alone leaves the job's status unchanged.
   The page sends only the side that was picked.
-- Driver ranking is `GET /fleet/dispatch/recommend-drivers` (`score`, `reasons`, `distanceKm`).
-  Fleet has no vehicle-recommend route, so vehicles are ranked client-side; proximity comes from
-  `GET /fleet/vehicles/nearest`.
-- `GET /dispatch/jobs` `weight_from` / `weight_to` are **tonnes**; `POST /dispatch/jobs`
-  `cargoWeight` is tonnes too, so the page always sends `load_weight_kg`.
-- `PATCH /dispatch/jobs/{id}` is not partial — it rejects a body without `pickup`.
+- Ranking comes from `GET /fleet/dispatch/recommend-drivers` and `/recommend-vehicles` (`score`,
+  `reasons`, `distanceKm`). Vehicles on an active job or in maintenance are returned ranked low.
+- Weights are **kg** everywhere (`cargoWeight`, `load_weight_kg`, `weight_from` / `weight_to`).
+  The filter slider is tonnes, so `toJobsQueryParams` multiplies by 1000.
+- `PATCH /dispatch/jobs/{id}` is a partial update; `stops`, when sent, replaces the list and
+  `deadline: ""` clears it. The edit form still sends the full body.
 
 ### Fleet page (`/fleet/*`)
 
@@ -295,8 +295,8 @@ devDependencies so its peers don't resolve to the landing page's React 19.
 - **Request Device** (`ui/RequestDeviceDialog.tsx`) posts `/fleet/device-setup-requests`. The API
   requires `manufacturer` and `trackerType`, which the design's form lacks, so step 1 adds them.
   Fulfilment (pickup store / delivery street) has no API field and is appended to `notes`.
-- **Tracking device-detail routes** (`/tracking/devices/:id/*`) have been seen both bare and wrapped
-  in `ServerResponse`; `tracking/requests.ts` unwraps either shape.
+- **Tracking routes** are wrapped in `ServerResponse`; `tracking/requests.ts` unwraps them (and
+  still accepts a bare body).
 
 ### Data bundles page (`/data-bundles/*`)
 
@@ -423,9 +423,10 @@ Failed API calls are normalized by `axiosInstance` and `onboardingInstance` to t
 
 ```ts
 export type ServerErrorResponse = {
-  error: string
+  error: string              // HTTP status text ("Bad Request"), not the reason
   message: string
   statusCode: number
+  errors?: string[]          // every problem (e.g. each validation failure); show `message`
   field?: string             // set on 400s that come with a per-field validation message
   retryAfterSeconds?: number // set on 429 cooldown responses
 }

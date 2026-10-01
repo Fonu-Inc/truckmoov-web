@@ -4,8 +4,8 @@ import type {
 } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
 import {
-  getNearestVehiclesQueryOptions,
   getRecommendDriversQueryOptions,
+  getRecommendVehiclesQueryOptions,
   useDrivers,
   useVehicles,
 } from "@truckmoov/api/fleet";
@@ -60,46 +60,15 @@ function sentence(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// ponytail: fleet has no vehicle-recommendation endpoint (only recommend-drivers), so
-// capacity fit + fuel are scored here — fleetflow's getVehicleSuitabilityScore weights.
-// Proximity is real (GET /fleet/vehicles/nearest). Replace with the server ranking once it exists.
-function scoreVehicle(v: Vehicle, requiredTonnes: number | undefined, requiredType: string | undefined, distance: number | null): Ranked {
-  const typeMismatch = Boolean(requiredType && v.type && v.type !== requiredType);
-  let score = 40 + (v.status === "active" ? 20 : 0) - (typeMismatch ? 30 : 0);
-  const fuel = v.fuelLevelPercent;
-  score += Math.min(
-    (fuel ?? 60) / 100,
-    1,
-  ) * 15;
-  const capacity = vehicleCapacityTonnes(v);
-  if (requiredTonnes && capacity) {
-    const ratio = requiredTonnes / capacity;
-    score += ratio <= 1 ? (1 - Math.abs(0.75 - ratio)) * 15 : -25;
-  }
-  else {
-    score += 8;
-  }
-  score += distance === null ? 4 : Math.max(
-    0,
-    1 - Math.min(
-      distance,
-      120,
-    ) / 120,
-  ) * 10;
+function distanceReason(distanceKm: number | null) {
+  return distanceKm !== null ? `≈ ${distanceKm} km from pickup point` : "Location not reported — proximity unscored";
+}
+
+function toRanked(id: string, score: number, reasons: string[], distanceKm: number | null): Ranked {
   return {
-    id: v.id,
-    score: Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(score),
-      ),
-    ),
-    reasons: [
-      ...(typeMismatch ? [`${sentence(v.type ?? "")} — job needs a ${requiredType}`] : []),
-      requiredTonnes ? `Capacity ${capacity ?? "—"}t vs ${requiredTonnes}t cargo` : `Rated capacity ${capacity ?? "—"}t`,
-      typeof fuel === "number" ? `Fuel level ${fuel}%` : "Fuel level not reported",
-      distance !== null ? `≈ ${distance} km from pickup point` : "Location not reported — proximity unscored",
+    id, score: Math.round(score), reasons: [
+      ...reasons.map(sentence),
+      distanceReason(distanceKm),
     ],
   };
 }
@@ -141,7 +110,6 @@ export function AssignResourceDialog({
 
   const pickupLat = job?.pickup?.latitude;
   const pickupLng = job?.pickup?.longitude;
-  const hasPickup = typeof pickupLat === "number" && typeof pickupLng === "number";
   const requiredTonnes = job?.load_weight_kg ? job.load_weight_kg / 1000 : undefined;
   const vehicleType = job?.required_vehicle_type as Vehicle["type"] | undefined;
 
@@ -159,13 +127,17 @@ export function AssignResourceDialog({
     }),
     enabled: open && kind === "driver",
   });
-  const nearestQuery = useQuery({
-    ...getNearestVehiclesQueryOptions({
+  const recommendVehiclesQuery = useQuery({
+    ...getRecommendVehiclesQueryOptions({
       params: {
-        lat: pickupLat ?? 0, lng: pickupLng ?? 0, limit: 50,
+        pickupLat,
+        pickupLng,
+        requiredWeightKg: job?.load_weight_kg || undefined,
+        vehicleType: vehicleType ?? undefined,
+        limit: 50,
       },
     }),
-    enabled: open && kind === "vehicle" && hasPickup,
+    enabled: open && kind === "vehicle",
   });
 
   const availableDrivers = useMemo(
@@ -176,26 +148,16 @@ export function AssignResourceDialog({
     () => (vehiclesQuery.data?.data ?? []).filter(v => v.status === "active"),
     [vehiclesQuery.data?.data],
   );
-  const vehicleDistance = useMemo(
-    () => new Map((nearestQuery.data?.data ?? []).map(n => [
-      n.vehicleId,
-      n.distanceKm,
-    ])),
-    [nearestQuery.data?.data],
-  );
-
   // Driver ranking comes from GET /fleet/dispatch/recommend-drivers.
   const rankedDrivers: Ranked[] = useMemo(
     () => (recommendQuery.data?.data ?? [])
       .filter(r => availableDrivers.some(d => d.id === r.driverId))
-      .map(r => ({
-        id: r.driverId,
-        score: Math.round(r.score),
-        reasons: [
-          ...r.reasons.map(sentence),
-          r.distanceKm !== null ? `≈ ${r.distanceKm} km from pickup point` : "Location not reported — proximity unscored",
-        ],
-      }))
+      .map(r => toRanked(
+        r.driverId,
+        r.score,
+        r.reasons,
+        r.distanceKm,
+      ))
       .sort((a, b) => b.score - a.score),
     [
       recommendQuery.data?.data,
@@ -203,25 +165,26 @@ export function AssignResourceDialog({
     ],
   );
 
+  // Vehicle ranking comes from GET /fleet/dispatch/recommend-vehicles.
   const rankedVehicles: Ranked[] = useMemo(
-    () => availableVehicles
-      .map(v => scoreVehicle(
-        v,
-        requiredTonnes,
-        job?.required_vehicle_type,
-        vehicleDistance.get(v.id) ?? null,
+    () => (recommendVehiclesQuery.data?.data ?? [])
+      .filter(r => availableVehicles.some(v => v.id === r.vehicleId))
+      .map(r => toRanked(
+        r.vehicleId,
+        r.score,
+        r.reasons,
+        r.distanceKm,
       ))
       .sort((a, b) => b.score - a.score),
     [
+      recommendVehiclesQuery.data?.data,
       availableVehicles,
-      requiredTonnes,
-      job?.required_vehicle_type,
-      vehicleDistance,
     ],
   );
 
   const ranked = kind === "driver" ? rankedDrivers : rankedVehicles;
-  const isRanking = kind === "driver" ? recommendQuery.isLoading : nearestQuery.isLoading;
+  const rankQuery = kind === "driver" ? recommendQuery : recommendVehiclesQuery;
+  const isRanking = rankQuery.isLoading;
   const isListLoading = kind === "driver" ? driversQuery.isLoading : vehiclesQuery.isLoading;
 
   const runAI = () => {
@@ -394,7 +357,7 @@ export function AssignResourceDialog({
                 %
               </span>
             )}
-            {vehicleDistance.has(v.id) && (
+            {recommendVehiclesQuery.data?.data.some(r => r.vehicleId === v.id && r.distanceKm !== null) && (
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 Live location
@@ -439,13 +402,13 @@ export function AssignResourceDialog({
         </div>
       );
     }
-    if (kind === "driver" && recommendQuery.isError) {
+    if (rankQuery.isError) {
       return (
         <div className="py-10 text-center space-y-1">
-          <p className="text-sm text-destructive">{recommendQuery.error.message}</p>
+          <p className="text-sm text-destructive">{rankQuery.error.message}</p>
           <Button
             variant="link"
-            onClick={() => void recommendQuery.refetch()}
+            onClick={() => void rankQuery.refetch()}
           >
             Try again
           </Button>

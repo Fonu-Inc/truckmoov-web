@@ -113,6 +113,7 @@ import {
   getSimDataBundles,
   getVehicleSafetyRadar,
   recommendDrivers,
+  recommendVehicles,
   setGeofenceVehicles,
   updateDeviceSetupRequestStatus,
   upsertFuelBudget,
@@ -198,6 +199,7 @@ import type {
   DataBundlesQuery,
   DocumentDownloadUrlQuery,
   RecommendDriversQuery,
+  RecommendVehiclesQuery,
   RenewComplianceDocumentPayload,
   LegacyGpsDevicesQuery,
   MaintenanceProfilesQuery,
@@ -253,6 +255,7 @@ export const FLEET_QUERY_KEY = {
   driverFatigueById: (id: string) => ['fleet', 'driver', id, 'fatigue'],
   dispatchSearch: (payload?: DispatchSearchQuery) => ['fleet', 'dispatchSearch', payload],
   recommendDrivers: (payload?: RecommendDriversQuery) => ['fleet', 'recommendDrivers', payload],
+  recommendVehicles: (payload?: RecommendVehiclesQuery) => ['fleet', 'recommendVehicles', payload],
   carriers: ['fleet', 'carriers'],
   dataBundles: (payload?: DataBundlesQuery) => ['fleet', 'dataBundles', payload],
   alertStats: ['fleet', 'alertStats'],
@@ -585,6 +588,13 @@ export function getRecommendDriversQueryOptions(payload?: RecommendDriversQuery)
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.recommendDrivers(payload),
     queryFn: () => recommendDrivers(payload),
+  })
+}
+
+export function getRecommendVehiclesQueryOptions(payload?: RecommendVehiclesQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.recommendVehicles(payload),
+    queryFn: () => recommendVehicles(payload),
   })
 }
 
@@ -1088,6 +1098,10 @@ export function useDispatchSearch(payload?: DispatchSearchQuery) {
 
 export function useRecommendDrivers(payload?: RecommendDriversQuery) {
   return useQuery(getRecommendDriversQueryOptions(payload))
+}
+
+export function useRecommendVehicles(payload?: RecommendVehiclesQuery) {
+  return useQuery(getRecommendVehiclesQueryOptions(payload))
 }
 
 export function useSimCarriers() {

@@ -415,7 +415,7 @@ export type LegacyGpsDevicesQuery = {
 
 // TRU-FE-3 § 1 — new filter bands and preferred-channel filter.
 export type DriverScoreBand = 'excellent' | 'strong' | 'fair' | 'poor' | 'unscored'
-export type DriverTripBand = 'high' | 'medium' | 'low' | 'none'
+export type DriverTripBand = '0' | '1-50' | '51-200' | '201-500' | '500+'
 
 export type DriversQuery = {
   params?: {
@@ -724,6 +724,32 @@ export type RecommendDriversQuery = {
     pickupLng?: number
     limit?: number
   }
+}
+
+export type RecommendVehiclesQuery = {
+  params?: {
+    requiredWeightKg?: number
+    vehicleType?: VehicleType
+    fuelType?: string
+    pickupLat?: number
+    pickupLng?: number
+    limit?: number
+  }
+}
+
+/** GET /fleet/dispatch/recommend-vehicles row. Vehicles on an active job or in maintenance are ranked low, not left out. */
+export type RecommendedVehicle = {
+  vehicleId: string
+  plateNumber: string
+  make: string | null
+  model: string | null
+  type: string | null
+  fuelType: string | null
+  status: string
+  capacityWeightKg: number | null
+  score: number
+  distanceKm: number | null
+  reasons: string[]
 }
 
 export type RecommendedDriver = {
@@ -1212,7 +1238,6 @@ export type FleetDriver = {
   trips?: number | null
   tripBand?: DriverTripBand | null
   preferredChannel?: DriverCommunicationPreference | null
-  // ponytail: returned by /fleet/drivers but absent from DriverSchema in the spec.
   performanceScore?: number | null
   createdAt: string
   updatedAt: string
@@ -1877,6 +1902,7 @@ export type FleetFinancialStatementResponse = ServerResponse<FleetFinancialState
 export type SimCarrierListResponse = ServerResponse<SimCarrier[]>
 export type SimDataBundleListResponse = ServerResponse<SimDataBundle[]>
 export type RecommendedDriverListResponse = ServerResponse<RecommendedDriver[]>
+export type RecommendedVehicleListResponse = ServerResponse<RecommendedVehicle[]>
 export type VehicleSafetyRadarResponse = ServerResponse<VehicleSafetyRadar>
 export type FuelBudgetListResponse = ServerResponse<FuelBudget[]>
 export type FuelBudgetResponse = ServerResponse<FuelBudget>

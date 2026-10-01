@@ -136,6 +136,8 @@ import type {
   NearestVehiclesQuery,
   RecommendDriversQuery,
   RecommendedDriverListResponse,
+  RecommendVehiclesQuery,
+  RecommendedVehicleListResponse,
   RecordFuelTransactionPayload,
   RegisterGeofencePayload,
   RegisterGpsDevicePayload,
@@ -681,6 +683,13 @@ export async function getDispatchSearch(payload?: DispatchSearchQuery) {
 
 export async function recommendDrivers(payload?: RecommendDriversQuery) {
   const { data } = await axiosInstance.get<RecommendedDriverListResponse>('/fleet/dispatch/recommend-drivers', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function recommendVehicles(payload?: RecommendVehiclesQuery) {
+  const { data } = await axiosInstance.get<RecommendedVehicleListResponse>('/fleet/dispatch/recommend-vehicles', {
     params: payload?.params,
   })
   return data
