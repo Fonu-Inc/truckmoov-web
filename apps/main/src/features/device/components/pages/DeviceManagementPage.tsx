@@ -85,6 +85,7 @@ import {
 } from "@/components/shadcn/select";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DeviceDetailsSheet } from "@/features/device/components/ui/DeviceDetailsSheet";
+import { DeviceProvisionBadge } from "@/features/device/components/ui/DeviceProvisionBadge";
 import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDialog";
 import { DeviceRequestsTracker } from "@/features/device/components/ui/DeviceRequestsTracker";
 import { RequestDeviceDialog } from "@/features/device/components/ui/RequestDeviceDialog";
@@ -776,6 +777,10 @@ export default function DeviceManagement() {
                                       >
                                         {state}
                                       </span>
+                                      <DeviceProvisionBadge
+                                        device={device}
+                                        className="mt-1.5 max-w-64"
+                                      />
                                     </td>
                                     <td className="py-4">
                                       {signal !== null && signal !== undefined
@@ -984,6 +989,7 @@ export default function DeviceManagement() {
           open={isDetailsOpen}
           onOpenChange={setIsDetailsOpen}
           device={toIoTDevice(detailDevice)}
+          provisioning={detailDevice}
           vehicle={detailVehicle
             ? {
                 id: detailVehicle.id,

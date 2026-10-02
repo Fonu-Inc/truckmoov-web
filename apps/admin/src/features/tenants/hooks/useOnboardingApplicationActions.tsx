@@ -2,6 +2,7 @@ import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import {
   useApproveSystemOnboardingApplication,
   useMarkSystemOnboardingApplicationProvisioned,
+  useRefundSystemOnboardingPayment,
   useRejectSystemOnboardingApplication,
   useRequestChangesSystemOnboardingApplication,
   useResendSystemOnboardingApplicationSetupLink,
@@ -17,7 +18,7 @@ type Target = {
   organizationName: string;
 };
 
-type ReasonKind = "reject" | "changes" | "provision" | "payment_resolved" | "payment_refund";
+type ReasonKind = "reject" | "changes" | "provision" | "payment_resolved" | "payment_refund" | "payment_issue_refund";
 
 const REASON_DIALOG: Record<ReasonKind, {
   title: string;
@@ -61,6 +62,13 @@ const REASON_DIALOG: Record<ReasonKind, {
     placeholder: "What was paid and what should be refunded. Staff only.",
     describe: name => `${name} — flags this payment so finance can refund it.`,
   },
+  payment_issue_refund: {
+    title: "Issue refund",
+    submitLabel: "Refund the money",
+    fieldLabel: "Note",
+    placeholder: "Why this refund is being issued. Staff only.",
+    describe: name => `${name} — the full amount goes back to the card it was paid with, and the applicant is emailed. This cannot be undone.`,
+  },
 };
 
 /** Application-level decisions + provisioning, shared by the queue and the detail page. */
@@ -71,11 +79,12 @@ export function useOnboardingApplicationActions() {
   const resendMutation = useResendSystemOnboardingApplicationSetupLink();
   const provisionedMutation = useMarkSystemOnboardingApplicationProvisioned();
   const paymentReviewMutation = useReviewSystemOnboardingPayment();
+  const refundMutation = useRefundSystemOnboardingPayment();
   const [
     reasonTarget,
     setReasonTarget,
   ] = useState<{
-    kind: ReasonKind; application: Target;
+    kind: ReasonKind; application: Target; paymentId?: string;
   } | null>(null);
 
   const approve = async (application: Target) => {
@@ -119,10 +128,12 @@ export function useOnboardingApplicationActions() {
     application: Target,
     outcome: "resolved" | "refund_needed",
     note: string,
+    paymentId?: string,
   ) => {
     try {
       await paymentReviewMutation.mutateAsync({
         id: application.id,
+        paymentId,
         data: {
           outcome,
           note,
@@ -135,6 +146,29 @@ export function useOnboardingApplicationActions() {
       toast.error(errorMessage(
         error,
         "Could not save the payment review",
+      ));
+    }
+  };
+
+  const issueRefund = async (application: Target, note: string, paymentId?: string) => {
+    try {
+      const res = await refundMutation.mutateAsync({
+        id: application.id,
+        paymentId,
+        data: { note },
+      });
+      if (res.data.alreadyRefunded)
+        toast.success("This payment was already refunded");
+      else if (res.data.refundStatus === "processing")
+        toast.success("Refund accepted by the payment provider. The applicant is emailed once it completes.");
+      else
+        toast.success("Refund issued. The applicant has been emailed.");
+      setReasonTarget(null);
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "The refund could not be issued",
       ));
     }
   };
@@ -160,7 +194,7 @@ export function useOnboardingApplicationActions() {
     if (!reasonTarget)
       return;
     const {
-      kind, application,
+      kind, application, paymentId,
     } = reasonTarget;
     if (kind === "provision") {
       return markProvisioned(
@@ -173,13 +207,17 @@ export function useOnboardingApplicationActions() {
         application,
         "resolved",
         reason,
+        paymentId,
       );
     }
+    if (kind === "payment_issue_refund")
+      return issueRefund(application, reason, paymentId);
     if (kind === "payment_refund") {
       return reviewPayment(
         application,
         "refund_needed",
         reason,
+        paymentId,
       );
     }
     try {
@@ -217,7 +255,7 @@ export function useOnboardingApplicationActions() {
       fieldLabel={dialogCopy.fieldLabel}
       placeholder={dialogCopy.placeholder}
       destructive={reasonTarget?.kind === "reject"}
-      loading={rejectMutation.isPending || changesMutation.isPending || provisionedMutation.isPending || paymentReviewMutation.isPending}
+      loading={rejectMutation.isPending || changesMutation.isPending || provisionedMutation.isPending || paymentReviewMutation.isPending || refundMutation.isPending}
       onOpenChange={open => !open && setReasonTarget(null)}
       onSubmit={submitReason}
     />
@@ -235,13 +273,20 @@ export function useOnboardingApplicationActions() {
       kind: "changes",
       application,
     }),
-    openPaymentResolved: (application: Target) => setReasonTarget({
+    openPaymentResolved: (application: Target, paymentId?: string) => setReasonTarget({
       kind: "payment_resolved",
       application,
+      paymentId,
     }),
-    openPaymentRefund: (application: Target) => setReasonTarget({
+    openPaymentRefund: (application: Target, paymentId?: string) => setReasonTarget({
       kind: "payment_refund",
       application,
+      paymentId,
+    }),
+    openIssueRefund: (application: Target, paymentId?: string) => setReasonTarget({
+      kind: "payment_issue_refund",
+      application,
+      paymentId,
     }),
     reasonDialog,
     isPending: approveMutation.isPending || provisionedMutation.isPending || resendMutation.isPending,

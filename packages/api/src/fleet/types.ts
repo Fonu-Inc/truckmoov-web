@@ -1333,6 +1333,11 @@ export type FleetDevice = {
   assignedAt: string | null
   traccarDeviceId: string | null
   provisionStatus: DeviceProvisionStatus
+  /** Failed attempts at registering the device with the tracking network. */
+  provisionAttempts?: number
+  /** When the next retry runs. Null once retries are used up. */
+  provisionNextAttemptAt?: string | null
+  provisionError?: string | null
   /** A tenant can reinstate only its own suspensions; a platform one stays until an admin lifts it. */
   suspendedBy?: 'tenant' | 'platform' | null
   suspendedAt?: string | null

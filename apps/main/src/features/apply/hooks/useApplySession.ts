@@ -30,8 +30,8 @@ function readStoredId() {
  * A resume link (from "Save & Continue Later" or a request-changes email) lands on
  * `/apply` carrying the draft token and application id.
  *
- * ponytail: the link's parameter names aren't in the Swagger spec; `token` plus
- * `applicationId` (or `id`) is assumed. Confirm against a real resume email.
+ * The emails link to `/apply?token=<token>&applicationId=<id>`. The stage then decides the screen,
+ * so an approved application lands on payment or installation.
  */
 function adoptResumeLink() {
   if (typeof window === "undefined")

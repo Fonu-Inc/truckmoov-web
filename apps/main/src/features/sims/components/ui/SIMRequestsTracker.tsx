@@ -14,9 +14,13 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { cn } from "@/lib/utils";
@@ -25,6 +29,13 @@ type SIMRequestsTrackerProps = {
   // Reserved for future use; section is read-only and has no actions.
   onNewRequest?: () => void;
 };
+
+const PAGE_SIZES = [
+  10,
+  25,
+  50,
+  100,
+];
 
 const statusConfig: Record<string, {
   label: string; color: string; icon: React.ReactNode;
@@ -58,8 +69,18 @@ const statusConfig: Record<string, {
 
 export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
   const { user } = useAuthStore();
-  const requestsQuery = useQuery(getSimRequestsQueryOptions());
+  const [
+    page,
+    setPage,
+  ] = useState(1);
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(PAGE_SIZES[1]);
+  const requestsQuery = useQuery(getSimRequestsQueryOptions({ params: { page, limit: pageSize } }));
   const requests = requestsQuery.data?.data.items ?? [];
+  const total = requestsQuery.data?.data.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const loading = requestsQuery.isLoading;
   const [
     expandedId,
@@ -243,6 +264,50 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
                 </div>
               );
             })}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <p className="text-xs text-muted-foreground">
+                {`Page ${page} of ${totalPages} · ${total} request${total === 1 ? "" : "s"}`}
+              </p>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(value) => {
+                    setPageSize(Number(value));
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[110px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZES.map(size => (
+                      <SelectItem
+                        key={size}
+                        value={String(size)}
+                      >
+                        {`${size} per page`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

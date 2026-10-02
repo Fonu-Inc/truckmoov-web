@@ -1,3 +1,4 @@
+import type { FleetDevice } from "@truckmoov/api/fleet";
 import type { DeviceHealth } from "@truckmoov/api/tracking";
 import type { DeviceHealthStatus } from "./DeviceHealthBadge";
 import type {
@@ -51,6 +52,7 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { cn } from "@/lib/utils";
+import { DeviceProvisionBadge } from "./DeviceProvisionBadge";
 
 type ExtendedDevice = {
   health_status?: DeviceHealthStatus | null;
@@ -69,6 +71,7 @@ type DeviceDetailsSheetProps = {
   device: ExtendedDevice | null;
   vehicle?: Vehicle | null;
   sim?: SIMCard | null;
+  provisioning?: Pick<FleetDevice, "provisionStatus" | "provisionAttempts" | "provisionNextAttemptAt" | "provisionError"> | null;
 };
 
 const healthTone: Record<DeviceHealth, string> = {
@@ -94,6 +97,7 @@ export function DeviceDetailsSheet({
   device,
   vehicle,
   sim,
+  provisioning,
 }: DeviceDetailsSheetProps) {
   const deviceId = device?.id ?? "";
   const overviewQuery = useDeviceOverview(deviceId);
@@ -162,6 +166,7 @@ export function DeviceDetailsSheet({
             </div>
           </DialogTitle>
           <DialogDescription className="sr-only">Device details and telemetry</DialogDescription>
+          {provisioning && <DeviceProvisionBadge device={provisioning} />}
         </DialogHeader>
 
         <div className="mt-6">

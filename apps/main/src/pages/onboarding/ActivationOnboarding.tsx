@@ -337,7 +337,7 @@ export default function ActivationOnboarding() {
       return;
     }
     try {
-      await registerSimsMutation.mutateAsync({
+      const response = await registerSimsMutation.mutateAsync({
         data: {
           sims: [
             {
@@ -346,6 +346,10 @@ export default function ActivationOnboarding() {
           ],
         },
       });
+      if (response.data.skipped.length > 0) {
+        toast.error("This ICCID cannot be added");
+        return;
+      }
       setAddedSims(prev => [
         ...prev,
         {

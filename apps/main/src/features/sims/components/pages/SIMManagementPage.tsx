@@ -581,9 +581,9 @@ export default function SIMManagement() {
       <SIMBulkUploadDialog
         open={isBulkUploadOpen}
         onOpenChange={setIsBulkUploadOpen}
-        onUpload={(newSIMs) => {
+        onUpload={(importedCount) => {
           refetch();
-          toast.success(`${newSIMs.length} SIM cards imported successfully`);
+          toast.success(`${importedCount} SIM cards imported successfully`);
           setIsBulkUploadOpen(false);
         }}
       />

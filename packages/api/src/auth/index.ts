@@ -112,6 +112,7 @@ import {
   getSystemDevices,
   getSystemDevicesCatalog,
   getStillReportingDevices,
+  actOnUnrecognisedDevice,
   getUnrecognisedDevices,
   getSystemDevicesSummary,
   getSystemDeviceManufacturers,
@@ -329,6 +330,7 @@ import {
   getSystemOnboardingApplicationTimeline,
   markSystemOnboardingApplicationProvisioned,
   reviewSystemOnboardingPayment,
+  refundSystemOnboardingPayment,
   getSystemOnboardingApplications,
   rejectSystemOnboardingApplication,
   rejectSystemOnboardingApplicationDocument,
@@ -391,6 +393,7 @@ import type {
   DataBundleTransactionsQuery,
   SimDataBundlesQuery,
   SimsQuery,
+  SimRequestsQuery,
   GetSimPayload,
   GetSimRequestPayload,
   SystemFailedLoginsQuery,
@@ -1411,6 +1414,15 @@ export function useUnrecognisedDevices() {
   return useQuery(getUnrecognisedDevicesQueryOptions())
 }
 
+export function useActOnUnrecognisedDevice() {
+  return useMutation({
+    mutationFn: actOnUnrecognisedDevice,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.unrecognisedDevices })
+    },
+  })
+}
+
 export function getSystemDevicesCatalogQueryOptions(payload?: SystemDeviceCatalogQuery) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemDevicesCatalog(payload),
@@ -1965,10 +1977,11 @@ export function getSimCarriersQueryOptions() {
   })
 }
 
-export function getSimRequestsQueryOptions() {
+export function getSimRequestsQueryOptions(payload?: SimRequestsQuery) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.simRequests,
-    queryFn: getSimRequests,
+    queryKey: [...AUTH_QUERY_KEY.simRequests, payload?.params ?? {}],
+    queryFn: () => getSimRequests(payload),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -3009,6 +3022,13 @@ export function useMarkSystemOnboardingApplicationProvisioned() {
 export function useReviewSystemOnboardingPayment() {
   return useMutation({
     mutationFn: reviewSystemOnboardingPayment,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useRefundSystemOnboardingPayment() {
+  return useMutation({
+    mutationFn: refundSystemOnboardingPayment,
     onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
   })
 }

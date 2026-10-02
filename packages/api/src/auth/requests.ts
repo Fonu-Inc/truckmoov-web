@@ -66,6 +66,7 @@ import type {
   UnassignSimDevicePayload,
   SimCarriersResponse,
   SimRequestsListResponse,
+  SimRequestsQuery,
   SimRequestResponse,
   GetSimRequestPayload,
   DataBundleAllocationsListResponse,
@@ -218,6 +219,7 @@ import type {
   SimActionResponse,
   SimDataBundlesResponse,
   SimImportResponse,
+  OnboardingSimImportResponse,
   StandardApiResponse,
   SupportTicketContextPayload,
   SupportTicketContextResponse,
@@ -254,6 +256,8 @@ import type {
   SystemDeviceSetupRequestsQuery,
   SystemDeviceSetupSummaryResponse,
   StillReportingDevicesResponse,
+  UnrecognisedDeviceActionPayload,
+  UnrecognisedDeviceActionResponse,
   UnrecognisedDevicesResponse,
   SystemDeviceSummaryResponse,
   SystemDeviceManufacturersResponse,
@@ -395,6 +399,8 @@ import type {
   SystemOnboardingProvisionedPayload,
   SystemOnboardingProvisionedResponse,
   SystemReviewOnboardingPaymentPayload,
+  SystemRefundOnboardingPaymentPayload,
+  SystemRefundOnboardingPaymentResponse,
   SystemReviewOnboardingPaymentResponse,
   SystemAuditLogFiltersResponse,
   SystemAuditLogQuery,
@@ -993,6 +999,14 @@ export async function getUnrecognisedDevices() {
   return data
 }
 
+export async function actOnUnrecognisedDevice({ imei, action, data: body }: UnrecognisedDeviceActionPayload) {
+  const { data } = await axiosInstance.post<UnrecognisedDeviceActionResponse>(
+    `/auth/system/devices/unrecognised/${encodeURIComponent(imei)}/${action}`,
+    body,
+  )
+  return data
+}
+
 export async function getSystemDevice({ id }: { id: string }) {
   const { data } = await axiosInstance.get<SystemDeviceDetailResponse>(`/auth/system/devices/${id}`)
   return data
@@ -1387,7 +1401,7 @@ export async function registerSims({ data }: RegisterSimsPayload) {
 export async function importSimsFromCsv(file: File) {
   const form = new FormData()
   form.append('file', file)
-  const { data } = await axiosInstance.post<SimImportResponse>('/auth/onboarding/sims/import', form, {
+  const { data } = await axiosInstance.post<OnboardingSimImportResponse>('/auth/onboarding/sims/import', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return data
@@ -1494,8 +1508,10 @@ export async function getSimCarriers() {
   return data
 }
 
-export async function getSimRequests() {
-  const { data } = await axiosInstance.get<SimRequestsListResponse>('/auth/sims/requests')
+export async function getSimRequests(payload?: SimRequestsQuery) {
+  const { data } = await axiosInstance.get<SimRequestsListResponse>('/auth/sims/requests', {
+    params: payload?.params,
+  })
   return data
 }
 
@@ -2433,9 +2449,22 @@ export async function markSystemOnboardingApplicationProvisioned({ id, data: bod
   return data
 }
 
-export async function reviewSystemOnboardingPayment({ id, data: body }: SystemReviewOnboardingPaymentPayload) {
+function onboardingPaymentPath(id: string, paymentId: string | undefined, action: 'review' | 'refund') {
+  const payment = paymentId ? `/${paymentId}` : ''
+  return `/auth/system/onboarding/applications/${id}/payment${payment}/${action}`
+}
+
+export async function reviewSystemOnboardingPayment({ id, paymentId, data: body }: SystemReviewOnboardingPaymentPayload) {
   const { data } = await axiosInstance.post<SystemReviewOnboardingPaymentResponse>(
-    `/auth/system/onboarding/applications/${id}/payment/review`,
+    onboardingPaymentPath(id, paymentId, 'review'),
+    body,
+  )
+  return data
+}
+
+export async function refundSystemOnboardingPayment({ id, paymentId, data: body }: SystemRefundOnboardingPaymentPayload) {
+  const { data } = await axiosInstance.post<SystemRefundOnboardingPaymentResponse>(
+    onboardingPaymentPath(id, paymentId, 'refund'),
     body,
   )
   return data

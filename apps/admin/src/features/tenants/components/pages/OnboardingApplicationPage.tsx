@@ -216,13 +216,15 @@ export default function OnboardingApplicationPage() {
           Waiting for device stock. Payment opens by itself once enough devices are available, or you can open it now — if stock is still short, you will be asked for a reason.
         </p>
       )}
-      {app.paymentReview && (
+      {app.paymentReviews.map(review => (
         <PaymentReviewNotice
-          review={app.paymentReview}
-          onResolved={() => actions.openPaymentResolved(app)}
-          onRefund={() => actions.openPaymentRefund(app)}
+          key={review.paymentId}
+          review={review}
+          onResolved={() => actions.openPaymentResolved(app, review.paymentId)}
+          onRefund={() => actions.openPaymentRefund(app, review.paymentId)}
+          onIssueRefund={() => actions.openIssueRefund(app, review.paymentId)}
         />
-      )}
+      ))}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -309,9 +311,25 @@ function PaymentReviewNotice({
   review,
   onResolved,
   onRefund,
+  onIssueRefund,
 }: {
-  review: SystemOnboardingPaymentReview; onResolved: () => void; onRefund: () => void;
+  review: SystemOnboardingPaymentReview; onResolved: () => void; onRefund: () => void; onIssueRefund: () => void;
 }) {
+  if (review.status === "refunded") {
+    return (
+      <div className="flex gap-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div>
+          <p className="font-medium">{`Refunded: payment ${review.reference} was sent back to the customer`}</p>
+          <p className="text-muted-foreground">
+            {review.refundedAt ? formatDateTime(review.refundedAt) : ""}
+            {review.reviewNote ? ` · ${review.reviewNote}` : ""}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  const refundPending = review.reviewOutcome === "refund_needed";
   const paid = review.paidNgn === null
     ? "an unknown amount"
     : review.currency && review.currency !== "NGN"
@@ -325,6 +343,12 @@ function PaymentReviewNotice({
           <p className="font-medium">
             {`Amount mismatch: expected ${formatCurrency(review.expectedNgn)}, paid ${paid}, reference ${review.reference}`}
           </p>
+          {review.refundProcessing && (
+            <p className="text-muted-foreground">Refund accepted by the payment provider. It completes on its own and the applicant is emailed then.</p>
+          )}
+          {review.refundError && (
+            <p className="text-destructive">{`The last refund attempt failed: ${review.refundError}`}</p>
+          )}
           {review.reviewOutcome
             ? (
                 <p className="text-muted-foreground">
@@ -341,6 +365,14 @@ function PaymentReviewNotice({
         </div>
       </div>
       <div className="flex shrink-0 flex-wrap gap-2">
+        {refundPending && !review.refundProcessing && (
+          <Button
+            size="sm"
+            onClick={onIssueRefund}
+          >
+            Issue refund
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -348,13 +380,15 @@ function PaymentReviewNotice({
         >
           Mark resolved
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRefund}
-        >
-          Refund needed
-        </Button>
+        {!refundPending && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefund}
+          >
+            Refund needed
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { SIMCard } from "@/types";
+import type { SimImportResult } from "@truckmoov/api/auth";
 import {
   useDownloadSimImportTemplate, useImportSims,
 } from "@truckmoov/api/auth";
@@ -18,10 +18,15 @@ import { cn } from "@/lib/utils";
 type SIMBulkUploadDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpload: (sims: Partial<SIMCard>[]) => void;
+  onUpload: (importedCount: number) => void;
 };
 
-type ParsedSIM = Partial<SIMCard> & {
+type ParsedSIM = {
+  iccid?: string;
+  imsi?: string;
+  mobileNumber?: string;
+  networkOperator?: string;
+  dataLimit: number;
   isValid: boolean;
   errors: string[];
 };
@@ -48,6 +53,10 @@ export function SIMBulkUploadDialog({
     isDragging,
     setIsDragging,
   ] = useState(false);
+  const [
+    result,
+    setResult,
+  ] = useState<SimImportResult | null>(null);
   const downloadTemplateMutation = useDownloadSimImportTemplate();
   const importSimsMutation = useImportSims();
 
@@ -112,15 +121,24 @@ export function SIMBulkUploadDialog({
 
   const validCount = parsedData.filter(r => r.isValid).length;
 
+  const finish = (importedCount: number) => {
+    onUpload(importedCount);
+    setFile(null);
+    setParsedData([]);
+    setResult(null);
+  };
+
   const importFile = async () => {
     if (!file || validCount === 0)
       return;
 
     try {
-      await importSimsMutation.mutateAsync(file);
-      onUpload(parsedData.filter(r => r.isValid));
-      setFile(null);
-      setParsedData([]);
+      const { data } = await importSimsMutation.mutateAsync(file);
+      if (data.skippedCount > 0 || data.failedCount > 0) {
+        setResult(data);
+        return;
+      }
+      finish(data.importedCount);
     }
     catch (error) {
       toast.error(getErrorMessage(
@@ -140,103 +158,156 @@ export function SIMBulkUploadDialog({
           <DialogTitle>Bulk Import SIM Cards</DialogTitle>
           <DialogDescription>Upload CSV to register multiple SIM cards.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          {!file
-            ? (
-                <>
-                  <div className="flex items-center justify-between rounded-lg border bg-secondary/30 p-3">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <span className="text-sm font-medium">Download Template</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={downloadTemplate}
-                      disabled={downloadTemplateMutation.isPending}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {downloadTemplateMutation.isPending ? "Downloading..." : "Download"}
-                    </Button>
-                  </div>
-                  <div
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
-                    className={cn(
-                      "relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8",
-                      isDragging ? "border-primary bg-primary/5" : "border-border",
-                    )}
-                  >
-                    <Upload className="h-10 w-10 text-muted-foreground mb-4" />
-                    <p className="text-sm font-medium">Drag and drop CSV file here</p>
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
-                      className="absolute inset-0 cursor-pointer opacity-0"
-                    />
-                  </div>
-                </>
-              )
-            : (
-                <>
-                  <div className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-8 w-8 text-primary" />
-                      <p className="font-medium">{file.name}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => {
-                        setFile(null);
-                        setParsedData([]);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-3">
-                      <CheckCircle className="h-5 w-5 text-success" />
-                      <p className="text-sm font-medium">
-                        {validCount}
-                        {" "}
-                        Valid
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
-                      <AlertCircle className="h-5 w-5 text-destructive" />
-                      <p className="text-sm font-medium">
-                        {parsedData.length - validCount}
-                        {" "}
-                        Invalid
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={importSimsMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={importFile}
-              disabled={!file || validCount === 0 || importSimsMutation.isPending}
-            >
-              {importSimsMutation.isPending ? "Importing..." : `Import ${validCount} SIMs`}
-            </Button>
-          </div>
-        </div>
+        {result
+          ? (
+              <ImportResultPanel
+                result={result}
+                onDone={() => finish(result.importedCount)}
+              />
+            )
+          : (
+            <div className="space-y-4">
+              {!file
+                ? (
+                    <>
+                      <div className="flex items-center justify-between rounded-lg border bg-secondary/30 p-3">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <span className="text-sm font-medium">Download Template</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={downloadTemplate}
+                          disabled={downloadTemplateMutation.isPending}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          {downloadTemplateMutation.isPending ? "Downloading..." : "Download"}
+                        </Button>
+                      </div>
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDragging(true);
+                        }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleDrop}
+                        className={cn(
+                          "relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8",
+                          isDragging ? "border-primary bg-primary/5" : "border-border",
+                        )}
+                      >
+                        <Upload className="h-10 w-10 text-muted-foreground mb-4" />
+                        <p className="text-sm font-medium">Drag and drop CSV file here</p>
+                        <input
+                          type="file"
+                          accept=".csv"
+                          onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+                          className="absolute inset-0 cursor-pointer opacity-0"
+                        />
+                      </div>
+                    </>
+                  )
+                : (
+                    <>
+                      <div className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-8 w-8 text-primary" />
+                          <p className="font-medium">{file.name}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => {
+                            setFile(null);
+                            setParsedData([]);
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-3">
+                          <CheckCircle className="h-5 w-5 text-success" />
+                          <p className="text-sm font-medium">
+                            {validCount}
+                            {" "}
+                            Valid
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                          <AlertCircle className="h-5 w-5 text-destructive" />
+                          <p className="text-sm font-medium">
+                            {parsedData.length - validCount}
+                            {" "}
+                            Invalid
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={importSimsMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={importFile}
+                  disabled={!file || validCount === 0 || importSimsMutation.isPending}
+                >
+                  {importSimsMutation.isPending ? "Importing..." : `Import ${validCount} SIMs`}
+                </Button>
+              </div>
+            </div>
+            )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ImportResultPanel({ result, onDone }: { result: SimImportResult; onDone: () => void }) {
+  const issues = [
+    ...(result.skipped ?? []),
+    ...(result.errors ?? []),
+  ].sort((a, b) => a.row - b.row);
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <div className="rounded-lg border border-success/30 bg-success/10 p-3">
+          <p className="text-lg font-semibold">{result.importedCount}</p>
+          <p className="text-xs text-muted-foreground">Added</p>
+        </div>
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+          <p className="text-lg font-semibold">{result.skippedCount}</p>
+          <p className="text-xs text-muted-foreground">Skipped</p>
+        </div>
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+          <p className="text-lg font-semibold">{result.failedCount}</p>
+          <p className="text-xs text-muted-foreground">Could not read</p>
+        </div>
+      </div>
+      {issues.length > 0 && (
+        <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-3 text-sm">
+          {issues.map(issue => (
+            <p key={`${issue.row}-${issue.message}`}>
+              <span className="font-medium">
+                Row
+                {" "}
+                {issue.row}
+                :
+              </span>
+              {" "}
+              {issue.message}
+            </p>
+          ))}
+        </div>
+      )}
+      <div className="flex justify-end">
+        <Button onClick={onDone}>Done</Button>
+      </div>
+    </div>
   );
 }

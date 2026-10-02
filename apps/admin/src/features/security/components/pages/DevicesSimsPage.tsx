@@ -1,15 +1,19 @@
-import { useStillReportingDevices, useUnrecognisedDevices } from "@truckmoov/api/auth";
+import {
+  useStillReportingDevices, useUnrecognisedDevices,
+} from "@truckmoov/api/auth";
 import { useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { findSetupProblems, useDevicesSimsData } from "../devices-sims/devicesSimsData";
+import {
+  findSetupProblems, useDevicesSimsData,
+} from "../devices-sims/devicesSimsData";
 import { SetupProblemsSection } from "../devices-sims/SetupProblemsSection";
-import { StillReportingSection } from "../devices-sims/StillReportingSection";
-import { UnrecognisedDevicesSection } from "../devices-sims/UnrecognisedDevicesSection";
 import { SimHistorySection } from "../devices-sims/SimHistorySection";
+import { StillReportingSection } from "../devices-sims/StillReportingSection";
 import {
   SuspendedDevicesSection,
   SuspendedSimsSection,
 } from "../devices-sims/SuspendedSection";
+import { UnrecognisedDevicesSection } from "../devices-sims/UnrecognisedDevicesSection";
 
 const ACTING_ROLES = [
   "SUPER_ADMIN",
@@ -77,6 +81,7 @@ export default function DevicesSimsPage() {
         isLoading={unrecognised.isLoading}
         isError={unrecognised.isError}
         onRetry={() => void unrecognised.refetch()}
+        canAct={canAct}
       />
       <SuspendedSimsSection
         sims={suspendedSims}

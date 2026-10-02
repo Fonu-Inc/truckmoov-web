@@ -2850,12 +2850,26 @@ export type StillReportingDevices = {
 
 export type StillReportingDevicesResponse = ServerResponse<StillReportingDevices>
 
+export type UnrecognisedDeviceStatus = 'active' | 'dismissed' | 'blocked'
+
 export type UnrecognisedDevice = {
   imei: string
   firstSeenAt: string
   lastSeenAt: string
   messageCount: number
+  status: UnrecognisedDeviceStatus
+  handledAt?: string
 }
+
+export type UnrecognisedDeviceAction = 'dismiss' | 'block' | 'unblock'
+
+export type UnrecognisedDeviceActionPayload = {
+  imei: string
+  action: UnrecognisedDeviceAction
+  data: { reason: string }
+}
+
+export type UnrecognisedDeviceActionResponse = ServerResponse<{ imei: string, status: UnrecognisedDeviceStatus }>
 
 export type UnrecognisedDevices = {
   trackingReachable: boolean
@@ -3076,11 +3090,20 @@ export type SimCarriersResponse = ServerResponse<{ carriers: SimCarrier[] }>
 /** Create / delete / suspend / reactivate / unassign all reply with `{ id }`. */
 export type SimActionResponse = IdResponse
 
-export type SimImportResponse = ServerResponse<{
-  imported: number
-  skipped: number
-  failed: number
-}>
+export type SimImportRowIssue = { row: number, field: string, message: string }
+
+export type SimImportResult = {
+  importedCount: number
+  skippedCount: number
+  failedCount: number
+  /** Rows that could not be read, such as a missing ICCID. */
+  errors?: SimImportRowIssue[]
+  /** Rows left out because the SIM could not be added, such as an ICCID already registered. */
+  skipped?: SimImportRowIssue[]
+}
+
+export type SimImportResponse = ServerResponse<SimImportResult>
+export type OnboardingSimImportResponse = ServerResponse<{ imported: number, skipped: number }>
 
 export type SimRequestDeviceMappingProcessResponse = ServerResponse<{
   processed: number
@@ -3142,6 +3165,7 @@ export type SimRequestsList = {
   total: number
 }
 
+export type SimRequestsQuery = { params?: { page?: number, limit?: number } }
 export type SimRequestsListResponse = ServerResponse<SimRequestsList>
 export type SimRequestResponse = ServerResponse<SimRequestItem>
 export type GetSimRequestPayload = { id: string }
@@ -3172,7 +3196,11 @@ export type OnboardingFeaturesResponse = ServerResponse<{
 export type OnboardingCompleteResponse = ServerResponse<{ completedAt: string }>
 export type OnboardingEnquiryResponse = ServerResponse<{ ticketId: string }>
 export type OnboardingRequestIdResponse = ServerResponse<{ requestId: string }>
-export type OnboardingSimsRegisterResponse = ServerResponse<{ registered: number }>
+export type OnboardingSimsRegisterResponse = ServerResponse<{
+  registered: number
+  created: { id: string, iccid: string }[]
+  skipped: { iccid: string, reason: string }[]
+}>
 
 export type KycDocumentStatus = 'pending' | 'under_review' | 'verified' | 'rejected'
 
@@ -4114,7 +4142,15 @@ export type SystemOnboardingPaymentOutcome = 'resolved' | 'refund_needed'
 
 /** Present only while the latest payment was refused for a wrong amount. */
 export type SystemOnboardingPaymentReview = {
+  paymentId: string
   reference: string
+  /** `refunded` once the money went back through the payment provider. */
+  status: 'mismatch' | 'refunded'
+  refundedAt: string | null
+  /** Why the provider refused the last refund attempt. */
+  refundError: string | null
+  /** The provider has accepted a refund and has not finished it yet. */
+  refundProcessing: boolean
   expectedNgn: number
   paidNgn: number | null
   currency: string | null
@@ -4127,6 +4163,8 @@ export type SystemOnboardingPaymentReview = {
 export type SystemOnboardingApplicationDetail = Omit<SystemOnboardingApplicationRow, 'documentCount'> & {
   progress: { stage: SystemOnboardingStage, complete: boolean, current: boolean }[]
   paymentReview: SystemOnboardingPaymentReview | null
+  /** Every wrong-amount onboarding payment, mismatched first. Each one is reviewed and refunded on its own. */
+  paymentReviews: SystemOnboardingPaymentReview[]
   vehicles: { id: string, registrationNumber: string, vehicleType: string, make: string, model: string }[]
   deviceRequests: { id: string, quantity: number, useCase: string }[]
   verifications: SystemOnboardingVerification[]
@@ -4179,8 +4217,27 @@ export type SystemOnboardingProvisionedResponse = ServerResponse<{
   reason: string | null
 }>
 
+export type SystemRefundOnboardingPaymentPayload = {
+  id: string
+  /** Omit to refund the newest mismatched payment. */
+  paymentId?: string
+  data: { note: string }
+}
+
+export type SystemRefundOnboardingPaymentResponse = ServerResponse<{
+  applicationId: string
+  reference: string
+  paymentId: string
+  refundReference: string | null
+  note: string
+  /** `processing` until the provider finishes; the applicant is emailed then. */
+  refundStatus: 'refunded' | 'processing'
+  alreadyRefunded: boolean
+}>
+
 export type SystemReviewOnboardingPaymentPayload = {
   id: string
+  paymentId?: string
   data: { outcome: SystemOnboardingPaymentOutcome, note: string }
 }
 
