@@ -293,13 +293,13 @@ export function PaymentStep({
           <h3 className="text-base font-semibold text-foreground">Order Summary</h3>
           {paid
             ? <Badge className="rounded-full bg-success/15 text-success hover:bg-success/15">Payment Confirmed</Badge>
-            : payment?.status === "failed"
+            : payment?.status === "failed" || payment?.status === "mismatch"
               ? (
                   <Badge
                     variant="destructive"
                     className="rounded-full"
                   >
-                    Payment failed
+                    {payment.status === "mismatch" ? "Payment needs attention" : "Payment failed"}
                   </Badge>
                 )
               : (
@@ -478,6 +478,11 @@ export function PaymentStep({
       {payment?.status === "failed" && !paid && (
         <p className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
           Your last payment attempt failed. You can try again.
+        </p>
+      )}
+      {payment?.status === "mismatch" && !paid && (
+        <p className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          {`${payment.problem ?? "We received a payment that does not match the amount due."} Reference: ${payment.reference}.`}
         </p>
       )}
       {!orderData.payable && !paid && (

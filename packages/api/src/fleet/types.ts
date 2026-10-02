@@ -2412,7 +2412,11 @@ export type TrackingAlert = {
   geofenceId?: string | null
   message?: string | null
   title?: string | null
-  createdAt: string
+  /** What the alert is about, e.g. the zone name. Sent by the alerts list and the socket. */
+  details?: Record<string, unknown> | null
+  /** The alerts list sends triggeredAt; createdAt is kept for older rows. */
+  triggeredAt?: string
+  createdAt?: string
 }
 
 export type TrackingAlertsResponse = ServerResponse<{ total: number, items: TrackingAlert[] }>
@@ -2438,4 +2442,24 @@ export type PublicTrack = {
 
 // Socket frames (realtime gateway)
 export type TrackingPositionsFrame = { positions: ({ vehicleId: string } & TrackingPosition)[] }
-export type TrackingGeofenceEvent = { vehicleId: string, geofenceId: string, geofenceName?: string, at?: string }
+export type TrackingGeofenceEvent = {
+  vehicleId?: string
+  geofenceId?: string
+  geofenceName?: string
+  at?: string
+  /** The server sends snake_case on the socket; vehicle_id is what actually arrives. */
+  vehicle_id?: string
+  geofence_name?: string
+  zoneName?: string
+}
+
+/** Raw alert.triggered frame: fleet sends the zone fields flat, tracking nests them under details. */
+export type TrackingAlertFrame = {
+  alert_id?: string
+  alert_type?: string
+  severity?: string
+  vehicle_id?: string | null
+  job_id?: string | null
+  details?: Record<string, unknown> | null
+  [key: string]: unknown
+}

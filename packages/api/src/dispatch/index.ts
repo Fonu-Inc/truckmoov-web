@@ -3,6 +3,7 @@ import { keepPreviousData, queryOptions, useMutation, useQuery } from '@tanstack
 import { queryClient } from '../lib/query-client'
 import {
   acknowledgeJob,
+  addJobAttachment,
   addJobNote,
   addPodAttachment,
   assignJob,
@@ -12,11 +13,13 @@ import {
   createJob,
   deleteJob,
   getJob,
+  getJobAttachment,
   getJobTimeline,
   getJobs,
   getJobsSummary,
   legacyUpdateJobStatus,
   optimizeRoute,
+  resendDriverInstruction,
   sendWhatsappInstruction,
   updateJobDetails,
   updateJobScheduling,
@@ -72,16 +75,18 @@ export function getJobTimelineQueryOptions(jobId: string) {
 
 // ─── useQuery hooks ────────────────────────────────────────────────────────────
 
-export function useJobs(payload?: JobsQuery) {
-  return useQuery(getJobsQueryOptions(payload))
+type PollingOptions = { refetchInterval?: number }
+
+export function useJobs(payload?: JobsQuery, options?: PollingOptions) {
+  return useQuery({ ...getJobsQueryOptions(payload), refetchInterval: options?.refetchInterval })
 }
 
 export function useJobsSummary() {
   return useQuery(getJobsSummaryQueryOptions())
 }
 
-export function useJob(jobId: string) {
-  return useQuery(getJobQueryOptions(jobId))
+export function useJob(jobId: string, options?: PollingOptions) {
+  return useQuery({ ...getJobQueryOptions(jobId), refetchInterval: options?.refetchInterval })
 }
 
 export function useJobTimeline(jobId: string) {
@@ -150,6 +155,7 @@ export function useCancelJob() {
     mutationFn: cancelJob,
     onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(jobId) })
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
     },
@@ -179,6 +185,15 @@ export function useUpdateJobScheduling() {
   })
 }
 
+export function useResendDriverInstruction() {
+  return useMutation({
+    mutationFn: resendDriverInstruction,
+    onSuccess: (_, { jobId }) => {
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
+    },
+  })
+}
+
 export function useSendWhatsappInstruction() {
   return useMutation({ mutationFn: sendWhatsappInstruction })
 }
@@ -191,6 +206,20 @@ export function useAddJobNote() {
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(jobId) })
     },
   })
+}
+
+export function useAddJobAttachment() {
+  return useMutation({
+    mutationFn: addJobAttachment,
+    onSuccess: (_, { jobId }) => {
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(jobId) })
+    },
+  })
+}
+
+export function useDownloadJobAttachment() {
+  return useMutation({ mutationFn: getJobAttachment })
 }
 
 export function useAddPodAttachment() {
@@ -219,6 +248,8 @@ export function useConfirmDriverStatusRequest() {
     onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(jobId) })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
     },
   })
 }

@@ -654,6 +654,12 @@ export default function ApplyForAccount() {
               session.clear();
               navigate("/auth");
             }}
+            onStartNew={() => {
+              session.clear();
+              setCustomerType(null);
+              setStep(1);
+              setPhase("form");
+            }}
           />
         )}
 

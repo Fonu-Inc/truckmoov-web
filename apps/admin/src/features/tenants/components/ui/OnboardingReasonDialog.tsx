@@ -37,6 +37,8 @@ type OnboardingReasonDialogProps = {
   description: string;
   submitLabel: string;
   destructive?: boolean;
+  fieldLabel?: string;
+  placeholder?: string;
   loading?: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (reason: string) => void;
@@ -49,6 +51,8 @@ export function OnboardingReasonDialog({
   description,
   submitLabel,
   destructive,
+  fieldLabel = "Reason",
+  placeholder = "Shared with the applicant — write something they can act on.",
   loading,
   onOpenChange,
   onSubmit,
@@ -89,12 +93,12 @@ export function OnboardingReasonDialog({
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reason</FormLabel>
+                  <FormLabel>{fieldLabel}</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={4}
                       className="resize-none"
-                      placeholder="Shared with the applicant — write something they can act on."
+                      placeholder={placeholder}
                       {...field}
                     />
                   </FormControl>

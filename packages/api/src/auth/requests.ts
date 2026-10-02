@@ -254,6 +254,7 @@ import type {
   SystemDeviceSetupRequestsQuery,
   SystemDeviceSetupSummaryResponse,
   StillReportingDevicesResponse,
+  UnrecognisedDevicesResponse,
   SystemDeviceSummaryResponse,
   SystemDeviceManufacturersResponse,
   SystemSimCarrierBreakdownResponse,
@@ -391,7 +392,10 @@ import type {
   SystemOnboardingDecisionResponse,
   SystemOnboardingSetupLinkResendResponse,
   SystemOnboardingTimelineResponse,
+  SystemOnboardingProvisionedPayload,
   SystemOnboardingProvisionedResponse,
+  SystemReviewOnboardingPaymentPayload,
+  SystemReviewOnboardingPaymentResponse,
   SystemAuditLogFiltersResponse,
   SystemAuditLogQuery,
   SystemAuditLogResponse,
@@ -981,6 +985,11 @@ export async function getSystemDevicesSummary() {
 
 export async function getStillReportingDevices() {
   const { data } = await axiosInstance.get<StillReportingDevicesResponse>('/auth/system/devices/still-reporting')
+  return data
+}
+
+export async function getUnrecognisedDevices() {
+  const { data } = await axiosInstance.get<UnrecognisedDevicesResponse>('/auth/system/devices/unrecognised')
   return data
 }
 
@@ -2416,9 +2425,18 @@ export async function getSystemOnboardingApplicationTimeline({ id }: { id: strin
 }
 
 // Devices and SIMs are physically allocated — this is what opens payment for the applicant.
-export async function markSystemOnboardingApplicationProvisioned({ id }: { id: string }) {
+export async function markSystemOnboardingApplicationProvisioned({ id, data: body }: SystemOnboardingProvisionedPayload) {
   const { data } = await axiosInstance.post<SystemOnboardingProvisionedResponse>(
     `/auth/system/onboarding/applications/${id}/provisioned`,
+    body ?? {},
+  )
+  return data
+}
+
+export async function reviewSystemOnboardingPayment({ id, data: body }: SystemReviewOnboardingPaymentPayload) {
+  const { data } = await axiosInstance.post<SystemReviewOnboardingPaymentResponse>(
+    `/auth/system/onboarding/applications/${id}/payment/review`,
+    body,
   )
   return data
 }

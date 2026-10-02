@@ -1,6 +1,7 @@
 import type {
   SystemOnboardingApplicationDetail,
   SystemOnboardingDocument,
+  SystemOnboardingPaymentReview,
 } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -58,6 +59,7 @@ import {
   VERDICT_LABELS,
   VERIFICATION_CHECK_LABELS,
 } from "@/features/tenants/utils/onboarding";
+import { formatCurrency } from "@/lib/currency";
 
 /**
  * Onboarding application detail behind `/tenants/onboarding/:id` (TRU-FE-16).
@@ -211,8 +213,15 @@ export default function OnboardingApplicationPage() {
       )}
       {app.stage === "provisioning" && (
         <p className="text-sm text-muted-foreground">
-          Allocate the devices and SIMs from stock, then mark this provisioned — the applicant cannot pay until you do.
+          Waiting for device stock. Payment opens by itself once enough devices are available, or you can open it now — if stock is still short, you will be asked for a reason.
         </p>
+      )}
+      {app.paymentReview && (
+        <PaymentReviewNotice
+          review={app.paymentReview}
+          onResolved={() => actions.openPaymentResolved(app)}
+          onRefund={() => actions.openPaymentRefund(app)}
+        />
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -292,6 +301,61 @@ export default function OnboardingApplicationPage() {
       </div>
 
       {actions.reasonDialog}
+    </div>
+  );
+}
+
+function PaymentReviewNotice({
+  review,
+  onResolved,
+  onRefund,
+}: {
+  review: SystemOnboardingPaymentReview; onResolved: () => void; onRefund: () => void;
+}) {
+  const paid = review.paidNgn === null
+    ? "an unknown amount"
+    : review.currency && review.currency !== "NGN"
+      ? `${review.paidNgn} ${review.currency}`
+      : formatCurrency(review.paidNgn);
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex gap-3">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+        <div>
+          <p className="font-medium">
+            {`Amount mismatch: expected ${formatCurrency(review.expectedNgn)}, paid ${paid}, reference ${review.reference}`}
+          </p>
+          {review.reviewOutcome
+            ? (
+                <p className="text-muted-foreground">
+                  {review.reviewOutcome === "resolved" ? "Marked resolved" : "Refund needed"}
+                  {review.reviewedAt ? ` · ${formatDateTime(review.reviewedAt)}` : ""}
+                  {review.reviewNote ? ` · ${review.reviewNote}` : ""}
+                </p>
+              )
+            : (
+                <p className="text-muted-foreground">
+                  The applicant was told to contact support or pay again. Review it and record what you decided.
+                </p>
+              )}
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-wrap gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onResolved}
+        >
+          Mark resolved
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefund}
+        >
+          Refund needed
+        </Button>
+      </div>
     </div>
   );
 }

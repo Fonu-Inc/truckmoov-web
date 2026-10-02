@@ -2849,6 +2849,21 @@ export type StillReportingDevices = {
 }
 
 export type StillReportingDevicesResponse = ServerResponse<StillReportingDevices>
+
+export type UnrecognisedDevice = {
+  imei: string
+  firstSeenAt: string
+  lastSeenAt: string
+  messageCount: number
+}
+
+export type UnrecognisedDevices = {
+  trackingReachable: boolean
+  devices: UnrecognisedDevice[]
+  generatedAt: string
+}
+
+export type UnrecognisedDevicesResponse = ServerResponse<UnrecognisedDevices>
 export type SystemSimsListResponse = ServerResponse<SystemSimsList>
 export type SystemSimImportResponse = ServerResponse<SystemSimImportResult>
 export type SystemSimBulkStatusResponse = ServerResponse<SystemSimBulkStatusResult>
@@ -3907,7 +3922,7 @@ export type OnboardingOrder = {
   renewalPerDeviceNgn: number
 }
 
-export type OnboardingPaymentStatus = 'pending' | 'paid' | 'failed'
+export type OnboardingPaymentStatus = 'pending' | 'paid' | 'failed' | 'mismatch' | 'refunded' | 'requires_review'
 
 export type OnboardingOrderResponse = ServerResponse<{
   order: OnboardingOrder
@@ -3917,7 +3932,13 @@ export type OnboardingOrderResponse = ServerResponse<{
   billingEmail: string | null
   billingEmailVerified: boolean
   /** Confirmation arrives by webhook — poll this, not the provider redirect. */
-  payment: { reference: string, status: OnboardingPaymentStatus, paidAt: string | null } | null
+  payment: {
+    reference: string
+    status: OnboardingPaymentStatus
+    paidAt: string | null
+    /** Plain-language explanation when the payment needs attention, such as a wrong amount. */
+    problem: string | null
+  } | null
 }>
 
 export type SetOnboardingBillingEmailPayload = { id: string, data: { billingEmail: string } }
@@ -4089,8 +4110,23 @@ export type SystemOnboardingDocument = {
   downloadUrl: string | null
 }
 
+export type SystemOnboardingPaymentOutcome = 'resolved' | 'refund_needed'
+
+/** Present only while the latest payment was refused for a wrong amount. */
+export type SystemOnboardingPaymentReview = {
+  reference: string
+  expectedNgn: number
+  paidNgn: number | null
+  currency: string | null
+  reviewOutcome: SystemOnboardingPaymentOutcome | null
+  reviewNote: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+}
+
 export type SystemOnboardingApplicationDetail = Omit<SystemOnboardingApplicationRow, 'documentCount'> & {
   progress: { stage: SystemOnboardingStage, complete: boolean, current: boolean }[]
+  paymentReview: SystemOnboardingPaymentReview | null
   vehicles: { id: string, registrationNumber: string, vehicleType: string, make: string, model: string }[]
   deviceRequests: { id: string, quantity: number, useCase: string }[]
   verifications: SystemOnboardingVerification[]
@@ -4133,9 +4169,26 @@ export type SystemOnboardingDecisionResponse = ServerResponse<{
   decisionReason: string
 }>
 
+/** The reason is only required when device stock does not cover the order. */
+export type SystemOnboardingProvisionedPayload = { id: string, data?: { reason?: string } }
+
 export type SystemOnboardingProvisionedResponse = ServerResponse<{
   applicationId: string
   stage: SystemOnboardingStage
+  confirmedWithoutStock: boolean
+  reason: string | null
+}>
+
+export type SystemReviewOnboardingPaymentPayload = {
+  id: string
+  data: { outcome: SystemOnboardingPaymentOutcome, note: string }
+}
+
+export type SystemReviewOnboardingPaymentResponse = ServerResponse<{
+  applicationId: string
+  reference: string
+  outcome: SystemOnboardingPaymentOutcome
+  note: string
 }>
 
 export type SystemOnboardingSetupLinkResendResponse = ServerResponse<{

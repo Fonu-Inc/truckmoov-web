@@ -112,6 +112,7 @@ import {
   getSystemDevices,
   getSystemDevicesCatalog,
   getStillReportingDevices,
+  getUnrecognisedDevices,
   getSystemDevicesSummary,
   getSystemDeviceManufacturers,
   getSystemSimCarrierBreakdown,
@@ -327,6 +328,7 @@ import {
   getSystemOnboardingApplication,
   getSystemOnboardingApplicationTimeline,
   markSystemOnboardingApplicationProvisioned,
+  reviewSystemOnboardingPayment,
   getSystemOnboardingApplications,
   rejectSystemOnboardingApplication,
   rejectSystemOnboardingApplicationDocument,
@@ -474,6 +476,7 @@ export const AUTH_QUERY_KEY = {
   systemSimDataUsage: ['systemSimDataUsage'],
   systemDeviceMessageRate: ['systemDeviceMessageRate'],
   stillReportingDevices: ['stillReportingDevices'],
+  unrecognisedDevices: ['unrecognisedDevices'],
   systemDevicesCatalog: (payload?: SystemDeviceCatalogQuery) =>
     payload ? ['systemDevicesCatalog', payload] : ['systemDevicesCatalog'],
 
@@ -1395,6 +1398,17 @@ export function getStillReportingDevicesQueryOptions() {
 
 export function useStillReportingDevices() {
   return useQuery(getStillReportingDevicesQueryOptions())
+}
+
+export function getUnrecognisedDevicesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.unrecognisedDevices,
+    queryFn: getUnrecognisedDevices,
+  })
+}
+
+export function useUnrecognisedDevices() {
+  return useQuery(getUnrecognisedDevicesQueryOptions())
 }
 
 export function getSystemDevicesCatalogQueryOptions(payload?: SystemDeviceCatalogQuery) {
@@ -2988,6 +3002,13 @@ export function useResendSystemOnboardingApplicationSetupLink() {
 export function useMarkSystemOnboardingApplicationProvisioned() {
   return useMutation({
     mutationFn: markSystemOnboardingApplicationProvisioned,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useReviewSystemOnboardingPayment() {
+  return useMutation({
+    mutationFn: reviewSystemOnboardingPayment,
     onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
   })
 }

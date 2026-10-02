@@ -1,6 +1,7 @@
 import type { LatLngTuple } from "leaflet";
 import type { MapLocation } from "@/components/maps/MapLocationInput";
 import type { RoutePreviewMapMarker } from "@/components/maps/RoutePreviewMap";
+import type { JobFormPrefill } from "@/features/jobs/utils/jobPayload";
 import type { Job } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -62,74 +63,19 @@ import { Separator } from "@/components/shadcn/separator";
 import { Switch } from "@/components/shadcn/switch";
 import { Textarea } from "@/components/shadcn/textarea";
 import { cn } from "@/lib/utils";
+import {
+  ANY_VEHICLE_TYPE,
+  CARGO_CATEGORIES,
+  CARGO_UNITS,
+  EQUIPMENT_OPTIONS,
+  MAX_FILE_BYTES,
+  SPECIAL_HANDLING,
+  VEHICLE_TYPES,
+} from "./jobFormOptions";
 
-// ponytail: route optimisation, per-stop details persistence and file uploads
-// are UI-only today. The @truckmoov/api POST /jobs body accepts pickup, dropoff,
-// stops, cargo, amount, deadline, priority — everything below that's richer
-// flows into a `metadata` bag that the JobDispatch payload builder drops until
-// the server accepts it.
-
-const CARGO_CATEGORIES = [
-  "Electronics",
-  "Food & Beverage",
-  "Textiles",
-  "Machinery",
-  "Building materials",
-  "Automotive",
-  "Chemicals",
-  "Pharmaceuticals",
-  "Documents",
-  "Furniture",
-  "Agricultural",
-  "Other",
-] as const;
-
-const CARGO_UNITS = [
-  "kg",
-  "tons",
-  "lbs",
-  "cbm",
-  "pallets",
-  "boxes",
-] as const;
-
-const VEHICLE_TYPES = [
-  "Any Available Vehicle",
-  "Pickup Truck",
-  "Van",
-  "Truck",
-  "Trailer",
-  "Container Truck",
-  "Refrigerated Truck",
-  "Flatbed",
-  "Tanker",
-] as const;
-
-const SPECIAL_HANDLING = [
-  "Fragile",
-  "Refrigerated",
-  "Frozen",
-  "Hazardous",
-  "Perishable",
-  "Oversized",
-  "Live cargo",
-  "High value",
-  "Other",
-] as const;
-
-const EQUIPMENT_OPTIONS = [
-  "Crane",
-  "Forklift",
-  "Pallet jack",
-  "Straps",
-  "Tarpaulin",
-  "Chains",
-  "Refrigeration",
-  "Loading dock",
-  "Other",
-] as const;
-
-const MAX_FILE_BYTES = 3 * 1024 * 1024;
+// Everything the wizard collects beyond the core fields flows into `metadata`
+// and `attachmentFiles`. The Jobs page turns them into the dispatch payload
+// (features/jobs/utils/jobPayload.ts) and uploads the files after the job is saved.
 
 const jobSchema = z.object({
   reference: z.string().min(3).max(50),
@@ -219,12 +165,19 @@ export type JobFormSubmitData = JobFormData & {
     notes?: string;
   }>;
   metadata: Record<string, unknown>;
+  attachmentFiles: File[];
+};
+
+/** The job as the wizard shows it: the legacy shape plus what the old shape cannot hold. */
+export type JobFormJob = Job & {
+  priority?: JobFormData["priority"];
+  prefill?: JobFormPrefill;
 };
 
 type JobFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job?: Job | null;
+  job?: JobFormJob | null;
   onSubmit: (data: JobFormSubmitData) => void;
   isSubmitting?: boolean;
 };
@@ -334,7 +287,7 @@ export function JobFormDialog({
       amount: 0, deadline: "", priority: "medium",
       cargoCategory: "", cargoCategoryOther: "",
       packagesCount: undefined, cargoUnit: "kg", cargoValue: undefined,
-      vehicleType: "Any Available Vehicle",
+      vehicleType: ANY_VEHICLE_TYPE,
     },
   });
 
@@ -356,6 +309,7 @@ export function JobFormDialog({
       setEquipmentOther("");
       setAttachments([]);
       if (job) {
+        const prefill = job.prefill;
         const jobStops = (job as Job & {
           stops?: Array<{
             address?: string; latitude?: number; longitude?: number; lat?: number; lng?: number;
@@ -372,17 +326,44 @@ export function JobFormDialog({
           cargoDescription: job.cargo.description,
           amount: job.amount,
           deadline: toDateTimeInputValue(job.deadline),
-          priority: "medium",
-          cargoCategory: "", cargoCategoryOther: "",
-          packagesCount: undefined, cargoUnit: "kg", cargoValue: undefined,
-          vehicleType: "Any Available Vehicle",
+          priority: job.priority ?? "medium",
+          cargoCategory: prefill?.cargoCategory ?? "", cargoCategoryOther: prefill?.cargoCategoryOther ?? "",
+          packagesCount: prefill?.packagesCount, cargoUnit: prefill?.cargoUnit ?? "kg", cargoValue: prefill?.cargoValue,
+          vehicleType: prefill?.vehicleType ?? ANY_VEHICLE_TYPE,
         });
-        setStops(jobStops.map(stop => ({
-          ...makeStop("simple"),
-          address: stop.address ?? "",
-          lat: stop.latitude ?? stop.lat ?? 0,
-          lng: stop.longitude ?? stop.lng ?? 0,
-        })));
+        if (prefill) {
+          setPickupDetails(prefill.pickupDetails);
+          setDeliveryDetails(prefill.deliveryDetails);
+          if (prefill.dimensions) {
+            setDimensionsOn(true);
+            setDimensions(prefill.dimensions);
+          }
+          if (prefill.specialHandling.length > 0) {
+            setSpecialHandlingOn(true);
+            setSpecialHandling(prefill.specialHandling);
+            setSpecialHandlingOther(prefill.specialHandlingOther);
+          }
+          if (prefill.equipment.length > 0) {
+            setEquipmentOn(true);
+            setEquipment(prefill.equipment);
+            setEquipmentOther(prefill.equipmentOther);
+          }
+          setStops(prefill.stops.map(stop => ({
+            ...makeStop("simple"),
+            address: stop.address,
+            lat: stop.lat,
+            lng: stop.lng,
+            details: stop.details,
+          })));
+        }
+        else {
+          setStops(jobStops.map(stop => ({
+            ...makeStop("simple"),
+            address: stop.address ?? "",
+            lat: stop.latitude ?? stop.lat ?? 0,
+            lng: stop.longitude ?? stop.lng ?? 0,
+          })));
+        }
       }
       else {
         form.reset({
@@ -393,7 +374,7 @@ export function JobFormDialog({
           amount: 0, deadline: "", priority: "medium",
           cargoCategory: "", cargoCategoryOther: "",
           packagesCount: undefined, cargoUnit: "kg", cargoValue: undefined,
-          vehicleType: "Any Available Vehicle",
+          vehicleType: ANY_VEHICLE_TYPE,
         });
       }
     },
@@ -549,7 +530,6 @@ export function JobFormDialog({
               deliveryDetails: s.deliveryDetails.include ? s.deliveryDetails : undefined,
             }),
       })),
-      // ponytail: file uploads are UI-only — the /jobs endpoint doesn't accept them.
       attachments: attachments.map(f => ({
         name: f.name, size: f.size, type: f.type,
       })),
@@ -578,7 +558,7 @@ export function JobFormDialog({
       return out;
     });
     onSubmit({
-      ...data, stops: flatStops, metadata,
+      ...data, stops: flatStops, metadata, attachmentFiles: attachments,
     });
   };
 
@@ -1260,7 +1240,7 @@ export function JobFormDialog({
                         <FormLabel>Vehicle type</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value || "Any Available Vehicle"}
+                          value={field.value || ANY_VEHICLE_TYPE}
                         >
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>

@@ -8,8 +8,8 @@ import type {
   JobsFilterBounds, JobsFilterValue,
 } from "@/features/jobs/components/ui/JobsFilterDialog";
 import {
+  useAddJobAttachment,
   useAssignJob,
-  useCancelJob,
   useCreateJob,
   useDeleteJob,
   useJob,
@@ -80,8 +80,15 @@ import {
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { AssignResourceDialog } from "@/features/jobs/components/ui/AssignResourceDialog";
+import { CancelJobDialog } from "@/features/jobs/components/ui/CancelJobDialog";
 import { JobDetailsDialog } from "@/features/jobs/components/ui/JobDetailsDialog";
 import { JobsFilterDialog } from "@/features/jobs/components/ui/JobsFilterDialog";
+import {
+  buildCargoPayload, buildStopsPayload, readFileAsBase64, readJobPrefill, requiredVehicleType,
+} from "@/features/jobs/utils/jobPayload";
+import {
+  pendingReports, stepLabel,
+} from "@/features/jobs/utils/jobProgress";
 import {
   buildDefaultFilterValue,
   countActiveFilters,
@@ -135,6 +142,9 @@ const KPI_TONE = {
   ],
 } as const;
 
+// Driver replies arrive on their own, so the list checks for them.
+const JOBS_REFRESH_MS = 30_000;
+
 const NO_BOUNDS: JobsFilterBounds = {
   weightMin: 0, weightMax: 0, amountMin: 0, amountMax: 0,
 };
@@ -182,9 +192,16 @@ function toNumber(value: unknown, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-// JobFormDialog still takes the legacy `Job` shape.
+// The wizard shows "medium" where the dispatch API says "normal".
+function toFormPriority(priority?: DispatchJobPriority): JobFormSubmitData["priority"] | undefined {
+  return priority === "normal" ? "medium" : priority;
+}
+
+// JobFormDialog still takes the legacy `Job` shape, plus what that shape cannot hold.
 function mapToLegacyJob(job: DispatchJob, driverName?: string) {
   return {
+    priority: toFormPriority(job.priority),
+    prefill: readJobPrefill(job),
     id: job.id ?? "",
     reference: job.reference || job.id || "Unreferenced",
     status: jobStatusTone(job.status || "created"),
@@ -245,11 +262,13 @@ export default function JobsPage() {
     setSelectedJob,
   ] = useState<DispatchJob | null>(null);
   const [
-    jobAction,
-    setJobAction,
-  ] = useState<{
-    job: DispatchJob; action: "cancel" | "delete";
-  } | null>(null);
+    deleteTarget,
+    setDeleteTarget,
+  ] = useState<DispatchJob | null>(null);
+  const [
+    cancelTarget,
+    setCancelTarget,
+  ] = useState<DispatchJob | null>(null);
   const [
     isFilterOpen,
     setIsFilterOpen,
@@ -261,7 +280,7 @@ export default function JobsPage() {
   const createJobMutation = useCreateJob();
   const updateJobDetailsMutation = useUpdateJobDetails();
   const updateJobSchedulingMutation = useUpdateJobScheduling();
-  const cancelJobMutation = useCancelJob();
+  const addAttachmentMutation = useAddJobAttachment();
   const deleteJobMutation = useDeleteJob();
   const assignJobMutation = useAssignJob();
 
@@ -284,7 +303,10 @@ export default function JobsPage() {
     ],
   );
 
-  const jobsQuery = useJobs(jobsQueryPayload);
+  const jobsQuery = useJobs(
+    jobsQueryPayload,
+    { refetchInterval: JOBS_REFRESH_MS },
+  );
   const jobsSummaryQuery = useJobsSummary();
   const driversQuery = useDrivers();
   const vehiclesQuery = useVehicles();
@@ -344,30 +366,46 @@ export default function JobsPage() {
     },
   ] as const;
 
-  // ponytail: `data.metadata` (cargo category, dimensions, special handling,
-  // per-stop contact details, attachments, etc.) is collected by the wizard but
-  // dropped here — the /jobs endpoint doesn't accept it yet. Forward it when
-  // the API grows a metadata field.
+  // Files are uploaded one by one after the job is saved, because the job has
+  // to exist first. A file that fails is named so it can be added again.
+  const uploadAttachments = async (jobId: string, files: File[]) => {
+    const failed: string[] = [];
+    for (const file of files) {
+      try {
+        await addAttachmentMutation.mutateAsync({
+          jobId,
+          data: {
+            name: file.name,
+            content_type: file.type || undefined,
+            content_base64: await readFileAsBase64(file),
+          },
+        });
+      }
+      catch {
+        failed.push(file.name);
+      }
+    }
+    if (failed.length > 0)
+      toast.error(`These files were not attached: ${failed.join(", ")}. Open the job and add them again.`);
+  };
+
   const handleAddJob = async (data: JobFormSubmitData) => {
+    const {
+      pickup, dropoff, stops,
+    } = buildStopsPayload(data);
     createJobMutation.mutate(
       {
         data: {
           pickupLocation: data.pickupAddress,
           deliveryLocation: data.deliveryAddress,
           reference: data.reference,
-          pickup: {
-            address: data.pickupAddress,
-            latitude: data.pickupLat,
-            longitude: data.pickupLng,
-          },
-          dropoff: {
-            address: data.deliveryAddress,
-            latitude: data.deliveryLat,
-            longitude: data.deliveryLng,
-          },
-          stops: data.stops,
+          pickup,
+          dropoff,
+          stops,
           cargoType: data.cargoType,
           cargoDescription: data.cargoDescription,
+          cargo: buildCargoPayload(data),
+          required_vehicle_type: requiredVehicleType(data),
           load_weight_kg: toKg(
             data.cargoWeight,
             data.cargoUnit,
@@ -378,10 +416,16 @@ export default function JobsPage() {
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: async (created) => {
           toast.success("Job created");
           setIsFormOpen(false);
           setSelectedJob(null);
+          if (created.data.id && data.attachmentFiles.length > 0) {
+            await uploadAttachments(
+              created.data.id,
+              data.attachmentFiles,
+            );
+          }
         },
         onError: error => toast.error(error.message),
       },
@@ -396,23 +440,20 @@ export default function JobsPage() {
       return;
     }
     const jobId = selectedJob.id;
+    const {
+      pickup, dropoff, stops,
+    } = buildStopsPayload(data);
     updateJobDetailsMutation.mutate(
       {
         jobId,
         data: {
-          pickup: {
-            address: data.pickupAddress,
-            latitude: data.pickupLat,
-            longitude: data.pickupLng,
-          },
-          dropoff: {
-            address: data.deliveryAddress,
-            latitude: data.deliveryLat,
-            longitude: data.deliveryLng,
-          },
-          stops: data.stops,
+          pickup,
+          dropoff,
+          stops,
           cargo_type: data.cargoType,
           cargo_description: data.cargoDescription,
+          cargo: buildCargoPayload(data),
+          required_vehicle_type: requiredVehicleType(data) ?? "",
           load_weight_kg: toKg(
             data.cargoWeight,
             data.cargoUnit,
@@ -422,47 +463,41 @@ export default function JobsPage() {
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           updateJobSchedulingMutation.mutate({
             jobId,
             data: { priority: toApiPriority(data.priority) },
           });
           toast.success("Job updated");
           setIsFormOpen(false);
+          if (data.attachmentFiles.length > 0) {
+            await uploadAttachments(
+              jobId,
+              data.attachmentFiles,
+            );
+          }
         },
         onError: error => toast.error(error.message),
       },
     );
   };
 
-  const handleJobAction = () => {
-    const jobId = jobAction?.job.id;
+  const handleDeleteJob = () => {
+    const jobId = deleteTarget?.id;
     if (!jobId)
       return;
-    const callbacks = {
-      onSuccess: () => {
-        toast.success(jobAction.action === "cancel" ? "Job cancelled" : "Job record deleted");
-        setJobAction(null);
-      },
-      onError: (error: { message: string }) => toast.error(error.message),
-    };
-    if (jobAction.action === "cancel") {
-      cancelJobMutation.mutate(
-        {
-          jobId,
-          data: { reason: "Cancelled by dispatcher" },
+    deleteJobMutation.mutate(
+      { jobId },
+      {
+        onSuccess: () => {
+          toast.success("Job record deleted");
+          setDeleteTarget(null);
         },
-        callbacks,
-      );
-    }
-    else {
-      deleteJobMutation.mutate(
-        { jobId },
-        callbacks,
-      );
-    }
+        onError: error => toast.error(error.message),
+      },
+    );
   };
-  const isJobActionPending = cancelJobMutation.isPending || deleteJobMutation.isPending;
+  const isJobActionPending = deleteJobMutation.isPending;
 
   // POST /dispatch/jobs/{id}/assign takes either side alone; the server keeps the other.
   const handleAssignResource = (kind: AssignResourceKind, resourceId: string) => {
@@ -514,7 +549,23 @@ export default function JobsPage() {
         header: "Status",
         cell: ({ row }) => {
           const status = row.original.status || "created";
-          return <Badge className={STATUS_BADGE[jobStatusTone(status)]}>{jobStatusLabel(status)}</Badge>;
+          const reports = pendingReports(row.original);
+          return (
+            <div className="space-y-1">
+              <Badge className={STATUS_BADGE[jobStatusTone(status)]}>{jobStatusLabel(status)}</Badge>
+              {reports.length > 0 && (
+                <button
+                  type="button"
+                  className="block text-left"
+                  onClick={() => openDetails(row.original)}
+                >
+                  <Badge className="bg-warning/20 text-warning border-warning/30 cursor-pointer">
+                    {`Driver says: ${stepLabel(reports[0].request.requested_status).toLowerCase()}`}
+                  </Badge>
+                </button>
+              )}
+            </div>
+          );
         },
       },
       {
@@ -681,9 +732,7 @@ export default function JobsPage() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive"
-                        onClick={() => setJobAction({
-                          job, action: tone === "completed" ? "delete" : "cancel",
-                        })}
+                        onClick={() => (tone === "completed" ? setDeleteTarget(job) : setCancelTarget(job))}
                       >
                         {tone === "completed"
                           ? <Trash2 className="h-4 w-4 mr-2" />
@@ -872,38 +921,37 @@ export default function JobsPage() {
         recommendOnly={recommendOnly}
       />
 
+      <CancelJobDialog
+        job={cancelTarget}
+        onOpenChange={open => !open && setCancelTarget(null)}
+      />
+
       <AlertDialog
-        open={Boolean(jobAction)}
+        open={Boolean(deleteTarget)}
         onOpenChange={(open) => {
           if (!open && !isJobActionPending)
-            setJobAction(null);
+            setDeleteTarget(null);
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {jobAction?.action === "delete" ? "Delete this job record?" : "Cancel this job?"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Delete this job record?</AlertDialogTitle>
             <AlertDialogDescription>
-              {jobAction?.action === "delete"
-                ? `Job ${jobAction.job.reference} will be permanently removed. This cannot be undone.`
-                : `Job ${jobAction?.job.reference} will be cancelled and any assigned driver or vehicle released.`}
+              {`Job ${deleteTarget?.reference ?? ""} will be permanently removed. This cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isJobActionPending}>
-              {jobAction?.action === "delete" ? "Cancel" : "Keep Job"}
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isJobActionPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isJobActionPending}
               onClick={(event) => {
                 event.preventDefault();
-                handleJobAction();
+                handleDeleteJob();
               }}
             >
               {isJobActionPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {jobAction?.action === "delete" ? "Delete Job Record" : "Cancel Job"}
+              Delete Job Record
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

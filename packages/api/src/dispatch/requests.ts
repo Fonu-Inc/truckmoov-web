@@ -2,6 +2,7 @@ import { axiosInstance } from '../lib/axios-instance'
 
 import type {
   AcknowledgeJobPayload,
+  AddJobAttachmentPayload,
   AddJobNotePayload,
   AddPodAttachmentPayload,
   AssignJobPayload,
@@ -9,12 +10,14 @@ import type {
   ConfirmDriverStatusRequestPayload,
   CreateDriverStatusRequestPayload,
   CreateJobPayload,
+  DispatchJobAttachmentResponse,
   DispatchJobListResponse,
   DispatchJobResponse,
   DispatchJobSummaryResponse,
   DispatchJobTimelineResponse,
   DriverStatusRequestActionResponse,
   EventPublishedResponse,
+  GetJobAttachmentPayload,
   JobsQuery,
   DeleteJobPayload,
   LegacyStatusPayload,
@@ -97,9 +100,26 @@ export async function sendWhatsappInstruction({ jobId, data }: SendWhatsappInstr
   return res
 }
 
+export async function resendDriverInstruction({ jobId }: { jobId: string }) {
+  const { data: res } = await axiosInstance.post<DispatchJobResponse>(`/dispatch/jobs/${jobId}/resend-instruction`)
+  return res
+}
+
 export async function addJobNote({ jobId, data }: AddJobNotePayload) {
   const { data: res } = await axiosInstance.post<DispatchJobResponse>(`/dispatch/jobs/${jobId}/notes`, data)
   return res
+}
+
+export async function addJobAttachment({ jobId, data }: AddJobAttachmentPayload) {
+  const { data: res } = await axiosInstance.post<DispatchJobResponse>(`/dispatch/jobs/${jobId}/attachments`, data)
+  return res
+}
+
+export async function getJobAttachment({ jobId, attachmentId }: GetJobAttachmentPayload) {
+  const { data } = await axiosInstance.get<DispatchJobAttachmentResponse>(
+    `/dispatch/jobs/${jobId}/attachments/${attachmentId}`,
+  )
+  return data
 }
 
 export async function addPodAttachment({ jobId, data }: AddPodAttachmentPayload) {

@@ -21,6 +21,8 @@ type ApplicationStatusScreenProps = {
   onEdit: () => void;
   /** Installation booked: the account exists, so the draft is done with. */
   onSignIn: () => void;
+  /** After a rejection: the same email can apply again from a clean form. */
+  onStartNew: () => void;
 };
 
 /** Stages after a booked installation — the account exists from here on. */
@@ -52,6 +54,7 @@ export function ApplicationStatusScreen({
   onContinue,
   onEdit,
   onSignIn,
+  onStartNew,
 }: ApplicationStatusScreenProps) {
   const statusQuery = useQuery({
     ...getOnboardingApplicationStatusQueryOptions(applicationId),
@@ -106,9 +109,11 @@ export function ApplicationStatusScreen({
             ? "We're allocating your devices and SIMs. Payment opens as soon as that's done — we'll email you."
             : approved
               ? "You can now make payment for your Fleet Pro package to continue."
-              : rejected || changesRequested
-                ? (status?.decisionReason ?? "You may review the requirements and submit again.")
-                : "Thank you for your submission. We're reviewing the details you sent, and we'll email you once your application has been approved."}
+              : rejected
+                ? `${status?.decisionReason ?? "We couldn't approve this application."} You can start a new application with the same email address.`
+                : changesRequested
+                  ? (status?.decisionReason ?? "You may review the requirements and submit again.")
+                  : "Thank you for your submission. We're reviewing the details you sent, and we'll email you once your application has been approved."}
       </p>
 
       {statusQuery.isError && (
@@ -170,6 +175,14 @@ export function ApplicationStatusScreen({
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh status
+          </Button>
+        )}
+        {rejected && (
+          <Button
+            size="lg"
+            onClick={onStartNew}
+          >
+            Start a new application
           </Button>
         )}
         {changesRequested && (

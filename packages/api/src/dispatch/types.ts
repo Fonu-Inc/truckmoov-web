@@ -46,6 +46,30 @@ export type CreateJobStopPayload = {
   latitude?: number
   longitude?: number
   notes?: string
+  company_name?: string
+  /** YYYY-MM-DD */
+  date?: string
+  /** HH:MM */
+  time_from?: string
+  /** HH:MM */
+  time_to?: string
+}
+
+export type JobDimensions = {
+  length_cm?: number
+  width_cm?: number
+  height_cm?: number
+}
+
+/** Cargo details beyond weight and description. Sent on update, it replaces what is stored. */
+export type JobCargoPayload = {
+  category?: string
+  packages_count?: number
+  unit?: string
+  value_ngn?: number
+  dimensions?: JobDimensions
+  special_handling?: string[]
+  equipment?: string[]
 }
 
 export type DispatchJobTimeWindow = {
@@ -114,6 +138,7 @@ export type CreateJobPayload = {
     notes?: string
     additionalNotes?: string
     time_window?: DispatchJobTimeWindow
+    cargo?: JobCargoPayload
   }
 }
 
@@ -130,6 +155,9 @@ export type UpdateJobDetailsPayload = {
     load_weight_kg?: number
     load_volume_m3?: number
     deadline?: string
+    cargo?: JobCargoPayload
+    /** Sent as an empty string, it clears the requirement. */
+    required_vehicle_type?: string
   }
 }
 
@@ -207,6 +235,21 @@ export type AddJobNotePayload = {
     text: string
     author_id?: string
   }
+}
+
+export type AddJobAttachmentPayload = {
+  jobId: string
+  data: {
+    name: string
+    content_type?: string
+    /** File content, at most 3 MB before encoding. */
+    content_base64: string
+  }
+}
+
+export type GetJobAttachmentPayload = {
+  jobId: string
+  attachmentId: string
 }
 
 export type AddPodAttachmentPayload = {
@@ -291,6 +334,22 @@ export type DispatchStop = {
   contact_name?: string
   contact_phone?: string
   notes?: string
+  company_name?: string
+  date?: string
+  time_from?: string
+  time_to?: string
+}
+
+export type DispatchJobAttachment = {
+  id?: string
+  name?: string
+  content_type?: string
+  size_bytes?: number
+  uploaded_at?: string
+}
+
+export type DispatchJobAttachmentContent = DispatchJobAttachment & {
+  content_base64?: string
 }
 
 export type DispatchJobNote = {
@@ -358,6 +417,17 @@ export type DispatchJob = {
   created_at?: string
   updated_at?: string
   acknowledged_at?: string
+  /** Set once, when the job first reaches delivered. */
+  delivered_at?: string
+
+  cargo_category?: string
+  packages_count?: number
+  cargo_unit?: string
+  cargo_value_ngn?: number
+  dimensions?: JobDimensions
+  special_handling?: string[]
+  equipment?: string[]
+  attachments?: DispatchJobAttachment[]
 
   // Always sent; null when nothing is assigned or fleet couldn't be read.
   assigned_driver_name?: string | null
@@ -448,6 +518,7 @@ export type DispatchJobTimelineResponse = ServerResponse<{
   job_id?: string
   timeline?: DispatchJobTimelineEntry[]
 }>
+export type DispatchJobAttachmentResponse = ServerResponse<DispatchJobAttachmentContent>
 export type DriverStatusRequestActionResponse = ServerResponse<{
   job?: DispatchJob
   request?: DispatchDriverStatusRequest

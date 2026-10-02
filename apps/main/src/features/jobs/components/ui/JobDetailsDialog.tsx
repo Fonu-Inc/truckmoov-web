@@ -1,14 +1,17 @@
 import type {
   DispatchJob, DispatchStop,
 } from "@truckmoov/api/dispatch";
-import { useJob } from "@truckmoov/api/dispatch";
+import {
+  useDownloadJobAttachment, useJob,
+} from "@truckmoov/api/dispatch";
 import {
   useDriver, useVehicle,
 } from "@truckmoov/api/fleet";
 import { format } from "date-fns";
 import {
-  ArrowDown, Calendar, Clock, FileText, MapPin, MessageSquare, Package, Phone, Route as RouteIcon, Truck, User,
+  ArrowDown, Calendar, Clock, Download, FileText, Loader2, MapPin, MessageSquare, Package, Phone, Route as RouteIcon, Truck, User,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -17,9 +20,15 @@ import {
 } from "@/components/shadcn/dialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
+  formatFileSize, saveBase64File,
+} from "@/features/jobs/utils/jobFiles";
+import {
   jobStatusLabel, jobStatusTone, PRIORITY_BADGE, STATUS_BADGE,
 } from "@/features/jobs/utils/jobStatus";
 import { cn } from "@/lib/utils";
+import { CancelJobDialog } from "./CancelJobDialog";
+import { JobProgressPanel } from "./JobProgressPanel";
+import { JobTimeline } from "./JobTimeline";
 
 type JobDetailsDialogProps = {
   open: boolean;
@@ -112,6 +121,36 @@ function initials(name: string) {
   ).toUpperCase();
 }
 
+// A driver's reply or the result of the message to them should show without a reload.
+const DETAILS_REFRESH_MS = 15_000;
+
+function Chips({ values }: { values?: string[] }) {
+  if (!values?.length)
+    return <>—</>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {values.map(value => (
+        <Badge
+          key={value}
+          variant="outline"
+          className="text-[10px]"
+        >
+          {value}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+function dimensionsText(dimensions: DispatchJob["dimensions"]) {
+  if (!dimensions)
+    return undefined;
+  const {
+    length_cm: length, width_cm: width, height_cm: height,
+  } = dimensions;
+  return length || width || height ? `${length ?? "—"} × ${width ?? "—"} × ${height ?? "—"} cm` : undefined;
+}
+
 const ROUTE_PIN = [
   "text-success",
   "text-destructive",
@@ -128,8 +167,16 @@ export function JobDetailsDialog({
   recommendOnly = false,
 }: JobDetailsDialogProps) {
   const { format: formatCurrency } = useCurrency();
-  const jobQuery = useJob(open ? listedJob?.id ?? "" : "");
+  const jobQuery = useJob(
+    open ? listedJob?.id ?? "" : "",
+    { refetchInterval: open ? DETAILS_REFRESH_MS : undefined },
+  );
   const job = jobQuery.data?.data ?? listedJob;
+  const downloadAttachment = useDownloadJobAttachment();
+  const [
+    cancelTarget,
+    setCancelTarget,
+  ] = useState<DispatchJob | null>(null);
   const driverQuery = useDriver(open ? job?.assigned_driver_id ?? "" : "");
   const vehicleQuery = useVehicle(open ? job?.assigned_vehicle_id ?? "" : "");
 
@@ -188,8 +235,23 @@ export function JobDetailsDialog({
       label: "Delivery Contact", stop: job.dropoff, start: tw.dropoff_start, end: tw.dropoff_end,
     },
   ];
-  const visibleContacts = contacts.filter(c => c.stop?.contact_name || c.stop?.contact_phone);
+  const visibleContacts = contacts.filter(c => c.stop?.contact_name || c.stop?.contact_phone || c.stop?.company_name);
   const attachments = job.pod_attachments ?? [];
+  const files = job.attachments ?? [];
+
+  const downloadFile = (attachmentId: string) => downloadAttachment.mutate(
+    {
+      jobId: job.id ?? "", attachmentId,
+    },
+    {
+      onSuccess: ({ data }) => saveBase64File(
+        data.name ?? "attachment",
+        data.content_type,
+        data.content_base64 ?? "",
+      ),
+      onError: error => toast.error(error.message),
+    },
+  );
 
   const assignButton = (label: string, onClick?: () => void) => onClick && canReassign && (
     <Button
@@ -413,10 +475,12 @@ export function JobDetailsDialog({
             </div>
           </div>
 
+          <JobProgressPanel
+            job={job}
+            onCancel={() => setCancelTarget(job)}
+          />
+
           {/* ── 3 · Job Details ── */}
-          {/* ponytail: fleetflow also shows category, ETA, packages, est. value, dimensions,
-              handling/equipment chips — the dispatch Job schema has no fields for them, so
-              they are left out rather than shown as mock values. */}
           <SectionCard
             title="Job Details"
             icon={Package}
@@ -425,6 +489,26 @@ export function JobDetailsDialog({
               <Field
                 label="Cargo Type"
                 value={job.cargo_type || "—"}
+              />
+              <Field
+                label="Cargo Category"
+                value={job.cargo_category || "—"}
+              />
+              <Field
+                label="Packages"
+                value={job.packages_count ? `${job.packages_count}${job.cargo_unit && ![
+                  "kg",
+                  "tons",
+                  "lbs",
+                ].includes(job.cargo_unit) ? ` (${job.cargo_unit})` : ""}` : "—"}
+              />
+              <Field
+                label="Declared Value"
+                value={job.cargo_value_ngn ? formatCurrency(job.cargo_value_ngn) : "—"}
+              />
+              <Field
+                label="Dimensions"
+                value={dimensionsText(job.dimensions) ?? "—"}
               />
               <Field
                 label="Cargo Weight"
@@ -487,6 +571,27 @@ export function JobDetailsDialog({
                     />
                   )
                 : null}
+              <div className="col-span-2 sm:col-span-2">
+                <Field
+                  label="Special Handling"
+                  value={<Chips values={job.special_handling} />}
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-2">
+                <Field
+                  label="Equipment Needed"
+                  value={<Chips values={job.equipment} />}
+                />
+              </div>
+              {job.delivered_at && (
+                <Field
+                  label="Delivered"
+                  value={fmt(
+                    job.delivered_at,
+                    "MMM dd, HH:mm",
+                  )}
+                />
+              )}
               <div className="col-span-2 sm:col-span-4">
                 <Field
                   label="Description"
@@ -494,6 +599,42 @@ export function JobDetailsDialog({
                 />
               </div>
             </div>
+
+            {files.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                  Files
+                </p>
+                <ul className="space-y-1.5">
+                  {files.map(file => (
+                    <li
+                      key={file.id}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-border/50 bg-muted/20 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <p className="text-sm truncate">{file.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{formatFileSize(file.size_bytes)}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs shrink-0"
+                        disabled={downloadAttachment.isPending}
+                        onClick={() => file.id && downloadFile(file.id)}
+                      >
+                        {downloadAttachment.isPending && downloadAttachment.variables?.attachmentId === file.id
+                          ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                        Download
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {attachments.length > 0 && (
               <div>
@@ -567,8 +708,25 @@ export function JobDetailsDialog({
                     {c.stop?.contact_name && (
                       <p className="text-sm font-medium">{c.stop.contact_name}</p>
                     )}
+                    {c.stop?.company_name && (
+                      <p className="text-xs text-muted-foreground">{c.stop.company_name}</p>
+                    )}
                     {c.stop?.contact_phone && (
                       <p className="text-xs">{c.stop.contact_phone}</p>
+                    )}
+                    {(c.stop?.date || c.stop?.time_from || c.stop?.time_to) && !(c.start || c.end) && (
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3 shrink-0" />
+                        <span>
+                          {[
+                            c.stop?.date,
+                            [
+                              c.stop?.time_from,
+                              c.stop?.time_to,
+                            ].filter(Boolean).join(" – "),
+                          ].filter(Boolean).join(" · ")}
+                        </span>
+                      </p>
                     )}
                     {(c.start || c.end) && (
                       <>
@@ -620,8 +778,14 @@ export function JobDetailsDialog({
               </div>
             </SectionCard>
           )}
+
+          <JobTimeline job={job} />
         </div>
       </DialogContent>
+      <CancelJobDialog
+        job={cancelTarget}
+        onOpenChange={open => !open && setCancelTarget(null)}
+      />
     </Dialog>
   );
 }

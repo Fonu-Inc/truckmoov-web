@@ -1,9 +1,10 @@
-import { useStillReportingDevices } from "@truckmoov/api/auth";
+import { useStillReportingDevices, useUnrecognisedDevices } from "@truckmoov/api/auth";
 import { useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { findSetupProblems, useDevicesSimsData } from "../devices-sims/devicesSimsData";
 import { SetupProblemsSection } from "../devices-sims/SetupProblemsSection";
 import { StillReportingSection } from "../devices-sims/StillReportingSection";
+import { UnrecognisedDevicesSection } from "../devices-sims/UnrecognisedDevicesSection";
 import { SimHistorySection } from "../devices-sims/SimHistorySection";
 import {
   SuspendedDevicesSection,
@@ -20,6 +21,7 @@ export default function DevicesSimsPage() {
   const canAct = !!role && ACTING_ROLES.includes(role);
   const data = useDevicesSimsData();
   const stillReporting = useStillReportingDevices();
+  const unrecognised = useUnrecognisedDevices();
   const {
     devicesQuery, simsQuery, historyQuery, names, devices, sims, history,
   } = data;
@@ -69,6 +71,12 @@ export default function DevicesSimsPage() {
         isLoading={stillReporting.isLoading}
         isError={stillReporting.isError}
         onRetry={() => void stillReporting.refetch()}
+      />
+      <UnrecognisedDevicesSection
+        report={unrecognised.data?.data}
+        isLoading={unrecognised.isLoading}
+        isError={unrecognised.isError}
+        onRetry={() => void unrecognised.refetch()}
       />
       <SuspendedSimsSection
         sims={suspendedSims}

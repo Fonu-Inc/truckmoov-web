@@ -1,5 +1,6 @@
 import type {
   TrackingAlert,
+  TrackingAlertFrame,
   TrackingCounts,
   TrackingGeofenceEvent,
   TrackingPositionsFrame,
@@ -8,6 +9,7 @@ import type {
   TrackingVehicle,
 } from "@truckmoov/api/fleet";
 import type L from "leaflet";
+import { alertFromFrame, alertHeadline, alertTime, geofenceEventName, geofenceEventVehicleId } from "../../lib/alertText";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   FLEET_QUERY_KEY,
@@ -154,6 +156,10 @@ export default function LiveMap() {
     [snapshot],
   );
   const counts = snapshot?.counts;
+  const vehicleNameFor = (id?: string | null) => {
+    const found = vehicles.find(x => x.vehicleId === id);
+    return found ? vehicleLabel(found) : null;
+  };
 
   const [
     selectedVehicle,
@@ -368,9 +374,10 @@ export default function LiveMap() {
     },
   );
 
-  useRealtimeEvent<TrackingAlert>(
+  useRealtimeEvent<TrackingAlertFrame>(
     "alert.triggered",
-    (alert) => {
+    (frame) => {
+      const alert = alertFromFrame(frame);
       queryClient.setQueryData<{
         data: {
           total: number; items: TrackingAlert[];
@@ -391,13 +398,12 @@ export default function LiveMap() {
           },
         } : old),
       );
-      toast.warning(alert.title || alert.message || alert.type);
+      toast.warning(alertHeadline(alert, vehicleNameFor(alert.vehicleId)));
     },
   );
 
   const onGeofenceEvent = (verb: string) => (e: TrackingGeofenceEvent) => {
-    const v = vehicles.find(x => x.vehicleId === e.vehicleId);
-    toast.info(`${v ? vehicleLabel(v) : "A vehicle"} ${verb} ${e.geofenceName ?? "a geofence"}`);
+    toast.info(`${vehicleNameFor(geofenceEventVehicleId(e)) ?? "A vehicle"} ${verb} ${geofenceEventName(e) ?? "a geofence"}`);
     // vehiclesInside changed — refresh that one list, on the event, not on a timer.
     queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.geofencesRoot });
   };
@@ -850,10 +856,10 @@ export default function LiveMap() {
                               className={`p-2.5 rounded-xl text-xs ${alert.severity === "critical" || alert.severity === "high" ? "bg-destructive/10" : alert.severity === "medium" ? "bg-warning/10" : "bg-muted/30"}`}
                             >
                               <div className="min-w-0">
-                                <p className="font-medium">{alert.title || alert.message || alert.type}</p>
+                                <p className="font-medium">{alertHeadline(alert, vehicleNameFor(alert.vehicleId))}</p>
                                 <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  {formatRelative(alert.createdAt)}
+                                  {formatRelative(alertTime(alert))}
                                 </p>
                               </div>
                               {alert.vehicleId && (
