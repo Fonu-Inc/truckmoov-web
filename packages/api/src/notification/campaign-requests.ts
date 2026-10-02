@@ -1,4 +1,5 @@
 import { axiosInstance } from '../lib/axios-instance'
+import type { ServerResponse } from '../lib/types'
 
 import type {
   CreatePlatformCampaignInput,
@@ -11,30 +12,30 @@ import type {
 const BASE = '/notify/system/campaigns'
 
 export async function getPlatformCampaigns(query: PlatformCampaignQuery = {}) {
-  const { data } = await axiosInstance.get<PlatformCampaignList>(BASE, {
+  const { data } = await axiosInstance.get<ServerResponse<PlatformCampaignList>>(BASE, {
     params: { status: query.status, query: query.query || undefined, page: query.page, limit: query.limit },
   })
-  return data
+  return data.data
 }
 
 export async function getPlatformCampaign(id: string) {
-  const { data } = await axiosInstance.get<PlatformCampaignDetail>(`${BASE}/${id}`)
-  return data
+  const { data } = await axiosInstance.get<ServerResponse<PlatformCampaignDetail>>(`${BASE}/${id}`)
+  return data.data
 }
 
 export async function createPlatformCampaign(input: CreatePlatformCampaignInput) {
-  const { data } = await axiosInstance.post<PlatformCampaign>(BASE, input)
-  return data
+  const { data } = await axiosInstance.post<ServerResponse<PlatformCampaign>>(BASE, input)
+  return data.data
 }
 
 export async function sendPlatformCampaign(id: string, retryFailedOnly = false) {
-  const { data } = await axiosInstance.post<{ campaign: PlatformCampaign, attempted: number }>(
+  const { data } = await axiosInstance.post<ServerResponse<{ campaign: PlatformCampaign, attempted: number }>>(
     `${BASE}/${id}/${retryFailedOnly ? 'retry' : 'send'}`,
   )
-  return data
+  return data.data
 }
 
 export async function cancelPlatformCampaign(id: string) {
-  const { data } = await axiosInstance.post<PlatformCampaign>(`${BASE}/${id}/cancel`)
-  return data
+  const { data } = await axiosInstance.post<ServerResponse<PlatformCampaign>>(`${BASE}/${id}/cancel`)
+  return data.data
 }
