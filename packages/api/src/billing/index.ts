@@ -6,6 +6,10 @@ import {
   createBillingPlan,
   deactivateBillingPlan,
   getBillingInvoice,
+  getEnforcementPreview,
+  getEnforcementSettings,
+  listEnforcement,
+  updateEnforcementSettings,
   getBillingInvoices,
   getBillingPayment,
   getBillingPayments,
@@ -16,6 +20,11 @@ import {
   getBillingQuotations,
   getBillingSummary,
   getInstallationPrice,
+  getTenantInvoice,
+  getTenantInvoices,
+  getTenantLicence,
+  payTenantInvoiceByCard,
+  payTenantInvoiceFromWallet,
   updateBillingPlan,
   updateInstallationPrice,
 } from './requests'
@@ -23,11 +32,13 @@ import {
 export type * from './types'
 
 import type {
+  EnforcementQuery,
   InvoicesQuery,
   PaymentsQuery,
   PlansQuery,
   PriceHistoryQuery,
   QuotationsQuery,
+  TenantInvoicesQuery,
 } from './types'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
@@ -50,6 +61,14 @@ export const BILLING_QUERY_KEY = {
   paymentsRoot: ['billing', 'payments'],
   payments: (payload?: PaymentsQuery) => ['billing', 'payments', 'list', payload],
   payment: (id: string) => ['billing', 'payments', 'detail', id],
+  enforcementRoot: ['billing', 'enforcement'],
+  enforcementSettings: ['billing', 'enforcement', 'settings'],
+  enforcementList: (payload?: EnforcementQuery) => ['billing', 'enforcement', 'list', payload],
+  enforcementPreview: ['billing', 'enforcement', 'preview'],
+  tenantRoot: ['billing', 'tenant'],
+  tenantInvoices: (payload?: TenantInvoicesQuery) => ['billing', 'tenant', 'invoices', payload],
+  tenantInvoice: (id: string) => ['billing', 'tenant', 'invoice', id],
+  tenantLicence: ['billing', 'tenant', 'licence'],
 } as const
 
 // ─── queryOptions factories ───────────────────────────────────────────────────
@@ -140,6 +159,51 @@ export function getBillingPaymentQueryOptions(id: string) {
   })
 }
 
+export function getEnforcementSettingsQueryOptions() {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.enforcementSettings,
+    queryFn: getEnforcementSettings,
+  })
+}
+
+export function getEnforcementListQueryOptions(payload?: EnforcementQuery) {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.enforcementList(payload),
+    queryFn: () => listEnforcement(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getEnforcementPreviewQueryOptions() {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.enforcementPreview,
+    queryFn: getEnforcementPreview,
+  })
+}
+
+export function getTenantInvoicesQueryOptions(payload?: TenantInvoicesQuery) {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantInvoices(payload),
+    queryFn: () => getTenantInvoices(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getTenantInvoiceQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantInvoice(id),
+    queryFn: () => getTenantInvoice({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getTenantLicenceQueryOptions() {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantLicence,
+    queryFn: getTenantLicence,
+  })
+}
+
 // ─── useQuery hooks ───────────────────────────────────────────────────────────
 
 export function useBillingSummary() {
@@ -218,4 +282,53 @@ export function useUpdateInstallationPrice() {
       queryClient.invalidateQueries({ queryKey: BILLING_QUERY_KEY.priceHistoryRoot })
     },
   })
+}
+
+export function useEnforcementSettings() {
+  return useQuery(getEnforcementSettingsQueryOptions())
+}
+
+export function useEnforcementList(payload?: EnforcementQuery) {
+  return useQuery(getEnforcementListQueryOptions(payload))
+}
+
+export function useEnforcementPreview(enabled = true) {
+  return useQuery({ ...getEnforcementPreviewQueryOptions(), enabled })
+}
+
+export function useUpdateEnforcementSettings() {
+  return useMutation({
+    mutationFn: updateEnforcementSettings,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: BILLING_QUERY_KEY.enforcementRoot }),
+  })
+}
+
+export function useTenantInvoices(payload?: TenantInvoicesQuery) {
+  return useQuery(getTenantInvoicesQueryOptions(payload))
+}
+
+export function useTenantInvoice(id: string) {
+  return useQuery(getTenantInvoiceQueryOptions(id))
+}
+
+export function useTenantLicence() {
+  return useQuery(getTenantLicenceQueryOptions())
+}
+
+function invalidateTenantBilling() {
+  queryClient.invalidateQueries({ queryKey: BILLING_QUERY_KEY.tenantRoot })
+}
+
+export function usePayTenantInvoiceFromWallet() {
+  return useMutation({
+    mutationFn: payTenantInvoiceFromWallet,
+    onSuccess: () => {
+      invalidateTenantBilling()
+      queryClient.invalidateQueries({ queryKey: ['dataBundleWalletBalance'] })
+    },
+  })
+}
+
+export function usePayTenantInvoiceByCard() {
+  return useMutation({ mutationFn: payTenantInvoiceByCard })
 }

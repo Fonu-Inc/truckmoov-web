@@ -8,6 +8,7 @@ export type PriceItemType = 'm2m_plan' | 'installation_fee'
 export type PriceField = 'year1' | 'renewal' | 'enterprise' | 'owner_operator'
 export type QuotationStatus = 'draft' | 'pending_review' | 'sent' | 'accepted' | 'expired' | 'cancelled'
 export type QuotationPaymentStatusFilter = 'complete' | 'incomplete'
+export type InvoiceKind = 'renewal' | 'first'
 export type InvoiceStatus = 'draft' | 'issued' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled'
 export type PaymentStatus = 'pending' | 'successful' | 'failed' | 'requires_review' | 'refunded'
 export type QuotationPaymentStatus = PaymentStatus
@@ -192,6 +193,9 @@ export type InvoiceRow = {
   amountPaidNgn: number
   outstandingNgn: number
   emailedAt: string | null
+  isRenewal: boolean
+  tenantId: string | null
+  periodEnd: string | null
 }
 
 export type InvoicePaymentEntry = {
@@ -210,7 +214,7 @@ export type InvoiceDetail = InvoiceRow & {
 }
 
 export type InvoicesQuery = {
-  params?: { q?: string, status?: InvoiceStatus, page?: number, limit?: number }
+  params?: { q?: string, status?: InvoiceStatus, kind?: InvoiceKind, page?: number, limit?: number }
 }
 export type InvoicesResponse = BillingPagedResponse<InvoiceRow>
 export type InvoiceResponse = ServerResponse<InvoiceDetail>
@@ -261,3 +265,195 @@ export type PaymentsQuery = {
 }
 export type PaymentsResponse = BillingPagedResponse<PaymentRow>
 export type PaymentResponse = ServerResponse<PaymentDetail>
+
+// ─── Payment enforcement (grace and automatic suspension) ────────────────────
+
+export type EnforcementStage = 'current' | 'in_grace' | 'past_grace'
+export type EnforcementCause = 'manual' | 'non_payment'
+export type EnforcementCascadeStatus = 'pending' | 'complete' | 'partial' | 'restoring' | 'restore_partial'
+export type EnforcementNoticeKind = 'due_today' | 'grace_daily' | 'final' | 'suspended' | 'restored'
+
+export type EnforcementSettings = {
+  graceDays: number
+  renewalLeadDays: number
+  autoSuspendEnabled: boolean
+  autoSuspendCapPerRun: number
+  paused: boolean
+  updatedAt: string | null
+  updatedBy: string | null
+  limits: {
+    graceDays: { min: number, max: number }
+    renewalLeadDays: { min: number, max: number }
+    autoSuspendCapPerRun: { min: number, max: number }
+  }
+}
+
+export type EnforcementSettingsUpdate = {
+  graceDays?: number
+  renewalLeadDays?: number
+  autoSuspendEnabled?: boolean
+  autoSuspendCapPerRun?: number
+  paused?: boolean
+  reason: string
+}
+
+export type EnforcementRow = {
+  tenantId: string
+  tenantName: string
+  dueDate: string
+  daysOverdue: number
+  graceEndsAt: string
+  graceDaysLeft: number | null
+  stage: EnforcementStage
+  amountOwedNgn: number
+  sources: string[]
+  items: number
+  suspended: boolean
+  suspensionCause: EnforcementCause | null
+  suspendedAt: string | null
+  reason: string | null
+  cascadeStatus: EnforcementCascadeStatus | null
+  lastNoticeKind: EnforcementNoticeKind | null
+  lastNoticeAt: string | null
+  hasContact: boolean
+}
+
+export type EnforcementList = {
+  items: EnforcementRow[]
+  page: number
+  pageSize: number
+  total: number
+  summary: {
+    inGrace: number
+    pastGrace: number
+    suspendedNonPayment: number
+    suspendedManual: number
+    owedNgn: number
+  }
+}
+
+export type EnforcementQuery = {
+  params?: {
+    stage?: 'all' | EnforcementStage
+    suspended?: boolean
+    q?: string
+    page?: number
+    pageSize?: number
+  }
+}
+
+export type EnforcementAssetCounts = {
+  users: number
+  devices: number
+  sims: number
+  vehicles: number
+  shareLinks: number
+}
+
+export type EnforcementPreview = {
+  generatedAt: string
+  today: string
+  settings: Pick<EnforcementSettings, 'graceDays' | 'autoSuspendEnabled' | 'autoSuspendCapPerRun' | 'paused'>
+  wouldNotify: {
+    tenantId: string
+    tenantName: string
+    kind: 'due_today' | 'grace_daily' | 'final'
+    daysLeft: number | null
+    amountOwedNgn: number
+    alreadySent: boolean
+  }[]
+  wouldSuspend: {
+    tenantId: string
+    tenantName: string
+    dueDate: string
+    daysOverdue: number
+    amountOwedNgn: number
+    reason: string
+    assets: EnforcementAssetCounts
+  }[]
+  deferred: {
+    tenantId: string
+    tenantName: string
+    why: 'waived' | 'no_notice_yet' | 'no_contact' | 'capped'
+    label: string
+  }[]
+  totalEligible: number
+  cappedCount: number
+  notes: { sims: string, apiKeys: string, scope: string }
+}
+
+export type EnforcementSettingsResponse = ServerResponse<EnforcementSettings>
+export type EnforcementListResponse = ServerResponse<EnforcementList>
+export type EnforcementPreviewResponse = ServerResponse<EnforcementPreview>
+
+// ─── Tenant billing (renewal invoices, paid by the tenant) ───────────────────
+
+export type TenantInvoiceKind = 'renewal' | 'first'
+export type TenantInvoiceStatus = 'issued' | 'partially_paid' | 'paid' | 'overdue'
+export type TenantInvoiceFilter = 'open' | 'paid' | 'all'
+
+export type TenantInvoice = {
+  id: string
+  number: string
+  kind: TenantInvoiceKind
+  status: TenantInvoiceStatus
+  issueDate: string
+  dueDate: string
+  totalNgn: number
+  amountPaidNgn: number
+  outstandingNgn: number
+  daysOverdue: number
+  graceEndsOn: string | null
+  payable: boolean
+  periodEnd: string | null
+}
+
+export type TenantInvoiceLine = {
+  kind: BillingLineKind
+  name: string
+  quantity: number
+  unitPriceNgn: number
+  totalNgn: number
+}
+
+export type TenantInvoiceDetail = TenantInvoice & { lines: TenantInvoiceLine[] }
+
+export type TenantInvoiceList = {
+  items: TenantInvoice[]
+  openTotalNgn: number
+  nextDueDate: string | null
+  total: number
+}
+
+export type TenantInvoicesQuery = {
+  params?: { status?: TenantInvoiceFilter, page?: number, pageSize?: number }
+}
+
+export type TenantLicence = {
+  planCode: string
+  planName: string
+  deviceCount: number
+  periodStart: string
+  periodEnd: string
+  daysLeft: number
+  status: 'active' | 'renewed' | 'ended'
+  renewalInvoiceId: string | null
+}
+
+export type TenantInvoicePayWallet = {
+  invoice: TenantInvoice
+  paidFromWalletNgn: number
+  newPeriodEnd: string | null
+}
+
+export type TenantInvoicePayCard = {
+  authorizationUrl: string
+  reference: string
+  amountNgn: number
+}
+
+export type TenantInvoiceListResponse = ServerResponse<TenantInvoiceList>
+export type TenantInvoiceDetailResponse = ServerResponse<TenantInvoiceDetail>
+export type TenantLicenceResponse = ServerResponse<TenantLicence | null>
+export type TenantInvoicePayWalletResponse = ServerResponse<TenantInvoicePayWallet>
+export type TenantInvoicePayCardResponse = ServerResponse<TenantInvoicePayCard>

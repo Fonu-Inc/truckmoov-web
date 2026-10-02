@@ -93,6 +93,49 @@ export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
   return <StatusBadge meta={INVOICE_STATUS[status]} />;
 }
 
+export function RenewalBadge() {
+  return <StatusBadge meta={{ label: "Renewal", tone: "info" }} />;
+}
+
+const DAY_MS = 86_400_000;
+
+function lagosToday() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: TIME_ZONE });
+}
+
+function daysBetween(from: string, to: string) {
+  return Math.round((Date.parse(`${to.slice(0, 10)}T00:00:00Z`) - Date.parse(`${from.slice(0, 10)}T00:00:00Z`)) / DAY_MS);
+}
+
+export function dueStateText(
+  invoice: { status: InvoiceStatus; dueDate: string; outstandingNgn: number },
+  graceDays: number | null,
+) {
+  if (invoice.status === "paid" || invoice.status === "cancelled" || invoice.status === "draft" || invoice.outstandingNgn <= 0)
+    return null;
+  const late = daysBetween(invoice.dueDate, lagosToday());
+  if (late < 0) {
+    const left = -late;
+    return { tone: "muted" as const, text: left === 1 ? "Due tomorrow" : `Due in ${left} days` };
+  }
+  if (late === 0) return { tone: "warning" as const, text: "Due today" };
+  const overdue = `Overdue by ${late} ${late === 1 ? "day" : "days"}`;
+  if (graceDays === null) return { tone: "destructive" as const, text: overdue };
+  const graceLeft = graceDays - late;
+  if (graceLeft >= 0)
+    return { tone: "warning" as const, text: `${overdue}, in grace period (${graceLeft} ${graceLeft === 1 ? "day" : "days"} left)` };
+  return { tone: "destructive" as const, text: `${overdue}, grace period ended` };
+}
+
+export function DueStateText({ invoice, graceDays }: {
+  invoice: { status: InvoiceStatus; dueDate: string; outstandingNgn: number };
+  graceDays: number | null;
+}) {
+  const state = dueStateText(invoice, graceDays);
+  if (!state) return null;
+  return <span className={cn("text-xs", state.tone === "muted" ? "text-muted-foreground" : state.tone === "warning" ? "text-warning" : "text-destructive")}>{state.text}</span>;
+}
+
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   return <StatusBadge meta={PAYMENT_STATUS[status]} />;
 }

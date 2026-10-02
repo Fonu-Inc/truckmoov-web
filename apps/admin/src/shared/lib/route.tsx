@@ -166,19 +166,10 @@ export const router = createBrowserRouter([
                 index: true, lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityOverviewPage")).default }),
               },
               {
-                path: "login-history", lazy: async () => ({ Component: (await import("@/features/security/components/pages/LoginHistoryPage")).default }),
+                path: "payments-access", lazy: async () => ({ Component: (await import("@/features/security/components/pages/PaymentsAccessPage")).default }),
               },
               {
-                path: "failed-attempts", lazy: async () => ({ Component: (await import("@/features/security/components/pages/FailedAttemptsPage")).default }),
-              },
-              {
-                path: "notifications", lazy: async () => ({ Component: (await import("@/features/security/components/pages/NotificationsPage")).default }),
-              },
-              {
-                path: "events", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityEventsPage")).default }),
-              },
-              {
-                path: "sim-audit", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SimAuditPage")).default }),
+                path: "devices-sims", lazy: async () => ({ Component: (await import("@/features/security/components/pages/DevicesSimsPage")).default }),
               },
             ],
           },

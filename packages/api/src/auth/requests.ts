@@ -253,6 +253,7 @@ import type {
   SystemDeviceSetupRequestsListResponse,
   SystemDeviceSetupRequestsQuery,
   SystemDeviceSetupSummaryResponse,
+  StillReportingDevicesResponse,
   SystemDeviceSummaryResponse,
   SystemFeatureFlagResponse,
   SystemFeatureFlagsResponse,
@@ -369,6 +370,9 @@ import type {
   SystemAuditLogQuery,
   SystemAuditLogResponse,
   SystemAuditLogVerifyResponse,
+  SystemActionHistoryQuery,
+  SystemWalletsResponse,
+  SystemAuditLogEntry,
   SystemOnboardingApplicationsQuery,
   SystemOnboardingApplicationsSummaryResponse,
   SystemTenantAuditLogResponse,
@@ -908,6 +912,11 @@ export async function getSystemDevices(payload?: SystemDevicesQuery) {
 
 export async function getSystemDevicesSummary() {
   const { data } = await axiosInstance.get<SystemDeviceSummaryResponse>('/auth/system/devices/summary')
+  return data
+}
+
+export async function getStillReportingDevices() {
+  const { data } = await axiosInstance.get<StillReportingDevicesResponse>('/auth/system/devices/still-reporting')
   return data
 }
 
@@ -1918,6 +1927,13 @@ export async function getPlatformWallets(payload?: PlatformWalletsQuery) {
   return data
 }
 
+export async function getSystemWallets(payload?: PlatformWalletsQuery) {
+  const { data } = await axiosInstance.get<SystemWalletsResponse>('/auth/system/wallets', {
+    params: payload?.params,
+  })
+  return data
+}
+
 export async function getPlatformWalletLedger(payload?: PlatformWalletLedgerQuery) {
   const { data } = await axiosInstance.get<PlatformWalletLedgerResponse>('/auth/system/wallets/ledger', {
     params: payload?.params,
@@ -2432,6 +2448,16 @@ export async function getSystemAuditLog(payload?: SystemAuditLogQuery) {
     { params: payload?.params },
   )
   return data
+}
+
+export async function getSystemActionHistory({ prefixes, tenantId, limit = 500 }: SystemActionHistoryQuery): Promise<SystemAuditLogEntry[]> {
+  const groups = await Promise.all(
+    prefixes.map((prefix) => getSystemAuditLog({ params: { search: prefix, tenantId, limit } })),
+  )
+  return groups
+    .flatMap((res) => res.data.items)
+    .filter((entry) => prefixes.some((prefix) => entry.action.startsWith(prefix)))
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
 }
 
 export async function getSystemAuditLogFilters() {

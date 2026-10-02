@@ -104,6 +104,7 @@ import {
   getSystemDevice,
   getSystemDevices,
   getSystemDevicesCatalog,
+  getStillReportingDevices,
   getSystemDevicesSummary,
   getSystemEscalatedSupportTickets,
   getSystemFeatureFlags,
@@ -266,6 +267,7 @@ import {
   rejectSystemKycDocument,
   getDataBundleWalletLedger,
   getPlatformWallets,
+  getSystemWallets,
   getPlatformWalletLedger,
   platformTopUpWallet,
   updatePlatformWalletCreditSettings,
@@ -317,6 +319,7 @@ import {
   submitOnboardingApplication,
   exportSystemAuditLog,
   getSystemAuditLog,
+  getSystemActionHistory,
   getSystemAuditLogFilters,
   verifySystemAuditLog,
   getSystemOnboardingApplicationsSummary,
@@ -375,6 +378,7 @@ import type {
   CreateOnboardingApplicationResponse,
   OnboardingApplicationResponse,
   SystemAuditLogQuery,
+  SystemActionHistoryQuery,
   SystemOnboardingApplicationsQuery,
   SystemTenantResourcesPayload,
   InstallerJobResponse,
@@ -440,6 +444,7 @@ export const AUTH_QUERY_KEY = {
     payload ? ['systemDevices', payload] : ['systemDevices'],
   systemDevice: (id: string) => ['systemDevice', id],
   systemDevicesSummary: ['systemDevicesSummary'],
+  stillReportingDevices: ['stillReportingDevices'],
   systemDevicesCatalog: (payload?: SystemDeviceCatalogQuery) =>
     payload ? ['systemDevicesCatalog', payload] : ['systemDevicesCatalog'],
 
@@ -578,6 +583,7 @@ export const AUTH_QUERY_KEY = {
     payload ? ['systemAuditLog', payload] : ['systemAuditLog'],
   systemAuditLogFilters: ['systemAuditLogFilters'],
   systemAuditLogVerify: ['systemAuditLogVerify'],
+  systemActionHistory: (payload: SystemActionHistoryQuery) => ['systemActionHistory', payload],
 
   systemTenantResources: (payload: SystemTenantResourcesPayload) =>
     ['systemTenantResources', payload],
@@ -1296,6 +1302,17 @@ export function getSystemDevicesSummaryQueryOptions() {
     queryKey: AUTH_QUERY_KEY.systemDevicesSummary,
     queryFn: getSystemDevicesSummary,
   })
+}
+
+export function getStillReportingDevicesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.stillReportingDevices,
+    queryFn: getStillReportingDevices,
+  })
+}
+
+export function useStillReportingDevices() {
+  return useQuery(getStillReportingDevicesQueryOptions())
 }
 
 export function getSystemDevicesCatalogQueryOptions(payload?: SystemDeviceCatalogQuery) {
@@ -2529,6 +2546,13 @@ export function getPlatformWalletsQueryOptions(payload?: PlatformWalletsQuery) {
   })
 }
 
+export function getSystemWalletsQueryOptions(payload?: PlatformWalletsQuery) {
+  return queryOptions({
+    queryKey: ['systemWallets', payload],
+    queryFn: () => getSystemWallets(payload),
+  })
+}
+
 export function getPlatformWalletLedgerQueryOptions(payload?: PlatformWalletLedgerQuery) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.platformWalletLedger(payload),
@@ -2963,6 +2987,13 @@ export function getSystemAuditLogQueryOptions(payload?: SystemAuditLogQuery) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemAuditLog(payload),
     queryFn: () => getSystemAuditLog(payload),
+  })
+}
+
+export function getSystemActionHistoryQueryOptions(payload: SystemActionHistoryQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemActionHistory(payload),
+    queryFn: () => getSystemActionHistory(payload),
   })
 }
 

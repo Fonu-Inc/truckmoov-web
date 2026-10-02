@@ -1,300 +1,93 @@
-import type {
-  InboxConversation, InboxMessage,
-} from "@/features/communications/types";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
-import {
-  formatDayMonthTime, formatRelative,
-} from "@truckmoov/app-core/utils/time-utils";
-import {
-  Check,
-  CheckCheck,
-  Clock,
-  Lock,
-  MessageSquare,
-  Search,
-  Send,
-  XCircle,
-} from "lucide-react";
-import {
-  useEffect, useMemo, useRef, useState,
-} from "react";
-import {
-  Avatar, AvatarFallback,
-} from "@/components/shadcn/avatar";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent,
-} from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { MessageSquare, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { Card } from "@/components/shadcn/card";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn } from "@/lib/utils";
+import { ConnectionStatus, connectionHint } from "@/features/communications/components/ConnectionStatus";
+import { ConversationList } from "@/features/communications/components/ConversationList";
+import { StateNotice } from "@/features/communications/components/StateNotice";
+import { ThreadPanel } from "@/features/communications/components/ThreadPanel";
+import { useMessagingAccess } from "@/features/communications/useMessagingAccess";
+import { useMessagingSocket } from "@/features/communications/useMessagingSocket";
+import { useOpenConversation } from "@/features/communications/useOpenConversation";
 
-function statusIcon(status: string | undefined) {
-  switch (status) {
-    case "read":
-      return <CheckCheck className="h-3 w-3 text-info" />;
-    case "delivered":
-      return <CheckCheck className="h-3 w-3 opacity-70" />;
-    case "sent":
-      return <Check className="h-3 w-3 opacity-70" />;
-    case "failed":
-      return <XCircle className="h-3 w-3 text-destructive" />;
-    default:
-      return <Clock className="h-3 w-3 opacity-70" />;
-  }
-}
-
-function conversationName(c: InboxConversation) {
-  return c.driver_name || c.driver_phone || "Unknown";
-}
-
-const NO_CONVERSATIONS: InboxConversation[] = [];
-const NO_THREADS: Record<string, InboxMessage[]> = {};
-
-export default function PlatformInbox() {
-  const [
-    search,
-    setSearch,
-  ] = useState("");
-  const [
-    selectedId,
-    setSelectedId,
-  ] = useState<string | null>(null);
-  const [
-    draft,
-    setDraft,
-  ] = useState("");
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const conversations = NO_CONVERSATIONS;
-  const threads = NO_THREADS;
-
-  const filtered = useMemo(
-    () => {
-      const q = search.trim().toLowerCase();
-      if (!q)
-        return conversations;
-      return conversations.filter(c =>
-        conversationName(c).toLowerCase().includes(q)
-        || c.driver_phone.toLowerCase().includes(q));
-    },
-    [
-      conversations,
-      search,
-    ],
-  );
-
-  const selected = useMemo(
-    () => conversations.find(c => c.id === selectedId),
-    [
-      conversations,
-      selectedId,
-    ],
-  );
-
-  const messages = selectedId ? threads[selectedId] ?? [] : [];
-
-  // Pin to the newest message whenever the open thread changes.
-  useEffect(
-    () => {
-      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-    },
-    [messages.length],
-  );
-
-  /**
-   * Meta only allows free-text inside the 24h window a driver's own message
-   * opens. Outside it the conversation is locked and a template is the only
-   * way back in — which this page cannot send, so the composer closes.
-   */
-  const isLocked = Boolean(selected?.is_locked);
-
+function Header({ hint, status }: { hint: string | null; status: React.ReactNode }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-3 h-[calc(100vh-9rem)]">
-      {/* ── Conversation list ─────────────────────────────────────────── */}
-      <Card className="flex flex-col overflow-hidden bg-card/50 border-border/50">
-        <div className="border-b border-border/50 p-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or number..."
-              className="pl-10"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <ScrollArea className="flex-1">
-          {filtered.length === 0
-            ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  {conversations.length === 0 ? "No conversations yet." : "No conversations match your search."}
-                </div>
-              )
-            : (
-                <div className="divide-y divide-border/50">
-                  {filtered.map((c) => {
-                    const active = c.id === selectedId;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setSelectedId(c.id ?? null)}
-                        className={cn(
-                          "flex w-full items-start gap-3 p-3 text-left transition-colors",
-                          active ? "bg-primary/10" : "hover:bg-muted/50",
-                        )}
-                      >
-                        <Avatar className="h-10 w-10 shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                            {getInitials(conversationName(c))}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="truncate text-sm font-medium text-foreground">
-                              {conversationName(c)}
-                            </span>
-                            <span className="shrink-0 text-[10px] text-muted-foreground">
-                              {c.last_message_at ? formatRelative(c.last_message_at) : ""}
-                            </span>
-                          </div>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {c.last_message_preview || "—"}
-                          </p>
-                          {c.is_locked && (
-                            <Badge
-                              variant="outline"
-                              className="mt-1 text-[10px]"
-                            >
-                              <Lock className="mr-1 h-2.5 w-2.5" />
-                              Window closed
-                            </Badge>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-        </ScrollArea>
-      </Card>
-
-      {/* ── Thread ────────────────────────────────────────────────────── */}
-      <Card className="flex flex-col overflow-hidden bg-card/50 border-border/50 lg:col-span-2">
-        {!selected
-          ? (
-              <CardContent className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
-                <MessageSquare className="h-10 w-10 text-muted-foreground/50" />
-                <p className="text-sm text-muted-foreground">
-                  Select a conversation to read it.
-                </p>
-              </CardContent>
-            )
-          : (
-              <>
-                <div className="flex items-center gap-3 border-b border-border/50 p-3">
-                  <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                      {getInitials(conversationName(selected))}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {conversationName(selected)}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {selected.driver_phone}
-                    </p>
-                  </div>
-                  {!isLocked && selected.window_remaining_hours !== undefined && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs"
-                    >
-                      <Clock className="mr-1 h-3 w-3" />
-                      {selected.window_remaining_hours}
-                      h left
-                    </Badge>
-                  )}
-                </div>
-
-                <div
-                  ref={scrollRef}
-                  className="flex-1 space-y-3 overflow-y-auto p-4"
-                >
-                  {messages.length === 0
-                    ? (
-                        <p className="py-8 text-center text-sm text-muted-foreground">
-                          No messages in this conversation yet.
-                        </p>
-                      )
-                    : messages.map((m) => {
-                        const outbound = m.direction === "outbound";
-                        return (
-                          <div
-                            key={m.id}
-                            className={cn(
-                              "flex",
-                              outbound ? "justify-end" : "justify-start",
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                "max-w-[75%] rounded-lg px-3 py-2 text-sm",
-                                outbound
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-foreground",
-                              )}
-                            >
-                              <p className="whitespace-pre-wrap break-words">
-                                {m.text}
-                              </p>
-                              <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80">
-                                {m.created_at ? formatDayMonthTime(m.created_at) : ""}
-                                {outbound && statusIcon(m.status)}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                </div>
-
-                <div className="border-t border-border/50 p-3">
-                  {isLocked
-                    ? (
-                        <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
-                          <Lock className="h-3.5 w-3.5 shrink-0" />
-                          The 24-hour reply window has closed. Only an approved
-                          template can reopen this conversation.
-                        </div>
-                      )
-                    : (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            placeholder="Type a message..."
-                            value={draft}
-                            onChange={e => setDraft(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey)
-                                e.preventDefault();
-                            }}
-                          />
-                          <Button
-                            size="icon"
-                            disabled
-                          >
-                            <Send className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                </div>
-              </>
-            )}
-      </Card>
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h1 className="text-lg font-semibold text-foreground">Messaging Center</h1>
+      {status}
+      {hint && <p className="w-full text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
+}
+
+function Inbox({ canManage }: { canManage: boolean }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { state, socket } = useMessagingSocket(true, selectedId);
+  const open = useOpenConversation(selectedId);
+
+  return (
+    <div className="flex h-[calc(100vh-9rem)] flex-col gap-3">
+      <Header hint={connectionHint(state)} status={<ConnectionStatus state={state} />} />
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-3">
+        <Card className={cn("flex min-h-0 flex-col overflow-hidden border-border/50 bg-card/50", selectedId && "hidden lg:flex")}>
+          <ConversationList activeId={selectedId} onSelect={setSelectedId} />
+        </Card>
+        <Card className={cn("flex min-h-0 flex-col overflow-hidden border-border/50 bg-card/50 lg:col-span-2", !selectedId && "hidden lg:flex")}>
+          {!selectedId && (
+            <StateNotice
+              icon={<MessageSquare className="h-10 w-10 text-muted-foreground/50" />}
+              title="Select a conversation to read it."
+            />
+          )}
+          {selectedId && open.isLoading && <Skeleton className="m-4 h-12" aria-label="Loading conversation" />}
+          {selectedId && open.isError && (
+            <StateNotice
+              title="Could not open this conversation."
+              body="It may have been removed, or the connection dropped."
+              actionLabel="Retry"
+              onAction={() => void open.refetch()}
+            />
+          )}
+          {open.conversation && (
+            <ThreadPanel
+              key={open.conversation.id}
+              conversation={open.conversation}
+              socket={socket}
+              connection={state}
+              canManage={canManage}
+              onBack={() => setSelectedId(null)}
+            />
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default function PlatformInbox() {
+  const access = useMessagingAccess();
+
+  if (access.isLoading)
+    return <Skeleton className="h-64 w-full" aria-label="Loading" />;
+  if (access.isError) {
+    return (
+      <StateNotice
+        title="Could not check your access."
+        body="Check your connection and try again."
+        actionLabel="Retry"
+        onAction={() => void access.refetch()}
+      />
+    );
+  }
+  if (!access.canRead) {
+    return (
+      <StateNotice
+        icon={<ShieldAlert className="h-10 w-10 text-muted-foreground/50" />}
+        title="You do not have access to the Messaging Center."
+        body="Ask an administrator to give you messaging access."
+      />
+    );
+  }
+  return <Inbox canManage={access.canManage} />;
 }

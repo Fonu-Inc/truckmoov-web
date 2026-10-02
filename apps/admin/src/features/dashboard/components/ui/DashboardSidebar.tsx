@@ -9,8 +9,9 @@ import {
   LogOut,
   Truck,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  memo, useEffect, useState,
+  memo, useEffect, useMemo, useState,
 } from "react";
 import {
   NavLink, useLocation,
@@ -31,9 +32,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/shadcn/tooltip";
+import { capabilitiesOptions } from "@/features/communications/messagingQueries";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
 import {
-  getEntriesForRole, isNavGroup,
+  filterByPermission, getEntriesForRole, isNavGroup,
 } from "@/features/dashboard/utils/sidebarNav";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/shared/hooks/useIsMobile";
@@ -61,6 +63,7 @@ const FOOTER_ROW = "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm 
 
 /** Stable empty array for the pre-auth render, so `navItems` never changes identity. */
 const NO_ENTRIES: SidebarEntry[] = [];
+const NO_PERMISSIONS: string[] = [];
 
 function NavRowBase({
   item, collapsed, nested = false,
@@ -333,7 +336,12 @@ function DashboardSidebarBase() {
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
 
-  const navItems = role ? getEntriesForRole(role) : NO_ENTRIES;
+  const permissions = useQuery(capabilitiesOptions()).data?.permissions;
+  const roleEntries = role ? getEntriesForRole(role) : NO_ENTRIES;
+  const navItems = useMemo(
+    () => filterByPermission(roleEntries, permissions ?? NO_PERMISSIONS),
+    [roleEntries, permissions],
+  );
 
   // Auto-close the drawer on navigation. Only wired when mobile — desktop
   // never opens it, so nothing to close.

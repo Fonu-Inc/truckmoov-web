@@ -12,6 +12,8 @@ export type ServerErrorResponse = {
   errors?: string[]
   field?: string
   retryAfterSeconds?: number
+  code?: string
+  shortfallNgn?: number
   /** Onboarding 409s: which identity detail is already on another application. */
   claimTypes?: string[]
 }

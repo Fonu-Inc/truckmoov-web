@@ -1,4 +1,4 @@
-import { getBillingInvoiceQueryOptions } from "@truckmoov/api/billing";
+import { getBillingInvoiceQueryOptions, useEnforcementSettings } from "@truckmoov/api/billing";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -12,8 +12,10 @@ import {
   customerTypeLabel,
   formatDateOnly,
   formatIsoDateTime,
+  DueStateText,
   formatNgn,
   InvoiceStatusBadge,
+  RenewalBadge,
   methodLabel,
   PaymentStatusBadge,
 } from "@/components/platform/billing/billingUi";
@@ -35,6 +37,7 @@ export function InvoiceDetailsDialog({
     getBillingInvoiceQueryOptions(id ?? ""),
   );
   const invoice = data?.data;
+  const graceDays = useEnforcementSettings().data?.data.graceDays ?? null;
 
   return (
     <Dialog open={id !== null} onOpenChange={open => !open && onClose()}>
@@ -42,6 +45,7 @@ export function InvoiceDetailsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             {invoice?.number ?? "Invoice"}
+            {invoice?.isRenewal && <RenewalBadge />}
             {invoice && <InvoiceStatusBadge status={invoice.status} />}
           </DialogTitle>
           <DialogDescription>{invoice?.customerName ?? "Invoice details"}</DialogDescription>
@@ -60,8 +64,18 @@ export function InvoiceDetailsDialog({
               />
               <DetailField label="Issue date" value={formatDateOnly(invoice.issueDate)} />
               <DetailField label="Due date" value={formatDateOnly(invoice.dueDate)} />
+              {invoice.isRenewal && (
+                <DetailField label="Licence period ends" value={invoice.periodEnd ? formatDateOnly(invoice.periodEnd) : "-"} />
+              )}
               <DetailField label="Customer type" value={customerTypeLabel(invoice.customerType)} />
             </div>
+
+            {invoice.isRenewal && (
+              <p className="text-sm text-muted-foreground">
+                Renewal invoice. Paying it extends the licence from its current end date.
+              </p>
+            )}
+            <div><DueStateText invoice={invoice} graceDays={graceDays} /></div>
 
             <LineItemsTable lines={invoice.lines} />
             <TotalsBlock totals={invoice} />

@@ -26,6 +26,8 @@ export function normalizeError(error: AxiosError<unknown>): ServerErrorResponse 
     error?: unknown
     field?: unknown
     retryAfterSeconds?: unknown
+    code?: unknown
+    shortfallNgn?: unknown
     claimTypes?: unknown
   } | undefined
   if (body && (typeof body.message === 'string' || Array.isArray(body.message))) {
@@ -35,6 +37,8 @@ export function normalizeError(error: AxiosError<unknown>): ServerErrorResponse 
       statusCode: error.response?.status ?? 0,
       ...(typeof body.field === 'string' ? { field: body.field } : {}),
       ...(typeof body.retryAfterSeconds === 'number' ? { retryAfterSeconds: body.retryAfterSeconds } : {}),
+      ...(typeof body.code === 'string' ? { code: body.code } : {}),
+      ...(typeof body.shortfallNgn === 'number' ? { shortfallNgn: body.shortfallNgn } : {}),
       ...(Array.isArray(body.claimTypes) ? { claimTypes: body.claimTypes as string[] } : {}),
     }
   }

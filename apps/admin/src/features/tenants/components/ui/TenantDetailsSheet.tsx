@@ -78,6 +78,7 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { SuspendAccessDialog } from "@/features/security/components/payments-access/SuspendAccessDialog";
 import { TerminateTenantDialog } from "./TerminateTenantDialog";
 
 type TenantDetailsSheetProps = {
@@ -233,6 +234,7 @@ export function TenantDetailsSheet({
     terminateOpen,
     setTerminateOpen,
   ] = useState(false);
+  const [suspendOpen, setSuspendOpen] = useState(false);
   const [
     activeTab,
     setActiveTab,
@@ -540,10 +542,7 @@ export function TenantDetailsSheet({
                         variant="outline"
                         size="sm"
                         disabled={updateStatusMutation.isPending}
-                        onClick={() => updateStatusMutation.mutate({
-                          id: tenant.id,
-                          data: { status: "suspended" },
-                        })}
+                        onClick={() => setSuspendOpen(true)}
                         className="gap-2 border-warning/40 text-warning hover:bg-warning/10"
                       >
                         <Clock className="h-4 w-4" />
@@ -1771,6 +1770,10 @@ export function TenantDetailsSheet({
           </TabsContent>
         </Tabs>
       </ShellContent>
+      <SuspendAccessDialog
+        tenant={suspendOpen ? tenant : null}
+        onClose={() => setSuspendOpen(false)}
+      />
       <TerminateTenantDialog
         tenant={tenant}
         open={terminateOpen}
