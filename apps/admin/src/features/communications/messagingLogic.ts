@@ -7,6 +7,7 @@ import type {
 
 const STATUS_RANK: Record<MessagingMessageStatus, number> = {
   received: 0,
+  scheduled: 0,
   queued: 1,
   sent: 2,
   delivered: 3,
@@ -14,12 +15,19 @@ const STATUS_RANK: Record<MessagingMessageStatus, number> = {
   failed: 5,
 };
 
+/** Go trims trailing zeros, so "05Z" and "05.123Z" only order right as numbers. */
+export function timeOf(iso: string): number {
+  const value = Date.parse(iso);
+  return Number.isNaN(value) ? 0 : value;
+}
+
 export type TickState = "clock" | "one" | "two" | "two-blue" | "failed" | "none";
 
 export function tickState(message: Pick<MessagingMessage, "direction" | "status">): TickState {
   if (message.direction === "inbound")
     return "none";
   switch (message.status) {
+    case "scheduled":
     case "queued": return "clock";
     case "sent": return "one";
     case "delivered": return "two";
@@ -39,7 +47,9 @@ export function pickStatus(
 }
 
 const ERROR_TEXT: Record<string, string> = {
-  window_locked: "The 24-hour window has closed.",
+  window_locked: "The 24-hour window has closed. Send a template to reopen it.",
+  invalid_number: "This number is not on WhatsApp.",
+  undeliverable: "WhatsApp could not deliver this message.",
   rate_limited: "Slow down, try again in a moment.",
   forbidden: "You do not have permission to reply.",
   unavailable: "Could not send. Try again.",
@@ -67,7 +77,7 @@ function mergeMessage(existing: MessagingMessage, incoming: MessagingMessage): M
 }
 
 function byCreatedAt(a: MessagingMessage, b: MessagingMessage) {
-  return a.created_at.localeCompare(b.created_at);
+  return timeOf(a.created_at) - timeOf(b.created_at);
 }
 
 export function upsertMessages(
@@ -118,11 +128,11 @@ export function mergeConversation(
   existing: MessagingConversation,
   incoming: MessagingConversation,
 ): MessagingConversation {
-  return incoming.last_message_at >= existing.last_message_at ? incoming : existing;
+  return timeOf(incoming.last_message_at) >= timeOf(existing.last_message_at) ? incoming : existing;
 }
 
 function byLastMessage(a: MessagingConversation, b: MessagingConversation) {
-  return b.last_message_at.localeCompare(a.last_message_at);
+  return timeOf(b.last_message_at) - timeOf(a.last_message_at);
 }
 
 export function updateConversations(
@@ -196,3 +206,82 @@ export function windowText(c: Pick<MessagingConversation, "is_locked" | "window_
   const hours = Math.max(1, Math.ceil(c.window_remaining_hours));
   return `${hours}h left to reply`;
 }
+
+export function removeMessage(list: MessagingMessage[], messageId: string): MessagingMessage[] {
+  const next = list.filter(m => m.id !== messageId);
+  return next.length === list.length ? list : next;
+}
+
+export function isLocalMessage(message: Pick<MessagingMessage, "id">) {
+  return message.id.startsWith("local:");
+}
+
+export function messagePreview(message: Pick<MessagingMessage, "message_type" | "text" | "media" | "template_name">) {
+  if (message.text)
+    return message.text;
+  if (message.media)
+    return message.media.filename || message.media.type;
+  return message.template_name || message.message_type;
+}
+
+/** Seconds left in the 24-hour window at `now`, from the hours the server last reported. */
+export function windowSecondsLeft(
+  conversation: Pick<MessagingConversation, "is_locked" | "window_remaining_hours">,
+  reportedAt: number,
+  now: number,
+): number {
+  if (conversation.is_locked || conversation.window_remaining_hours === null)
+    return 0;
+  const left = conversation.window_remaining_hours * 3600 - (now - reportedAt) / 1000;
+  return Math.max(0, Math.floor(left));
+}
+
+export type ListFilters = {
+  state: "all" | "unread";
+  status: string;
+  assignee: string;
+  tag: string;
+};
+
+/** Whether a conversation belongs in a filtered list. The text search is the server's to judge. */
+export function matchesFilters(filters: ListFilters, c: MessagingConversation, myUserId: string | null): boolean {
+  if (filters.state === "unread" && c.unread_count === 0)
+    return false;
+  if (filters.status && c.status !== filters.status)
+    return false;
+  if (filters.tag && !c.tags.includes(filters.tag))
+    return false;
+  if (!filters.assignee)
+    return true;
+  if (filters.assignee === "unassigned")
+    return c.assignee_user_id === null;
+  const wanted = filters.assignee === "me" ? myUserId : filters.assignee;
+  return c.assignee_user_id === wanted;
+}
+
+export function removeConversation(list: MessagingConversation[], id: string): MessagingConversation[] {
+  const next = list.filter(c => c.id !== id);
+  return next.length === list.length ? list : next;
+}
+
+
+export function windowLabel(locked: boolean, secondsLeft: number): string {
+  if (locked)
+    return "Reply window closed";
+  if (secondsLeft < 3600)
+    return `${Math.max(1, Math.ceil(secondsLeft / 60))}m left to reply`;
+  return `${Math.ceil(secondsLeft / 3600)}h left to reply`;
+}
+
+export const STATUS_LABEL: Record<MessagingConversation["status"], string> = {
+  open: "Open",
+  pending: "Pending",
+  resolved: "Resolved",
+};
+
+export const PRIORITY_LABEL: Record<MessagingConversation["priority"], string> = {
+  low: "Low",
+  normal: "Normal",
+  high: "High",
+  urgent: "Urgent",
+};

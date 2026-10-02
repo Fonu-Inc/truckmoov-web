@@ -1,4 +1,3 @@
-import type { Invoice } from "@/features/billing/utils/enterpriseBillingData";
 import {
   QueryClient, QueryClientProvider,
 } from "@tanstack/react-query";
@@ -9,10 +8,6 @@ import {
   afterEach, expect, it, vi,
 } from "vitest";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
-import { BillingInvoicesTab } from "@/features/billing/components/ui/BillingInvoicesTab";
-import {
-  currentPlan, invoiceOutstanding, invoiceTotal,
-} from "@/features/billing/utils/enterpriseBillingData";
 import {
   getEntriesForRole, getRolesForHref,
 } from "@/features/dashboard/utils/sidebarNav";
@@ -160,35 +155,5 @@ it(
       { name: "Try again" },
     ));
     expect(await screen.findByText("JOB-001")).toBeInTheDocument();
-  },
-);
-
-it(
-  "shows an empty invoice history and keeps totals consistent",
-  () => {
-    render(<CurrencyProvider><BillingInvoicesTab /></CurrencyProvider>);
-    expect(screen.getByText("No invoices match your filters.")).toBeInTheDocument();
-    expect(currentPlan()).toBeUndefined();
-
-    const invoice: Invoice = {
-      id: "i1",
-      number: "INV-1",
-      billingPeriod: "Sep 2026",
-      invoiceDate: "2026-09-01",
-      dueDate: "2026-09-15",
-      amountPaid: 0,
-      status: "pending",
-      taxRate: 0.1,
-      paymentRefs: [],
-      lines: [
-        {
-          id: "l1", name: "M2M STANDARD", category: "Licensing", quantity: 2, unitCharge: 50000,
-        },
-      ],
-    };
-    expect(invoiceTotal(invoice)).toBe(110000);
-    expect(invoiceOutstanding({
-      ...invoice, amountPaid: 200000,
-    })).toBe(0);
   },
 );

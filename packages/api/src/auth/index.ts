@@ -1,5 +1,7 @@
 import { keepPreviousData, queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
+export * from './system-mailbox'
+
 import { useAuthStore } from '../lib/auth-store'
 import type { ServerErrorResponse } from '../lib/types'
 import { setOnboardingToken as persistOnboardingToken } from '../lib/onboarding-instance'
@@ -111,6 +113,12 @@ import {
   getSystemDevicesCatalog,
   getStillReportingDevices,
   getSystemDevicesSummary,
+  getSystemDeviceManufacturers,
+  getSystemSimCarrierBreakdown,
+  getSystemRevenueByMonth,
+  getSystemTenantGrowth,
+  getSystemSimDataUsage,
+  getSystemDeviceMessageRate,
   getSystemEscalatedSupportTickets,
   getSystemFeatureFlags,
   getSystemHealth,
@@ -143,6 +151,12 @@ import {
   getSystemSupportTickets,
   getSystemTenant,
   getSystemTenantBilling,
+  getSystemTenantExports,
+  updateSystemTenantQuotas,
+  extendSystemTenantTrial,
+  convertSystemTenantTrial,
+  requestSystemTenantExport,
+  downloadSystemTenantExport,
   getSystemTenants,
   getSystemTenantsSummary,
   inviteUser,
@@ -368,6 +382,7 @@ import type {
   SupportTicketsQuery,
   SystemTenantsQuery,
   DataBundleAnalyticsRangeQuery,
+  SystemSnapshotPeriod,
   DataBundleAllocationsQuery,
   AllocatableSimsQuery,
   DataBundleRatesQuery,
@@ -401,7 +416,7 @@ import type {
 export type * from './types'
 
 // Value + type export: UserRole is a const object, so it must not be type-only.
-export { DEVICE_CATALOG_PROTOCOLS, INSTALLER_CAPABILITIES, INSTALLER_ISSUE_TYPES, NIGERIAN_STATES, UserRole } from './types'
+export { DEVICE_CATALOG_PROTOCOLS, INSTALLER_CAPABILITIES, INSTALLER_ISSUE_TYPES, NIGERIAN_STATES, SYSTEM_TENANT_EXPORT_SCOPES, UserRole } from './types'
 export { CITIES_BY_STATE } from './nigeriaCities'
 
 export const AUTH_QUERY_KEY = {
@@ -445,12 +460,19 @@ export const AUTH_QUERY_KEY = {
     payload ? ['systemTenants', payload] : ['systemTenants'],
   systemTenant: (id: string) => ['systemTenant', id],
   systemTenantBilling: (id: string) => ['systemTenantBilling', id],
+  systemTenantExports: (id: string) => ['systemTenantExports', id],
   systemTenantsSummary: ['systemTenantsSummary'],
 
   systemDevices: (payload?: SystemDevicesQuery) =>
     payload ? ['systemDevices', payload] : ['systemDevices'],
   systemDevice: (id: string) => ['systemDevice', id],
   systemDevicesSummary: ['systemDevicesSummary'],
+  systemDeviceManufacturers: (period?: SystemSnapshotPeriod) => ['systemDeviceManufacturers', period],
+  systemSimCarrierBreakdown: (period?: SystemSnapshotPeriod) => ['systemSimCarrierBreakdown', period],
+  systemRevenueByMonth: ['systemRevenueByMonth'],
+  systemTenantGrowth: ['systemTenantGrowth'],
+  systemSimDataUsage: ['systemSimDataUsage'],
+  systemDeviceMessageRate: ['systemDeviceMessageRate'],
   stillReportingDevices: ['stillReportingDevices'],
   systemDevicesCatalog: (payload?: SystemDeviceCatalogQuery) =>
     payload ? ['systemDevicesCatalog', payload] : ['systemDevicesCatalog'],
@@ -1312,6 +1334,48 @@ export function getSystemDeviceQueryOptions(id: string) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemDevice(id),
     queryFn: () => getSystemDevice({ id }),
+  })
+}
+
+export function getSystemDeviceManufacturersQueryOptions(period?: SystemSnapshotPeriod) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDeviceManufacturers(period),
+    queryFn: () => getSystemDeviceManufacturers(period),
+  })
+}
+
+export function getSystemSimCarrierBreakdownQueryOptions(period?: SystemSnapshotPeriod) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSimCarrierBreakdown(period),
+    queryFn: () => getSystemSimCarrierBreakdown(period),
+  })
+}
+
+export function getSystemRevenueByMonthQueryOptions(months?: number) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemRevenueByMonth, months],
+    queryFn: () => getSystemRevenueByMonth(months),
+  })
+}
+
+export function getSystemTenantGrowthQueryOptions(months?: number) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemTenantGrowth, months],
+    queryFn: () => getSystemTenantGrowth(months),
+  })
+}
+
+export function getSystemSimDataUsageQueryOptions(days?: number) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemSimDataUsage, days],
+    queryFn: () => getSystemSimDataUsage(days),
+  })
+}
+
+export function getSystemDeviceMessageRateQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDeviceMessageRate,
+    queryFn: getSystemDeviceMessageRate,
   })
 }
 
@@ -3125,3 +3189,50 @@ export function getSystemOnboardingApplicationsSummaryQueryOptions() {
   })
 }
 
+
+// ─── System — tenant limits, trial and data export ───────────────────────────
+
+export { downloadSystemTenantExport }
+
+function refreshTenantAfterChange(id: string) {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTenants() })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTenant(id) })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTenantBilling(id) })
+}
+
+export function useUpdateSystemTenantQuotas() {
+  return useMutation({
+    mutationFn: updateSystemTenantQuotas,
+    onSuccess: (_res, { id }) => refreshTenantAfterChange(id),
+  })
+}
+
+export function useExtendSystemTenantTrial() {
+  return useMutation({
+    mutationFn: extendSystemTenantTrial,
+    onSuccess: (_res, { id }) => refreshTenantAfterChange(id),
+  })
+}
+
+export function useConvertSystemTenantTrial() {
+  return useMutation({
+    mutationFn: convertSystemTenantTrial,
+    onSuccess: (_res, { id }) => refreshTenantAfterChange(id),
+  })
+}
+
+export function getSystemTenantExportsQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTenantExports(id),
+    queryFn: () => getSystemTenantExports({ id }),
+  })
+}
+
+export function useRequestSystemTenantExport() {
+  return useMutation({
+    mutationFn: requestSystemTenantExport,
+    onSuccess: (_res, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTenantExports(id) })
+    },
+  })
+}

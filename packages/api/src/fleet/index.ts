@@ -91,7 +91,11 @@ import {
   getFleetFinancialConfigs,
   getIntegrationHealth,
   getFleetFinancialStatement,
+  getFleetComplianceAudit,
   getFleetFinancialSummary,
+  getFleetFuelReport,
+  getFleetProfitLoss,
+  getFleetUtilizationReport,
   getFuelBudgets,
   getFuelBudgetVsActual,
   getFuelEfficiency,
@@ -195,6 +199,7 @@ import type {
   FleetAnalyticsShortPeriodQuery,
   FleetFinancialConfigActionPayload,
   FleetFinancialStatementQuery,
+  FleetAnalyticsRangeQuery,
   FleetFinancialSummaryQuery,
   FleetProfitabilityPayload,
   FuelBudgetVsActualQuery,
@@ -280,6 +285,10 @@ export const FLEET_QUERY_KEY = {
   analyticsSafetyRadar: (payload?: FleetAnalyticsShortPeriodQuery) => ['fleet', 'analytics', 'safetyRadar', payload],
   analyticsDriverScores: (payload?: FleetAnalyticsDriverScoresQuery) => ['fleet', 'analytics', 'driverScores', payload],
   analyticsEvents: (payload?: FleetAnalyticsEventsQuery) => ['fleet', 'analytics', 'events', payload],
+  profitLoss: (payload?: FleetAnalyticsRangeQuery) => ['fleet', 'financials', 'profitLoss', payload],
+  utilizationReport: (payload?: FleetAnalyticsRangeQuery) => ['fleet', 'analytics', 'utilization', payload],
+  fuelReport: (payload?: FleetAnalyticsRangeQuery) => ['fleet', 'analytics', 'fuelReport', payload],
+  complianceAudit: (payload?: FleetAnalyticsRangeQuery) => ['fleet', 'analytics', 'complianceAudit', payload],
   financialSummary: (payload?: FleetFinancialSummaryQuery) => ['fleet', 'financials', 'summary', payload],
   financialStatement: (payload?: FleetFinancialStatementQuery) => ['fleet', 'financials', 'statement', payload],
   financialConfigs: ['fleet', 'financials', 'configs'],
@@ -755,6 +764,38 @@ export function getFleetAnalyticsEventsQueryOptions(payload?: FleetAnalyticsEven
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.analyticsEvents(payload),
     queryFn: () => getFleetAnalyticsEvents(payload),
+  })
+}
+
+export function getFleetProfitLossQueryOptions(payload?: FleetAnalyticsRangeQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.profitLoss(payload),
+    queryFn: () => getFleetProfitLoss(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getFleetUtilizationReportQueryOptions(payload?: FleetAnalyticsRangeQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.utilizationReport(payload),
+    queryFn: () => getFleetUtilizationReport(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getFleetFuelReportQueryOptions(payload?: FleetAnalyticsRangeQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.fuelReport(payload),
+    queryFn: () => getFleetFuelReport(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getFleetComplianceAuditQueryOptions(payload?: FleetAnalyticsRangeQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.complianceAudit(payload),
+    queryFn: () => getFleetComplianceAudit(payload),
+    placeholderData: keepPreviousData,
   })
 }
 

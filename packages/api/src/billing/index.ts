@@ -20,9 +20,15 @@ import {
   getBillingQuotations,
   getBillingSummary,
   getInstallationPrice,
+  getTenantBillingActivity,
+  getTenantBillingOverview,
   getTenantInvoice,
   getTenantInvoices,
   getTenantLicence,
+  getTenantPayment,
+  getTenantPayments,
+  getTenantQuotation,
+  getTenantQuotations,
   payTenantInvoiceByCard,
   payTenantInvoiceFromWallet,
   updateBillingPlan,
@@ -38,7 +44,10 @@ import type {
   PlansQuery,
   PriceHistoryQuery,
   QuotationsQuery,
+  TenantBillingActivityQuery,
   TenantInvoicesQuery,
+  TenantPaymentsQuery,
+  TenantQuotationsQuery,
 } from './types'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
@@ -69,6 +78,12 @@ export const BILLING_QUERY_KEY = {
   tenantInvoices: (payload?: TenantInvoicesQuery) => ['billing', 'tenant', 'invoices', payload],
   tenantInvoice: (id: string) => ['billing', 'tenant', 'invoice', id],
   tenantLicence: ['billing', 'tenant', 'licence'],
+  tenantQuotations: (payload?: TenantQuotationsQuery) => ['billing', 'tenant', 'quotations', payload],
+  tenantQuotation: (id: string) => ['billing', 'tenant', 'quotation', id],
+  tenantPayments: (payload?: TenantPaymentsQuery) => ['billing', 'tenant', 'payments', payload],
+  tenantPayment: (id: string) => ['billing', 'tenant', 'payment', id],
+  tenantOverview: ['billing', 'tenant', 'overview'],
+  tenantActivity: (payload?: TenantBillingActivityQuery) => ['billing', 'tenant', 'activity', payload],
 } as const
 
 // ─── queryOptions factories ───────────────────────────────────────────────────
@@ -204,6 +219,53 @@ export function getTenantLicenceQueryOptions() {
   })
 }
 
+export function getTenantQuotationsQueryOptions(payload?: TenantQuotationsQuery) {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantQuotations(payload),
+    queryFn: () => getTenantQuotations(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getTenantQuotationQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantQuotation(id),
+    queryFn: () => getTenantQuotation({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getTenantPaymentsQueryOptions(payload?: TenantPaymentsQuery) {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantPayments(payload),
+    queryFn: () => getTenantPayments(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getTenantPaymentQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantPayment(id),
+    queryFn: () => getTenantPayment({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getTenantBillingOverviewQueryOptions() {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantOverview,
+    queryFn: getTenantBillingOverview,
+  })
+}
+
+export function getTenantBillingActivityQueryOptions(payload?: TenantBillingActivityQuery) {
+  return queryOptions({
+    queryKey: BILLING_QUERY_KEY.tenantActivity(payload),
+    queryFn: () => getTenantBillingActivity(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
 // ─── useQuery hooks ───────────────────────────────────────────────────────────
 
 export function useBillingSummary() {
@@ -313,6 +375,30 @@ export function useTenantInvoice(id: string) {
 
 export function useTenantLicence() {
   return useQuery(getTenantLicenceQueryOptions())
+}
+
+export function useTenantQuotations(payload?: TenantQuotationsQuery) {
+  return useQuery(getTenantQuotationsQueryOptions(payload))
+}
+
+export function useTenantQuotation(id: string) {
+  return useQuery(getTenantQuotationQueryOptions(id))
+}
+
+export function useTenantPayments(payload?: TenantPaymentsQuery) {
+  return useQuery(getTenantPaymentsQueryOptions(payload))
+}
+
+export function useTenantPayment(id: string) {
+  return useQuery(getTenantPaymentQueryOptions(id))
+}
+
+export function useTenantBillingOverview() {
+  return useQuery(getTenantBillingOverviewQueryOptions())
+}
+
+export function useTenantBillingActivity(payload?: TenantBillingActivityQuery) {
+  return useQuery(getTenantBillingActivityQueryOptions(payload))
 }
 
 function invalidateTenantBilling() {

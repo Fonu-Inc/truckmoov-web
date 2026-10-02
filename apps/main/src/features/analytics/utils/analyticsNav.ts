@@ -14,26 +14,29 @@ export type AnalyticsTab = {
   hasPermissions: UserRole[];
 };
 
+const FLEET_OPERATORS: UserRole[] = ["ENTERPRISE_ADMIN", "FLEET_ADMIN", "OWNER_OPERATOR", "OPERATIONS_MANAGER"];
+const FINANCE_READERS: UserRole[] = ["ENTERPRISE_ADMIN", "FLEET_ADMIN", "OWNER_OPERATOR", "FINANCE_VIEWER"];
+
 /**
  * The analytics tab bar, in order. One entry per child route of `/analytics` —
  * add a route here and in `shared/lib/route.tsx`, same as `settingsNav.ts`.
  *
- * Empty `hasPermissions` means every role that can already reach `/analytics`
- * (the sidebar entry's list is the outer gate), matching how Settings tabs
- * default to "all of Settings' roles".
+ * `hasPermissions` mirrors the roles the report endpoints accept, so a role
+ * never sees a tab that would answer 403. Empty means every role that can
+ * already reach `/analytics`.
  */
 export const ANALYTICS_TABS: AnalyticsTab[] = [
   {
-    to: "/analytics", label: "Profit & Loss", icon: DollarSign, hasPermissions: [],
+    to: "/analytics", label: "Profit & Loss", icon: DollarSign, hasPermissions: FINANCE_READERS,
   },
   {
-    to: "/analytics/compliance-audit", label: "Compliance Audit", icon: Shield, hasPermissions: [],
+    to: "/analytics/compliance-audit", label: "Compliance Audit", icon: Shield, hasPermissions: FLEET_OPERATORS,
   },
   {
-    to: "/analytics/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: [],
+    to: "/analytics/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: [...FLEET_OPERATORS, "FINANCE_VIEWER"],
   },
   {
-    to: "/analytics/fleet-utilization", label: "Fleet Utilization", icon: Truck, hasPermissions: [],
+    to: "/analytics/fleet-utilization", label: "Fleet Utilization", icon: Truck, hasPermissions: FLEET_OPERATORS,
   },
 ];
 

@@ -51,7 +51,7 @@ import { useAuthStore } from "@/stores/authStore";
  * navigation, so each click cost a layout pass instead of a repaint.
  * `pl-[10px]` + the 2px border is the same 12px as the old `px-3`.
  */
-const ROW = "flex items-center gap-3 rounded-md border-l-2 border-transparent py-2.5 pl-[10px] pr-3 text-sm font-medium transition-colors";
+const ROW = "relative flex items-center gap-3 rounded-md border-l-2 border-transparent py-2.5 pl-[10px] pr-3 text-sm font-medium transition-colors";
 const ROW_ACTIVE = "border-primary bg-primary/10 text-primary";
 const ROW_IDLE = "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 /** Indents a group child so it reads as belonging to the row above it. */
@@ -73,6 +73,7 @@ function NavRowBase({
   nested?: boolean;
 }) {
   const Icon = item.icon;
+  const Badge = item.badge;
 
   // ponytail: only "/" needs `end`; every other entry should light up on its
   // sub-routes too (`/security/login-history` → highlights "Security").
@@ -88,6 +89,7 @@ function NavRowBase({
     >
       <Icon className={ICON} />
       {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+      {Badge && <Badge collapsed={collapsed} />}
     </NavLink>
   );
 

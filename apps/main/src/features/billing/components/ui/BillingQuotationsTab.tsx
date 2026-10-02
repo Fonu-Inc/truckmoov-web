@@ -1,4 +1,10 @@
-import type { Quotation } from "@/features/billing/utils/enterpriseBillingData";
+import type {
+  TenantQuotation, TenantQuotationStatus,
+} from "@truckmoov/api/billing";
+import {
+  getTenantQuotationQueryOptions, useTenantQuotation, useTenantQuotations,
+} from "@truckmoov/api/billing";
+import { queryClient } from "@truckmoov/api/lib/query-client";
 import {
   Download, Eye, Search,
 } from "lucide-react";
@@ -17,29 +23,164 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
+import { quotationDocument } from "../../utils/billingDocuments";
 import {
-  ChargeBreakdown,
-  LabelValue,
-  PlanSummary,
-  StatusPill,
-} from "@/features/billing/utils/billingShared";
-import {
-  deviceCountOf,
-  formatDate,
-  formatLongDate,
-  lineTotal,
-  planLineOf,
-  QUOTATION_STATUS_LABEL,
-  quotations,
-  totalOf,
-} from "@/features/billing/utils/enterpriseBillingData";
-import {
-  downloadDocument, toneForStatus,
+  formatDate, formatLongDate, ngn, QUOTATION_STATUS_LABEL, toneForStatus,
 } from "../../utils/billingHelpers";
+import {
+  ChargeBreakdown, DialogSkeleton, EmptyRow, LabelValue, Pager, PlanSummary, SectionError, SkeletonRows, StatusPill,
+} from "../../utils/billingShared";
+import { useBillingDownload } from "../../utils/useBillingDownload";
+
+const PAGE_SIZE = 20;
+const COLS = 9;
+
+function QuotationStatus({ status }: { status: TenantQuotationStatus }) {
+  return (
+    <StatusPill
+      label={QUOTATION_STATUS_LABEL[status]}
+      tone={toneForStatus(status)}
+    />
+  );
+}
+
+function QuotationDialog({
+  id, onClose, onDownload,
+}: {
+  id: string | null; onClose: () => void; onDownload: (id: string) => void;
+}) {
+  const query = useTenantQuotation(id ?? "");
+  const quotation = query.data?.data;
+
+  return (
+    <Dialog
+      open={!!id}
+      onOpenChange={o => !o && onClose()}
+    >
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-w-3xl max-h-[85vh] overflow-y-auto"
+      >
+        <DialogHeader>
+          <DialogTitle>{quotation ? `Quotation ${quotation.number}` : "Quotation"}</DialogTitle>
+        </DialogHeader>
+        {query.isLoading && <DialogSkeleton />}
+        {query.isError && (
+          <SectionError
+            message="Could not load this quotation."
+            onRetry={() => query.refetch()}
+          />
+        )}
+        {quotation && (
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <LabelValue
+                label="Date"
+                value={formatLongDate(quotation.date)}
+              />
+              <LabelValue
+                label="Purpose"
+                value={quotation.purpose}
+              />
+              <LabelValue
+                label="Status"
+                value={<QuotationStatus status={quotation.status} />}
+              />
+              <LabelValue
+                label="Related request"
+                value={quotation.relatedRequest ?? "—"}
+              />
+              <LabelValue
+                label="Related payment"
+                value={quotation.paymentRef ?? "Not paid yet"}
+              />
+              <LabelValue
+                label="Related invoice"
+                value={quotation.invoiceNumber ?? "Not invoiced"}
+              />
+            </div>
+            <PlanSummary lines={quotation.lines} />
+            <div>
+              <p className="text-sm font-medium mb-2">Charge breakdown</p>
+              <ChargeBreakdown
+                lines={quotation.lines}
+                totals={quotation}
+              />
+            </div>
+            <div className="rounded-2xl border border-border p-4">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Related operational activity</p>
+              <p className="text-sm mt-1">{quotation.operationalOutcome}</p>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => onDownload(quotation.id)}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download quotation
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function QuotationRow({
+  quotation, onView, onDownload, downloading,
+}: {
+  quotation: TenantQuotation; onView: () => void; onDownload: () => void; downloading: boolean;
+}) {
+  return (
+    <TableRow>
+      <TableCell className="font-medium whitespace-nowrap">
+        {quotation.number}
+        <div className="text-xs text-muted-foreground">{quotation.category}</div>
+      </TableCell>
+      <TableCell className="whitespace-nowrap">{formatDate(quotation.date)}</TableCell>
+      <TableCell className="whitespace-nowrap">
+        {quotation.planName ? (
+          <StatusPill
+            label={quotation.planName}
+            tone="info"
+          />
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell className="text-right tabular-nums">{quotation.deviceCount || "—"}</TableCell>
+      <TableCell className="max-w-[280px] text-muted-foreground">{quotation.description}</TableCell>
+      <TableCell className="text-right tabular-nums">{ngn(quotation.totalNgn)}</TableCell>
+      <TableCell><QuotationStatus status={quotation.status} /></TableCell>
+      <TableCell className="text-muted-foreground">{quotation.relatedRequest ?? "—"}</TableCell>
+      <TableCell className="text-right whitespace-nowrap">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onView}
+        >
+          <Eye className="h-4 w-4 mr-1" />
+          {" "}
+          View
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={downloading}
+          onClick={onDownload}
+          aria-label="Download document"
+        >
+          <Download className="h-4 w-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+}
 
 export function BillingQuotationsTab() {
-  const { format } = useCurrency();
   const [
     search,
     setSearch,
@@ -49,35 +190,30 @@ export function BillingQuotationsTab() {
     setStatus,
   ] = useState("all");
   const [
-    selected,
-    setSelected,
-  ] = useState<Quotation | null>(null);
+    page,
+    setPage,
+  ] = useState(1);
+  const [
+    selectedId,
+    setSelectedId,
+  ] = useState<string | null>(null);
+  const q = useDebouncedValue(search.trim());
 
-  const rows = quotations.filter((q) => {
-    const matchesSearch
-      = !search
-        || `${q.number} ${q.description} ${q.purpose} ${q.relatedRequest}`.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch && (status === "all" || q.status === status);
+  const quotations = useTenantQuotations({
+    params: {
+      status: status === "all" ? undefined : status as TenantQuotationStatus,
+      q: q || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    },
   });
-
-  const download = (q: Quotation) =>
-    downloadDocument(
-      `${q.number}.txt`,
-      [
-        `Quotation ${q.number}`,
-        `Date: ${formatLongDate(q.date)}`,
-        `Purpose: ${q.purpose}`,
-        `Status: ${QUOTATION_STATUS_LABEL[q.status]}`,
-        `Related request: ${q.relatedRequest}`,
-        "",
-        ...q.lines.map(l => `${l.name} — ${l.quantity} x ${format(l.unitCharge)} = ${format(lineTotal(l))}`),
-        "",
-        `Total: ${format(totalOf(
-          q.lines,
-          q.taxRate,
-        ))}`,
-      ],
-    );
+  const {
+    download, busyId,
+  } = useBillingDownload(
+    id => queryClient.fetchQuery(getTenantQuotationQueryOptions(id)).then(r => r.data),
+    quotationDocument,
+  );
+  const list = quotations.data?.data;
 
   return (
     <Card className="surface-sleek rounded-2xl">
@@ -93,14 +229,20 @@ export function BillingQuotationsTab() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Search quotation number, purpose or request"
               className="pl-9 rounded-xl"
             />
           </div>
           <Select
             value={status}
-            onValueChange={setStatus}
+            onValueChange={(v) => {
+              setStatus(v);
+              setPage(1);
+            }}
           >
             <SelectTrigger className="w-full lg:w-48 rounded-xl">
               <SelectValue placeholder="All statuses" />
@@ -123,168 +265,64 @@ export function BillingQuotationsTab() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-2xl border border-border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Quotation</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>M2M plan</TableHead>
-                <TableHead className="text-right">Devices</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Related request</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map(q => (
-                <TableRow key={q.id}>
-                  <TableCell className="font-medium whitespace-nowrap">
-                    {q.number}
-                    <div className="text-xs text-muted-foreground">{q.category}</div>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">{formatDate(q.date)}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {planLineOf(q.lines) ? (
-                      <StatusPill
-                        label={planLineOf(q.lines)!.name}
-                        tone="info"
-                      />
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {deviceCountOf(q.lines) || "—"}
-                  </TableCell>
-                  <TableCell className="max-w-[280px] text-muted-foreground">{q.description}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {format(totalOf(
-                      q.lines,
-                      q.taxRate,
-                    ))}
-                  </TableCell>
-                  <TableCell>
-                    <StatusPill
-                      label={QUOTATION_STATUS_LABEL[q.status]}
-                      tone={toneForStatus(q.status)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{q.relatedRequest}</TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelected(q)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      {" "}
-                      View
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => download(q)}
-                      aria-label="Download document"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rows.length === 0 && (
+        {quotations.isError && (
+          <SectionError
+            message="Could not load your quotations."
+            onRetry={() => quotations.refetch()}
+          />
+        )}
+        {!quotations.isError && (
+          <div className="rounded-2xl border border-border overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="text-center text-muted-foreground py-8"
-                  >
-                    No quotations match your filters.
-                  </TableCell>
+                  <TableHead>Quotation</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>M2M plan</TableHead>
+                  <TableHead className="text-right">Devices</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Related request</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {quotations.isLoading && <SkeletonRows cols={COLS} />}
+                {list?.items.map(item => (
+                  <QuotationRow
+                    key={item.id}
+                    quotation={item}
+                    onView={() => setSelectedId(item.id)}
+                    onDownload={() => download(item.id)}
+                    downloading={busyId === item.id}
+                  />
+                ))}
+                {list && list.items.length === 0 && (
+                  <EmptyRow
+                    cols={COLS}
+                    text="No quotations match your filters."
+                  />
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+        {list && (
+          <Pager
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={list.total}
+            onPage={setPage}
+          />
+        )}
       </CardContent>
 
-      <Dialog
-        open={!!selected}
-        onOpenChange={o => !o && setSelected(null)}
-      >
-        <DialogContent
-          aria-describedby={undefined}
-          className="max-w-3xl max-h-[85vh] overflow-y-auto"
-        >
-          {selected && (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  Quotation
-                  {selected.number}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <LabelValue
-                    label="Date"
-                    value={formatLongDate(selected.date)}
-                  />
-                  <LabelValue
-                    label="Purpose"
-                    value={selected.purpose}
-                  />
-                  <LabelValue
-                    label="Status"
-                    value={(
-                      <StatusPill
-                        label={QUOTATION_STATUS_LABEL[selected.status]}
-                        tone={toneForStatus(selected.status)}
-                      />
-                    )}
-                  />
-                  <LabelValue
-                    label="Related request"
-                    value={selected.relatedRequest}
-                  />
-                  <LabelValue
-                    label="Related payment"
-                    value={selected.paymentRef ?? "Not paid yet"}
-                  />
-                  <LabelValue
-                    label="Related invoice"
-                    value={selected.invoiceNumber ?? "Not invoiced"}
-                  />
-                </div>
-                <PlanSummary lines={selected.lines} />
-                <div>
-                  <p className="text-sm font-medium mb-2">Charge breakdown</p>
-                  <ChargeBreakdown
-                    lines={selected.lines}
-                    taxRate={selected.taxRate}
-                  />
-                </div>
-                <div className="rounded-2xl border border-border p-4">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Related operational activity</p>
-                  <p className="text-sm mt-1">{selected.operationalOutcome}</p>
-                </div>
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    className="rounded-xl"
-                    onClick={() => download(selected)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {" "}
-                    Download quotation
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <QuotationDialog
+        id={selectedId}
+        onClose={() => setSelectedId(null)}
+        onDownload={download}
+      />
     </Card>
   );
 }

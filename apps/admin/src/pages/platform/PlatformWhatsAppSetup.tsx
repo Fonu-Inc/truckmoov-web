@@ -1,18 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { formatDateTime } from "@truckmoov/app-core/utils/time-utils";
 import {
   getSystemWhatsAppAccountQueryOptions,
-  getSystemWhatsAppTemplatesQueryOptions,
   useConnectSystemWhatsAppAccount,
   useDisconnectSystemWhatsAppAccount,
 } from "@truckmoov/api/notification";
-import {
-  CheckCircle2,
-  Info,
-  Link2Off,
-  Phone,
-  ShieldCheck,
-} from "lucide-react";
+import { Info } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
@@ -29,51 +21,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Label } from "@/components/shadcn/label";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { signupStepLabel } from "@/features/communications/components/whatsapp/accountHealth";
+import { ConnectionCard } from "@/features/communications/components/whatsapp/ConnectionCard";
+import { ConnectionSteps } from "@/features/communications/components/whatsapp/ConnectionSteps";
+import { TemplatesPanel } from "@/features/communications/components/whatsapp/TemplatesPanel";
 import {
   EmbeddedSignupCancelled,
   useMetaEmbeddedSignup,
 } from "@/features/communications/useMetaEmbeddedSignup";
 import { DetailSkeleton } from "@/components/ui/skeletons";
 
-/**
- * Meta's template review states. Anything unrecognised falls through to the
- * neutral outline badge rather than being mapped to a guess.
- */
-const TEMPLATE_STATUS_TONE: Record<string, string> = {
-  APPROVED: "bg-success/10 text-success border-success/30",
-  PENDING: "bg-warning/10 text-warning border-warning/30",
-  REJECTED: "bg-destructive/10 text-destructive border-destructive/30",
-  PAUSED: "bg-muted text-muted-foreground",
-  DISABLED: "bg-muted text-muted-foreground",
-};
-
-function ConnectionDetail({
-  label, value,
-}: {
-  label: string;
-  value: string | undefined;
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="truncate text-sm font-medium text-foreground">{value || "—"}</p>
-    </div>
-  );
-}
-
 export default function PlatformWhatsAppSetup() {
   const [
     confirmOpen,
     setConfirmOpen,
+  ] = useState(false);
+  const [
+    deregister,
+    setDeregister,
   ] = useState(false);
   const signup = useMetaEmbeddedSignup();
   const connectAccount = useConnectSystemWhatsAppAccount();
@@ -84,27 +58,29 @@ export default function PlatformWhatsAppSetup() {
   const isConnected = Boolean(account?.phone_number_id);
   const loadFailed = accountQuery.isError;
 
-  const templatesQuery = useQuery({
-    ...getSystemWhatsAppTemplatesQueryOptions(),
-    enabled: isConnected,
-  });
-  const templates = templatesQuery.data?.data.data ?? [];
-
   const handleConnect = async () => {
     try {
       const result = await signup.launch();
-      await connectAccount.mutateAsync({
+      const connected = await connectAccount.mutateAsync({
         data: {
           code: result.code,
           phone_number_id: result.phoneNumberId,
           business_account_id: result.businessAccountId,
+          coexistence: result.coexistence || undefined,
         },
       });
-      toast.success("WhatsApp number connected.");
+      const failed = connected.data.steps?.filter(step => step.status === "failed") ?? [];
+      if (failed.length > 0)
+        toast.warning("WhatsApp number connected, but a step needs attention. See the setup checklist.");
+      else
+        toast.success("WhatsApp number connected.");
     }
     catch (error) {
-      if (error instanceof EmbeddedSignupCancelled)
+      if (error instanceof EmbeddedSignupCancelled) {
+        if (error.step)
+          toast.info(`Signup stopped while ${signupStepLabel(error.step)}.`);
         return;
+      }
       toast.error((error as { message?: string }).message || "Couldn't connect the WhatsApp number.");
     }
   };
@@ -113,16 +89,21 @@ export default function PlatformWhatsAppSetup() {
     if (!account?.phone_number_id)
       return;
     disconnectAccount.mutate(
-      { phoneNumberId: account.phone_number_id },
+      { phoneNumberId: account.phone_number_id, deregister },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
           setConfirmOpen(false);
+          setDeregister(false);
           toast.success("WhatsApp number disconnected.");
+          response.data.warnings?.forEach(warning => toast.warning(warning));
         },
         onError: error => toast.error(error.message),
       },
     );
   };
+
+  const linking = connectAccount.isPending;
+  const showEmpty = !accountQuery.isLoading && !loadFailed && !isConnected && !linking;
 
   return (
     <Tabs
@@ -171,165 +152,60 @@ export default function PlatformWhatsAppSetup() {
                 </Button>
               </div>
             )}
-            {!accountQuery.isLoading && !loadFailed && !isConnected
-              && (
-                  <div className="flex flex-col items-center gap-3 py-10 text-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                      <WhatsAppIcon className="h-7 w-7 text-primary" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-base font-semibold text-foreground">
-                        No WhatsApp number connected
-                      </p>
-                      <p className="mx-auto max-w-md text-sm text-muted-foreground">
-                        Connect the platform&apos;s WhatsApp Business number with
-                        Meta&apos;s embedded signup. You&apos;ll sign in to
-                        Facebook, choose or create a WhatsApp Business account
-                        and verify the number. The access token is stored
-                        encrypted at platform level.
-                      </p>
-                    </div>
-                    <Button
-                      onClick={() => void handleConnect()}
-                      loading={signup.launching || connectAccount.isPending}
-                      disabled={!signup.configured}
-                    >
-                      <WhatsAppIcon className="mr-2 h-4 w-4" />
-                      Connect WhatsApp Business
-                    </Button>
-                    {!signup.configured && (
-                      <p className="text-xs text-muted-foreground">
-                        Signup isn&apos;t configured: set VITE_META_APP_ID and VITE_META_CONFIG_ID for this app.
-                      </p>
-                    )}
-                  </div>
+            {linking && !isConnected && (
+              <div className="space-y-4 py-4">
+                <p className="text-sm text-muted-foreground">
+                  Linking the number. This takes a few seconds.
+                </p>
+                <ConnectionSteps pending />
+              </div>
+            )}
+            {showEmpty && (
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <WhatsAppIcon className="h-7 w-7 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-semibold text-foreground">
+                    No WhatsApp number connected
+                  </p>
+                  <p className="mx-auto max-w-md text-sm text-muted-foreground">
+                    Connect the platform&apos;s WhatsApp Business number with
+                    Meta&apos;s embedded signup. You&apos;ll sign in to
+                    Facebook, choose or create a WhatsApp Business account
+                    and verify the number. The access token is stored
+                    encrypted at platform level.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => void handleConnect()}
+                  loading={signup.launching}
+                  disabled={!signup.configured}
+                >
+                  <WhatsAppIcon className="mr-2 h-4 w-4" />
+                  Connect WhatsApp Business
+                </Button>
+                {!signup.configured && (
+                  <p className="text-xs text-muted-foreground">
+                    Signup isn&apos;t configured: set VITE_META_APP_ID and VITE_META_CONFIG_ID for this app.
+                  </p>
                 )}
-            {isConnected
-              && (
-                  <div className="space-y-6">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className="bg-success/10 text-success border-success/30">
-                        <CheckCircle2 className="mr-1 h-3 w-3" />
-                        Connected
-                      </Badge>
-                      {account?.webhook_subscribed_at && (
-                        <Badge
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          <ShieldCheck className="mr-1 h-3 w-3" />
-                          Webhook active
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                      <ConnectionDetail
-                        label="Display number"
-                        value={account?.display_phone_number}
-                      />
-                      <ConnectionDetail
-                        label="Verified name"
-                        value={account?.verified_name}
-                      />
-                      <ConnectionDetail
-                        label="Business name"
-                        value={account?.business_name}
-                      />
-                      <ConnectionDetail
-                        label="Phone number ID"
-                        value={account?.phone_number_id}
-                      />
-                      <ConnectionDetail
-                        label="Business account ID"
-                        value={account?.business_account_id}
-                      />
-                      <ConnectionDetail
-                        label="Connected"
-                        value={account?.connected_at ? formatDateTime(account.connected_at) : undefined}
-                      />
-                    </div>
-
-                    <div className="flex justify-end border-t border-border/50 pt-4">
-                      <Button
-                        variant="outline"
-                        className="border-destructive/40 text-destructive hover:bg-destructive/10"
-                        onClick={() => setConfirmOpen(true)}
-                      >
-                        <Link2Off className="mr-2 h-4 w-4" />
-                        Disconnect
-                      </Button>
-                    </div>
-                  </div>
-                )}
+              </div>
+            )}
+            {isConnected && account && (
+              <ConnectionCard
+                account={account}
+                connecting={signup.launching || linking}
+                onReconnect={() => void handleConnect()}
+                onDisconnect={() => setConfirmOpen(true)}
+              />
+            )}
           </CardContent>
         </Card>
       </TabsContent>
 
       <TabsContent value="templates">
-        <Card className="bg-card/50 border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              Message Templates
-            </CardTitle>
-            <CardDescription>
-              Templates approved by Meta. A template is required to open a
-              conversation outside the 24-hour session window.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DataTable
-              columns={[
-                {
-                  id: "name",
-                  accessorKey: "name",
-                  header: "Template",
-                  cell: ({ row }) => (
-                    <span className="font-medium">{row.original.name || "—"}</span>
-                  ),
-                },
-                {
-                  id: "category",
-                  accessorKey: "category",
-                  header: "Category",
-                  cell: ({ row }) => (
-                    <Badge
-                      variant="outline"
-                      className="text-xs"
-                    >
-                      {row.original.category || "—"}
-                    </Badge>
-                  ),
-                },
-                {
-                  id: "language",
-                  accessorKey: "language",
-                  header: "Language",
-                  cell: ({ row }) => row.original.language || "—",
-                },
-                {
-                  id: "status",
-                  accessorKey: "status",
-                  header: "Status",
-                  cell: ({ row }) => {
-                    const status = row.original.status || "";
-                    return (
-                      <Badge
-                        variant="outline"
-                        className={TEMPLATE_STATUS_TONE[status] ?? "text-xs"}
-                      >
-                        {status || "—"}
-                      </Badge>
-                    );
-                  },
-                },
-              ]}
-              data={templates}
-              isLoading={templatesQuery.isLoading}
-            />
-          </CardContent>
-        </Card>
+        <TemplatesPanel connected={isConnected} />
       </TabsContent>
 
       <AlertDialog
@@ -340,13 +216,27 @@ export default function PlatformWhatsAppSetup() {
           <AlertDialogHeader>
             <AlertDialogTitle>Disconnect this WhatsApp number?</AlertDialogTitle>
             <AlertDialogDescription>
-              Drivers will stop receiving WhatsApp messages from
+              Sending stops for the whole platform: drivers will no longer
+              receive WhatsApp messages from
               {" "}
               {account?.display_phone_number || "this number"}
-              , and replies will no longer reach the Messaging Center.
-              Reconnecting requires Meta&apos;s embedded signup again.
+              , and replies will no longer reach the Messaging Center, until a
+              number is connected again. Conversation history is kept.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="deregister-number"
+              checked={deregister}
+              onCheckedChange={checked => setDeregister(checked === true)}
+            />
+            <Label
+              htmlFor="deregister-number"
+              className="text-sm font-normal leading-snug"
+            >
+              Also release the number from WhatsApp Cloud API, so it can be used on the WhatsApp Business app again.
+            </Label>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction

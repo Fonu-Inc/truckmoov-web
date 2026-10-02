@@ -5,6 +5,8 @@ import type {
   CreateWhatsAppTemplatePayload,
   CreateWhatsAppTemplateResponse,
   DeliveryLogQuery,
+  DeleteSystemWhatsAppTemplatePayload,
+  DeleteSystemWhatsAppTemplateResponse,
   DeliveryLogResponse,
   DisconnectWhatsAppAccountPayload,
   DisconnectWhatsAppAccountResponse,
@@ -14,10 +16,14 @@ import type {
   SendJobInstructionPayload,
   SendNotifyMessagePayload,
   SendOtherTemplatePayload,
+  SendSystemWhatsAppTemplatePayload,
+  SendSystemWhatsAppTemplateResponse,
   SendWhatsAppMediaMessagePayload,
   SendWhatsAppMessageResponse,
   SendWhatsAppTemplateResponse,
   SendWhatsAppTextMessagePayload,
+  SystemWhatsAppAccountQuery,
+  SystemWhatsAppTemplatesQuery,
   WhatsAppAccountResponse,
   WhatsAppConversationListResponse,
   WhatsAppConversationMessagesResponse,
@@ -136,8 +142,25 @@ export async function disconnectWhatsAppAccount({ phoneNumberId }: DisconnectWha
 
 // ─── Platform WhatsApp account (platform admin, held under the system tenant) ──
 
-export async function getSystemWhatsAppAccount() {
-  const { data } = await axiosInstance.get<WhatsAppAccountResponse>('/notify/system/whatsapp/settings')
+export async function getSystemWhatsAppAccount(query?: SystemWhatsAppAccountQuery) {
+  const { data } = await axiosInstance.get<WhatsAppAccountResponse>('/notify/system/whatsapp/settings', {
+    params: query?.refresh ? { refresh: true } : undefined,
+  })
+  return data
+}
+
+export async function refreshSystemWhatsAppAccount() {
+  const { data } = await axiosInstance.post<WhatsAppAccountResponse>('/notify/system/whatsapp/settings/refresh')
+  return data
+}
+
+export async function resubscribeSystemWhatsAppAccount() {
+  const { data } = await axiosInstance.post<WhatsAppAccountResponse>('/notify/system/whatsapp/settings/resubscribe')
+  return data
+}
+
+export async function registerSystemWhatsAppNumber() {
+  const { data } = await axiosInstance.post<WhatsAppAccountResponse>('/notify/system/whatsapp/settings/register')
   return data
 }
 
@@ -146,15 +169,36 @@ export async function connectSystemWhatsAppAccount({ data: body }: ConnectWhatsA
   return data
 }
 
-export async function disconnectSystemWhatsAppAccount({ phoneNumberId }: DisconnectWhatsAppAccountPayload) {
+export async function disconnectSystemWhatsAppAccount({ phoneNumberId, deregister }: DisconnectWhatsAppAccountPayload) {
   const { data } = await axiosInstance.delete<DisconnectWhatsAppAccountResponse>(
     `/notify/system/whatsapp/settings/${phoneNumberId}`,
+    { params: deregister ? { deregister: true } : undefined },
   )
   return data
 }
 
-export async function getSystemWhatsAppTemplates() {
-  const { data } = await axiosInstance.get<WhatsAppTemplateListResponse>('/notify/system/whatsapp/templates')
+export async function getSystemWhatsAppTemplates(query?: SystemWhatsAppTemplatesQuery) {
+  const { data } = await axiosInstance.get<WhatsAppTemplateListResponse>('/notify/system/whatsapp/templates', {
+    params: query,
+  })
+  return data
+}
+
+export async function createSystemWhatsAppTemplate({ data: body }: CreateWhatsAppTemplatePayload) {
+  const { data } = await axiosInstance.post<CreateWhatsAppTemplateResponse>('/notify/system/whatsapp/templates', body)
+  return data
+}
+
+export async function deleteSystemWhatsAppTemplate({ name }: DeleteSystemWhatsAppTemplatePayload) {
+  const { data } = await axiosInstance.delete<DeleteSystemWhatsAppTemplateResponse>(
+    `/notify/system/whatsapp/templates/${encodeURIComponent(name)}`,
+  )
+  return data
+}
+
+/** Sends an approved template from the platform number: starts a conversation or reopens a locked one. */
+export async function sendSystemWhatsAppTemplate({ data: body }: SendSystemWhatsAppTemplatePayload) {
+  const { data } = await axiosInstance.post<SendSystemWhatsAppTemplateResponse>('/notify/system/whatsapp/outreach', body)
   return data
 }
 

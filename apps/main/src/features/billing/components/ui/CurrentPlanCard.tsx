@@ -1,31 +1,31 @@
+import type { TenantLicence } from "@truckmoov/api/billing";
+import { useTenantLicence } from "@truckmoov/api/billing";
 import {
-  BadgeCheck,
-  CalendarClock,
-  Cpu,
-  Package,
-  RefreshCw,
-  Wallet,
+  addDays, toDateParam,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  BadgeCheck, CalendarClock, Cpu, Package, RefreshCw, Wallet,
 } from "lucide-react";
-
 import { Badge } from "@/components/shadcn/badge";
 import {
   Card, CardContent,
 } from "@/components/shadcn/card";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
-  currentPlan, formatLongDate,
-} from "@/features/billing/utils/enterpriseBillingData";
+  formatLongDate, ngn,
+} from "@/features/billing/utils/billingHelpers";
+import { SectionError } from "@/features/billing/utils/billingShared";
+
+const STATUS_LABEL: Record<TenantLicence["status"], string> = {
+  active: "Active",
+  renewed: "Renewed",
+  ended: "Ended",
+};
 
 function Fact({
-  icon: Icon,
-  label,
-  value,
-  hint,
+  icon: Icon, label, value, hint,
 }: {
-  icon: typeof Cpu;
-  label: string;
-  value: React.ReactNode;
-  hint?: string;
+  icon: typeof Cpu; label: string; value: React.ReactNode; hint?: string;
 }) {
   return (
     <div className="rounded-xl border border-border bg-background/60 p-3">
@@ -40,16 +40,22 @@ function Fact({
   );
 }
 
-/**
- * Prominent banner on the customer billing overview showing the M2M plan the
- * organization is on, priced per device.
- */
-export function CurrentPlanCard() {
-  const { format } = useCurrency();
-  const plan = currentPlan();
-  if (!plan)
-    return null;
+function renewalDate(periodEnd: string) {
+  const next = addDays(
+    periodEnd,
+    1,
+  );
+  return next ? toDateParam(next) : periodEnd;
+}
 
+function validityHint(days: number | null) {
+  if (!days)
+    return undefined;
+  return `Valid for ${Math.round(days / 30.4375)} months from purchase`;
+}
+
+function PlanBody({ plan }: { plan: TenantLicence }) {
+  const price = plan.pricePerDeviceNgn;
   return (
     <Card className="surface-sleek rounded-2xl border-primary/40 bg-primary/5 overflow-hidden">
       <div className="h-1.5 w-full bg-primary" />
@@ -63,16 +69,19 @@ export function CurrentPlanCard() {
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
                 <Package className="h-5 w-5" />
               </span>
-              <h3 className="text-2xl font-semibold leading-tight">{plan.tier}</h3>
-              <Badge className="rounded-full bg-primary text-primary-foreground hover:bg-primary">
+              <h3 className="text-2xl font-semibold leading-tight">{plan.planName}</h3>
+              <Badge
+                variant={plan.status === "active" ? "default" : "outline"}
+                className="rounded-full"
+              >
                 <BadgeCheck className="mr-1 h-3.5 w-3.5" />
-                Active
+                {STATUS_LABEL[plan.status]}
               </Badge>
             </div>
           </div>
           <div className="text-right shrink-0">
             <p className="text-3xl font-semibold tabular-nums tracking-tight text-primary">
-              {format(plan.pricePerDevice)}
+              {price === null ? "—" : ngn(price)}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">per device</p>
           </div>
@@ -83,33 +92,48 @@ export function CurrentPlanCard() {
             icon={Cpu}
             label="Devices purchased"
             value={`${plan.deviceCount} devices`}
+            hint={plan.devicesInUse === null ? undefined : `${plan.devicesInUse} in use`}
           />
           <Fact
             icon={Wallet}
             label="Total amount paid"
-            value={format(plan.totalPaid)}
-            hint={`${plan.deviceCount} × ${format(plan.pricePerDevice)}`}
+            value={plan.totalPaidNgn === null ? "—" : ngn(plan.totalPaidNgn)}
+            hint={price === null ? undefined : `${plan.deviceCount} × ${ngn(price)}`}
           />
           <Fact
             icon={CalendarClock}
             label="Date of purchase"
-            value={formatLongDate(plan.startDate)}
+            value={formatLongDate(plan.periodStart)}
           />
           <Fact
             icon={RefreshCw}
             label="Renewal price"
-            value={`${format(plan.renewalPricePerDevice)} per device`}
+            value={plan.renewalPricePerDeviceNgn === null ? "—" : `${ngn(plan.renewalPricePerDeviceNgn)} per device`}
           />
-
           <Fact
             icon={CalendarClock}
             label="Renews on"
-            value={formatLongDate(plan.renewalDate)}
-            hint="Valid for 12 months from purchase"
+            value={formatLongDate(renewalDate(plan.periodEnd))}
+            hint={validityHint(plan.validityDays)}
           />
         </div>
-
       </CardContent>
     </Card>
   );
+}
+
+export function CurrentPlanCard() {
+  const licence = useTenantLicence();
+  if (licence.isLoading)
+    return <Skeleton className="h-56 w-full rounded-2xl" />;
+  if (licence.isError) {
+    return (
+      <SectionError
+        message="Could not load your current plan."
+        onRetry={() => licence.refetch()}
+      />
+    );
+  }
+  const plan = licence.data?.data;
+  return plan ? <PlanBody plan={plan} /> : null;
 }

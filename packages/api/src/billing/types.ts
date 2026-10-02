@@ -386,11 +386,22 @@ export type EnforcementSettingsResponse = ServerResponse<EnforcementSettings>
 export type EnforcementListResponse = ServerResponse<EnforcementList>
 export type EnforcementPreviewResponse = ServerResponse<EnforcementPreview>
 
-// ─── Tenant billing (renewal invoices, paid by the tenant) ───────────────────
+// ─── Tenant billing (what the signed-in tenant sees of its own billing) ──────
 
 export type TenantInvoiceKind = 'renewal' | 'first'
 export type TenantInvoiceStatus = 'issued' | 'partially_paid' | 'paid' | 'overdue'
-export type TenantInvoiceFilter = 'open' | 'paid' | 'all'
+/** open, paid and all are scopes; the rest are exact states, pending being issued with nothing paid. */
+export type TenantInvoiceFilter = 'open' | 'paid' | 'all' | 'pending' | 'partially_paid' | 'overdue'
+export type TenantPaymentMethod = PaymentMethod | 'wallet'
+export type TenantPaymentStatus = 'successful' | 'pending' | 'failed' | 'refunded'
+export type TenantQuotationStatus =
+  | 'draft'
+  | 'sent'
+  | 'awaiting_decision'
+  | 'accepted'
+  | 'paid'
+  | 'expired'
+  | 'cancelled'
 
 export type TenantInvoice = {
   id: string
@@ -406,27 +417,40 @@ export type TenantInvoice = {
   graceEndsOn: string | null
   payable: boolean
   periodEnd: string | null
+  planName: string | null
+  deviceCount: number
+  billingPeriod: string
+  quotationNumber: string | null
 }
 
-export type TenantInvoiceLine = {
-  kind: BillingLineKind
-  name: string
-  quantity: number
-  unitPriceNgn: number
-  totalNgn: number
+export type TenantInvoiceLine = BillingLine
+
+export type TenantInvoicePayment = {
+  reference: string
+  method: TenantPaymentMethod | null
+  paidAt: string | null
+  amountNgn: number
 }
 
-export type TenantInvoiceDetail = TenantInvoice & { lines: TenantInvoiceLine[] }
+export type TenantInvoiceDetail = TenantInvoice & {
+  subtotalNgn: number
+  taxNgn: number
+  taxRateBp: number
+  lines: TenantInvoiceLine[]
+  payments: TenantInvoicePayment[]
+}
 
 export type TenantInvoiceList = {
   items: TenantInvoice[]
   openTotalNgn: number
   nextDueDate: string | null
   total: number
+  page: number
+  pageSize: number
 }
 
 export type TenantInvoicesQuery = {
-  params?: { status?: TenantInvoiceFilter, page?: number, pageSize?: number }
+  params?: { status?: TenantInvoiceFilter, q?: string, page?: number, pageSize?: number }
 }
 
 export type TenantLicence = {
@@ -438,6 +462,14 @@ export type TenantLicence = {
   daysLeft: number
   status: 'active' | 'renewed' | 'ended'
   renewalInvoiceId: string | null
+  pricePerDeviceNgn: number | null
+  renewalPricePerDeviceNgn: number | null
+  totalPaidNgn: number | null
+  validityDays: number | null
+  invoiceNumber: string | null
+  devicesInUse: number | null
+  vehiclesInUse: number | null
+  simsInUse: number | null
 }
 
 export type TenantInvoicePayWallet = {
@@ -452,8 +484,130 @@ export type TenantInvoicePayCard = {
   amountNgn: number
 }
 
+export type TenantQuotation = {
+  id: string
+  number: string
+  date: string
+  planName: string
+  deviceCount: number
+  description: string
+  purpose: string
+  category: 'Onboarding'
+  status: TenantQuotationStatus
+  relatedRequest: string | null
+  totalNgn: number
+  paymentRef: string | null
+  operationalOutcome: string
+}
+
+export type TenantQuotationDetail = TenantQuotation & {
+  invoiceNumber: string | null
+  validUntil: string
+  subtotalNgn: number
+  discountNgn: number
+  taxNgn: number
+  taxRateBp: number
+  lines: BillingLine[]
+}
+
+export type TenantQuotationList = { items: TenantQuotation[], total: number, page: number, pageSize: number }
+
+export type TenantQuotationsQuery = {
+  params?: { q?: string, status?: TenantQuotationStatus, page?: number, pageSize?: number }
+}
+
+export type TenantPayment = {
+  id: string
+  reference: string
+  date: string
+  planName: string
+  deviceCount: number
+  amountNgn: number
+  method: TenantPaymentMethod | null
+  status: TenantPaymentStatus
+  invoiceNumber: string | null
+  quotationNumber: string | null
+  paidFor: string
+}
+
+export type TenantPaymentDetail = TenantPayment & {
+  relatedInvoice: TenantInvoiceDetail | null
+  relatedQuotation: TenantQuotationDetail | null
+}
+
+export type TenantPaymentList = { items: TenantPayment[], total: number, page: number, pageSize: number }
+
+export type TenantPaymentsQuery = {
+  params?: {
+    q?: string
+    status?: TenantPaymentStatus
+    method?: TenantPaymentMethod
+    from?: string
+    to?: string
+    page?: number
+    pageSize?: number
+  }
+}
+
+export type TenantBillingSummary = {
+  outstandingNgn: number
+  nextDueDate: string | null
+  paidThisYearNgn: number
+  walletBalanceNgn: number
+}
+
+export type TenantSpendMonth = { month: string, invoicedNgn: number, paidNgn: number }
+export type TenantSpendCategory = { name: 'Licensing' | 'Installation', valueNgn: number }
+export type TenantOutstandingPoint = { date: string, invoiceNumber: string, outstandingNgn: number }
+
+export type TenantBillingOverview = {
+  summary: TenantBillingSummary
+  spendTrend: TenantSpendMonth[]
+  spendByCategory: TenantSpendCategory[]
+  outstandingTrend: TenantOutstandingPoint[]
+}
+
+export type TenantBillingActivityEvent =
+  | 'Invoice Issued'
+  | 'Payment Received'
+  | 'Quotation Sent'
+  | 'Quotation Accepted'
+  | 'Licence Renewed'
+  | 'New Device Requested'
+  | 'Vehicles Added'
+  | 'Devices Added'
+  | 'SIMs Added'
+  | 'Installation Completed'
+  | 'Service Removed'
+
+export type TenantBillingActivity = {
+  id: string
+  date: string
+  event: TenantBillingActivityEvent
+  resource: string
+  impactNgn: number | null
+}
+
+export type TenantBillingActivityList = {
+  items: TenantBillingActivity[]
+  events: string[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export type TenantBillingActivityQuery = {
+  params?: { q?: string, event?: string, page?: number, pageSize?: number }
+}
+
 export type TenantInvoiceListResponse = ServerResponse<TenantInvoiceList>
 export type TenantInvoiceDetailResponse = ServerResponse<TenantInvoiceDetail>
 export type TenantLicenceResponse = ServerResponse<TenantLicence | null>
 export type TenantInvoicePayWalletResponse = ServerResponse<TenantInvoicePayWallet>
 export type TenantInvoicePayCardResponse = ServerResponse<TenantInvoicePayCard>
+export type TenantQuotationListResponse = ServerResponse<TenantQuotationList>
+export type TenantQuotationDetailResponse = ServerResponse<TenantQuotationDetail>
+export type TenantPaymentListResponse = ServerResponse<TenantPaymentList>
+export type TenantPaymentDetailResponse = ServerResponse<TenantPaymentDetail>
+export type TenantBillingOverviewResponse = ServerResponse<TenantBillingOverview>
+export type TenantBillingActivityResponse = ServerResponse<TenantBillingActivityList>

@@ -132,6 +132,20 @@ In components use the app hooks (`apps/main/src/features/map/hooks/useRealtime.t
 `release()` on unmount — and `useRealtimeStatus()` for the indicator. In dev,
 `window.__realtimeDebug(event)` reports `{ refCount, connected, listeners }` for checking cleanup.
 
+## Platform WhatsApp connector
+
+The platform number lives under the system tenant and is set up on `/whatsapp`
+(`PlatformWhatsAppSetup`). `POST /notify/system/whatsapp/settings` takes the embedded-signup
+`code` and, optionally, `phone_number_id`, `business_account_id` and `coexistence`; the server
+exchanges the code, checks the token owns the account, subscribes webhooks, registers the number
+(it generates and keeps the two-step PIN, never returned) and answers with the account plus a
+`steps` checklist (`token`, `profile`, `subscribed`, `registered`, each `ok` / `failed` / `skipped`).
+Reads (`GET .../settings`) refresh the number's quality, status and token health from Meta at most
+once a minute; `?refresh=true` forces it. `POST .../settings/{refresh|resubscribe|register}` retry a
+step, `DELETE .../settings/{phone}?deregister=true` unsubscribes webhooks and optionally releases the
+number. Templates: `GET|POST .../templates`, `DELETE .../templates/{name}`. Starting or reopening a
+conversation is `POST .../outreach` (an approved template to a phone or a locked conversation).
+
 ## Auth session
 
 The shared auth session is managed by a zustand store persisted to `localStorage` under the key `truckmoov_auth`.

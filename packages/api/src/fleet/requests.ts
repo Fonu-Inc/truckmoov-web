@@ -61,6 +61,11 @@ import type {
   FleetFinancialStatementExportQuery,
   FleetFinancialStatementQuery,
   FleetFinancialStatementResponse,
+  FleetAnalyticsRangeQuery,
+  FleetComplianceAuditResponse,
+  FleetFuelReportResponse,
+  FleetProfitLossResponse,
+  FleetUtilizationResponse,
   FleetFinancialSummaryQuery,
   FleetFinancialSummaryResponse,
   FleetProfitabilityPayload,
@@ -825,6 +830,34 @@ export async function getFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuer
 
 export async function getFleetFinancialSummary(payload?: FleetFinancialSummaryQuery) {
   const { data } = await axiosInstance.get<FleetFinancialSummaryResponse>('/fleet/financials/summary', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetProfitLoss(payload?: FleetAnalyticsRangeQuery) {
+  const { data } = await axiosInstance.get<FleetProfitLossResponse>('/fleet/financials/profit-loss', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetUtilizationReport(payload?: FleetAnalyticsRangeQuery) {
+  const { data } = await axiosInstance.get<FleetUtilizationResponse>('/fleet/analytics/utilization', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetFuelReport(payload?: FleetAnalyticsRangeQuery) {
+  const { data } = await axiosInstance.get<FleetFuelReportResponse>('/fleet/analytics/fuel-consumption', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetComplianceAudit(payload?: FleetAnalyticsRangeQuery) {
+  const { data } = await axiosInstance.get<FleetComplianceAuditResponse>('/fleet/analytics/compliance-audit', {
     params: payload?.params,
   })
   return data

@@ -1,17 +1,19 @@
-import type { MessagingConversation, PlatformMessagingSocket } from "@truckmoov/api/notification";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
-import { ArrowLeft, Clock, Lock } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
-import { composerDisabledReason } from "../composerState";
-import { conversationTitle, windowText } from "../messagingLogic";
+import type { MessagingConversation, MessagingMessage, PlatformMessagingSocket } from "@truckmoov/api/notification";
+import { useState } from "react";
+import { isLocalMessage } from "../messagingLogic";
 import type { MessagingConnection } from "../useMessagingSocket";
+import { useConversationActions } from "../useConversationActions";
 import { useMarkRead } from "../useMarkRead";
 import { useSendMessage } from "../useSendMessage";
+import { useStaffDirectory } from "../useStaffDirectory";
 import { useThread } from "../useThread";
+import { useWindowLock } from "../useWindowLock";
+import { CannedRepliesDialog } from "./CannedRepliesDialog";
 import { Composer } from "./Composer";
+import { ContactPanel } from "./ContactPanel";
+import { ThreadHeader } from "./ThreadHeader";
 import { ThreadMessages } from "./ThreadMessages";
+import { StartConversationDialog } from "./whatsapp/StartConversationDialog";
 
 type Props = {
   conversation: MessagingConversation;
@@ -21,33 +23,46 @@ type Props = {
   onBack: () => void;
 };
 
+/** Runs a mutation and reports whether it worked, so the composer only clears what was sent. */
+async function succeeded(run: () => Promise<unknown>) {
+  try {
+    await run();
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
+
 export function ThreadPanel({ conversation, socket, connection, canManage, onBack }: Props) {
   const thread = useThread(conversation.id);
-  const send = useSendMessage(socket);
+  const { send, retry } = useSendMessage(socket);
+  const actions = useConversationActions(conversation.id);
+  const { locked, secondsLeft } = useWindowLock(conversation);
+  const { nameOf } = useStaffDirectory();
+  const [contactOpen, setContactOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [repliesOpen, setRepliesOpen] = useState(false);
   useMarkRead(socket, connection === "connected", conversation, canManage);
+
+  const retryMessage = (message: MessagingMessage) => {
+    if (isLocalMessage(message))
+      void retry(conversation.id, message);
+    else
+      actions.retry.mutate(message.id);
+  };
 
   return (
     <>
-      <div className="flex items-center gap-3 border-b border-border/50 p-3">
-        <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Back to conversations" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <Avatar className="h-9 w-9">
-          <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-            {getInitials(conversationTitle(conversation))}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">{conversationTitle(conversation)}</p>
-          <p className="truncate text-xs text-muted-foreground">{conversation.driver_phone}</p>
-        </div>
-        {windowText(conversation) && (
-          <Badge variant="outline" className="text-xs">
-            {conversation.is_locked ? <Lock className="mr-1 h-3 w-3" /> : <Clock className="mr-1 h-3 w-3" />}
-            {windowText(conversation)}
-          </Badge>
-        )}
-      </div>
+      <ThreadHeader
+        conversation={conversation}
+        canManage={canManage}
+        locked={locked}
+        secondsLeft={secondsLeft}
+        onBack={onBack}
+        onOpenContact={() => setContactOpen(true)}
+        onUpdate={change => actions.update.mutate(change)}
+      />
 
       <ThreadMessages
         messages={thread.messages}
@@ -57,13 +72,39 @@ export function ThreadPanel({ conversation, socket, connection, canManage, onBac
         hasEarlier={thread.hasEarlier}
         isLoadingEarlier={thread.isLoadingEarlier}
         onLoadEarlier={() => void thread.loadEarlier()}
+        canManage={canManage}
+        authorName={nameOf}
+        onRetryMessage={retryMessage}
+        onCancelScheduled={message => actions.cancelScheduled.mutate(message.id)}
       />
 
       <Composer
         key={conversation.id}
-        disabledReason={composerDisabledReason(conversation, canManage, connection)}
+        conversationId={conversation.id}
+        locked={locked}
+        canManage={canManage}
+        connection={connection}
+        busy={{ media: actions.media.isPending, schedule: actions.schedule.isPending, note: actions.note.isPending }}
         onSend={text => void send(conversation.id, text)}
+        onNote={text => succeeded(() => actions.note.mutateAsync(text))}
+        onMedia={(file, caption) => succeeded(() => actions.media.mutateAsync({ file, caption: caption || undefined }))}
+        onSchedule={(text, sendAt) => succeeded(() => actions.schedule.mutateAsync({ text, sendAt }))}
+        onOpenTemplates={() => setTemplatesOpen(true)}
+        onManageReplies={() => setRepliesOpen(true)}
       />
+
+      <ContactPanel
+        conversation={conversation}
+        open={contactOpen}
+        canManage={canManage}
+        locked={locked}
+        secondsLeft={secondsLeft}
+        saving={actions.update.isPending}
+        onOpenChange={setContactOpen}
+        onUpdate={change => actions.update.mutate(change)}
+      />
+      <StartConversationDialog open={templatesOpen} onOpenChange={setTemplatesOpen} conversationId={conversation.id} />
+      <CannedRepliesDialog open={repliesOpen} canManage={canManage} onOpenChange={setRepliesOpen} />
     </>
   );
 }

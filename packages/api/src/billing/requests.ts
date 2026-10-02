@@ -13,12 +13,21 @@ import type {
   InvoiceResponse,
   InvoicesQuery,
   InvoicesResponse,
+  TenantBillingActivityQuery,
+  TenantBillingActivityResponse,
+  TenantBillingOverviewResponse,
   TenantInvoiceDetailResponse,
   TenantInvoiceListResponse,
   TenantInvoicePayCardResponse,
   TenantInvoicePayWalletResponse,
   TenantInvoicesQuery,
   TenantLicenceResponse,
+  TenantPaymentDetailResponse,
+  TenantPaymentListResponse,
+  TenantPaymentsQuery,
+  TenantQuotationDetailResponse,
+  TenantQuotationListResponse,
+  TenantQuotationsQuery,
   PaymentResponse,
   PaymentsQuery,
   PaymentsResponse,
@@ -190,5 +199,41 @@ export async function payTenantInvoiceFromWallet({ id }: BillingIdPayload) {
 
 export async function payTenantInvoiceByCard({ id }: BillingIdPayload) {
   const { data } = await axiosInstance.post<TenantInvoicePayCardResponse>(`${TENANT_BASE}/invoices/${id}/pay-card`)
+  return data
+}
+
+export async function getTenantQuotations(payload?: TenantQuotationsQuery) {
+  const { data } = await axiosInstance.get<TenantQuotationListResponse>(`${TENANT_BASE}/quotations`, {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getTenantQuotation({ id }: BillingIdPayload) {
+  const { data } = await axiosInstance.get<TenantQuotationDetailResponse>(`${TENANT_BASE}/quotations/${id}`)
+  return data
+}
+
+export async function getTenantPayments(payload?: TenantPaymentsQuery) {
+  const { data } = await axiosInstance.get<TenantPaymentListResponse>(`${TENANT_BASE}/payments`, {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getTenantPayment({ id }: BillingIdPayload) {
+  const { data } = await axiosInstance.get<TenantPaymentDetailResponse>(`${TENANT_BASE}/payments/${id}`)
+  return data
+}
+
+export async function getTenantBillingOverview() {
+  const { data } = await axiosInstance.get<TenantBillingOverviewResponse>(`${TENANT_BASE}/overview`)
+  return data
+}
+
+export async function getTenantBillingActivity(payload?: TenantBillingActivityQuery) {
+  const { data } = await axiosInstance.get<TenantBillingActivityResponse>(`${TENANT_BASE}/activity`, {
+    params: payload?.params,
+  })
   return data
 }

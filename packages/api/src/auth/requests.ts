@@ -255,6 +255,13 @@ import type {
   SystemDeviceSetupSummaryResponse,
   StillReportingDevicesResponse,
   SystemDeviceSummaryResponse,
+  SystemDeviceManufacturersResponse,
+  SystemSimCarrierBreakdownResponse,
+  SystemSnapshotPeriod,
+  SystemRevenueByMonthResponse,
+  SystemTenantGrowthResponse,
+  SystemSimDataUsageResponse,
+  SystemDeviceMessageRateResponse,
   SystemFeatureFlagResponse,
   SystemFeatureFlagsResponse,
   SystemHealthResponse,
@@ -276,6 +283,16 @@ import type {
   SystemSubscriptionPlansResponse,
   SystemTenantDeleteResponse,
   SystemTenantBillingResponse,
+  SystemTenantContactDetail,
+  SystemTenantQuotasResponse,
+  SystemTenantTrialResponse,
+  SystemTenantExportResponse,
+  SystemTenantExportsResponse,
+  UpdateSystemTenantQuotasPayload,
+  ExtendSystemTenantTrialPayload,
+  ConvertSystemTenantTrialPayload,
+  RequestSystemTenantExportPayload,
+  DownloadSystemTenantExportPayload,
   SystemTenantDetailResponse,
   SystemTenantInviteActionResponse,
   SystemTenantOnboardingReferenceDataResponse,
@@ -887,7 +904,7 @@ export async function createTenant({ data }: CreateTenantPayload) {
 }
 
 export async function getSystemTenant({ id }: { id: string }) {
-  const { data } = await axiosInstance.get<SystemTenantDetailResponse>(`/auth/system/tenants/${id}`)
+  const { data } = await axiosInstance.get<ServerResponse<SystemTenantContactDetail>>(`/auth/system/tenants/${id}`)
   return data
 }
 
@@ -921,6 +938,39 @@ export async function getSystemDevices(payload?: SystemDevicesQuery) {
   const { data } = await axiosInstance.get<SystemDeviceInventoryListResponse>('/auth/system/devices', {
     params: payload?.params,
   })
+  return data
+}
+
+export async function getSystemDeviceManufacturers(period?: SystemSnapshotPeriod) {
+  const { data } = await axiosInstance.get<SystemDeviceManufacturersResponse>('/auth/system/devices/manufacturers', {
+    params: { period },
+  })
+  return data
+}
+
+export async function getSystemRevenueByMonth(months?: number) {
+  const { data } = await axiosInstance.get<SystemRevenueByMonthResponse>('/auth/system/tenants/revenue-by-month', {
+    params: { months },
+  })
+  return data
+}
+
+export async function getSystemTenantGrowth(months?: number) {
+  const { data } = await axiosInstance.get<SystemTenantGrowthResponse>('/auth/system/tenants/growth', {
+    params: { months },
+  })
+  return data
+}
+
+export async function getSystemSimDataUsage(days?: number) {
+  const { data } = await axiosInstance.get<SystemSimDataUsageResponse>('/auth/system/sims/data-usage', {
+    params: { days },
+  })
+  return data
+}
+
+export async function getSystemDeviceMessageRate() {
+  const { data } = await axiosInstance.get<SystemDeviceMessageRateResponse>('/auth/system/devices/messages-per-hour')
   return data
 }
 
@@ -1047,6 +1097,13 @@ export async function bulkSystemSimStatus(body: BulkSystemSimStatusPayload) {
 
 export async function getSystemSimsSummary() {
   const { data } = await axiosInstance.get<SystemSimSummaryResponse>('/auth/system/sims/summary')
+  return data
+}
+
+export async function getSystemSimCarrierBreakdown(period?: SystemSnapshotPeriod) {
+  const { data } = await axiosInstance.get<SystemSimCarrierBreakdownResponse>('/auth/system/sims/by-carrier', {
+    params: { period },
+  })
   return data
 }
 
@@ -2561,5 +2618,39 @@ export async function getSystemOnboardingApplicationsSummary() {
   const { data } = await axiosInstance.get<SystemOnboardingApplicationsSummaryResponse>(
     '/auth/system/onboarding/applications/summary',
   )
+  return data
+}
+
+// ─── System — tenant limits, trial and data export ───────────────────────────
+
+export async function updateSystemTenantQuotas({ id, data }: UpdateSystemTenantQuotasPayload) {
+  const { data: res } = await axiosInstance.patch<SystemTenantQuotasResponse>(`/auth/system/tenants/${id}/quotas`, data)
+  return res
+}
+
+export async function extendSystemTenantTrial({ id, data }: ExtendSystemTenantTrialPayload) {
+  const { data: res } = await axiosInstance.post<SystemTenantTrialResponse>(`/auth/system/tenants/${id}/trial/extend`, data)
+  return res
+}
+
+export async function convertSystemTenantTrial({ id, data }: ConvertSystemTenantTrialPayload) {
+  const { data: res } = await axiosInstance.post<SystemTenantTrialResponse>(`/auth/system/tenants/${id}/trial/convert`, data ?? {})
+  return res
+}
+
+export async function requestSystemTenantExport({ id, data }: RequestSystemTenantExportPayload) {
+  const { data: res } = await axiosInstance.post<SystemTenantExportResponse>(`/auth/system/tenants/${id}/exports`, data)
+  return res
+}
+
+export async function getSystemTenantExports({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemTenantExportsResponse>(`/auth/system/tenants/${id}/exports`)
+  return data
+}
+
+export async function downloadSystemTenantExport({ id, exportId }: DownloadSystemTenantExportPayload) {
+  const { data } = await axiosInstance.get<Blob>(`/auth/system/tenants/${id}/exports/${exportId}/download`, {
+    responseType: 'blob',
+  })
   return data
 }

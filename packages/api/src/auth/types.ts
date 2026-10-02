@@ -1781,9 +1781,9 @@ export type SystemDashboard = {
   totalVehicles: number
   totalDrivers: number
   totalSensors: number
-  totalSimCards: number
-  dataUsageTodayMb: number
-  sensorGpsMessagesPerHour: number
+  totalSimCards: number | null
+  dataUsageTodayMb: number | null
+  sensorGpsMessagesPerHour: number | null
   unavailableMetrics: string[]
   generatedAt: string
 }
@@ -1983,7 +1983,12 @@ export type SystemTenant = SystemTenantSuspension & {
   driverCount: number
   deviceCount: number
   simCount: number
+  /** What applies today: the plan limit, or the tenant override when one is set. */
   quotas: SystemTenantQuotas
+  /** The plan's own limits. */
+  planQuotas: SystemTenantQuotas
+  /** Limits set for this tenant by staff; null means the plan limit applies. */
+  quotaOverrides: SystemTenantQuotas
   features: Record<string, boolean>
   createdAt: string
   /** Cash collected this Africa/Lagos month, in naira. */
@@ -2075,6 +2080,12 @@ export type ReinstateSystemDevicePayload = {
 }
 
 export type SystemDeviceActionResponse = ServerResponse<{ id: string }>
+
+export type SystemSimCarrierBreakdown = {
+  period: SystemSnapshotPeriod
+  byCarrier: Record<string, number>
+  generatedAt: string
+}
 
 export type SystemSimsSummary = {
   total: number
@@ -2739,6 +2750,23 @@ export type SystemTenantBilling = {
   } | null
   wallet: { balanceNgn: number; status: 'healthy' | 'low' | 'negative' } | null
   collectedThisMonthNgn: number
+  billingModel: {
+    kind: 'per_device_licence' | 'subscription' | null
+    paymentModel: 'prepaid' | 'postpaid' | null
+    billingCycle: 'monthly' | 'yearly' | null
+    deviceCount: number | null
+  }
+  trial: SystemTenantTrial | null
+}
+export type SystemTenantTrial = {
+  startedAt: string
+  endsAt: string
+  daysRemaining: number
+  expired: boolean
+  extendedCount: number
+  converted: boolean
+  convertedAt: string | null
+  convertedPlanCode: string | null
 }
 export type SystemTenantBillingResponse = ServerResponse<SystemTenantBilling>
 export type SystemTenantDeleteResponse = ServerResponse<Record<string, unknown>>
@@ -2752,6 +2780,53 @@ export type SystemDeviceCatalogReferenceDataResponse = ServerResponse<Record<str
 export type SystemDeviceInventoryListResponse = ServerResponse<SystemDeviceInventoryList>
 export type SystemDeviceDetailResponse = ServerResponse<SystemDeviceDetail>
 export type SystemDeviceSummaryResponse = ServerResponse<SystemDevicesSummary>
+
+export type SystemSnapshotPeriod = '7d' | '30d' | '90d' | 'all'
+
+export type SystemDeviceManufacturers = {
+  period: SystemSnapshotPeriod
+  manufacturers: { manufacturer: string; count: number }[]
+  generatedAt: string
+}
+
+export type SystemDeviceManufacturersResponse = ServerResponse<SystemDeviceManufacturers>
+
+export type SystemRevenueByMonth = {
+  /** Oldest first. `month` is an Africa/Lagos calendar month, `YYYY-MM`. */
+  months: { month: string; collectedNgn: number }[]
+  generatedAt: string
+}
+
+export type SystemRevenueByMonthResponse = ServerResponse<SystemRevenueByMonth>
+
+export type SystemTenantGrowth = {
+  /** Oldest first. `tenants` is the cumulative count at the end of that Africa/Lagos month. */
+  months: { month: string; tenants: number }[]
+  generatedAt: string
+}
+
+export type SystemTenantGrowthResponse = ServerResponse<SystemTenantGrowth>
+
+export type SystemSimDataUsage = {
+  /** Oldest first. `day` is an Africa/Lagos calendar day, `YYYY-MM-DD`. */
+  days: { day: string; usageMb: number }[]
+  todayMb: number
+  totalBoughtMb: number
+  generatedAt: string
+}
+
+export type SystemSimDataUsageResponse = ServerResponse<SystemSimDataUsage>
+
+export type SystemDeviceMessageRate = {
+  gateReachable: boolean
+  countsSince: string | null
+  lastHour: number | null
+  /** Last 24 UTC hours, oldest first. */
+  hours: { hourStart: string; count: number }[]
+  generatedAt: string
+}
+
+export type SystemDeviceMessageRateResponse = ServerResponse<SystemDeviceMessageRate>
 
 export type StillReportingDevice = {
   deviceId: string | null
@@ -2780,6 +2855,7 @@ export type SystemSimBulkStatusResponse = ServerResponse<SystemSimBulkStatusResu
 export type SystemSimDeleteResponse = ServerResponse<SystemSimDeleteResult>
 export type SystemSimResponse = ServerResponse<SystemSimItem>
 export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
+export type SystemSimCarrierBreakdownResponse = ServerResponse<SystemSimCarrierBreakdown>
 export type DataBundleDashboardSummaryResponse = ServerResponse<DataBundleDashboardSummary>
 export type DataBundleWalletBalanceResponse = ServerResponse<DataBundleWalletBalance>
 export type DataBundleWalletTopupResponse = ServerResponse<DataBundleWalletTopup>
@@ -4397,3 +4473,59 @@ export type SystemOnboardingApplicationsSummary = {
 }
 export type SystemOnboardingApplicationsSummaryResponse =
   ServerResponse<SystemOnboardingApplicationsSummary>
+
+// ─── System — tenant limits, trial and data export ───────────────────────────
+
+export type SystemTenantContactDetail = {
+  tenant: SystemTenant
+  onboarding: {
+    company: {
+      companyName: string
+      contactName: string | null
+      email: string
+      phoneNumber: string | null
+      billingEmail: string | null
+      businessAddress: string | null
+    }
+    subscription: { planCode: string; billingCycle: 'monthly' | 'yearly' }
+  } | null
+}
+
+export type UpdateSystemTenantQuotasPayload = {
+  id: string
+  data: Partial<SystemTenantQuotas> & { reason: string }
+}
+export type SystemTenantQuotasResponse = ServerResponse<{
+  tenantId: string
+  quotas: SystemTenantQuotas
+  planQuotas: SystemTenantQuotas
+  quotaOverrides: SystemTenantQuotas
+}>
+
+export type SystemTenantTrialResponse = ServerResponse<{ tenantId: string; trial: SystemTenantTrial }>
+export type ExtendSystemTenantTrialPayload = { id: string; data: { days: number; reason: string } }
+export type ConvertSystemTenantTrialPayload = { id: string; data?: { reason?: string } }
+
+export const SYSTEM_TENANT_EXPORT_SCOPES = ['vehicles', 'drivers', 'devices', 'sims', 'users', 'invoices', 'all'] as const
+export type SystemTenantExportScope = (typeof SYSTEM_TENANT_EXPORT_SCOPES)[number]
+
+export type SystemTenantExport = {
+  id: string
+  tenantId: string
+  scope: SystemTenantExportScope
+  status: 'pending' | 'ready' | 'failed'
+  rowCounts: Record<string, number>
+  fileName: string | null
+  fileBytes: number | null
+  error: string | null
+  requestedBy: string
+  requestedByName: string | null
+  createdAt: string
+  expiresAt: string
+  expired: boolean
+  downloadable: boolean
+}
+export type SystemTenantExportResponse = ServerResponse<SystemTenantExport>
+export type SystemTenantExportsResponse = ServerResponse<{ items: SystemTenantExport[] }>
+export type RequestSystemTenantExportPayload = { id: string; data: { scope: SystemTenantExportScope } }
+export type DownloadSystemTenantExportPayload = { id: string; exportId: string }

@@ -2,6 +2,7 @@ import type {
   SystemTenant,
   SystemTenantAuditLogEntry,
   SystemTenantBilling,
+  SystemTenantContactDetail,
   SystemTenantDeviceRow,
   SystemTenantDocument,
   SystemTenantDriverRow,
@@ -42,10 +43,12 @@ import {
   Hash,
   Mail,
   MapPin,
+  Package,
   Phone,
   Shield,
   Smartphone,
   Truck,
+  User,
   Users,
   XCircle,
 } from "lucide-react";
@@ -73,6 +76,9 @@ import {
 } from "@/components/shadcn/tabs";
 import { ListSkeleton } from "@/components/ui/skeletons";
 import { SuspendAccessDialog } from "@/features/security/components/payments-access/SuspendAccessDialog";
+import { TenantDataExportPanel } from "./TenantDataExportPanel";
+import { TenantQuotaEditor } from "./TenantQuotaEditor";
+import { TenantTrialCard } from "./TenantTrialCard";
 import { TerminateTenantDialog } from "./TerminateTenantDialog";
 
 type TenantDetailsSheetProps = {
@@ -122,29 +128,77 @@ function BillingFact({ label, children }: { label: string; children: ReactNode }
 function BillingFacts({ billing }: { billing: SystemTenantBilling }) {
   const { licence, openInvoice, lastPayment, enforcement, wallet } = billing;
   return (
-    <Card className="p-5 space-y-4">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-        <BillingFact label="Licence valid until">
-          {licence ? formatDay(licence.validUntil) : "No licence on record"}
-        </BillingFact>
-        <BillingFact label="Next renewal due">
-          {openInvoice ? `${formatDay(openInvoice.dueDate)} (${openInvoice.number})` : "Nothing due"}
-        </BillingFact>
-        <BillingFact label="Last payment">
-          {lastPayment
-            ? `${formatNgn(lastPayment.amountNgn)} on ${formatDay(lastPayment.paidAt)}${lastPayment.method ? ` by ${PAYMENT_METHOD_LABELS[lastPayment.method] ?? lastPayment.method}` : ""}`
-            : "No payment yet"}
-        </BillingFact>
-        <BillingFact label="Amount owed">{formatNgn(billing.totalOwedNgn)}</BillingFact>
-        <BillingFact label="Grace state">
-          {enforcement ? graceSentence(enforcement) : "Nothing overdue"}
-        </BillingFact>
-        <BillingFact label="Wallet">
-          {wallet ? `${formatNgn(wallet.balanceNgn)} (${wallet.status})` : "No wallet yet"}
-        </BillingFact>
-        <BillingFact label="Collected this month">{formatNgn(billing.collectedThisMonthNgn)}</BillingFact>
-      </div>
-    </Card>
+    <div className="space-y-3">
+      <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+        <CreditCard className="h-4 w-4" />
+        Billing Summary
+      </h4>
+      <Card className="p-5 space-y-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          <BillingFact label="Licence period started">
+            {licence ? formatDay(licence.periodStart) : "No licence on record"}
+          </BillingFact>
+          <BillingFact label="Licence valid until">
+            {licence ? formatDay(licence.validUntil) : "No licence on record"}
+          </BillingFact>
+          <BillingFact label="Next renewal due">
+            {openInvoice ? `${formatDay(openInvoice.dueDate)} (${openInvoice.number})` : "Nothing due"}
+          </BillingFact>
+          <BillingFact label="Last payment">
+            {lastPayment
+              ? `${formatNgn(lastPayment.amountNgn)} on ${formatDay(lastPayment.paidAt)}`
+              : "No payment yet"}
+          </BillingFact>
+          <BillingFact label="Payment method">
+            {lastPayment?.method ? (PAYMENT_METHOD_LABELS[lastPayment.method] ?? lastPayment.method) : "No payment yet"}
+          </BillingFact>
+          <BillingFact label="Amount owed">{formatNgn(billing.totalOwedNgn)}</BillingFact>
+          <BillingFact label="Grace state">
+            {enforcement ? graceSentence(enforcement) : "Nothing overdue"}
+          </BillingFact>
+          <BillingFact label="Wallet">
+            {wallet ? `${formatNgn(wallet.balanceNgn)} (${wallet.status})` : "No wallet yet"}
+          </BillingFact>
+          <BillingFact label="Collected this month">{formatNgn(billing.collectedThisMonthNgn)}</BillingFact>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+const PAYMENT_MODEL_SENTENCES = {
+  prepaid: "Usage is taken from the wallet, which the tenant tops up in advance.",
+  postpaid: "Usage is billed after it happens.",
+} as const;
+
+function billingModelText(model: SystemTenantBilling["billingModel"]) {
+  const paymentModel = model.paymentModel ? PAYMENT_MODEL_SENTENCES[model.paymentModel] : null;
+  if (model.kind === "per_device_licence") {
+    const devices = model.deviceCount === null ? "" : ` for ${model.deviceCount} device${model.deviceCount === 1 ? "" : "s"}`;
+    return {
+      label: "Per-device licence",
+      detail: `A licence${devices} that runs for a set period. A renewal invoice is raised before it ends.`,
+      paymentModel,
+    };
+  }
+  if (model.kind === "subscription") {
+    const cycle = model.billingCycle ? ` each ${model.billingCycle === "yearly" ? "year" : "month"}` : "";
+    return { label: "Subscription plan", detail: `A fixed subscription fee${cycle}.`, paymentModel };
+  }
+  return { label: "No billing model yet", detail: "The tenant has no licence or plan on record.", paymentModel };
+}
+
+function BillingModelCard({ model }: { model: SystemTenantBilling["billingModel"] }) {
+  const { label, detail, paymentModel } = billingModelText(model);
+  return (
+    <div className="space-y-3">
+      <h4 className="font-medium text-sm text-muted-foreground">Billing Model</h4>
+      <Card className="p-4 space-y-2">
+        <Badge variant="outline">{label}</Badge>
+        <p className="text-xs text-muted-foreground">{detail}</p>
+        {paymentModel && <p className="text-xs text-muted-foreground">{paymentModel}</p>}
+      </Card>
+    </div>
   );
 }
 
@@ -156,9 +210,10 @@ type ResourceUsageProps = {
   used: number;
   limit: number | null;
   planAssigned: boolean;
+  custom?: boolean;
 };
 function ResourceUsage({
-  icon: Icon, label, used, limit, planAssigned,
+  icon: Icon, label, used, limit, planAssigned, custom,
 }: ResourceUsageProps) {
   const unlimited = limit === null || limit === undefined;
   const over = !unlimited && used > (limit as number);
@@ -183,6 +238,7 @@ function ResourceUsage({
                 <span className="text-muted-foreground font-normal">
                   {" / "}
                   {limit}
+                  {custom ? " · custom" : ""}
                 </span>
               )}
         </span>
@@ -284,8 +340,9 @@ export function TenantDetailsSheet({
     enabled: (open || asPage) && !!tenant?.id,
   });
 
-  const subscription = (detailQuery.data?.data?.onboarding as { subscription?: { billingCycle?: string } } | null | undefined)?.subscription;
-  const billingCycle = subscription?.billingCycle;
+  const detail: SystemTenantContactDetail | undefined = detailQuery.data?.data;
+  const company = detail?.onboarding?.company;
+  const billingCycle = detail?.onboarding?.subscription?.billingCycle;
   const planQuery = useQuery(getBillingPlanQueryOptions(tenant?.planCode ?? ""));
   const plan = planQuery.data?.data?.plan;
   const planName = plan?.name ?? tenant?.planCode ?? "No plan assigned";
@@ -489,7 +546,7 @@ export function TenantDetailsSheet({
           onValueChange={setActiveTab}
           className="mt-6"
         >
-          <TabsList className="grid grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-9 w-full">
             <TabsTrigger
               value="overview"
               className="flex items-center gap-2"
@@ -537,6 +594,13 @@ export function TenantDetailsSheet({
             >
               <CreditCard className="w-4 h-4" />
               Billing
+            </TabsTrigger>
+            <TabsTrigger
+              value="export"
+              className="flex items-center gap-2"
+            >
+              <Package className="w-4 h-4" />
+              Data Export
             </TabsTrigger>
             <TabsTrigger
               value="audit"
@@ -623,14 +687,20 @@ export function TenantDetailsSheet({
                 <div className="space-y-3">
                   <h4 className="font-medium text-sm text-muted-foreground">Contact Information</h4>
                   <div className="space-y-2">
+                    {company?.contactName && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        {company.contactName}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 text-sm">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      {tenant.email}
+                      {company?.email ?? tenant.email}
                     </div>
-                    {tenant.phone && (
+                    {(company?.phoneNumber ?? tenant.phone) && (
                       <div className="flex items-center gap-2 text-sm">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        {tenant.phone}
+                        {company?.phoneNumber ?? tenant.phone}
                       </div>
                     )}
                     {fullAddress && (
@@ -652,6 +722,7 @@ export function TenantDetailsSheet({
                     used={tenant.vehicleCount}
                     limit={tenant.quotas.vehicles}
                     planAssigned={tenant.planAssigned}
+                    custom={tenant.quotaOverrides.vehicles !== null}
                   />
                   <ResourceUsage
                     icon={Users}
@@ -659,6 +730,7 @@ export function TenantDetailsSheet({
                     used={tenant.driverCount}
                     limit={tenant.quotas.drivers}
                     planAssigned={tenant.planAssigned}
+                    custom={tenant.quotaOverrides.drivers !== null}
                   />
                   <ResourceUsage
                     icon={Cpu}
@@ -666,6 +738,7 @@ export function TenantDetailsSheet({
                     used={tenant.deviceCount}
                     limit={tenant.quotas.devices}
                     planAssigned={tenant.planAssigned}
+                    custom={tenant.quotaOverrides.devices !== null}
                   />
                   <ResourceUsage
                     icon={Smartphone}
@@ -673,6 +746,11 @@ export function TenantDetailsSheet({
                     used={tenant.simCount}
                     limit={tenant.quotas.sims}
                     planAssigned={tenant.planAssigned}
+                    custom={tenant.quotaOverrides.sims !== null}
+                  />
+                  <TenantQuotaEditor
+                    key={JSON.stringify(tenant.quotaOverrides)}
+                    tenant={tenant}
                   />
                 </div>
 
@@ -1094,6 +1172,13 @@ export function TenantDetailsSheet({
                   </div>
                 </Card>
 
+                {billing?.trial && (
+                  <TenantTrialCard
+                    tenantId={tenant.id}
+                    trial={billing.trial}
+                  />
+                )}
+
                 {billingQuery.isLoading
                   ? <ListSkeleton rows={3} />
                   : billingQuery.isError
@@ -1102,7 +1187,12 @@ export function TenantDetailsSheet({
                           Billing details could not be loaded.
                         </Card>
                       )
-                    : billing && <BillingFacts billing={billing} />}
+                    : billing && (
+                        <>
+                          <BillingFacts billing={billing} />
+                          <BillingModelCard model={billing.billingModel} />
+                        </>
+                      )}
 
                 <Separator />
 
@@ -1110,10 +1200,19 @@ export function TenantDetailsSheet({
                   <h4 className="font-medium text-sm text-muted-foreground">Billing Contact</h4>
                   <div className="flex items-center gap-2 text-sm">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    {tenant.billingEmail || tenant.email}
+                    {company?.billingEmail ?? tenant.billingEmail ?? tenant.email}
                   </div>
                 </div>
               </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent
+            value="export"
+            className="mt-4"
+          >
+            <ScrollArea className="h-[calc(100vh-280px)]">
+              <TenantDataExportPanel tenantId={tenant.id} />
             </ScrollArea>
           </TabsContent>
 

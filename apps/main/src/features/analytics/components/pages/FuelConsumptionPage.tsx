@@ -1,7 +1,7 @@
 import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
+import type { FleetFuelReport } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
-import { getJobsQueryOptions } from "@truckmoov/api/dispatch";
-import { getVehiclesQueryOptions } from "@truckmoov/api/fleet";
+import { getFleetFuelReportQueryOptions } from "@truckmoov/api/fleet";
 import {
   DollarSign, Fuel, Search, SlidersHorizontal, TrendingUp, Truck,
 } from "lucide-react";
@@ -26,43 +26,45 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
+import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
+import { periodLabel, periodToRange } from "@/features/analytics/utils/period";
+import { formatCurrency } from "@/lib/currency";
 
 export default function FuelConsumptionPage() {
-  const { format: formatCurrency } = useCurrency();
-  const vehiclesQuery = useQuery(getVehiclesQueryOptions());
-  const jobsQuery = useQuery(getJobsQueryOptions());
-  const vehicles = vehiclesQuery.data?.data ?? [];
-  const jobs = jobsQuery.data?.data ?? [];
-  const isPending = vehiclesQuery.isPending || jobsQuery.isPending;
-  const hasData = vehicles.length > 0 || jobs.length > 0;
+  const [
+    chartPeriod,
+    setChartPeriod,
+  ] = useState<ChartPeriod>("30d");
+  const query = useQuery(getFleetFuelReportQueryOptions({ params: periodToRange(chartPeriod) }));
+  const report = query.data?.data;
 
   return (
     <AnalyticsGate
-      isPending={isPending}
-      hasData={hasData}
+      isPending={query.isPending}
+      isError={query.isError}
+      onRetry={() => query.refetch()}
+      hasData
     >
-      <FuelConsumptionReport
-        vehicles={vehicles}
-        jobs={jobs}
-        formatCurrency={formatCurrency}
-      />
+      {report && (
+        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
+          <FuelConsumptionReport
+            report={report}
+            chartPeriod={chartPeriod}
+            onPeriodChange={setChartPeriod}
+          />
+        </div>
+      )}
     </AnalyticsGate>
   );
 }
 
 function FuelConsumptionReport({
-  vehicles, jobs, formatCurrency,
+  report, chartPeriod, onPeriodChange,
 }: {
-  vehicles: any[]; jobs: any[]; formatCurrency: (v: number) => string;
+  report: FleetFuelReport; chartPeriod: ChartPeriod; onPeriodChange: (v: ChartPeriod) => void;
 }) {
-  const [
-    chartPeriod,
-    setChartPeriod,
-  ] = useState<ChartPeriod>("30d");
-
   const [
     fuelSearch,
     setFuelSearch,
@@ -243,43 +245,19 @@ function FuelConsumptionReport({
     tripsEnabled,
   ].filter(Boolean).length;
 
-  const vehicleFuelData = vehicles.map((v) => {
-    const vehicleJobs = jobs.filter(j => j.assignedVehicleId === v.id && j.status === "completed");
-    const totalKm = vehicleJobs.reduce(
-      (s, j) => s + (j.distance || 0),
-      0,
-    );
-    const estimatedLiters = totalKm > 0 ? totalKm / (v.fuelEfficiency || 5) : 0;
-    const estimatedCost = estimatedLiters * 650;
-    return {
-      vehicle: v.registrationNumber || v.id.slice(
-        0,
-        8,
-      ),
-      type: v.type || "Unknown",
-      totalKm: Math.round(totalKm),
-      liters: Math.round(estimatedLiters),
-      cost: Math.round(estimatedCost),
-      efficiency: totalKm > 0 && estimatedLiters > 0 ? (totalKm / estimatedLiters).toFixed(1) : "—",
-      trips: vehicleJobs.length,
-    };
-  }).filter(v => v.trips > 0).sort((a, b) => b.cost - a.cost);
-
-  const totalFuelCost = vehicleFuelData.reduce(
-    (s, v) => s + v.cost,
-    0,
-  );
-  const totalLiters = vehicleFuelData.reduce(
-    (s, v) => s + v.liters,
-    0,
-  );
-  const totalKm = vehicleFuelData.reduce(
-    (s, v) => s + v.totalKm,
-    0,
-  );
-  const avgEfficiency = totalLiters > 0 ? (totalKm / totalLiters).toFixed(1) : "—";
-
-  const displayFuelData = vehicleFuelData;
+  const displayFuelData = report.vehicles.map(v => ({
+    vehicle: v.plateNumber,
+    type: v.fuelType ?? v.vehicleType ?? "Unknown",
+    totalKm: v.distanceKm,
+    liters: v.litres,
+    cost: v.costNgn,
+    efficiency: v.efficiencyKmPerLitre,
+    trips: v.trips,
+  }));
+  const {
+    totalLitres: totalLiters, totalCostNgn: totalFuelCost, totalDistanceKm: totalKm, avgEfficiencyKmPerLitre,
+  } = report.summary;
+  const avgEfficiency = avgEfficiencyKmPerLitre === null ? "—" : avgEfficiencyKmPerLitre.toFixed(1);
   const top5 = displayFuelData.slice(
     0,
     5,
@@ -304,13 +282,12 @@ function FuelConsumptionReport({
         return false;
     }
     if (effEnabled) {
-      const eff = Number.parseFloat(v.efficiency as any);
-      if (!Number.isNaN(eff)) {
-        if (effMin && eff < Number(effMin))
-          return false;
-        if (effMax && eff > Number(effMax))
-          return false;
-      }
+      if (v.efficiency === null)
+        return false;
+      if (effMin && v.efficiency < Number(effMin))
+        return false;
+      if (effMax && v.efficiency > Number(effMax))
+        return false;
     }
     if (tripsEnabled) {
       if (tripsMin && v.trips < Number(tripsMin))
@@ -323,9 +300,18 @@ function FuelConsumptionReport({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">Fuel Consumption Report</h3>
-        <p className="text-sm text-muted-foreground">Vehicle-level fuel usage analysis</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">Fuel Consumption Report</h3>
+          <p className="text-sm text-muted-foreground">
+            {periodLabel(chartPeriod)}
+            {" · recorded fuel transactions; distance is the odometer movement between fills"}
+          </p>
+        </div>
+        <ChartPeriodFilter
+          value={chartPeriod}
+          onChange={onPeriodChange}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -395,68 +381,66 @@ function FuelConsumptionReport({
         </Card>
       </div>
 
-      {top5.length > 0 && (
-        <Card className="border-border/50">
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-            <div>
-              <CardTitle className="text-base">Top 5 Fuel Consumers</CardTitle>
-              <CardDescription>Highest fuel cost vehicles</CardDescription>
-            </div>
-            <ChartPeriodFilter
-              value={chartPeriod}
-              onChange={setChartPeriod}
-            />
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer
-              width="100%"
-              height={250}
-            >
-              <BarChart
-                data={top5}
-                layout="vertical"
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  type="number"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickFormatter={v => `₦${(v / 1000).toFixed(0)}k`}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="vehicle"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={11}
-                  width={100}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px",
-                  }}
-                  formatter={(value: number) => [
-                    `₦${value.toLocaleString()}`,
-                    "Fuel Cost",
-                  ]}
-                />
-                <Bar
-                  dataKey="cost"
-                  fill="hsl(var(--primary))"
-                  radius={[
-                    0,
-                    4,
-                    4,
-                    0,
-                  ]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="text-base">Top 5 Fuel Consumers</CardTitle>
+          <CardDescription>Highest fuel cost vehicles</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {top5.length > 0
+            ? (
+                <ResponsiveContainer
+                  width="100%"
+                  height={250}
+                >
+                  <BarChart
+                    data={top5}
+                    layout="vertical"
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      type="number"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickFormatter={v => `₦${(v / 1000).toFixed(0)}k`}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="vehicle"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      width={100}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px",
+                      }}
+                      formatter={(value: number) => [
+                        `₦${value.toLocaleString()}`,
+                        "Fuel Cost",
+                      ]}
+                    />
+                    <Bar
+                      dataKey="cost"
+                      fill="hsl(var(--primary))"
+                      radius={[
+                        0,
+                        4,
+                        4,
+                        0,
+                      ]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )
+            : (
+                <div className="h-[250px] flex items-center justify-center text-muted-foreground">No fuel recorded in this period</div>
+              )}
+        </CardContent>
+      </Card>
 
       <Card className="border-border/50">
         <CardHeader>
@@ -690,6 +674,33 @@ function FuelConsumptionReport({
                 </div>
               </PopoverContent>
             </Popover>
+            <ExportCsvButton
+              rows={filteredFuel}
+              filename="fuel-consumption"
+              columns={[
+                {
+                  header: "Vehicle", accessor: "vehicle",
+                },
+                {
+                  header: "Fuel type", accessor: "type",
+                },
+                {
+                  header: "Distance (km)", accessor: "totalKm",
+                },
+                {
+                  header: "Fuel (L)", accessor: "liters",
+                },
+                {
+                  header: "Cost (NGN)", accessor: "cost",
+                },
+                {
+                  header: "Efficiency (km/L)", accessor: "efficiency",
+                },
+                {
+                  header: "Trips", accessor: "trips",
+                },
+              ]}
+            />
           </div>
           {filteredFuel.length > 0
             ? (
@@ -697,7 +708,7 @@ function FuelConsumptionReport({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Vehicle</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>Fuel type</TableHead>
                       <TableHead className="text-right">Distance (km)</TableHead>
                       <TableHead className="text-right">Fuel (L)</TableHead>
                       <TableHead className="text-right">Cost</TableHead>
@@ -714,9 +725,7 @@ function FuelConsumptionReport({
                         <TableCell className="text-right">{v.liters.toLocaleString()}</TableCell>
                         <TableCell className="text-right">{formatCurrency(v.cost)}</TableCell>
                         <TableCell className="text-right">
-                          {v.efficiency}
-                          {" "}
-                          km/L
+                          {v.efficiency === null ? "—" : `${v.efficiency} km/L`}
                         </TableCell>
                         <TableCell className="text-right">{v.trips}</TableCell>
                       </TableRow>
@@ -725,7 +734,7 @@ function FuelConsumptionReport({
                 </Table>
               )
             : (
-                <div className="text-center py-8 text-muted-foreground">No vehicles match your filters</div>
+                <div className="text-center py-8 text-muted-foreground">No fuel recorded for this period or filters</div>
               )}
         </CardContent>
       </Card>

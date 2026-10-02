@@ -6,6 +6,8 @@ import {
   connectWhatsAppAccount,
   createWhatsAppTemplate,
   connectSystemWhatsAppAccount,
+  createSystemWhatsAppTemplate,
+  deleteSystemWhatsAppTemplate,
   disconnectSystemWhatsAppAccount,
   disconnectWhatsAppAccount,
   getDeliveryLog,
@@ -17,26 +19,71 @@ import {
   getWhatsAppConversationMessages,
   getWhatsAppConversations,
   getWhatsAppTemplates,
+  refreshSystemWhatsAppAccount,
+  registerSystemWhatsAppNumber,
+  resubscribeSystemWhatsAppAccount,
   retryNotifyMessage,
   sendJobInstruction,
   sendNotifyMessage,
   sendOtherTemplate,
+  sendSystemWhatsAppTemplate,
   sendWhatsAppMediaMessage,
   sendWhatsAppTextMessage,
 } from './requests'
 
 export type * from './types'
 export type * from './messaging-types'
+export type * from './campaign-types'
+export type * from './sms-template-types'
+export type * from './voice-types'
+export {
+  cancelPlatformCampaign,
+  createPlatformCampaign,
+  getPlatformCampaign,
+  getPlatformCampaigns,
+  sendPlatformCampaign,
+} from './campaign-requests'
+export {
+  createSmsTemplate,
+  deleteSmsTemplate,
+  getSmsTemplates,
+  testSmsTemplate,
+  updateSmsTemplate,
+} from './sms-template-requests'
+export {
+  deleteVoicePrompt,
+  getVoiceCalls,
+  getVoicePrompts,
+  getVoiceStats,
+  getVoiceStatus,
+  initiateVoiceCall,
+  saveVoicePrompt,
+  updateVoiceCallNotes,
+} from './voice-requests'
 export { createPlatformMessagingSocket } from './messaging-socket'
 export type { PlatformMessagingSocket, PlatformMessagingSocketOptions } from './messaging-socket'
 export {
+  addMessagingNote,
+  bulkUpdateMessagingConversations,
+  cancelScheduledMessagingMessage,
+  createMessagingCannedReply,
+  deleteMessagingCannedReply,
+  fetchMessagingMedia,
+  getMessagingCannedReplies,
+  getMessagingContactLinks,
   getMessagingCapabilities,
   getMessagingConversation,
   getMessagingConversations,
   getMessagingMessages,
+  getMessagingUnreadSummary,
+  retryMessagingMessage,
+  scheduleMessagingMessage,
+  sendMessagingMedia,
+  updateMessagingCannedReply,
+  updateMessagingConversation,
 } from './messaging-requests'
 
-import type { DeliveryLogQuery, WhatsAppConversationsQuery } from './types'
+import type { DeliveryLogQuery, SystemWhatsAppTemplatesQuery, WhatsAppConversationsQuery } from './types'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
@@ -59,7 +106,10 @@ export const NOTIFICATION_QUERY_KEY = {
   whatsappTemplates: ['notification', 'whatsapp', 'templates'],
   whatsappAccount: ['notification', 'whatsapp', 'account'],
   systemWhatsappAccount: ['notification', 'system', 'whatsapp', 'account'],
-  systemWhatsappTemplates: ['notification', 'system', 'whatsapp', 'templates'],
+  systemWhatsappTemplates: (query?: SystemWhatsAppTemplatesQuery) =>
+    query
+      ? ['notification', 'system', 'whatsapp', 'templates', query]
+      : ['notification', 'system', 'whatsapp', 'templates'],
   deliveryLog: (payload?: DeliveryLogQuery) =>
     payload ? ['notification', 'deliveryLog', payload] : ['notification', 'deliveryLog'],
   notifyHealth: ['notification', 'health'],
@@ -125,10 +175,10 @@ export function getSystemWhatsAppAccountQueryOptions() {
   })
 }
 
-export function getSystemWhatsAppTemplatesQueryOptions() {
+export function getSystemWhatsAppTemplatesQueryOptions(query?: SystemWhatsAppTemplatesQuery) {
   return queryOptions({
-    queryKey: NOTIFICATION_QUERY_KEY.systemWhatsappTemplates,
-    queryFn: getSystemWhatsAppTemplates,
+    queryKey: NOTIFICATION_QUERY_KEY.systemWhatsappTemplates(query),
+    queryFn: () => getSystemWhatsAppTemplates(query),
   })
 }
 
@@ -237,6 +287,34 @@ export function useConnectSystemWhatsAppAccount() {
       queryClient.invalidateQueries({ queryKey: ['notification', 'system', 'whatsapp'] })
     },
   })
+}
+
+function invalidateSystemWhatsApp() {
+  queryClient.invalidateQueries({ queryKey: ['notification', 'system', 'whatsapp'] })
+}
+
+export function useRefreshSystemWhatsAppAccount() {
+  return useMutation({ mutationFn: refreshSystemWhatsAppAccount, onSettled: invalidateSystemWhatsApp })
+}
+
+export function useResubscribeSystemWhatsAppAccount() {
+  return useMutation({ mutationFn: resubscribeSystemWhatsAppAccount, onSettled: invalidateSystemWhatsApp })
+}
+
+export function useRegisterSystemWhatsAppNumber() {
+  return useMutation({ mutationFn: registerSystemWhatsAppNumber, onSettled: invalidateSystemWhatsApp })
+}
+
+export function useCreateSystemWhatsAppTemplate() {
+  return useMutation({ mutationFn: createSystemWhatsAppTemplate, onSuccess: invalidateSystemWhatsApp })
+}
+
+export function useDeleteSystemWhatsAppTemplate() {
+  return useMutation({ mutationFn: deleteSystemWhatsAppTemplate, onSuccess: invalidateSystemWhatsApp })
+}
+
+export function useSendSystemWhatsAppTemplate() {
+  return useMutation({ mutationFn: sendSystemWhatsAppTemplate })
 }
 
 export function useDisconnectSystemWhatsAppAccount() {

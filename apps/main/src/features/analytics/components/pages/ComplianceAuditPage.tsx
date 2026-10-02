@@ -1,8 +1,7 @@
 import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
+import type { FleetComplianceAudit } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
-import {
-  getDriversQueryOptions, getVehiclesQueryOptions,
-} from "@truckmoov/api/fleet";
+import { getFleetComplianceAuditQueryOptions } from "@truckmoov/api/fleet";
 import {
   AlertTriangle, CheckCircle, ChevronDown, Clock, Search, Shield, SlidersHorizontal,
 } from "lucide-react";
@@ -29,78 +28,65 @@ import {
 } from "@/components/shadcn/table";
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
+import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
+import { periodLabel, periodToRange } from "@/features/analytics/utils/period";
 
 export default function ComplianceAuditPage() {
-  const vehiclesQuery = useQuery(getVehiclesQueryOptions());
-  const driversQuery = useQuery(getDriversQueryOptions());
-  const vehicles = vehiclesQuery.data?.data ?? [];
-  const drivers = driversQuery.data?.data ?? [];
-  const isPending = vehiclesQuery.isPending || driversQuery.isPending;
-  const hasData = vehicles.length > 0 || drivers.length > 0;
+  const [
+    chartPeriod,
+    setChartPeriod,
+  ] = useState<ChartPeriod>("30d");
+  const query = useQuery(getFleetComplianceAuditQueryOptions({ params: periodToRange(chartPeriod) }));
+  const report = query.data?.data;
 
   return (
     <AnalyticsGate
-      isPending={isPending}
-      hasData={hasData}
+      isPending={query.isPending}
+      isError={query.isError}
+      onRetry={() => query.refetch()}
+      hasData
     >
-      <ComplianceAuditReport
-        vehicles={vehicles}
-        drivers={drivers}
-      />
+      {report && (
+        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
+          <ComplianceAuditReport
+            report={report}
+            chartPeriod={chartPeriod}
+            onPeriodChange={setChartPeriod}
+          />
+        </div>
+      )}
     </AnalyticsGate>
   );
 }
 
 function ComplianceAuditReport({
-  vehicles, drivers,
+  report, chartPeriod, onPeriodChange,
 }: {
-  vehicles: any[]; drivers: any[];
+  report: FleetComplianceAudit; chartPeriod: ChartPeriod; onPeriodChange: (v: ChartPeriod) => void;
 }) {
-  const [
-    chartPeriod,
-    setChartPeriod,
-  ] = useState<ChartPeriod>("30d");
-  const totalVehicles = vehicles.length;
-  const insuredVehicles = vehicles.filter(v => v.insuranceExpiry && new Date(v.insuranceExpiry) > new Date()).length;
-  const licensedDrivers = drivers.filter(d => d.licenseExpiry && new Date(d.licenseExpiry) > new Date()).length;
-  const expiringSoon = vehicles.filter((v) => {
-    if (!v.insuranceExpiry)
-      return false;
-    const expiry = new Date(v.insuranceExpiry);
-    const thirtyDays = new Date();
-    thirtyDays.setDate(thirtyDays.getDate() + 30);
-    return expiry > new Date() && expiry <= thirtyDays;
-  }).length;
+  const {
+    complianceRatePercent: complianceRate, expiringIn30Days: expiringSoon, nonCompliantVehicles,
+  } = report.summary;
 
-  const complianceRate = totalVehicles > 0 ? Math.round((insuredVehicles / totalVehicles) * 100) : 0;
-
-  const complianceItems = [
-    {
-      category: "Vehicle Insurance", total: totalVehicles, compliant: insuredVehicles, status: insuredVehicles === totalVehicles ? "pass" : "warning",
-    },
-    {
-      category: "Driver Licenses", total: drivers.length, compliant: licensedDrivers, status: licensedDrivers === drivers.length ? "pass" : "warning",
-    },
-    {
-      category: "Vehicle Registration", total: totalVehicles, compliant: vehicles.filter(v => v.registrationNumber).length, status: "pass",
-    },
-    {
-      category: "Road Worthiness", total: totalVehicles, compliant: Math.round(totalVehicles * 0.85), status: "warning",
-    },
-    {
-      category: "Fire Extinguisher", total: totalVehicles, compliant: Math.round(totalVehicles * 0.9), status: "pass",
-    },
-  ];
+  const complianceItems = report.categories.map(c => ({
+    category: c.category,
+    total: c.total,
+    compliant: c.valid,
+    status: c.expired + c.missing + c.expiring === 0 ? "pass" : "warning",
+  }));
 
   const pieData = [
     {
-      name: "Compliant", value: insuredVehicles, color: "hsl(var(--success))",
+      name: "Compliant", value: report.summary.valid, color: "hsl(var(--success))",
     },
     {
-      name: "Non-Compliant", value: totalVehicles - insuredVehicles, color: "hsl(var(--destructive))",
+      name: "Expiring Soon", value: report.summary.expiring, color: "hsl(var(--warning))",
     },
     {
-      name: "Expiring Soon", value: expiringSoon, color: "hsl(var(--warning))",
+      name: "Expired", value: report.summary.expired, color: "hsl(var(--destructive))",
+    },
+    {
+      name: "No Expiry On Record", value: report.summary.missing, color: "hsl(var(--muted-foreground))",
     },
   ].filter(d => d.value > 0);
 
@@ -275,7 +261,7 @@ function ComplianceAuditReport({
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Non-Compliant Assets</p>
-                <p className="text-3xl font-bold text-destructive">{totalVehicles - insuredVehicles}</p>
+                <p className="text-3xl font-bold text-destructive">{nonCompliantVehicles}</p>
               </div>
             </div>
           </CardContent>
@@ -284,15 +270,9 @@ function ComplianceAuditReport({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-border/50">
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-            <div className="space-y-1">
-              <CardTitle className="text-base">Compliance Breakdown</CardTitle>
-              <CardDescription>Share of compliance documents by status — valid, expiring, expired.</CardDescription>
-            </div>
-            <ChartPeriodFilter
-              value={chartPeriod}
-              onChange={setChartPeriod}
-            />
+          <CardHeader>
+            <CardTitle className="text-base">Compliance Breakdown</CardTitle>
+            <CardDescription>Share of current compliance documents and driver licences by status, as of today.</CardDescription>
           </CardHeader>
           <CardContent>
             {pieData.length > 0
@@ -533,6 +513,24 @@ function ComplianceAuditReport({
                   </div>
                 </PopoverContent>
               </Popover>
+              <ExportCsvButton
+                rows={filteredItems}
+                filename="compliance-categories"
+                columns={[
+                  {
+                    header: "Category", accessor: "category",
+                  },
+                  {
+                    header: "Total", accessor: "total",
+                  },
+                  {
+                    header: "Compliant", accessor: "compliant",
+                  },
+                  {
+                    header: "Status", accessor: "status",
+                  },
+                ]}
+              />
             </div>
             <Table>
               <TableHeader>
@@ -594,6 +592,75 @@ function ComplianceAuditReport({
           </CardContent>
         </Card>
       </div>
+      <Card className="border-border/50">
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div className="space-y-1">
+            <CardTitle className="text-base">Audit Activity</CardTitle>
+            <CardDescription>
+              {`Recorded activity in the audit log — ${periodLabel(chartPeriod).toLowerCase()}.`}
+            </CardDescription>
+          </div>
+          <ChartPeriodFilter
+            value={chartPeriod}
+            onChange={onPeriodChange}
+          />
+        </CardHeader>
+        <CardContent>
+          <AuditActivity activity={report.activity} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AuditActivity({ activity }: { activity: FleetComplianceAudit["activity"] }) {
+  if (!activity) {
+    return <p className="text-sm text-muted-foreground">The audit log is available to administrators and operations managers.</p>;
+  }
+  return (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div>
+        <p className="text-sm text-muted-foreground">Events recorded</p>
+        <p className="text-3xl font-bold">
+          {activity.totalEvents.toLocaleString()}
+          {activity.truncated ? "+" : ""}
+        </p>
+      </div>
+      <CountList
+        title="By record type"
+        rows={activity.byEntityType.map(r => ({
+          label: r.entityType, count: r.count,
+        }))}
+      />
+      <CountList
+        title="Most frequent actions"
+        rows={activity.topActions.map(r => ({
+          label: r.action, count: r.count,
+        }))}
+      />
+    </div>
+  );
+}
+
+function CountList({ title, rows }: { title: string; rows: { label: string; count: number }[] }) {
+  return (
+    <div>
+      <p className="mb-2 text-sm text-muted-foreground">{title}</p>
+      {rows.length === 0
+        ? <p className="text-sm text-muted-foreground">No activity</p>
+        : (
+            <ul className="space-y-1 text-sm">
+              {rows.map(r => (
+                <li
+                  key={r.label}
+                  className="flex justify-between gap-4"
+                >
+                  <span className="capitalize">{r.label.replace(/[._]/g, " ")}</span>
+                  <span className="font-medium">{r.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
     </div>
   );
 }

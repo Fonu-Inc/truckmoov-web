@@ -23,6 +23,8 @@ export type PlatformMessagingSocket = {
   onDisconnect: (handler: () => void) => () => void
   onFailure: (handler: (reason: MessagingConnectionFailure) => void) => () => void
   isConnected: () => boolean
+  /** Try again now. socket.io does not retry on its own once the server has refused the sign-in. */
+  connect: () => void
   send: (input: SendMessageInput) => Promise<SendMessageAck>
   markRead: (conversationId: string) => Promise<MarkReadAck>
   close: () => void
@@ -73,6 +75,10 @@ export function createPlatformMessagingSocket({ baseUrl, getToken }: PlatformMes
     onDisconnect: handler => subscribe(socket, 'disconnect', handler),
     onFailure: handler => subscribe(socket, 'connect_error', (error: Error) => handler(failureOf(error))),
     isConnected: () => socket.connected,
+    connect: () => {
+      if (!socket.connected)
+        socket.connect()
+    },
     send: input => emitWithAck<SendMessageAck>(socket, 'message.send', input),
     markRead: conversation_id => emitWithAck<MarkReadAck>(socket, 'conversation.read', { conversation_id }),
     close: () => {

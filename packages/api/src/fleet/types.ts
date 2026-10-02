@@ -1985,6 +1985,149 @@ export type FleetProfitabilityResponse = ServerResponse<FleetProfitabilityVehicl
 export type FleetFinancialConfigResponse = ServerResponse<FleetFinancialConfig>
 export type FleetFinancialConfigListResponse = ServerResponse<FleetFinancialConfig[]>
 export type FleetFinancialStatementResponse = ServerResponse<FleetFinancialStatement>
+
+export type FleetAnalyticsRangeQuery = {
+  params?: {
+    from?: string
+    to?: string
+  }
+}
+
+export type FleetProfitLossCosts = {
+  fuel: number
+  maintenance: number
+  wages: number
+  insurance: number
+  depreciation: number
+  other: number
+}
+
+export type FleetProfitLossFigures = {
+  revenue: number
+  costs: FleetProfitLossCosts
+  totalCosts: number
+  netProfit: number
+  marginPercent: number
+  deliveredJobs: number
+}
+
+export type FleetProfitLossMonth = {
+  month: string
+  revenue: number
+  costs: number
+  profit: number
+  marginPercent: number
+}
+
+export type FleetProfitLoss = {
+  from: string
+  to: string
+  summary: FleetProfitLossFigures
+  monthly: FleetProfitLossMonth[]
+}
+
+export type FleetUtilizationSummary = {
+  fleetSize: number
+  avgUtilizationPercent: number
+  idleVehicles: number
+  fleetRevenue: number
+  highCount: number
+  mediumCount: number
+  lowCount: number
+}
+
+export type FleetUtilizationVehicle = {
+  vehicleId: string
+  plateNumber: string
+  name: string
+  type: string | null
+  status: string
+  completedJobs: number
+  activeJobs: number
+  totalJobs: number
+  revenue: number
+  activeDays: number
+  utilizationPercent: number
+}
+
+export type FleetUtilization = {
+  from: string
+  to: string
+  days: number
+  summary: FleetUtilizationSummary
+  vehicles: FleetUtilizationVehicle[]
+}
+
+export type FleetFuelReportSummary = {
+  totalLitres: number
+  totalCostNgn: number
+  totalDistanceKm: number
+  avgEfficiencyKmPerLitre: number | null
+  fillUps: number
+  vehiclesWithFuel: number
+}
+
+export type FleetFuelReportVehicle = {
+  vehicleId: string
+  plateNumber: string
+  name: string
+  vehicleType: string | null
+  fuelType: string | null
+  fillUps: number
+  litres: number
+  costNgn: number
+  distanceKm: number
+  efficiencyKmPerLitre: number | null
+  trips: number
+}
+
+export type FleetFuelReport = {
+  from: string
+  to: string
+  summary: FleetFuelReportSummary
+  vehicles: FleetFuelReportVehicle[]
+}
+
+export type FleetComplianceAuditSummary = {
+  total: number
+  valid: number
+  expiring: number
+  expired: number
+  missing: number
+  complianceRatePercent: number
+  expiringIn30Days: number
+  nonCompliantVehicles: number
+}
+
+export type FleetComplianceCategory = {
+  category: string
+  total: number
+  valid: number
+  expiring: number
+  expired: number
+  missing: number
+  complianceRatePercent: number
+}
+
+export type FleetAuditActivity = {
+  totalEvents: number
+  byEntityType: { entityType: string, count: number }[]
+  topActions: { action: string, count: number }[]
+  truncated: boolean
+}
+
+export type FleetComplianceAudit = {
+  from: string
+  to: string
+  summary: FleetComplianceAuditSummary
+  categories: FleetComplianceCategory[]
+  activity: FleetAuditActivity | null
+}
+
+export type FleetProfitLossResponse = ServerResponse<FleetProfitLoss>
+export type FleetUtilizationResponse = ServerResponse<FleetUtilization>
+export type FleetFuelReportResponse = ServerResponse<FleetFuelReport>
+export type FleetComplianceAuditResponse = ServerResponse<FleetComplianceAudit>
 export type SimCarrierListResponse = ServerResponse<SimCarrier[]>
 export type SimDataBundleListResponse = ServerResponse<SimDataBundle[]>
 export type RecommendedDriverListResponse = ServerResponse<RecommendedDriver[]>

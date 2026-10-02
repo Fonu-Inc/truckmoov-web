@@ -4,7 +4,11 @@ import {
   applyStatusEvent,
   errorText,
   groupByDay,
+  matchesFilters,
   mergeConversation,
+  removeMessage,
+  timeOf,
+  windowSecondsLeft,
   pickStatus,
   tickState,
   upsertMessages,
@@ -32,6 +36,11 @@ const conv = (over: Partial<MessagingConversation>): MessagingConversation => ({
   unread_count: 0,
   is_locked: false,
   window_remaining_hours: 5,
+  status: "open",
+  priority: "normal",
+  assignee_user_id: null,
+  tags: [],
+  first_seen_at: "2026-10-01T09:00:00.000Z",
   ...over,
 });
 
@@ -113,7 +122,8 @@ describe("mergeConversation", () => {
 
 describe("errorText", () => {
   it("maps known codes with a safe default", () => {
-    expect(errorText("window_locked")).toBe("The 24-hour window has closed.");
+    expect(errorText("window_locked")).toContain("24-hour window");
+    expect(errorText("invalid_number")).toBe("This number is not on WhatsApp.");
     expect(errorText("forbidden")).toBe("You do not have permission to reply.");
     expect(errorText("weird")).toBe("Could not send. Try again.");
   });
@@ -132,5 +142,69 @@ describe("groupByDay", () => {
     );
     expect(groups.map(g => g.label)).toEqual(["Yesterday", "Today"]);
     expect(groups[1].messages).toHaveLength(2);
+  });
+});
+
+describe("timestamp order", () => {
+  it("orders a whole-second time before a fractional one in the same second", () => {
+    expect(timeOf("2026-10-01T10:00:05Z")).toBeLessThan(timeOf("2026-10-01T10:00:05.123Z"));
+    const whole = msg({ id: "in", created_at: "2026-10-01T10:00:05Z" });
+    const fraction = msg({ id: "out", created_at: "2026-10-01T10:00:05.123Z" });
+    expect(upsertMessages([fraction], [whole]).map(m => m.id)).toEqual(["in", "out"]);
+  });
+
+  it("keeps the newer conversation push when seconds differ in precision", () => {
+    const current = conv({ last_message_at: "2026-10-01T10:00:05Z" });
+    const newer = conv({ last_message_at: "2026-10-01T10:00:05.5Z", unread_count: 2 });
+    expect(mergeConversation(current, newer)).toBe(newer);
+  });
+
+  it("treats an unreadable time as the oldest", () => {
+    expect(timeOf("nope")).toBe(0);
+  });
+});
+
+describe("tickState for scheduled", () => {
+  it("shows a clock until it is sent", () => {
+    expect(tickState({ direction: "outbound", status: "scheduled" })).toBe("clock");
+  });
+});
+
+describe("matchesFilters", () => {
+  const base = { state: "all" as const, status: "", assignee: "", tag: "" };
+
+  it("applies status, tag and unread together", () => {
+    const c = conv({ status: "pending", tags: ["billing"], unread_count: 1 });
+    expect(matchesFilters({ ...base, status: "pending", tag: "billing", state: "unread" }, c, null)).toBe(true);
+    expect(matchesFilters({ ...base, status: "resolved" }, c, null)).toBe(false);
+    expect(matchesFilters({ ...base, tag: "other" }, c, null)).toBe(false);
+    expect(matchesFilters({ ...base, state: "unread" }, conv({ unread_count: 0 }), null)).toBe(false);
+  });
+
+  it("resolves me and unassigned", () => {
+    const mine = conv({ assignee_user_id: "u1" });
+    expect(matchesFilters({ ...base, assignee: "me" }, mine, "u1")).toBe(true);
+    expect(matchesFilters({ ...base, assignee: "me" }, mine, "u2")).toBe(false);
+    expect(matchesFilters({ ...base, assignee: "unassigned" }, mine, "u1")).toBe(false);
+    expect(matchesFilters({ ...base, assignee: "unassigned" }, conv({}), "u1")).toBe(true);
+    expect(matchesFilters({ ...base, assignee: "u1" }, mine, null)).toBe(true);
+  });
+});
+
+describe("removeMessage", () => {
+  it("drops a message and keeps the list when nothing matches", () => {
+    const list = [msg({ id: "a" }), msg({ id: "b" })];
+    expect(removeMessage(list, "a").map(m => m.id)).toEqual(["b"]);
+    expect(removeMessage(list, "zz")).toBe(list);
+  });
+});
+
+describe("windowSecondsLeft", () => {
+  it("counts down from the hours the server reported", () => {
+    const open = { is_locked: false, window_remaining_hours: 1 };
+    expect(windowSecondsLeft(open, 0, 0)).toBe(3600);
+    expect(windowSecondsLeft(open, 0, 1_800_000)).toBe(1800);
+    expect(windowSecondsLeft(open, 0, 7_200_000)).toBe(0);
+    expect(windowSecondsLeft({ is_locked: true, window_remaining_hours: null }, 0, 0)).toBe(0);
   });
 });

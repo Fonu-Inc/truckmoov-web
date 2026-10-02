@@ -1,13 +1,18 @@
 import type {
   ConversationUpdatedEvent,
   MessageCreatedEvent,
+  MessageDeletedEvent,
   MessageStatusEvent,
 } from "@truckmoov/api/notification";
+import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import { getMessagingConversations, getMessagingMessages } from "@truckmoov/api/notification";
 import {
   applyStatusEvent,
+  matchesFilters,
   mergeConversationPage,
+  removeConversation,
+  removeMessage,
   updateConversations,
   upsertMessages,
 } from "./messagingLogic";
@@ -27,29 +32,35 @@ function filtersOf(key: readonly unknown[]): ConversationFilters {
   return key[2] as ConversationFilters;
 }
 
-function canInsert(filters: ConversationFilters, unread: number) {
-  if (filters.query)
-    return false;
-  return filters.state === "all" || unread > 0;
+function patchList(
+  data: ConversationsData,
+  filters: ConversationFilters,
+  conversation: ConversationUpdatedEvent["conversation"],
+): ConversationsData {
+  const fits = matchesFilters(filters, conversation, useApiAuthStore.getState().user?.id ?? null);
+  const insert = fits && !filters.query;
+  return {
+    ...data,
+    pages: data.pages.map((page, index) => {
+      if (!fits)
+        return { ...page, items: removeConversation(page.items, conversation.id) };
+      return {
+        ...page,
+        items: index === 0
+          ? updateConversations(page.items, conversation, { insert })
+          : page.items.map(c => (c.id === conversation.id ? conversation : c)),
+      };
+    }),
+  };
 }
 
 export function patchConversation(client: QueryClient, event: ConversationUpdatedEvent) {
   client.setQueryData(messagingKeys.conversation(event.conversation.id), event.conversation);
+  void client.invalidateQueries({ queryKey: messagingKeys.unreadSummary });
   const entries = client.getQueriesData<ConversationsData>({ queryKey: CONVERSATIONS_ROOT });
   for (const [key, data] of entries) {
-    if (!data)
-      continue;
-    const insert = canInsert(filtersOf(key), event.conversation.unread_count);
-    const next = {
-      ...data,
-      pages: data.pages.map((page, index) => ({
-        ...page,
-        items: index === 0
-          ? updateConversations(page.items, event.conversation, { insert })
-          : page.items.map(c => (c.id === event.conversation.id ? event.conversation : c)),
-      })),
-    };
-    client.setQueryData(key, next);
+    if (data)
+      client.setQueryData(key, patchList(data, filtersOf(key), event.conversation));
   }
 }
 
@@ -64,6 +75,14 @@ export function patchMessageCreated(client: QueryClient, event: MessageCreatedEv
   });
   if (event.message.client_message_id)
     usePendingMessages.getState().drop(event.conversation_id, event.message.client_message_id);
+}
+
+export function patchMessageDeleted(client: QueryClient, event: MessageDeletedEvent) {
+  client.setQueryData<ThreadData>(messagingKeys.thread(event.conversation_id), (data) => {
+    if (!data)
+      return data;
+    return { ...data, pages: data.pages.map(page => ({ ...page, items: removeMessage(page.items, event.message_id) })) };
+  });
 }
 
 export function patchMessageStatus(client: QueryClient, event: MessageStatusEvent) {
@@ -84,7 +103,13 @@ async function resyncConversations(client: QueryClient) {
     if (!data)
       return;
     const filters = filtersOf(key);
-    const fresh = await getMessagingConversations({ query: filters.query, state: filters.state });
+    const fresh = await getMessagingConversations({
+      query: filters.query,
+      state: filters.state,
+      status: filters.status || undefined,
+      assignee: filters.assignee || undefined,
+      tag: filters.tag || undefined,
+    });
     client.setQueryData<ConversationsData>(key, current => current && mapFirstPage(current, page => ({
       ...page,
       items: mergeConversationPage(page.items, fresh.items),

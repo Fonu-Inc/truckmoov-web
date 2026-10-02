@@ -8,6 +8,8 @@ type PendingState = {
   fail: (conversationId: string, clientMessageId: string, code: string) => void;
   applyStatus: (event: MessageStatusEvent) => void;
   drop: (conversationId: string, clientMessageId: string) => void;
+  expire: (conversationId: string, clientMessageId: string) => void;
+  requeue: (conversationId: string, clientMessageId: string) => void;
 };
 
 const NONE: MessagingMessage[] = [];
@@ -27,6 +29,22 @@ export const usePendingMessages = create<PendingState>(set => ({
         m.client_message_id === clientMessageId
           ? { ...m, status: "failed", error: { code, message: errorText(code) } }
           : m),
+    },
+  })),
+  expire: (conversationId, clientMessageId) => set(s => ({
+    byConversation: {
+      ...s.byConversation,
+      [conversationId]: (s.byConversation[conversationId] ?? NONE).map(m =>
+        m.client_message_id === clientMessageId && m.status === "queued"
+          ? { ...m, status: "failed", error: { code: "unavailable", message: errorText("unavailable") } }
+          : m),
+    },
+  })),
+  requeue: (conversationId, clientMessageId) => set(s => ({
+    byConversation: {
+      ...s.byConversation,
+      [conversationId]: (s.byConversation[conversationId] ?? NONE).map(m =>
+        m.client_message_id === clientMessageId ? { ...m, status: "queued", error: undefined } : m),
     },
   })),
   applyStatus: event => set(s => ({

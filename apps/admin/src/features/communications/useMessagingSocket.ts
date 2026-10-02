@@ -5,10 +5,11 @@ import type {
 import { createPlatformMessagingSocket } from "@truckmoov/api/notification";
 import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   patchConversation,
   patchMessageCreated,
+  patchMessageDeleted,
   patchMessageStatus,
   resyncMessaging,
 } from "./messagingCache";
@@ -45,15 +46,23 @@ export function useMessagingSocket(enabled: boolean, openConversationId: string 
       let wasConnected = false;
       const offs = [
         instance.onConnect(() => {
+          const isReconnect = wasConnected;
           wasConnected = true;
           setState("connected");
-          void resyncMessaging(client, openRef.current);
+          if (isReconnect)
+            void resyncMessaging(client, openRef.current);
         }),
         instance.onDisconnect(() => setState("reconnecting")),
         instance.onFailure(reason => setState(failureState(reason, wasConnected))),
         instance.on("message.created", event => patchMessageCreated(client, event)),
         instance.on("message.status", event => patchMessageStatus(client, event)),
         instance.on("conversation.updated", event => patchConversation(client, event)),
+        instance.on("message.deleted", event => patchMessageDeleted(client, event)),
+        // The server refuses an expired sign-in without retrying; a fresh token means try again.
+        useApiAuthStore.subscribe((auth, previous) => {
+          if (auth.accessToken && auth.accessToken !== previous.accessToken)
+            instance.connect();
+        }),
       ];
       setSocket(instance);
       setState("connecting");
@@ -69,5 +78,10 @@ export function useMessagingSocket(enabled: boolean, openConversationId: string 
     ],
   );
 
-  return { state, socket };
+  const reconnect = useCallback(() => {
+    setState("connecting");
+    socket?.connect();
+  }, [socket]);
+
+  return { state, socket, reconnect };
 }

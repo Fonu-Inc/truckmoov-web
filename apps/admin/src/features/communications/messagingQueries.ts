@@ -1,8 +1,10 @@
 import type {
   MessagingConversationPage,
+  MessagingConversationStatus,
   MessagingMessagePage,
 } from "@truckmoov/api/notification";
 import {
+  getMessagingCannedReplies,
   getMessagingCapabilities,
   getMessagingConversation,
   getMessagingConversations,
@@ -11,7 +13,16 @@ import {
 import type { InfiniteData } from "@tanstack/react-query";
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 
-export type ConversationFilters = { query: string; state: "all" | "unread" };
+export type ConversationFilters = {
+  query: string;
+  state: "all" | "unread";
+  status: MessagingConversationStatus | "";
+  /** A user id, "me", "unassigned" or "" for everyone. */
+  assignee: string;
+  tag: string;
+};
+
+export const NO_FILTERS: ConversationFilters = { query: "", state: "all", status: "", assignee: "", tag: "" };
 
 export type ConversationsData = InfiniteData<MessagingConversationPage, string>;
 export type ThreadData = InfiniteData<MessagingMessagePage, string>;
@@ -24,7 +35,16 @@ export const messagingKeys = {
   conversation: (id: string) => ["platform-messaging", "conversation", id] as const,
   threadRoot: ["platform-messaging", "thread"] as const,
   thread: (id: string) => ["platform-messaging", "thread", id] as const,
+  canned: ["platform-messaging", "canned-replies"] as const,
+  unreadSummary: ["platform-messaging", "unread-summary"] as const,
+  staff: ["platform-messaging", "staff"] as const,
 };
+
+export const cannedRepliesOptions = () => queryOptions({
+  queryKey: messagingKeys.canned,
+  queryFn: getMessagingCannedReplies,
+  staleTime: 60_000,
+});
 
 export const capabilitiesOptions = () => queryOptions({
   queryKey: messagingKeys.capabilities,
@@ -38,6 +58,9 @@ export const conversationsOptions = (filters: ConversationFilters) => infiniteQu
     cursor: pageParam,
     query: filters.query,
     state: filters.state,
+    status: filters.status || undefined,
+    assignee: filters.assignee || undefined,
+    tag: filters.tag || undefined,
   }),
   initialPageParam: "",
   getNextPageParam: last => last.next_cursor ?? undefined,

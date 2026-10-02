@@ -1,5 +1,5 @@
 import type { UserRole } from "@truckmoov/api/auth";
-import type { ElementType } from "react";
+import type { ComponentType, ElementType } from "react";
 import {
   Bell,
   Building2,
@@ -7,7 +7,11 @@ import {
   CreditCard,
   Database,
   Inbox,
+  Mail,
   LayoutDashboard,
+  Megaphone,
+  MessageSquareText,
+  Phone,
   Send,
   Settings,
   ShieldCheck,
@@ -15,6 +19,7 @@ import {
   Wifi,
   Wrench,
 } from "lucide-react";
+import { MessagingNavBadge } from "@/features/communications/components/MessagingNavBadge";
 
 /**
  * The nav is mostly flat, with one collapsible group ("Communications"). The
@@ -36,6 +41,8 @@ export type SidebarNavItem = {
   hasPermission?: UserRole[];
   /** Permission key the signed-in user must hold, on top of the role check. */
   requiredPermission?: string;
+  /** Small live marker drawn at the end of the row, such as an unread count. */
+  badge?: ComponentType<{ collapsed: boolean }>;
 };
 
 /** A collapsible parent row. Has no href of its own — it opens onto `items`. */
@@ -104,10 +111,22 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     icon: Bell,
     items: [
       {
-        label: "WhatsApp Setup", href: "/whatsapp", icon: Send,
+        label: "Messaging Center", href: "/inbox", icon: Inbox, requiredPermission: "admin.messaging.read", badge: MessagingNavBadge,
       },
       {
-        label: "Messaging Center", href: "/inbox", icon: Inbox, requiredPermission: "admin.messaging.read",
+        label: "Email", href: "/messaging", icon: Mail, requiredPermission: "admin.messaging.read",
+      },
+      {
+        label: "Campaigns", href: "/campaigns", icon: Megaphone, requiredPermission: "admin.messaging.read",
+      },
+      {
+        label: "Voice & IVR", href: "/voice", icon: Phone, requiredPermission: "admin.messaging.read",
+      },
+      {
+        label: "SMS Templates", href: "/sms-templates", icon: MessageSquareText, requiredPermission: "admin.messaging.read",
+      },
+      {
+        label: "WhatsApp Setup", href: "/whatsapp", icon: Send, requiredPermission: "admin.messaging.read",
       },
     ],
     hasPermission: ADMIN_ROLES,

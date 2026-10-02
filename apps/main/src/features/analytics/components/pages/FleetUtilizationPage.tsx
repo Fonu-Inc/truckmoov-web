@@ -1,7 +1,7 @@
 import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
+import type { FleetUtilization } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
-import { getJobsQueryOptions } from "@truckmoov/api/dispatch";
-import { getVehiclesQueryOptions } from "@truckmoov/api/fleet";
+import { getFleetUtilizationReportQueryOptions } from "@truckmoov/api/fleet";
 import {
   Clock, DollarSign, Search, SlidersHorizontal, TrendingUp, Truck,
 } from "lucide-react";
@@ -26,43 +26,45 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
+import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
+import { periodLabel, periodToRange } from "@/features/analytics/utils/period";
+import { formatCurrency } from "@/lib/currency";
 
 export default function FleetUtilizationPage() {
-  const { format: formatCurrency } = useCurrency();
-  const vehiclesQuery = useQuery(getVehiclesQueryOptions());
-  const jobsQuery = useQuery(getJobsQueryOptions());
-  const vehicles = vehiclesQuery.data?.data ?? [];
-  const jobs = jobsQuery.data?.data ?? [];
-  const isPending = vehiclesQuery.isPending || jobsQuery.isPending;
-  const hasData = vehicles.length > 0 || jobs.length > 0;
+  const [
+    chartPeriod,
+    setChartPeriod,
+  ] = useState<ChartPeriod>("30d");
+  const query = useQuery(getFleetUtilizationReportQueryOptions({ params: periodToRange(chartPeriod) }));
+  const report = query.data?.data;
 
   return (
     <AnalyticsGate
-      isPending={isPending}
-      hasData={hasData}
+      isPending={query.isPending}
+      isError={query.isError}
+      onRetry={() => query.refetch()}
+      hasData={(report?.summary.fleetSize ?? 1) > 0}
     >
-      <FleetUtilizationReport
-        vehicles={vehicles}
-        jobs={jobs}
-        formatCurrency={formatCurrency}
-      />
+      {report && (
+        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
+          <FleetUtilizationReport
+            report={report}
+            chartPeriod={chartPeriod}
+            onPeriodChange={setChartPeriod}
+          />
+        </div>
+      )}
     </AnalyticsGate>
   );
 }
 
 function FleetUtilizationReport({
-  vehicles, jobs, formatCurrency,
+  report, chartPeriod, onPeriodChange,
 }: {
-  vehicles: any[]; jobs: any[]; formatCurrency: (v: number) => string;
+  report: FleetUtilization; chartPeriod: ChartPeriod; onPeriodChange: (v: ChartPeriod) => void;
 }) {
-  const [
-    chartPeriod,
-    setChartPeriod,
-  ] = useState<ChartPeriod>("30d");
-
   const [
     utilSearch,
     setUtilSearch,
@@ -156,60 +158,30 @@ function FleetUtilizationReport({
     revEnabled,
   ].filter(Boolean).length;
 
-  const vehicleUtilization = vehicles.map((v) => {
-    const vehicleJobs = jobs.filter(j => j.assignedVehicleId === v.id);
-    const completedJobs = vehicleJobs.filter(j => j.status === "completed");
-    const activeJobs = vehicleJobs.filter(j => [
-      "assigned",
-      "in_progress",
-    ].includes(j.status));
-    const totalRevenue = completedJobs.reduce(
-      (s, j) => s + (j.revenueNgn || j.amountNgn || 0),
-      0,
-    );
-    const utilization = Math.min(
-      100,
-      completedJobs.length * 15,
-    );
-
-    return {
-      vehicle: v.registrationNumber || v.id.slice(
-        0,
-        8,
-      ),
-      type: v.type || "Unknown",
-      status: v.status,
-      completedJobs: completedJobs.length,
-      activeJobs: activeJobs.length,
-      totalJobs: vehicleJobs.length,
-      revenue: totalRevenue,
-      utilization,
-    };
-  }).sort((a, b) => b.utilization - a.utilization);
-
-  const avgUtilization = vehicleUtilization.length > 0
-    ? Math.round(vehicleUtilization.reduce(
-        (s, v) => s + v.utilization,
-        0,
-      ) / vehicleUtilization.length)
-    : 0;
-  const idleVehicles = vehicleUtilization.filter(v => v.totalJobs === 0).length;
-  const totalFleetRevenue = vehicleUtilization.reduce(
-    (s, v) => s + v.revenue,
-    0,
-  );
-
-  const displayVehicleUtilization = vehicleUtilization;
+  const displayVehicleUtilization = report.vehicles.map(v => ({
+    vehicle: v.plateNumber,
+    type: v.type ?? "Unknown",
+    status: v.status,
+    completedJobs: v.completedJobs,
+    activeJobs: v.activeJobs,
+    totalJobs: v.totalJobs,
+    revenue: v.revenue,
+    activeDays: v.activeDays,
+    utilization: v.utilizationPercent,
+  }));
+  const {
+    fleetSize, avgUtilizationPercent, idleVehicles, fleetRevenue: totalFleetRevenue, highCount, mediumCount, lowCount,
+  } = report.summary;
 
   const utilizationBuckets = [
     {
-      name: "High (>70%)", value: displayVehicleUtilization.filter(v => v.utilization > 70).length, color: "hsl(var(--success))",
+      name: "High (>70%)", value: highCount, color: "hsl(var(--success))",
     },
     {
-      name: "Medium (30-70%)", value: displayVehicleUtilization.filter(v => v.utilization >= 30 && v.utilization <= 70).length, color: "hsl(var(--warning))",
+      name: "Medium (30-70%)", value: mediumCount, color: "hsl(var(--warning))",
     },
     {
-      name: "Low (<30%)", value: displayVehicleUtilization.filter(v => v.utilization < 30).length, color: "hsl(var(--destructive))",
+      name: "Low (<30%)", value: lowCount, color: "hsl(var(--destructive))",
     },
   ].filter(b => b.value > 0);
 
@@ -236,9 +208,18 @@ function FleetUtilizationReport({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">Fleet Utilization Report</h3>
-        <p className="text-sm text-muted-foreground">Vehicle activity and efficiency analysis</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">Fleet Utilization Report</h3>
+          <p className="text-sm text-muted-foreground">
+            {periodLabel(chartPeriod)}
+            {" · utilization is the share of days with a job on the vehicle"}
+          </p>
+        </div>
+        <ChartPeriodFilter
+          value={chartPeriod}
+          onChange={onPeriodChange}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -250,7 +231,7 @@ function FleetUtilizationReport({
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Total Fleet Size</p>
-                <p className="text-2xl font-bold truncate">{vehicles.length}</p>
+                <p className="text-2xl font-bold truncate">{fleetSize}</p>
               </div>
             </div>
           </CardContent>
@@ -264,7 +245,7 @@ function FleetUtilizationReport({
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Avg Utilization</p>
                 <p className="text-2xl font-bold truncate">
-                  {avgUtilization}
+                  {avgUtilizationPercent}
                   %
                 </p>
               </div>
@@ -301,15 +282,9 @@ function FleetUtilizationReport({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="border-border/50">
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-            <div className="space-y-1">
-              <CardTitle className="text-base">Utilization Distribution</CardTitle>
-              <CardDescription>Distribution of vehicles by utilization band — under-used, optimal, and over-stretched assets.</CardDescription>
-            </div>
-            <ChartPeriodFilter
-              value={chartPeriod}
-              onChange={setChartPeriod}
-            />
+          <CardHeader>
+            <CardTitle className="text-base">Utilization Distribution</CardTitle>
+            <CardDescription>Distribution of vehicles by utilization band — under-used, optimal, and over-stretched assets.</CardDescription>
           </CardHeader>
           <CardContent>
             {utilizationBuckets.length > 0
@@ -498,6 +473,30 @@ function FleetUtilizationReport({
                   </div>
                 </PopoverContent>
               </Popover>
+              <ExportCsvButton
+                rows={filteredUtil}
+                filename="fleet-utilization"
+                columns={[
+                  {
+                    header: "Vehicle", accessor: "vehicle",
+                  },
+                  {
+                    header: "Status", accessor: "status",
+                  },
+                  {
+                    header: "Completed jobs", accessor: "completedJobs",
+                  },
+                  {
+                    header: "Revenue (NGN)", accessor: "revenue",
+                  },
+                  {
+                    header: "Active days", accessor: "activeDays",
+                  },
+                  {
+                    header: "Utilization (%)", accessor: "utilization",
+                  },
+                ]}
+              />
             </div>
             {filteredUtil.length > 0
               ? (

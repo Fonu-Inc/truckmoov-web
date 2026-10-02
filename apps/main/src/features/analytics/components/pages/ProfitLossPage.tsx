@@ -1,9 +1,7 @@
+import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
+import type { FleetProfitLoss } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
-import { getJobsQueryOptions } from "@truckmoov/api/dispatch";
-import { getVehiclesQueryOptions } from "@truckmoov/api/fleet";
-import {
-  endOfMonth, formatMonthYear, getDateRange, isWithinRange, startOfMonth, subMonths,
-} from "@truckmoov/app-core/utils/time-utils";
+import { getFleetProfitLossQueryOptions } from "@truckmoov/api/fleet";
 import {
   DollarSign, Percent, Search, SlidersHorizontal, TrendingDown, TrendingUp,
 } from "lucide-react";
@@ -25,105 +23,52 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
+import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
+import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
+import { formatMonthLabel, periodLabel, periodToRange } from "@/features/analytics/utils/period";
+import { formatCurrency } from "@/lib/currency";
 
 export default function ProfitLossPage() {
-  const { format: formatCurrency } = useCurrency();
-  const [dateRange] = useState("this_month");
-  const vehiclesQuery = useQuery(getVehiclesQueryOptions());
-  const jobsQuery = useQuery(getJobsQueryOptions());
-  const vehicles = vehiclesQuery.data?.data ?? [];
-  const jobs = jobsQuery.data?.data ?? [];
-  const isPending = vehiclesQuery.isPending || jobsQuery.isPending;
-  const hasData = vehicles.length > 0 || jobs.length > 0;
+  const [
+    period,
+    setPeriod,
+  ] = useState<ChartPeriod>("30d");
+  const query = useQuery(getFleetProfitLossQueryOptions({ params: periodToRange(period) }));
+  const report = query.data?.data;
 
   return (
     <AnalyticsGate
-      isPending={isPending}
-      hasData={hasData}
+      isPending={query.isPending}
+      isError={query.isError}
+      onRetry={() => query.refetch()}
+      hasData
     >
-      <ProfitLossReport
-        jobs={jobs}
-        vehicles={vehicles}
-        dateRange={dateRange}
-        formatCurrency={formatCurrency}
-      />
+      {report && (
+        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
+          <ProfitLossReport
+            report={report}
+            period={period}
+            onPeriodChange={setPeriod}
+          />
+        </div>
+      )}
     </AnalyticsGate>
   );
 }
 
 function ProfitLossReport({
-  jobs, vehicles, dateRange, formatCurrency,
+  report, period, onPeriodChange,
 }: {
-  jobs: any[]; vehicles: any[]; dateRange: string; formatCurrency: (v: number) => string;
+  report: FleetProfitLoss; period: ChartPeriod; onPeriodChange: (v: ChartPeriod) => void;
 }) {
   const {
-    start, end,
-  } = getDateRange(dateRange);
-
-  const filteredJobs = jobs.filter((j) => {
-    const d = new Date(j.createdAt);
-    return isWithinRange(
-      d,
-      start,
-      end,
-    );
-  });
-
-  const completedJobs = filteredJobs.filter(j => j.status === "completed");
-  const totalRevenue = completedJobs.reduce(
-    (s, j) => s + (j.revenueNgn || j.amountNgn || 0),
-    0,
-  );
-  const totalFuelCost = completedJobs.reduce(
-    (s, j) => s + (j.fuelCostNgn || 0),
-    0,
-  );
-  const totalMaintenanceCost = vehicles.reduce(
-    (s, v) => s + (v.maintenanceCostNgn || 0),
-    0,
-  );
-  const totalWages = completedJobs.length * 15000; // Estimated per-trip wage
-  const totalCosts = totalFuelCost + totalMaintenanceCost + totalWages;
-  const netProfit = totalRevenue - totalCosts;
-  const margin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-
-  const monthlyData = Array.from(
-    { length: 6 },
-    (_, i) => {
-      const monthDate = subMonths(
-        new Date(),
-        5 - i,
-      );
-      const monthStart = startOfMonth(monthDate);
-      const monthEnd = endOfMonth(monthDate);
-      const monthJobs = completedJobs.filter((j) => {
-        const d = new Date(j.createdAt);
-        return isWithinRange(
-          d,
-          monthStart,
-          monthEnd,
-        );
-      });
-      const rev = monthJobs.reduce(
-        (s, j) => s + (j.revenueNgn || j.amountNgn || 0),
-        0,
-      );
-      const cost = monthJobs.length * 15000 + monthJobs.reduce(
-        (s, j) => s + (j.fuelCostNgn || 0),
-        0,
-      );
-      return {
-        month: formatMonthYear(monthDate),
-        revenue: rev,
-        costs: cost,
-        profit: rev - cost,
-      };
-    },
-  );
-
-  const displayMonthlyData = monthlyData;
+    revenue: totalRevenue, totalCosts, netProfit, marginPercent, deliveredJobs, costs,
+  } = report.summary;
+  const displayMonthlyData = report.monthly.map(m => ({
+    ...m,
+    month: formatMonthLabel(m.month),
+  }));
 
   const [
     tableSearch,
@@ -337,9 +282,15 @@ function ProfitLossReport({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">Profit & Loss Summary</h3>
-        <p className="text-sm text-muted-foreground">{getDateRange(dateRange).label}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">Profit & Loss Summary</h3>
+          <p className="text-sm text-muted-foreground">{periodLabel(period)}</p>
+        </div>
+        <ChartPeriodFilter
+          value={period}
+          onChange={onPeriodChange}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -353,9 +304,9 @@ function ProfitLossReport({
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
                 <p className="text-2xl font-bold text-success truncate">{formatCurrency(totalRevenue)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {completedJobs.length}
+                  {deliveredJobs}
                   {" "}
-                  completed jobs
+                  delivered jobs
                 </p>
               </div>
             </div>
@@ -370,7 +321,23 @@ function ProfitLossReport({
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Total Costs</p>
                 <p className="text-2xl font-bold text-destructive truncate">{formatCurrency(totalCosts)}</p>
-                <p className="text-xs text-muted-foreground">Fuel + Maintenance + Wages</p>
+                <p className="text-xs text-muted-foreground">
+                  Fuel
+                  {" "}
+                  {formatCurrency(costs.fuel)}
+                  {" · "}
+                  Maintenance
+                  {" "}
+                  {formatCurrency(costs.maintenance)}
+                  {" · "}
+                  Wages
+                  {" "}
+                  {formatCurrency(costs.wages)}
+                  {" · "}
+                  Other
+                  {" "}
+                  {formatCurrency(costs.insurance + costs.depreciation + costs.other)}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -398,8 +365,8 @@ function ProfitLossReport({
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Profit Margin</p>
-                <p className={`text-2xl font-bold ${margin >= 0 ? "text-success" : "text-destructive"}`}>
-                  {margin.toFixed(1)}
+                <p className={`text-2xl font-bold ${marginPercent >= 0 ? "text-success" : "text-destructive"}`}>
+                  {marginPercent.toFixed(1)}
                   %
                 </p>
               </div>
@@ -411,7 +378,7 @@ function ProfitLossReport({
       <Card className="border-border/50">
         <CardHeader>
           <CardTitle className="text-base">Monthly Revenue vs Costs</CardTitle>
-          <CardDescription>6-month trend</CardDescription>
+          <CardDescription>6-month trend, to the end of the selected period</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer
@@ -673,6 +640,27 @@ function ProfitLossReport({
                 </div>
               </PopoverContent>
             </Popover>
+            <ExportCsvButton
+              rows={filteredMonthly}
+              filename="profit-loss-monthly"
+              columns={[
+                {
+                  header: "Month", accessor: "month",
+                },
+                {
+                  header: "Revenue (NGN)", accessor: "revenue",
+                },
+                {
+                  header: "Costs (NGN)", accessor: "costs",
+                },
+                {
+                  header: "Net profit (NGN)", accessor: "profit",
+                },
+                {
+                  header: "Margin (%)", accessor: "marginPercent",
+                },
+              ]}
+            />
           </div>
 
           <Table>
