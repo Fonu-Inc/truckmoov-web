@@ -4205,6 +4205,8 @@ export type SystemOnboardingDecisionResponse = ServerResponse<{
   reference: string
   status: 'rejected' | 'changes_requested'
   decisionReason: string
+  /** Only on request-changes: false when the email could not be sent. */
+  delivered?: boolean
 }>
 
 /** The reason is only required when device stock does not cover the order. */
@@ -4257,6 +4259,8 @@ export type SystemOnboardingSetupLinkResendResponse = ServerResponse<{
   setupLinkStatus: 'sent' | 'failed'
   setupLinkError: string | null
 }>
+
+export type SystemOnboardingChangesLinkResendResponse = SystemOnboardingPaymentLinkResendResponse
 
 export type SystemOnboardingPaymentLinkResendResponse = ServerResponse<{
   applicationId: string

@@ -337,6 +337,7 @@ import {
   reopenSupportTicket,
   replySupportTicket,
   requestChangesSystemOnboardingApplication,
+  resendSystemOnboardingApplicationChangesLink,
   resendSystemOnboardingApplicationPaymentLink,
   resendSystemOnboardingApplicationSetupLink,
   sendOnboardingApplicationEmailVerification,
@@ -3009,6 +3010,13 @@ export function useRequestChangesSystemOnboardingApplication() {
 export function useResendSystemOnboardingApplicationSetupLink() {
   return useMutation({
     mutationFn: resendSystemOnboardingApplicationSetupLink,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useResendSystemOnboardingApplicationChangesLink() {
+  return useMutation({
+    mutationFn: resendSystemOnboardingApplicationChangesLink,
     onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
   })
 }

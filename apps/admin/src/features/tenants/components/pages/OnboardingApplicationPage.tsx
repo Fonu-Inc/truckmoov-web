@@ -188,6 +188,17 @@ export default function OnboardingApplicationPage() {
               Mark provisioned
             </Button>
           )}
+          {app.status === "changes_requested" && (
+            <Button
+              variant="outline"
+              loading={actions.resendChangesPending}
+              disabled={actions.isPending}
+              onClick={() => actions.resendChangesLink(app)}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Resend changes-requested link
+            </Button>
+          )}
           {app.status === "approved" && app.stage === "payment" && (
             <Button
               variant="outline"

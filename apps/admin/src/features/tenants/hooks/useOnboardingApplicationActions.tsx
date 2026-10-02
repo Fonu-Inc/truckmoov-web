@@ -5,6 +5,7 @@ import {
   useRefundSystemOnboardingPayment,
   useRejectSystemOnboardingApplication,
   useRequestChangesSystemOnboardingApplication,
+  useResendSystemOnboardingApplicationChangesLink,
   useResendSystemOnboardingApplicationPaymentLink,
   useResendSystemOnboardingApplicationSetupLink,
   useReviewSystemOnboardingPayment,
@@ -78,6 +79,7 @@ export function useOnboardingApplicationActions() {
   const rejectMutation = useRejectSystemOnboardingApplication();
   const changesMutation = useRequestChangesSystemOnboardingApplication();
   const resendMutation = useResendSystemOnboardingApplicationSetupLink();
+  const resendChangesMutation = useResendSystemOnboardingApplicationChangesLink();
   const resendPaymentMutation = useResendSystemOnboardingApplicationPaymentLink();
   const provisionedMutation = useMarkSystemOnboardingApplicationProvisioned();
   const paymentReviewMutation = useReviewSystemOnboardingPayment();
@@ -208,6 +210,22 @@ export function useOnboardingApplicationActions() {
     }
   };
 
+  const resendChangesLink = async (application: Target) => {
+    try {
+      const res = await resendChangesMutation.mutateAsync({ id: application.id });
+      if (res.data.delivered)
+        toast.success("Link sent. The previous link no longer works.");
+      else
+        toast.error(res.message || "The link could not be delivered. The previous link still works.");
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "Resend failed",
+      ));
+    }
+  };
+
   const submitReason = async (reason: string) => {
     if (!reasonTarget)
       return;
@@ -247,11 +265,14 @@ export function useOnboardingApplicationActions() {
         toast.success("Application rejected");
       }
       else {
-        await changesMutation.mutateAsync({
+        const res = await changesMutation.mutateAsync({
           id: application.id,
           data: { reason },
         });
-        toast.success("Changes requested — the applicant has been emailed a resume link");
+        if (res.data.delivered === false)
+          toast.error(res.message || "Status updated but the email could not be sent: use Resend");
+        else
+          toast.success("Changes requested — the applicant has been emailed a resume link");
       }
       setReasonTarget(null);
     }
@@ -284,6 +305,7 @@ export function useOnboardingApplicationActions() {
     markProvisioned,
     resendSetupLink,
     resendPaymentLink,
+    resendChangesLink,
     openReject: (application: Target) => setReasonTarget({
       kind: "reject",
       application,
@@ -308,10 +330,11 @@ export function useOnboardingApplicationActions() {
       paymentId,
     }),
     reasonDialog,
-    isPending: approveMutation.isPending || provisionedMutation.isPending || resendMutation.isPending || resendPaymentMutation.isPending,
+    isPending: approveMutation.isPending || provisionedMutation.isPending || resendMutation.isPending || resendPaymentMutation.isPending || resendChangesMutation.isPending,
     approvePending: approveMutation.isPending,
     provisionedPending: provisionedMutation.isPending,
     resendPending: resendMutation.isPending,
     resendPaymentPending: resendPaymentMutation.isPending,
+    resendChangesPending: resendChangesMutation.isPending,
   };
 }
