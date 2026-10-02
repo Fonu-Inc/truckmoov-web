@@ -394,6 +394,7 @@ import type {
   SystemOnboardingApplicationResponse,
   SystemApproveOnboardingApplicationResponse,
   SystemOnboardingDecisionResponse,
+  SystemOnboardingPaymentLinkResendResponse,
   SystemOnboardingSetupLinkResendResponse,
   SystemOnboardingTimelineResponse,
   SystemOnboardingProvisionedPayload,
@@ -2429,6 +2430,13 @@ export async function requestChangesSystemOnboardingApplication({
 export async function resendSystemOnboardingApplicationSetupLink({ id }: { id: string }) {
   const { data } = await axiosInstance.post<SystemOnboardingSetupLinkResendResponse>(
     `/auth/system/onboarding/applications/${id}/setup-link/resend`,
+  )
+  return data
+}
+
+export async function resendSystemOnboardingApplicationPaymentLink({ id }: { id: string }) {
+  const { data } = await axiosInstance.post<SystemOnboardingPaymentLinkResendResponse>(
+    `/auth/system/onboarding/applications/${id}/payment-link/resend`,
   )
   return data
 }

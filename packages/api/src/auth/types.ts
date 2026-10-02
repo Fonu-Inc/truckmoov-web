@@ -4258,6 +4258,14 @@ export type SystemOnboardingSetupLinkResendResponse = ServerResponse<{
   setupLinkError: string | null
 }>
 
+export type SystemOnboardingPaymentLinkResendResponse = ServerResponse<{
+  applicationId: string
+  reference: string
+  delivered: boolean
+  resentBy: string
+  resentAt: string
+}>
+
 export type SystemOnboardingApplicationDocumentActionPayload = {
   id: string
   documentId: string

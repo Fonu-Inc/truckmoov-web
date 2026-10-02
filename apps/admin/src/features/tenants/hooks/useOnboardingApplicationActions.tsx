@@ -5,6 +5,7 @@ import {
   useRefundSystemOnboardingPayment,
   useRejectSystemOnboardingApplication,
   useRequestChangesSystemOnboardingApplication,
+  useResendSystemOnboardingApplicationPaymentLink,
   useResendSystemOnboardingApplicationSetupLink,
   useReviewSystemOnboardingPayment,
 } from "@truckmoov/api/auth";
@@ -77,6 +78,7 @@ export function useOnboardingApplicationActions() {
   const rejectMutation = useRejectSystemOnboardingApplication();
   const changesMutation = useRequestChangesSystemOnboardingApplication();
   const resendMutation = useResendSystemOnboardingApplicationSetupLink();
+  const resendPaymentMutation = useResendSystemOnboardingApplicationPaymentLink();
   const provisionedMutation = useMarkSystemOnboardingApplicationProvisioned();
   const paymentReviewMutation = useReviewSystemOnboardingPayment();
   const refundMutation = useRefundSystemOnboardingPayment();
@@ -190,6 +192,22 @@ export function useOnboardingApplicationActions() {
     }
   };
 
+  const resendPaymentLink = async (application: Target) => {
+    try {
+      const res = await resendPaymentMutation.mutateAsync({ id: application.id });
+      if (res.data.delivered)
+        toast.success("Payment link sent. The previous link no longer works.");
+      else
+        toast.error(res.message || "The payment link could not be delivered. The previous link still works.");
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "Resend failed",
+      ));
+    }
+  };
+
   const submitReason = async (reason: string) => {
     if (!reasonTarget)
       return;
@@ -265,6 +283,7 @@ export function useOnboardingApplicationActions() {
     approve,
     markProvisioned,
     resendSetupLink,
+    resendPaymentLink,
     openReject: (application: Target) => setReasonTarget({
       kind: "reject",
       application,
@@ -289,9 +308,10 @@ export function useOnboardingApplicationActions() {
       paymentId,
     }),
     reasonDialog,
-    isPending: approveMutation.isPending || provisionedMutation.isPending || resendMutation.isPending,
+    isPending: approveMutation.isPending || provisionedMutation.isPending || resendMutation.isPending || resendPaymentMutation.isPending,
     approvePending: approveMutation.isPending,
     provisionedPending: provisionedMutation.isPending,
     resendPending: resendMutation.isPending,
+    resendPaymentPending: resendPaymentMutation.isPending,
   };
 }
