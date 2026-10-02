@@ -1,5 +1,8 @@
 import type { Invoice } from "@/features/billing/utils/enterpriseBillingData";
 import {
+  QueryClient, QueryClientProvider,
+} from "@tanstack/react-query";
+import {
   cleanup, fireEvent, render, screen,
 } from "@testing-library/react";
 import {
@@ -14,36 +17,60 @@ import {
   getEntriesForRole, getRolesForHref,
 } from "@/features/dashboard/utils/sidebarNav";
 import VehicleActivityPage from "@/features/reports/components/pages/VehicleActivityPage";
-import { buildTrend } from "@/features/reports/utils/reportsUtils";
 
-const reportData = vi.hoisted(() => ({
-  vehicles: [
-    {
-      id: "v1", registrationNumber: "LAG-123",
-    },
-  ],
-  drivers: [
-    {
-      id: "d1", name: "Ada Driver",
-    },
-  ],
-  jobs: [
-    {
-      id: "j1", reference: "JOB-001", vehicleId: "v1", driverId: "d1", status: "completed", createdAt: "2026-09-28T08:00:00", updatedAt: "2026-09-28T10:00:00", amountNgn: 2500, pickupAddress: "Lagos", deliveryAddress: "Ibadan", attachments: [],
-    },
-  ],
-  isPending: false,
-  error: null as null | { message: string },
-  refetch: vi.fn(),
+const activity = vi.hoisted(() => ({
+  fail: false,
+  trip: {
+    id: "j1", reference: "JOB-001", status: "delivered", date: "2026-09-28T08:00:00Z", vehicle: "LAG-123", driver: "Ada Driver", from: "Lagos", to: "Ibadan", amountNgn: 2500,
+  },
 }));
 vi.mock(
-  "@/features/reports/hooks/useReportsData",
-  () => ({ useReportsData: () => reportData }),
+  "@truckmoov/api/fleet",
+  async (importOriginal) => {
+    const actual = await importOriginal<typeof import("@truckmoov/api/fleet")>();
+    return {
+      ...actual,
+      getVehicleActivityQueryOptions: (payload?: { params?: { search?: string } }) => ({
+        queryKey: [
+          "vehicleActivity",
+          payload,
+        ],
+        queryFn: async () => {
+          if (activity.fail)
+            throw new Error("Service unavailable");
+          const items = payload?.params?.search ? [] : [activity.trip];
+          return {
+            status: true,
+            message: "success",
+            data: {
+              totals: {
+                trips: 1, completed: 1, open: 0, locationsServed: 1, tripValueNgn: 2500,
+              },
+              statuses: ["delivered"],
+              items,
+              page: 1,
+              limit: 50,
+              total: items.length,
+            },
+          };
+        },
+      }),
+    };
+  },
 );
+
+function renderVehicleActivity() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <CurrencyProvider><VehicleActivityPage /></CurrencyProvider>
+    </QueryClientProvider>,
+  );
+}
+
 afterEach(() => {
   cleanup();
-  vi.useRealTimers();
-  reportData.error = null;
+  activity.fail = false;
 });
 
 it(
@@ -108,58 +135,31 @@ it(
 );
 
 it(
-  "counts created and completed jobs in separate hourly buckets",
-  () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-28T12:00:00"));
-    const trend = buildTrend(
-      reportData.jobs,
-      "today",
-    );
-    expect(trend[0]).toEqual({
-      label: "8:00", created: 1, completed: 0,
-    });
-    expect(trend[1]).toEqual({
-      label: "10:00", created: 0, completed: 1,
-    });
-    expect(buildTrend(
-      reportData.jobs,
-      "yesterday",
-    ).every(row => row.created === 0 && row.completed === 0)).toBe(true);
-    expect(buildTrend(
-      reportData.jobs,
-      "last_week",
-    )).toHaveLength(7);
-    expect(buildTrend(
-      reportData.jobs,
-      "last_month",
-    )).toHaveLength(4);
-    expect(buildTrend(
-      reportData.jobs,
-      "last_year",
-    )).toHaveLength(12);
-  },
-);
-
-it(
   "renders and filters vehicle activity, and retries failed reports",
-  () => {
-    const view = render(<CurrencyProvider><VehicleActivityPage /></CurrencyProvider>);
-    expect(screen.getByText("JOB-001")).toBeInTheDocument();
+  async () => {
+    const view = renderVehicleActivity();
+    expect(await screen.findByText("JOB-001")).toBeInTheDocument();
     expect(screen.getByText("Ada Driver")).toBeInTheDocument();
     fireEvent.change(
       screen.getByPlaceholderText("Search by reference, vehicle, driver or route..."),
       { target: { value: "missing" } },
     );
-    expect(screen.getByText("No trips match your filters")).toBeInTheDocument();
-    reportData.error = { message: "Service unavailable" };
-    view.rerender(<CurrencyProvider><VehicleActivityPage /></CurrencyProvider>);
-    expect(screen.getByRole("alert")).toHaveTextContent("Service unavailable");
+    expect(await screen.findByText(
+      "No trips match your filters",
+      undefined,
+      { timeout: 2000 },
+    )).toBeInTheDocument();
+    view.unmount();
+
+    activity.fail = true;
+    renderVehicleActivity();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Service unavailable");
+    activity.fail = false;
     fireEvent.click(screen.getByRole(
       "button",
       { name: "Try again" },
     ));
-    expect(reportData.refetch).toHaveBeenCalledOnce();
+    expect(await screen.findByText("JOB-001")).toBeInTheDocument();
   },
 );
 

@@ -41,6 +41,9 @@ import {
   getCapacityUnits,
   getComplianceDocumentHistory,
   getDeliveryMetrics,
+  getReportsActivityTrend,
+  getReportsSummary,
+  getVehicleActivity,
   getDevice,
   getDeviceCatalogManufacturers,
   getDeviceCatalogModels,
@@ -214,6 +217,9 @@ import type {
   GeofencesQuery,
   TrackingAlertsQuery,
   TrackingVehiclesQuery,
+  ReportsActivityTrendQuery,
+  ReportsSummaryQuery,
+  VehicleActivityQuery,
 } from './types'
 
 export const FLEET_QUERY_KEY = {
@@ -264,6 +270,9 @@ export const FLEET_QUERY_KEY = {
   alerts: (payload?: AlertsQuery) => ['fleet', 'alerts', payload],
   reportsDashboard: ['fleet', 'reportsDashboard'],
   deliveryMetrics: ['fleet', 'deliveryMetrics'],
+  reportsSummary: (payload: ReportsSummaryQuery) => ['fleet', 'reports', 'summary', payload],
+  reportsActivityTrend: (payload: ReportsActivityTrendQuery) => ['fleet', 'reports', 'activityTrend', payload],
+  vehicleActivity: (payload?: VehicleActivityQuery) => ['fleet', 'reports', 'vehicleActivity', payload],
   analyticsSummary: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'summary', payload],
   analyticsFleetStatus: (payload?: FleetAnalyticsShortPeriodQuery) => ['fleet', 'analytics', 'fleetStatus', payload],
   analyticsJobPipeline: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'jobPipeline', payload],
@@ -639,6 +648,29 @@ export function getReportsDashboardQueryOptions() {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.reportsDashboard,
     queryFn: () => getReportsDashboard(),
+  })
+}
+
+export function getReportsSummaryQueryOptions(payload: ReportsSummaryQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.reportsSummary(payload),
+    queryFn: () => getReportsSummary(payload),
+  })
+}
+
+export function getReportsActivityTrendQueryOptions(payload: ReportsActivityTrendQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.reportsActivityTrend(payload),
+    queryFn: () => getReportsActivityTrend(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getVehicleActivityQueryOptions(payload?: VehicleActivityQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.vehicleActivity(payload),
+    queryFn: () => getVehicleActivity(payload),
+    placeholderData: keepPreviousData,
   })
 }
 

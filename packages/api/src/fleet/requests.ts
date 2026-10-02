@@ -20,6 +20,12 @@ import type {
   CreateVehiclePayload,
   CreateGeofencePayload,
   DeliveryMetricsResponse,
+  ReportsActivityTrendQuery,
+  ReportsActivityTrendResponse,
+  ReportsSummaryQuery,
+  ReportsSummaryResponse,
+  VehicleActivityQuery,
+  VehicleActivityResponse,
   DeviceAssignmentValidationResponse,
   DeviceSetupRequestListResponse,
   DeviceSetupRequestResponse,
@@ -740,6 +746,23 @@ export async function getReportsDashboard() {
 
 export async function getDeliveryMetrics() {
   const { data } = await axiosInstance.get<DeliveryMetricsResponse>('/fleet/reports/delivery-metrics')
+  return data
+}
+
+export async function getReportsSummary({ params }: ReportsSummaryQuery) {
+  const { data } = await axiosInstance.get<ReportsSummaryResponse>('/fleet/reports/summary', { params })
+  return data
+}
+
+export async function getReportsActivityTrend({ params }: ReportsActivityTrendQuery) {
+  const { data } = await axiosInstance.get<ReportsActivityTrendResponse>('/fleet/reports/activity-trend', { params })
+  return data
+}
+
+export async function getVehicleActivity(payload?: VehicleActivityQuery) {
+  const { data } = await axiosInstance.get<VehicleActivityResponse>('/fleet/reports/vehicle-activity', {
+    params: payload?.params,
+  })
   return data
 }
 

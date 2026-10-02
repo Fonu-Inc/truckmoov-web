@@ -1,15 +1,19 @@
+import type { QueryClient } from "@tanstack/react-query";
+import type {
+  ReportVehicleTrip, VehicleActivityQuery,
+} from "@truckmoov/api/fleet";
 import {
-  formatWithPattern, toDate,
-} from "@truckmoov/app-core/utils/time-utils";
+  useQuery, useQueryClient,
+} from "@tanstack/react-query";
+import { getVehicleActivityQueryOptions } from "@truckmoov/api/fleet";
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   CheckCircle, CreditCard, MapPin, Route, Search,
 } from "lucide-react";
-import {
-  useMemo, useState,
-} from "react";
+import { useState } from "react";
 
 import { Badge } from "@/components/shadcn/badge";
-
+import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -19,19 +23,64 @@ import {
 } from "@/components/shadcn/table";
 
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useReportsData } from "@/features/reports/hooks/useReportsData";
+import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
 import { exportToCSV } from "@/features/reports/utils/reportsUtils";
 import { ReportsGate } from "../ui/ReportsGate";
 import {
   SectionCard, SummaryStat,
 } from "../ui/ReportsShared";
 
+const PAGE_SIZE = 50;
+const EXPORT_PAGE_SIZE = 200;
+
+async function fetchAllTrips(queryClient: QueryClient, params: VehicleActivityQuery["params"]): Promise<ReportVehicleTrip[]> {
+  const trips: ReportVehicleTrip[] = [];
+  for (let page = 1; ; page++) {
+    const { data } = await queryClient.fetchQuery(getVehicleActivityQueryOptions({
+      params: {
+        ...params, page, limit: EXPORT_PAGE_SIZE,
+      },
+    }));
+    trips.push(...data.items);
+    if (trips.length >= data.total || data.items.length === 0)
+      return trips;
+  }
+}
+
+async function exportTrips(queryClient: QueryClient, params: VehicleActivityQuery["params"]) {
+  const trips = await fetchAllTrips(
+    queryClient,
+    params,
+  );
+  exportToCSV(
+    "vehicle_activity",
+    [
+      "Reference",
+      "Date",
+      "Vehicle",
+      "Driver",
+      "From",
+      "To",
+      "Status",
+    ],
+    trips.map(t => [
+      t.reference,
+      formatWithPattern(
+        t.date,
+        "yyyy-MM-dd",
+      ),
+      t.vehicle ?? "Unassigned",
+      t.driver ?? "Unassigned",
+      t.from ?? "\u2014",
+      t.to ?? "\u2014",
+      t.status,
+    ]),
+  );
+}
+
 export default function VehicleActivityPage() {
-  const data = useReportsData();
-  const {
-    vehicles, drivers, jobs,
-  } = data;
   const { format: formatCurrency } = useCurrency();
+  const queryClient = useQueryClient();
   const [
     search,
     setSearch,
@@ -40,80 +89,62 @@ export default function VehicleActivityPage() {
     statusFilter,
     setStatusFilter,
   ] = useState("all");
-  const trips = useMemo(
-    () => jobs
-      .slice()
-      .sort((a, b) => (toDate(b.createdAt)?.getTime() ?? 0) - (toDate(a.createdAt)?.getTime() ?? 0))
-      .map((j) => {
-        const vehicle = vehicles.find(v => v.id === j.vehicleId);
-        const driver = drivers.find(d => d.id === j.driverId);
-        return {
-          id: j.id,
-          reference: j.reference,
-          status: j.status,
-          date: j.createdAt,
-          vehicle: vehicle?.registrationNumber || "Unassigned",
-          driver: driver?.name || "Unassigned",
-          from: j.pickupAddress ?? "\u2014",
-          to: j.deliveryAddress ?? "\u2014",
-          amount: j.amountNgn,
-        };
-      }),
-    [
-      jobs,
-      vehicles,
-      drivers,
-    ],
+  const [
+    page,
+    setPage,
+  ] = useState(1);
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const params = {
+    search: debouncedSearch || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter,
+  };
+  const activityQuery = useQuery(getVehicleActivityQueryOptions({
+    params: {
+      ...params, page, limit: PAGE_SIZE,
+    },
+  }));
+  const activity = activityQuery.data?.data;
+  const totals = activity?.totals;
+  const pageCount = Math.max(
+    1,
+    Math.ceil((activity?.total ?? 0) / PAGE_SIZE),
   );
 
-  const completed = trips.filter(t => [
-    "completed",
-    "delivered",
-  ].includes(t.status)).length;
-  const tripStatuses = Array.from(new Set(trips.map(t => t.status).filter(Boolean)));
-  const filteredTrips = trips.filter((t) => {
-    const q = search.trim().toLowerCase();
-    const matchesSearch = !q || [
-      t.reference,
-      t.vehicle,
-      t.driver,
-      t.from,
-      t.to,
-    ]
-      .filter(Boolean)
-      .some(v => String(v).toLowerCase().includes(q));
-    return matchesSearch && (statusFilter === "all" || t.status === statusFilter);
-  });
+  const changeSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+  const changeStatus = (value: string) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
 
   return (
-    <ReportsGate data={data}>
+    <ReportsGate query={activityQuery}>
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SummaryStat
             icon={Route}
             label="Total trips"
-            value={`${trips.length}`}
+            value={`${totals?.trips ?? 0}`}
             hint="All recorded movements"
           />
           <SummaryStat
             icon={CheckCircle}
             label="Completed trips"
-            value={`${completed}`}
-            hint={`${trips.length - completed} open`}
+            value={`${totals?.completed ?? 0}`}
+            hint={`${totals?.open ?? 0} open`}
           />
           <SummaryStat
             icon={MapPin}
             label="Locations served"
-            value={`${new Set(trips.map(t => t.to)).size}`}
+            value={`${totals?.locationsServed ?? 0}`}
             hint="Unique delivery points"
           />
           <SummaryStat
             icon={CreditCard}
             label="Trip value"
-            value={formatCurrency(trips.reduce(
-              (s, t) => s + t.amount,
-              0,
-            ))}
+            value={formatCurrency(totals?.tripValueNgn ?? 0)}
             hint="All trips"
           />
         </div>
@@ -128,18 +159,18 @@ export default function VehicleActivityPage() {
                 <Input
                   placeholder="Search by reference, vehicle, driver or route..."
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  onChange={e => changeSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
               <Select
                 value={statusFilter}
-                onValueChange={setStatusFilter}
+                onValueChange={changeStatus}
               >
                 <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All statuses</SelectItem>
-                  {tripStatuses.map(o => (
+                  {(activity?.statuses ?? []).map(o => (
                     <SelectItem
                       key={o}
                       value={o}
@@ -155,29 +186,9 @@ export default function VehicleActivityPage() {
               </Select>
             </div>
           )}
-          onExport={() => exportToCSV(
-            "vehicle_activity",
-            [
-              "Reference",
-              "Date",
-              "Vehicle",
-              "Driver",
-              "From",
-              "To",
-              "Status",
-            ],
-            filteredTrips.map(t => [
-              t.reference,
-              formatWithPattern(
-                t.date,
-                "yyyy-MM-dd",
-              ),
-              t.vehicle,
-              t.driver,
-              t.from,
-              t.to,
-              t.status,
-            ]),
+          onExport={() => void exportTrips(
+            queryClient,
+            params,
           )}
         >
           <div className="overflow-x-auto">
@@ -193,7 +204,7 @@ export default function VehicleActivityPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTrips.length === 0 && (
+                {activity?.items.length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -203,10 +214,7 @@ export default function VehicleActivityPage() {
                     </TableCell>
                   </TableRow>
                 )}
-                {filteredTrips.slice(
-                  0,
-                  50,
-                ).map(t => (
+                {activity?.items.map(t => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.reference}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -215,14 +223,14 @@ export default function VehicleActivityPage() {
                         "dd MMM yyyy",
                       )}
                     </TableCell>
-                    <TableCell>{t.vehicle}</TableCell>
-                    <TableCell>{t.driver}</TableCell>
+                    <TableCell>{t.vehicle ?? "Unassigned"}</TableCell>
+                    <TableCell>{t.driver ?? "Unassigned"}</TableCell>
                     <TableCell className="max-w-[280px] truncate text-sm">
-                      {t.from}
+                      {t.from ?? "\u2014"}
                       {" "}
                       →
                       {" "}
-                      {t.to}
+                      {t.to ?? "\u2014"}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -240,6 +248,35 @@ export default function VehicleActivityPage() {
               </TableBody>
             </Table>
           </div>
+          {pageCount > 1 && (
+            <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
+              <span>
+                Page
+                {" "}
+                {page}
+                {" "}
+                of
+                {" "}
+                {pageCount}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(p => p - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pageCount}
+                onClick={() => setPage(p => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </SectionCard>
       </div>
     </ReportsGate>

@@ -815,6 +815,52 @@ export type ExportReportPayload = {
   entity: string
 }
 
+export type ReportPeriod = 'daily' | 'weekly'
+export type ReportTrendRange = 'today' | 'yesterday' | 'last_week' | 'last_month' | 'last_year'
+
+export type ReportsSummary = {
+  period: { from: string, to: string }
+  operations: { jobsCreated: number, jobsCompleted: number, jobsInProgress: number, jobsCancelled: number }
+  fleet: { vehiclesAdded: number, driversAdded: number, vehiclesInMaintenance: number, activeVehicles: number, totalVehicles: number }
+  administration: { documentsUploaded: number, driverCommunications: number, fuelEntries: number }
+  revenueNgn: number
+}
+
+export type ReportsActivityTrendPoint = {
+  label: string
+  from: string
+  to: string
+  created: number
+  completed: number
+}
+
+export type ReportVehicleTrip = {
+  id: string
+  reference: string
+  status: string
+  date: string
+  vehicle: string | null
+  driver: string | null
+  from: string | null
+  to: string | null
+  amountNgn: number
+}
+
+export type VehicleActivity = {
+  totals: { trips: number, completed: number, open: number, locationsServed: number, tripValueNgn: number }
+  statuses: string[]
+  items: ReportVehicleTrip[]
+  page: number
+  limit: number
+  total: number
+}
+
+export type ReportsSummaryQuery = { params: { period: ReportPeriod } }
+export type ReportsActivityTrendQuery = { params: { range: ReportTrendRange } }
+export type VehicleActivityQuery = {
+  params?: { search?: string, status?: string, page?: number, limit?: number }
+}
+
 // ─── Fuel ─────────────────────────────────────────────────────────────────────
 
 export type FuelTransactionInput = {
@@ -1920,6 +1966,9 @@ export type DriverImportColumnsResponse = ServerResponse<DriverImportColumns>
 export type BulkDeviceImportResponse = ServerResponse<BulkImportResult<FleetDevice>>
 export type FleetDashboardResponse = ServerResponse<FleetDashboard>
 export type DeliveryMetricsResponse = ServerResponse<DeliveryMetrics>
+export type ReportsSummaryResponse = ServerResponse<ReportsSummary>
+export type ReportsActivityTrendResponse = ServerResponse<ReportsActivityTrendPoint[]>
+export type VehicleActivityResponse = ServerResponse<VehicleActivity>
 export type DispatchSearchResult = {
   vehicles: Vehicle[]
   drivers: FleetDriver[]

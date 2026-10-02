@@ -1,14 +1,19 @@
 import type { ReactNode } from "react";
-import type { useReportsData } from "../../hooks/useReportsData";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 
+type GateQuery = {
+  isPending: boolean;
+  error: { message: string } | null;
+  refetch: () => unknown;
+};
+
 export function ReportsGate({
-  data, children,
+  query, children,
 }: {
-  data: ReturnType<typeof useReportsData>; children: ReactNode;
+  query: GateQuery; children: ReactNode;
 }) {
-  if (data.isPending) {
+  if (query.isPending) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2
@@ -18,7 +23,7 @@ export function ReportsGate({
       </div>
     );
   }
-  if (data.error) {
+  if (query.error) {
     return (
       <div
         role="alert"
@@ -26,11 +31,12 @@ export function ReportsGate({
       >
         <p>
           Unable to load reports:
-          {data.error.message}
+          {" "}
+          {query.error.message}
         </p>
         <Button
           variant="link"
-          onClick={data.refetch}
+          onClick={() => void query.refetch()}
         >
           Try again
         </Button>

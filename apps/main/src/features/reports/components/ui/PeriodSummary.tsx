@@ -1,8 +1,14 @@
+import type { TenantLicence } from "@truckmoov/api/billing";
+import type {
+  ReportPeriod, ReportsSummary, ReportTrendRange,
+} from "@truckmoov/api/fleet";
 import type { Row } from "./ReportsShared";
-import type { TrendRange } from "@/features/reports/utils/reportsUtils";
+import { useQuery } from "@tanstack/react-query";
+import { getTenantLicenceQueryOptions } from "@truckmoov/api/billing";
 import {
-  endOfDay, formatWithPattern, isWithinRange, startOfDay, startOfWeek,
-} from "@truckmoov/app-core/utils/time-utils";
+  getReportsActivityTrendQueryOptions, getReportsSummaryQueryOptions,
+} from "@truckmoov/api/fleet";
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity, CheckCircle, CreditCard, Download, FileText,
   Fuel, MessageSquare, Package, Route, Truck, Users, Wrench,
@@ -12,15 +18,12 @@ import {
   Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { Button } from "@/components/shadcn/button";
-
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useReportsData } from "@/features/reports/hooks/useReportsData";
 import {
-  buildTrend, exportToCSV, TREND_RANGES,
+  exportToCSV, TREND_RANGES,
 } from "@/features/reports/utils/reportsUtils";
 import { ReportsGate } from "./ReportsGate";
 import {
@@ -30,12 +33,12 @@ import {
 function TrendRangeSelect({
   value, onChange,
 }: {
-  value: TrendRange; onChange: (v: TrendRange) => void;
+  value: ReportTrendRange; onChange: (v: ReportTrendRange) => void;
 }) {
   return (
     <Select
       value={value}
-      onValueChange={v => onChange(v as TrendRange)}
+      onValueChange={v => onChange(v as ReportTrendRange)}
     >
       <SelectTrigger className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
       <SelectContent>
@@ -52,107 +55,195 @@ function TrendRangeSelect({
   );
 }
 
-export function PeriodSummary({ mode }: { mode: "daily" | "weekly" }) {
-  const data = useReportsData();
-  const {
-    vehicles, drivers, jobs,
-  } = data;
-  const { format: formatCurrency } = useCurrency();
+function ActivityTrendCard({ initialRange }: { initialRange: ReportTrendRange }) {
   const [
-    trendRange,
-    setTrendRange,
-  ] = useState<TrendRange>(mode === "daily" ? "today" : "last_week");
-  const [now] = useState(() => new Date());
-  const start = mode === "daily" ? startOfDay(now) : startOfWeek(now);
-  const end = endOfDay(now);
-  const within = (d?: string | null) => !!d && isWithinRange(
-    d,
-    start,
-    end,
+    range,
+    setRange,
+  ] = useState(initialRange);
+  const trendQuery = useQuery(getReportsActivityTrendQueryOptions({ params: { range } }));
+
+  return (
+    <SectionCard
+      title="Activity trend"
+      description="Jobs created vs completed"
+      action={(
+        <TrendRangeSelect
+          value={range}
+          onChange={setRange}
+        />
+      )}
+    >
+      <ReportsGate query={trendQuery}>
+        <ResponsiveContainer
+          width="100%"
+          height={240}
+        >
+          <BarChart data={trendQuery.data?.data ?? []}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="hsl(var(--border))"
+            />
+            <XAxis
+              dataKey="label"
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+            />
+            <YAxis
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              allowDecimals={false}
+            />
+            <Tooltip contentStyle={{
+              backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px",
+            }}
+            />
+            <Legend />
+            <Bar
+              dataKey="created"
+              name="Created"
+              fill="hsl(var(--primary))"
+              radius={[
+                6,
+                6,
+                0,
+                0,
+              ]}
+            />
+            <Bar
+              dataKey="completed"
+              name="Completed"
+              fill="hsl(var(--success))"
+              radius={[
+                6,
+                6,
+                0,
+                0,
+              ]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </ReportsGate>
+    </SectionCard>
   );
+}
 
-  const jobsCreated = jobs.filter(j => within(j.createdAt));
-  const jobsCompleted = jobs.filter(j => [
-    "completed",
-    "delivered",
-  ].includes(j.status) && within(j.updatedAt));
-  const jobsInProgress = jobs.filter(j => [
-    "in_progress",
-    "en-route",
-    "arrived",
-    "loaded",
-  ].includes(j.status));
-  const jobsCancelled = jobs.filter(j => j.status === "cancelled" && within(j.updatedAt));
-  const driversAdded = drivers.filter(d => within(d.createdAt));
-  const inMaintenance = vehicles.filter(v => v.status === "maintenance");
-  const revenue = jobsCompleted.reduce(
-    (s, j) => s + (j.amountNgn),
-    0,
+function subscriptionRow(licence: TenantLicence | null | undefined): Row {
+  const base = {
+    label: "Subscription", icon: CreditCard,
+  };
+  if (!licence) {
+    return {
+      ...base, count: "—", detail: "No active licence",
+    };
+  }
+  const periodEnd = formatWithPattern(
+    licence.periodEnd,
+    "dd MMM yyyy",
   );
+  if (licence.status === "ended") {
+    return {
+      ...base, count: 0, detail: `${licence.planName} — ended ${periodEnd}`,
+    };
+  }
+  return {
+    ...base, count: licence.daysLeft, detail: `${licence.planName} — ${licence.daysLeft} days to renewal (${periodEnd})`,
+  };
+}
 
-  const rangeLabel = mode === "daily"
-    ? formatWithPattern(
-        now,
-        "EEEE, dd MMM yyyy",
-      )
-    : `${formatWithPattern(
-      start,
-      "dd MMM",
-    )} – ${formatWithPattern(
-      now,
-      "dd MMM yyyy",
-    )}`;
-
-  const operations: Row[] = [
+function summaryRows(summary: ReportsSummary, licence: TenantLicence | null | undefined) {
+  const {
+    operations, fleet, administration,
+  } = summary;
+  const operationRows: Row[] = [
     {
-      label: "Jobs created", count: jobsCreated.length, detail: "New jobs booked in this period", icon: Package,
+      label: "Jobs created", count: operations.jobsCreated, detail: "New jobs booked in this period", icon: Package,
     },
     {
-      label: "Jobs completed", count: jobsCompleted.length, detail: "Deliveries marked complete", icon: CheckCircle,
+      label: "Jobs completed", count: operations.jobsCompleted, detail: "Deliveries marked complete", icon: CheckCircle,
     },
     {
-      label: "Jobs in progress", count: jobsInProgress.length, detail: "Currently on the road", icon: Route,
+      label: "Jobs in progress", count: operations.jobsInProgress, detail: "Currently on the road", icon: Route,
     },
     {
-      label: "Jobs cancelled", count: jobsCancelled.length, detail: "Cancelled or aborted jobs", icon: FileText,
+      label: "Jobs cancelled", count: operations.jobsCancelled, detail: "Cancelled or aborted jobs", icon: FileText,
     },
   ];
-
-  const fleet: Row[] = [
+  const fleetRows: Row[] = [
     {
-      label: "Vehicles added", count: "\u2014", detail: "Onboarding dates unavailable", icon: Truck,
+      label: "Vehicles added", count: fleet.vehiclesAdded, detail: "New vehicles onboarded", icon: Truck,
     },
     {
-      label: "Drivers added", count: driversAdded.length, detail: "New drivers registered", icon: Users,
+      label: "Drivers added", count: fleet.driversAdded, detail: "New drivers registered", icon: Users,
     },
     {
-      label: "Vehicles in maintenance", count: inMaintenance.length, detail: "Currently off the road", icon: Wrench,
+      label: "Vehicles in maintenance", count: fleet.vehiclesInMaintenance, detail: "Currently off the road", icon: Wrench,
     },
     {
-      label: "Active vehicles", count: vehicles.filter(v => v.status === "active").length, detail: "Available for dispatch", icon: Activity,
-    },
-  ];
-
-  // ponytail: missing report metrics stay unavailable until a reporting endpoint supplies them.
-  const admin: Row[] = [
-    {
-      label: "Documents uploaded", count: jobsCompleted.filter(j => j.attachments.length).length, detail: "Waybills, PODs and attachments", icon: FileText,
-    },
-    {
-      label: "Driver communications", count: "\u2014", detail: "Communication totals unavailable", icon: MessageSquare,
-    },
-    {
-      label: "Subscription", count: "\u2014", detail: "Subscription activity unavailable", icon: CreditCard,
-    },
-    {
-      label: "Fuel entries logged", count: "\u2014", detail: "Fuel entry totals unavailable", icon: Fuel,
+      label: "Active vehicles", count: fleet.activeVehicles, detail: "Available for dispatch", icon: Activity,
     },
   ];
+  const adminRows: Row[] = [
+    {
+      label: "Documents uploaded", count: administration.documentsUploaded, detail: "Waybills, PODs and attachments", icon: FileText,
+    },
+    {
+      label: "Driver communications", count: administration.driverCommunications, detail: "Dispatch notifications sent to drivers", icon: MessageSquare,
+    },
+    subscriptionRow(licence),
+    {
+      label: "Fuel entries logged", count: administration.fuelEntries, detail: "Fuel transactions recorded", icon: Fuel,
+    },
+  ];
+  return {
+    operationRows, fleetRows, adminRows,
+  };
+}
 
-  const trend = buildTrend(
-    jobs,
-    trendRange,
+function periodLabel(mode: ReportPeriod, summary: ReportsSummary) {
+  if (mode === "daily") {
+    return formatWithPattern(
+      summary.period.from,
+      "EEEE, dd MMM yyyy",
+    );
+  }
+  return `${formatWithPattern(
+    summary.period.from,
+    "dd MMM",
+  )} – ${formatWithPattern(
+    summary.period.to,
+    "dd MMM yyyy",
+  )}`;
+}
+
+function SummaryContent({
+  mode, summary, licence,
+}: {
+  mode: ReportPeriod; summary: ReportsSummary; licence: TenantLicence | null | undefined;
+}) {
+  const { format: formatCurrency } = useCurrency();
+  const {
+    operationRows, fleetRows, adminRows,
+  } = summaryRows(
+    summary,
+    licence,
   );
+  const {
+    operations, fleet,
+  } = summary;
+  const sections: [string, Row[]][] = [
+    [
+      "Operations",
+      operationRows,
+    ],
+    [
+      "Fleet",
+      fleetRows,
+    ],
+    [
+      "Administration",
+      adminRows,
+    ],
+  ];
 
   const handleExport = () => exportToCSV(
     `${mode}_summary`,
@@ -162,156 +253,112 @@ export function PeriodSummary({ mode }: { mode: "daily" | "weekly" }) {
       "Value",
     ],
     [
-      ...operations.map(r => [
-        "Operations",
+      ...sections.flatMap(([
+        section,
+        rows,
+      ]) => rows.map(r => [
+        section,
         r.label,
         r.count,
-      ] as (string | number)[]),
-      ...fleet.map(r => [
-        "Fleet",
-        r.label,
-        r.count,
-      ] as (string | number)[]),
-      ...admin.map(r => [
-        "Administration",
-        r.label,
-        r.count,
-      ] as (string | number)[]),
+      ])),
       [
         "Financial",
         "Revenue",
-        revenue,
+        summary.revenueNgn,
       ],
     ],
   );
 
   return (
-    <ReportsGate data={data}>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">{mode === "daily" ? "Daily Summary" : "Weekly Summary"}</h2>
-            <p className="text-sm text-muted-foreground">{rangeLabel}</p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {" "}
-            Export summary
-          </Button>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">{mode === "daily" ? "Daily Summary" : "Weekly Summary"}</h2>
+          <p className="text-sm text-muted-foreground">
+            {periodLabel(
+              mode,
+              summary,
+            )}
+          </p>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <SummaryStat
-            icon={Package}
-            label="Jobs created"
-            value={`${jobsCreated.length}`}
-            hint={mode === "daily" ? "Today" : "This week"}
-          />
-          <SummaryStat
-            icon={CheckCircle}
-            label="Jobs completed"
-            value={`${jobsCompleted.length}`}
-            hint={`${jobsInProgress.length} in progress`}
-          />
-          <SummaryStat
-            icon={Truck}
-            label="Vehicles active"
-            value={`${vehicles.filter(v => v.status === "active").length}/${vehicles.length}`}
-            hint={`${inMaintenance.length} in maintenance`}
-          />
-          <SummaryStat
-            icon={CreditCard}
-            label="Revenue booked"
-            value={formatCurrency(revenue)}
-            hint="Completed jobs"
-          />
-        </div>
-
-        <SectionCard
-          title="Activity trend"
-          description="Jobs created vs completed"
-          action={(
-            <TrendRangeSelect
-              value={trendRange}
-              onChange={setTrendRange}
-            />
-          )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExport}
         >
-          <ResponsiveContainer
-            width="100%"
-            height={240}
-          >
-            <BarChart data={trend}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
-              />
-              <XAxis
-                dataKey="label"
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-              />
-              <YAxis
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                allowDecimals={false}
-              />
-              <Tooltip contentStyle={{
-                backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px",
-              }}
-              />
-              <Legend />
-              <Bar
-                dataKey="created"
-                name="Created"
-                fill="hsl(var(--primary))"
-                radius={[
-                  6,
-                  6,
-                  0,
-                  0,
-                ]}
-              />
-              <Bar
-                dataKey="completed"
-                name="Completed"
-                fill="hsl(var(--success))"
-                radius={[
-                  6,
-                  6,
-                  0,
-                  0,
-                ]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </SectionCard>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <SectionCard
-            title="Operations"
-            description="Job and dispatch activity"
-          >
-            <ActivityRows rows={operations} />
-          </SectionCard>
-          <SectionCard
-            title="Fleet & people"
-            description="Assets and drivers"
-          >
-            <ActivityRows rows={fleet} />
-          </SectionCard>
-          <SectionCard
-            title="Administration"
-            description="Documents, communications and account"
-          >
-            <ActivityRows rows={admin} />
-          </SectionCard>
-        </div>
+          <Download className="h-4 w-4 mr-2" />
+          {" "}
+          Export summary
+        </Button>
       </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryStat
+          icon={Package}
+          label="Jobs created"
+          value={`${operations.jobsCreated}`}
+          hint={mode === "daily" ? "Today" : "This week"}
+        />
+        <SummaryStat
+          icon={CheckCircle}
+          label="Jobs completed"
+          value={`${operations.jobsCompleted}`}
+          hint={`${operations.jobsInProgress} in progress`}
+        />
+        <SummaryStat
+          icon={Truck}
+          label="Vehicles active"
+          value={`${fleet.activeVehicles}/${fleet.totalVehicles}`}
+          hint={`${fleet.vehiclesInMaintenance} in maintenance`}
+        />
+        <SummaryStat
+          icon={CreditCard}
+          label="Revenue booked"
+          value={formatCurrency(summary.revenueNgn)}
+          hint="Completed jobs"
+        />
+      </div>
+
+      <ActivityTrendCard initialRange={mode === "daily" ? "today" : "last_week"} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <SectionCard
+          title="Operations"
+          description="Job and dispatch activity"
+        >
+          <ActivityRows rows={operationRows} />
+        </SectionCard>
+        <SectionCard
+          title="Fleet & people"
+          description="Assets and drivers"
+        >
+          <ActivityRows rows={fleetRows} />
+        </SectionCard>
+        <SectionCard
+          title="Administration"
+          description="Documents, communications and account"
+        >
+          <ActivityRows rows={adminRows} />
+        </SectionCard>
+      </div>
+    </div>
+  );
+}
+
+export function PeriodSummary({ mode }: { mode: ReportPeriod }) {
+  const summaryQuery = useQuery(getReportsSummaryQueryOptions({ params: { period: mode } }));
+  // A missing or forbidden licence only blanks the Subscription row.
+  const licenceQuery = useQuery(getTenantLicenceQueryOptions());
+
+  return (
+    <ReportsGate query={summaryQuery}>
+      {summaryQuery.data && (
+        <SummaryContent
+          mode={mode}
+          summary={summaryQuery.data.data}
+          licence={licenceQuery.data?.data}
+        />
+      )}
     </ReportsGate>
   );
 }
