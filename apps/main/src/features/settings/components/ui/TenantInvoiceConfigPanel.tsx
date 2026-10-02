@@ -24,12 +24,13 @@ export function TenantInvoiceConfigPanel() {
     cfg,
     setCfg,
   ] = useState<InvoiceConfig>({
-    payment_terms_days: 15,
+    // ponytail: blank until an invoice-config endpoint exists
+    payment_terms_days: 0,
     ncc_levy_enabled: false,
-    ncc_levy_percent: 2.5,
+    ncc_levy_percent: 0,
     ncc_levy_label: "NCC Levy",
-    tax_enabled: true,
-    tax_rate_percent: 7.5,
+    tax_enabled: false,
+    tax_rate_percent: 0,
     tax_label: "VAT",
   });
   const [saving] = useState(false);

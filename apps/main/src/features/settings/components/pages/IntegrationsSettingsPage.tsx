@@ -10,16 +10,15 @@ import {
 import { AccountingIntegrationPanel } from "@/features/settings/components/ui/AccountingIntegrationPanel";
 
 /**
- * ponytail: this list is hardcoded, which file-structure.md bans — it came over
- * from the old Connections tab unchanged. Replace it the day there is an
- * endpoint for connected services; until then it is the same fiction it was.
+ * ponytail: the catalogue of connectable services. Nothing reports connection
+ * status yet, so every service shows as not connected until that endpoint exists.
  */
 const CONNECTED_SERVICES = [
   {
-    id: "whatsapp", name: "WhatsApp Business", icon: WhatsAppIcon, connected: true, description: "Send messages and notifications via WhatsApp",
+    id: "whatsapp", name: "WhatsApp Business", icon: WhatsAppIcon, connected: false, description: "Send messages and notifications via WhatsApp",
   },
   {
-    id: "sms", name: "SMS Gateway", icon: Phone, connected: true, description: "Send SMS notifications to drivers",
+    id: "sms", name: "SMS Gateway", icon: Phone, connected: false, description: "Send SMS notifications to drivers",
   },
   {
     id: "gmail", name: "Gmail", icon: Mail, connected: false, description: "Send emails using your Gmail account",
@@ -28,7 +27,7 @@ const CONNECTED_SERVICES = [
     id: "outlook", name: "Outlook", icon: Mail, connected: false, description: "Send emails using Microsoft Outlook",
   },
   {
-    id: "maps", name: "Google Maps", icon: MapPin, connected: true, description: "Route optimization and live tracking",
+    id: "maps", name: "Google Maps", icon: MapPin, connected: false, description: "Route optimization and live tracking",
   },
 ];
 

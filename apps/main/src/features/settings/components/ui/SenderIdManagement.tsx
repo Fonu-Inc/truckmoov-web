@@ -3,6 +3,7 @@ import {
   CheckCircle2, Clock, Loader2, MessageSquare, Phone, Plus, XCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -29,41 +30,23 @@ const statusConfig: Record<SenderIdStatus, {
   },
 };
 
-const DEMO_SENDER_IDS: Array<{
+type SenderId = {
   id: string;
   sender_id: string;
   sender_type: "sms" | "voice" | "both";
   status: SenderIdStatus;
   requested_at: string;
   rejection_reason?: string | null;
-}> = [
-  {
-    id: "demo-s-1", sender_id: "FleetPro", sender_type: "sms", status: "approved", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
-  },
-  {
-    id: "demo-s-2", sender_id: "LagosExp", sender_type: "sms", status: "approved", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-  },
-  {
-    id: "demo-s-3", sender_id: "FleetPro Voice", sender_type: "voice", status: "approved", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
-  },
-  {
-    id: "demo-s-4", sender_id: "MTNFleet", sender_type: "both", status: "whitelisting", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-  },
-  {
-    id: "demo-s-5", sender_id: "TruckOps", sender_type: "sms", status: "pending", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-  },
-];
+};
 
 export function SenderIdManagement() {
-  const senderIds: any[] = [];
+  // ponytail: empty until a sender-ID endpoint exists
+  const senderIds: SenderId[] = [];
   const loading = false;
   const [
     dialogOpen,
     setDialogOpen,
   ] = useState(false);
-
-  const isDemo = !loading && senderIds.length === 0;
-  const displayedSenderIds = isDemo ? DEMO_SENDER_IDS : senderIds;
 
   if (loading) {
     return (
@@ -93,14 +76,6 @@ export function SenderIdManagement() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              {isDemo && (
-                <Badge
-                  variant="outline"
-                  className="text-xs"
-                >
-                  Demo data
-                </Badge>
-              )}
               <Button
                 onClick={() => setDialogOpen(true)}
                 size="sm"
@@ -113,8 +88,15 @@ export function SenderIdManagement() {
           </div>
         </CardHeader>
         <CardContent>
+          {senderIds.length === 0 && (
+            <EmptyState
+              icon={MessageSquare}
+              title="No sender IDs yet"
+              description="Request a custom sender ID to use for SMS and voice communications."
+            />
+          )}
           <div className="space-y-3">
-            {displayedSenderIds.map((item) => {
+            {senderIds.map((item) => {
               const config = statusConfig[item.status];
               return (
                 <div
@@ -154,10 +136,10 @@ export function SenderIdManagement() {
             })}
           </div>
 
-          {displayedSenderIds.some(s => s.status === "rejected") && (
+          {senderIds.some(s => s.status === "rejected") && (
             <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
               <p className="text-sm text-destructive font-medium">Rejected Requests</p>
-              {displayedSenderIds
+              {senderIds
                 .filter(s => s.status === "rejected")
                 .map(s => (
                   <p

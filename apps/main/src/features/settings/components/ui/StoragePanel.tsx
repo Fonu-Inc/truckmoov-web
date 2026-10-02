@@ -135,7 +135,7 @@ export function StoragePanel() {
             <div className="min-w-0">
               <CardDescription className="text-xs">Largest category</CardDescription>
               <CardTitle className="text-xl truncate">
-                {isLoading || !largestCat ? <Skeleton className="h-6 w-24" /> : fmt(largestCat.bytes)}
+                {isLoading ? <Skeleton className="h-6 w-24" /> : largestCat ? fmt(largestCat.bytes) : "—"}
               </CardTitle>
             </div>
           </CardHeader>
@@ -248,6 +248,16 @@ export function StoragePanel() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {!breakdown?.rows?.length && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={4}
+                          className="py-8 text-center text-sm text-muted-foreground"
+                        >
+                          No storage usage recorded yet.
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {(breakdown?.rows ?? []).map((r) => {
                       const Icon = r.icon;
                       const share = usedBytes > 0 ? (r.bytes / usedBytes) * 100 : 0;

@@ -16,7 +16,6 @@ import { useState } from "react";
 import {
   Alert, AlertDescription, AlertTitle,
 } from "@/components/shadcn/alert";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -35,23 +34,19 @@ import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Slider } from "@/components/shadcn/slider";
 import { Switch } from "@/components/shadcn/switch";
-import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
 
 type TenantAIConfigPanelProps = { tenantId: string };
 
 export function TenantAIConfigPanel({ tenantId: _tenantId }: TenantAIConfigPanelProps) {
   // Hooks removed — inline defaults until data source is wired up
-  const config: null = null;
+  const config: any = null;
   const isLoading = false;
   const isSaving = false;
   const isTesting = false;
   const createOrUpdateConfig = (_updates: any) => {};
   const testConnection = () => {};
-  const platformConfig: null = null;
+  const platformConfig: any = null;
   const isLoadingPlatform = false;
-  const {
-    canConfigureTenantAI, canRunAIMatching,
-  } = useAIConfigPermissions();
   const [
     showApiKey,
     setShowApiKey,
@@ -68,31 +63,6 @@ export function TenantAIConfigPanel({ tenantId: _tenantId }: TenantAIConfigPanel
         <Skeleton className="h-32" />
         <Skeleton className="h-48" />
       </div>
-    );
-  }
-
-  if (!canConfigureTenantAI && !canRunAIMatching) {
-    return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Access Restricted</AlertTitle>
-        <AlertDescription>
-          You don't have permission to view or configure AI settings. Contact your administrator.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!platformConfig?.ai_job_matching_enabled) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>AI Job Matching Disabled</AlertTitle>
-        <AlertDescription>
-          AI Job Matching is currently disabled platform-wide. Contact your platform administrator
-          to enable this feature.
-        </AlertDescription>
-      </Alert>
     );
   }
 
@@ -132,21 +102,16 @@ export function TenantAIConfigPanel({ tenantId: _tenantId }: TenantAIConfigPanel
             Configure AI-assisted truck and driver matching for your fleet
           </p>
         </div>
-        {canConfigureTenantAI && (
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={config?.enabled ?? false}
-              onCheckedChange={checked => createOrUpdateConfig({ enabled: checked })}
-              disabled={isSaving}
-            />
-            <Label className="font-medium">
-              {config?.enabled ? "Enabled" : "Disabled"}
-            </Label>
-          </div>
-        )}
-        {!canConfigureTenantAI && (
-          <Badge variant="secondary">View Only</Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={config?.enabled ?? false}
+            onCheckedChange={checked => createOrUpdateConfig({ enabled: checked })}
+            disabled={isSaving}
+          />
+          <Label className="font-medium">
+            {config?.enabled ? "Enabled" : "Disabled"}
+          </Label>
+        </div>
       </div>
 
       {/* Provider Selection */}
@@ -174,7 +139,7 @@ export function TenantAIConfigPanel({ tenantId: _tenantId }: TenantAIConfigPanel
                   createOrUpdateConfig({
                     provider: value, model: getAvailableModels(value)[0],
                   })}
-                disabled={isSaving || !config?.enabled || !canConfigureTenantAI}
+                disabled={isSaving || !config?.enabled}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select provider" />
@@ -198,7 +163,7 @@ export function TenantAIConfigPanel({ tenantId: _tenantId }: TenantAIConfigPanel
               <Select
                 value={config?.model || undefined}
                 onValueChange={value => createOrUpdateConfig({ model: value })}
-                disabled={isSaving || !config?.enabled || !config?.provider || !canConfigureTenantAI}
+                disabled={isSaving || !config?.enabled || !config?.provider}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select model" />
@@ -462,7 +427,7 @@ export function TenantAIConfigPanel({ tenantId: _tenantId }: TenantAIConfigPanel
             />
           </div>
 
-          {!config?.require_dispatcher_approval && (
+          {config?.require_dispatcher_approval === false && (
             <Alert
               className="mt-4"
               variant="destructive"

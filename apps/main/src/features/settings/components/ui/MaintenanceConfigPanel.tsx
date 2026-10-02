@@ -35,7 +35,7 @@ export function MaintenanceConfigPanel() {
   const [
     isLoading,
     setIsLoading,
-  ] = useState(true);
+  ] = useState(!!tenantId);
   const [
     isSaving,
     setIsSaving,

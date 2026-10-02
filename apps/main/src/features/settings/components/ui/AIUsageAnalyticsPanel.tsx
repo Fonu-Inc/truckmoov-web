@@ -48,72 +48,16 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
   fatigue_detection: "Fatigue Detection",
 };
 
-// Deterministic pseudo-random for stable demo data
-function seededRandom(seed: number) {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
 function rangeDays(r: TimeRange) {
   return r === "7d" ? 7 : r === "30d" ? 30 : r === "90d" ? 90 : 365;
 }
 
-const DEMO_FEATURES = [
-  {
-    key: "load_matching", base: 145, tokensPerReq: 820,
-  },
-  {
-    key: "route_optimization", base: 92, tokensPerReq: 1240,
-  },
-  {
-    key: "waybill_extraction", base: 64, tokensPerReq: 540,
-  },
-  {
-    key: "job_matching", base: 38, tokensPerReq: 720,
-  },
-  {
-    key: "fatigue_detection", base: 21, tokensPerReq: 410,
-  },
-];
-
-function buildDemoDaily(days: number) {
-  const data: {
-    date: string; label: string; requests: number; tokens: number;
-  }[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const date = subDays(
-      new Date(),
-      i,
-    );
-    const dayKey = toDateParam(date);
-    const weekday = date.getDay();
-    const weekendFactor = weekday === 0 || weekday === 6 ? 0.55 : 1;
-    const noise = 0.7 + seededRandom(i + 13) * 0.7;
-    const requests = Math.round(28 * weekendFactor * noise);
-    const tokens = Math.round(requests * (700 + seededRandom(i + 41) * 600));
-    data.push({
-      date: dayKey, label: formatDayMonth(date), requests, tokens,
-    });
-  }
-  return data;
-}
-
-function buildDemoFeatureBreakdown(days: number) {
-  const scale = days / 14;
-  return DEMO_FEATURES.map((f) => {
-    const requests = Math.round(f.base * scale * (0.85 + seededRandom(f.base) * 0.3));
-    return {
-      name: REQUEST_TYPE_LABELS[f.key],
-      requests,
-      tokens: requests * f.tokensPerReq,
-    };
-  }).sort((a, b) => b.requests - a.requests);
-}
-
 export function AIUsageAnalyticsPanel() {
-  // Hooks removed — no live data source; fall back to demo data
+  // ponytail: empty until an AI-usage endpoint exists; the panel renders its empty states
   const logs: any[] = [];
-  const stats: null = null;
+  const stats: {
+    totalRequests: number; totalTokens: number; successRate: number; avgLatency: number;
+  } | null = null;
   const isLoading = false;
   const [dailyRange] = useState<TimeRange>("30d");
   const [
@@ -137,15 +81,10 @@ export function AIUsageAnalyticsPanel() {
     setFailureFilters,
   ] = useState<FilterValues>({});
 
-  const hasReal = (stats?.totalRequests ?? 0) > 0;
-
   // Daily usage aggregation for chart
   const dailyData = useMemo(
     () => {
       const days = rangeDays(dailyRange);
-      if (!hasReal)
-        return buildDemoDaily(days);
-
       const map = new Map<string, {
         date: string; requests: number; tokens: number;
       }>();
@@ -176,7 +115,6 @@ export function AIUsageAnalyticsPanel() {
     },
     [
       logs,
-      hasReal,
       dailyRange,
     ],
   );
@@ -185,9 +123,6 @@ export function AIUsageAnalyticsPanel() {
   const featureBreakdown = useMemo(
     () => {
       const days = rangeDays(featureRange);
-      if (!hasReal)
-        return buildDemoFeatureBreakdown(days);
-
       const cutoff = subDays(
         new Date(),
         days,
@@ -215,45 +150,16 @@ export function AIUsageAnalyticsPanel() {
     },
     [
       logs,
-      hasReal,
       featureRange,
     ],
   );
 
-  // Demo summary derived from demo daily when no real data
-  const demoSummary = useMemo(
-    () => {
-      if (hasReal)
-        return null;
-      const totalRequests = dailyData.reduce(
-        (s, d) => s + d.requests,
-        0,
-      );
-      const totalTokens = dailyData.reduce(
-        (s, d) => s + d.tokens,
-        0,
-      );
-      return {
-        totalRequests,
-        totalTokens,
-        successRate: 98.4,
-        avgLatency: 742,
-      };
-    },
-    [
-      hasReal,
-      dailyData,
-    ],
-  );
-
-  const summary = hasReal
-    ? {
-        totalRequests: stats?.totalRequests ?? 0,
-        totalTokens: stats?.totalTokens ?? 0,
-        successRate: stats?.successRate ?? 100,
-        avgLatency: stats?.avgLatency ?? 0,
-      }
-    : demoSummary!;
+  const summary = {
+    totalRequests: stats?.totalRequests ?? 0,
+    totalTokens: stats?.totalTokens ?? 0,
+    successRate: stats?.successRate ?? 0,
+    avgLatency: stats?.avgLatency ?? 0,
+  };
 
   // Recent failures (real only — keep authentic, hide when empty)
   const recentFailures = useMemo(
@@ -283,14 +189,6 @@ export function AIUsageAnalyticsPanel() {
             Monitor your organization's AI feature consumption and costs
           </p>
         </div>
-        {!hasReal && (
-          <Badge
-            variant="outline"
-            className="text-xs"
-          >
-            Demo data
-          </Badge>
-        )}
       </div>
 
       {/* Summary Cards */}
@@ -332,8 +230,7 @@ export function AIUsageAnalyticsPanel() {
               <div>
                 <p className="text-sm text-muted-foreground">Success Rate</p>
                 <p className="text-2xl font-bold">
-                  {summary.successRate.toFixed(1)}
-                  %
+                  {summary.totalRequests ? `${summary.successRate.toFixed(1)}%` : "—"}
                 </p>
               </div>
             </div>

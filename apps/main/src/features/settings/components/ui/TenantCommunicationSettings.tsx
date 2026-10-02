@@ -6,6 +6,7 @@ import {
   useEffect, useState,
 } from "react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -91,51 +92,16 @@ export function TenantCommunicationSettings() {
     toast.info("Coming soon");
   };
 
-  // Demo fallback when tenant has no assigned numbers yet
-  const DEMO_NUMBERS: AssignedPhoneNumber[] = [
-    {
-      id: "demo-num-1", phone_number: "+234 801 234 5678", phone_number_type: "mobile", capabilities: [
-        "sms",
-        "voice",
-      ], status: "assigned", monthly_cost_ngn: 2500,
-    },
-    {
-      id: "demo-num-2", phone_number: "+234 700 555 0199", phone_number_type: "toll_free", capabilities: ["voice"], status: "assigned", monthly_cost_ngn: 8000,
-    },
-    {
-      id: "demo-num-3", phone_number: "+234 904 882 1100", phone_number_type: "local", capabilities: ["sms"], status: "assigned", monthly_cost_ngn: 1500,
-    },
-  ];
-  const displayedNumbers = assignedNumbers.length > 0 ? assignedNumbers : DEMO_NUMBERS;
-  const isDemoNumbers = assignedNumbers.length === 0;
-
   // Combine platform-assigned numbers with approved sender IDs
-  const smsCapableNumbers = displayedNumbers.filter(n => n.capabilities.includes("sms"));
-  const voiceCapableNumbers = displayedNumbers.filter(n => n.capabilities.includes("voice"));
-
-  // Demo approved sender IDs when tenant has none
-  const DEMO_SMS_SENDERS = [
-    {
-      id: "demo-sms-1", sender_id: "FleetPro",
-    },
-    {
-      id: "demo-sms-2", sender_id: "LagosExp",
-    },
-  ];
-  const DEMO_VOICE_SENDERS = [
-    {
-      id: "demo-voice-1", sender_id: "FleetPro Voice",
-    },
-  ];
-  const effectiveSmsIds = approvedSmsIds.length > 0 ? approvedSmsIds : DEMO_SMS_SENDERS;
-  const effectiveVoiceIds = approvedVoiceIds.length > 0 ? approvedVoiceIds : DEMO_VOICE_SENDERS;
+  const smsCapableNumbers = assignedNumbers.filter(n => n.capabilities.includes("sms"));
+  const voiceCapableNumbers = assignedNumbers.filter(n => n.capabilities.includes("voice"));
 
   // All available SMS options: assigned numbers + approved sender IDs
   const allSmsOptions = [
     ...smsCapableNumbers.map(n => ({
       id: n.id, value: n.phone_number, label: n.phone_number, source: "assigned" as const,
     })),
-    ...effectiveSmsIds.map(s => ({
+    ...approvedSmsIds.map(s => ({
       id: s.id, value: s.sender_id, label: s.sender_id, source: "approved" as const,
     })),
   ];
@@ -144,7 +110,7 @@ export function TenantCommunicationSettings() {
     ...voiceCapableNumbers.map(n => ({
       id: n.id, value: n.phone_number, label: n.phone_number, source: "assigned" as const,
     })),
-    ...effectiveVoiceIds.map(s => ({
+    ...approvedVoiceIds.map(s => ({
       id: s.id, value: s.sender_id, label: s.sender_id, source: "approved" as const,
     })),
   ];
@@ -168,29 +134,24 @@ export function TenantCommunicationSettings() {
       {/* Assigned Phone Numbers */}
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <PhoneCall className="h-5 w-5 text-primary" />
-                My Phone Numbers
-              </CardTitle>
-              <CardDescription>
-                Phone numbers assigned to your organization by the platform administrator
-              </CardDescription>
-            </div>
-            {isDemoNumbers && (
-              <Badge
-                variant="outline"
-                className="text-xs shrink-0"
-              >
-                Demo data
-              </Badge>
-            )}
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <PhoneCall className="h-5 w-5 text-primary" />
+            My Phone Numbers
+          </CardTitle>
+          <CardDescription>
+            Phone numbers assigned to your organization by the platform administrator
+          </CardDescription>
         </CardHeader>
         <CardContent>
+          {assignedNumbers.length === 0 && (
+            <EmptyState
+              icon={PhoneCall}
+              title="No phone numbers assigned"
+              description="Your platform administrator hasn't assigned any phone numbers to your organization yet."
+            />
+          )}
           <div className="space-y-3">
-            {displayedNumbers.map(number => (
+            {assignedNumbers.map(number => (
               <div
                 key={number.id}
                 className="flex items-center justify-between p-3 rounded-lg border bg-card"

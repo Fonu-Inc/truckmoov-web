@@ -72,7 +72,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { useAuthStore } from "@/features/auth/stores/authStore";
 import { formatCurrency } from "@/lib/currency";
 import { downloadReceiptPDF } from "@/lib/receiptPdf";
 import { cn } from "@/lib/utils";
@@ -99,128 +98,8 @@ type SubscriptionInvoice = {
   }[];
 };
 
-const DEMO_INVOICES: SubscriptionInvoice[] = [
-  {
-    id: "sub-inv-001",
-    invoiceNumber: "SUB-2026-0042",
-    plan: "Professional",
-    billingType: "Monthly",
-    billingModel: "Postpaid",
-    amount: 149900,
-    status: "paid",
-    issueDate: "2026-04-01",
-    dueDate: "2026-04-15",
-    paidDate: "2026-04-10",
-    paymentMethod: "mtn_momo",
-    reference: "PAY-MOMO-2026-0042",
-    items: [
-      {
-        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
-      },
-      {
-        description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000,
-      },
-    ],
-  },
-  {
-    id: "sub-inv-002",
-    invoiceNumber: "SUB-2026-0031",
-    plan: "Professional",
-    billingType: "Monthly",
-    billingModel: "Postpaid",
-    amount: 129900,
-    status: "paid",
-    issueDate: "2026-03-01",
-    dueDate: "2026-03-15",
-    paidDate: "2026-03-12",
-    paymentMethod: "mtn_momo",
-    reference: "PAY-MOMO-2026-0031",
-    items: [
-      {
-        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
-      },
-    ],
-  },
-  {
-    id: "sub-inv-003",
-    invoiceNumber: "SUB-2026-0024",
-    plan: "Professional",
-    billingType: "Monthly",
-    billingModel: "Prepaid",
-    amount: 129900,
-    status: "paid",
-    issueDate: "2026-02-01",
-    dueDate: "2026-02-15",
-    paidDate: "2026-02-14",
-    paymentMethod: "bank_transfer",
-    reference: "PAY-BT-2026-0024",
-    items: [
-      {
-        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
-      },
-    ],
-  },
-  {
-    id: "sub-inv-004",
-    invoiceNumber: "SUB-2026-0051",
-    plan: "Professional",
-    billingType: "Monthly",
-    billingModel: "Postpaid",
-    amount: 149900,
-    status: "pending",
-    issueDate: "2026-05-01",
-    dueDate: "2026-05-15",
-    paidDate: null,
-    paymentMethod: null,
-    reference: "—",
-    items: [
-      {
-        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
-      },
-      {
-        description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000,
-      },
-    ],
-  },
-  {
-    id: "sub-inv-005",
-    invoiceNumber: "SUB-2026-0017",
-    plan: "Starter",
-    billingType: "Yearly",
-    billingModel: "Prepaid",
-    amount: 599000,
-    status: "overdue",
-    issueDate: "2026-01-01",
-    dueDate: "2026-01-15",
-    paidDate: null,
-    paymentMethod: null,
-    reference: "—",
-    items: [
-      {
-        description: "Starter Plan — Yearly", quantity: 1, unitPrice: 599000, total: 599000,
-      },
-    ],
-  },
-  {
-    id: "sub-inv-006",
-    invoiceNumber: "SUB-2025-0998",
-    plan: "Professional",
-    billingType: "Monthly",
-    billingModel: "Trial",
-    amount: 0,
-    status: "paid",
-    issueDate: "2025-12-01",
-    dueDate: "2025-12-15",
-    paidDate: "2025-12-01",
-    paymentMethod: "card",
-    reference: "TRIAL-2025-0998",
-    items: [
-      {
-        description: "Free Trial — Professional Plan", quantity: 1, unitPrice: 0, total: 0,
-      },
-    ],
-  },
-];
+// ponytail: empty until a subscription-invoices endpoint exists
+const INVOICES: SubscriptionInvoice[] = [];
 
 function statusBadge(s: SubInvoiceStatus) {
   switch (s) {
@@ -282,8 +161,7 @@ function modelBadge(m: BillingModel) {
 }
 
 export function SubscriptionInvoicesPanel() {
-  const { user } = useAuthStore();
-  const tenantName = user?.tenantId ? "Your Organisation" : "Demo Tenant";
+  const tenantName = "Your Organisation";
 
   const [
     search,
@@ -350,7 +228,7 @@ export function SubscriptionInvoicesPanel() {
   });
 
   const allPlans = useMemo(
-    () => Array.from(new Set(DEMO_INVOICES.map(i => i.plan))),
+    () => Array.from(new Set(INVOICES.map(i => i.plan))),
     [],
   );
 
@@ -436,7 +314,7 @@ export function SubscriptionInvoicesPanel() {
 
   const filtered = useMemo(
     () => {
-      return DEMO_INVOICES.filter((inv) => {
+      return INVOICES.filter((inv) => {
         if (statusFilter !== "all" && inv.status !== statusFilter)
           return false;
         if (filters.billingType && inv.billingType !== filters.billingType)
@@ -479,16 +357,16 @@ export function SubscriptionInvoicesPanel() {
     ],
   );
 
-  const totalPaid = DEMO_INVOICES.filter(i => i.status === "paid").reduce(
+  const totalPaid = INVOICES.filter(i => i.status === "paid").reduce(
     (s, i) => s + i.amount,
     0,
   );
-  const outstanding = DEMO_INVOICES.filter(i => i.status !== "paid").reduce(
+  const outstanding = INVOICES.filter(i => i.status !== "paid").reduce(
     (s, i) => s + i.amount,
     0,
   );
-  const overdueCount = DEMO_INVOICES.filter(i => i.status === "overdue").length;
-  const nextDue = DEMO_INVOICES.find(i => i.status === "pending")?.dueDate ?? "—";
+  const overdueCount = INVOICES.filter(i => i.status === "overdue").length;
+  const nextDue = INVOICES.find(i => i.status === "pending")?.dueDate ?? "—";
 
   const handleDownload = (inv: SubscriptionInvoice) => {
     if (inv.status !== "paid" || !inv.paidDate) {
