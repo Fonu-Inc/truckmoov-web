@@ -137,7 +137,7 @@ export type CreateJobPayload = {
     job_id?: string
     notes?: string
     additionalNotes?: string
-    time_window?: DispatchJobTimeWindow
+    time_window?: DispatchJobTimeWindow | null
     cargo?: JobCargoPayload
   }
 }
@@ -212,7 +212,7 @@ export type UpdateJobSchedulingPayload = {
   jobId: string
   data: {
     priority?: DispatchJobPriority
-    time_window?: DispatchJobTimeWindow
+    time_window?: DispatchJobTimeWindow | null
   }
 }
 
