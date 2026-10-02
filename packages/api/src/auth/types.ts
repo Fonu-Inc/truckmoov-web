@@ -828,25 +828,62 @@ export type SystemSimsQuery = {
     status?: string
     carrier?: string
     tenantId?: string
+    page?: number
+    limit?: number
   }
 }
 
 export type UpdateSystemSimPayload = {
   id: string
   data: {
-    plan: string
-    carrier: string
-    dataLimitMb: number
-    smsLimit: number
+    iccid?: string
+    msisdn?: string
+    imsi?: string | null
+    plan?: string
+    carrier?: string
+    dataLimitMb?: number
+    smsLimit?: number
   }
 }
 
 export type ReassignSystemSimPayload = {
   id: string
   data: {
-    tenantId: string
-    deviceId: string
+    tenantId: string | null
+    deviceId?: string | null
   }
+}
+
+export type CreateSystemSimPayload = {
+  iccid: string
+  msisdn: string
+  imsi?: string | null
+  carrier: string
+  plan?: string
+  dataLimitMb?: number
+  smsLimit?: number
+}
+
+export type ImportSystemSimRow = {
+  iccid: string
+  msisdn: string
+  imsi?: string | null
+  carrier?: string | null
+}
+
+export type ImportSystemSimsPayload = {
+  rows: ImportSystemSimRow[]
+}
+
+export type DeleteSystemSimPayload = { id: string }
+
+export type ActivateSystemSimPayload = { id: string }
+
+export type SystemSimStatusAction = 'activate' | 'suspend' | 'reinstate'
+
+export type BulkSystemSimStatusPayload = {
+  ids: string[]
+  action: SystemSimStatusAction
 }
 
 export type SuspendSystemSimPayload = {
@@ -863,6 +900,7 @@ export type SystemTenantsQuery = {
     search?: string
     status?: 'active' | 'pending' | 'suspended' | 'inactive' | 'terminated'
     plan?: 'starter' | 'professional' | 'enterprise'
+    planCode?: string
     organizationType?: 'fleet_provider' | 'enterprise' | 'aggregator' | 'owner_operator'
     kycStatus?: 'not_submitted' | 'pending' | 'under_review' | 'verified' | 'rejected'
     revenueFrom?: number
@@ -1936,6 +1974,9 @@ export type SystemTenant = SystemTenantSuspension & {
   billingEmail: string | null
   plan: 'starter' | 'professional' | 'enterprise'
   planCode: string | null
+  planName: string | null
+  /** False means no plan: null quota limits are then not unlimited. */
+  planAssigned: boolean
   status: 'active' | 'pending' | 'trial' | 'suspended' | 'inactive' | 'terminated'
   organizationType: string | null
   vehicleCount: number
@@ -1945,6 +1986,9 @@ export type SystemTenant = SystemTenantSuspension & {
   quotas: SystemTenantQuotas
   features: Record<string, boolean>
   createdAt: string
+  /** Cash collected this Africa/Lagos month, in naira. */
+  collectedThisMonthNgn: number
+  /** @deprecated use collectedThisMonthNgn */
   monthlyRevenueNgn: number
   lastActiveAt: string | null
   primaryContactName?: string | null
@@ -2372,19 +2416,62 @@ export type SystemSimItem = {
   plan: string
   status: string
   tenantId: string | null
+  tenantName?: string | null
   deviceId: string | null
+  deviceImei: string | null
+  suspensionReason: string | null
   dataUsageMb: number
   dataLimitMb: number
   smsUsage: number
   smsLimit: number
   monthlyCostNgn: number
   activationDate: string | null
+  expiryDate: string | null
+  lastActivity: string | null
   signalStrength: number | null
   networkType: string | null
   roaming: boolean
   fonuStatus: string | null
   createdAt: string
   updatedAt: string
+}
+
+export type SystemSimImportOutcome = 'imported' | 'skipped' | 'failed'
+
+export type SystemSimImportRowResult = {
+  row: number
+  iccid: string
+  outcome: SystemSimImportOutcome
+  reason: string | null
+  simId: string | null
+}
+
+export type SystemSimImportResult = {
+  imported: number
+  skipped: number
+  failed: number
+  results: SystemSimImportRowResult[]
+}
+
+export type SystemSimStatusItemResult = {
+  id: string
+  iccid: string | null
+  outcome: 'changed' | 'skipped' | 'failed'
+  reason: string | null
+  status: string | null
+}
+
+export type SystemSimBulkStatusResult = {
+  action: SystemSimStatusAction
+  changed: number
+  skipped: number
+  failed: number
+  results: SystemSimStatusItemResult[]
+}
+
+export type SystemSimDeleteResult = {
+  id: string
+  iccid: string
 }
 
 export type SystemSimsList = {
@@ -2628,6 +2715,32 @@ export type SystemDeviceSetupSummaryResponse = ServerResponse<SystemDeviceSetupS
 export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
 export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
 export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown> & Partial<SystemTenantSuspension>>
+export type SystemTenantBilling = {
+  tenantId: string
+  plan: { code: string; name: string | null } | null
+  licence: { status: 'active' | 'renewed' | 'ended'; periodStart: string; validUntil: string } | null
+  openInvoice: {
+    id: string
+    number: string
+    dueDate: string
+    status: string
+    isRenewal: boolean
+    amountOwedNgn: number
+  } | null
+  totalOwedNgn: number
+  lastPayment: { amountNgn: number; paidAt: string; method: string | null } | null
+  enforcement: {
+    stage: 'current' | 'in_grace' | 'past_grace'
+    dueDate: string
+    graceEndsOn: string
+    owedNgn: number
+    suspended: boolean
+    suspensionCause: 'manual' | 'non_payment' | null
+  } | null
+  wallet: { balanceNgn: number; status: 'healthy' | 'low' | 'negative' } | null
+  collectedThisMonthNgn: number
+}
+export type SystemTenantBillingResponse = ServerResponse<SystemTenantBilling>
 export type SystemTenantDeleteResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantOnboardingResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantOnboardingReferenceDataResponse = ServerResponse<Record<string, unknown>>
@@ -2662,6 +2775,9 @@ export type StillReportingDevices = {
 
 export type StillReportingDevicesResponse = ServerResponse<StillReportingDevices>
 export type SystemSimsListResponse = ServerResponse<SystemSimsList>
+export type SystemSimImportResponse = ServerResponse<SystemSimImportResult>
+export type SystemSimBulkStatusResponse = ServerResponse<SystemSimBulkStatusResult>
+export type SystemSimDeleteResponse = ServerResponse<SystemSimDeleteResult>
 export type SystemSimResponse = ServerResponse<SystemSimItem>
 export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
 export type DataBundleDashboardSummaryResponse = ServerResponse<DataBundleDashboardSummary>

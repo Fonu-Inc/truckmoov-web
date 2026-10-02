@@ -295,33 +295,33 @@ export function TenantOnboardingPanel() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
         <StatCard
           title="Total Applications"
-          value={summary?.total ?? 0}
+          value={summary?.total ?? "—"}
           icon={ClipboardList}
           loading={summaryQuery.isPending}
         />
         <StatCard
           title="Pending Review"
-          value={summary?.pendingReview ?? 0}
+          value={summary?.pendingReview ?? "—"}
           icon={Hourglass}
           loading={summaryQuery.isPending}
         />
         <StatCard
           title="Changes Requested"
-          value={summary?.changesRequested ?? 0}
+          value={summary?.changesRequested ?? "—"}
           icon={FileWarning}
           variant="warning"
           loading={summaryQuery.isPending}
         />
         <StatCard
           title="Approved"
-          value={summary?.approved ?? 0}
+          value={summary?.approved ?? "—"}
           icon={CheckCircle2}
           variant="success"
           loading={summaryQuery.isPending}
         />
         <StatCard
           title="Rejected"
-          value={summary?.rejected ?? 0}
+          value={summary?.rejected ?? "—"}
           icon={XCircle}
           variant="danger"
           loading={summaryQuery.isPending}

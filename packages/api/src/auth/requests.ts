@@ -275,6 +275,7 @@ import type {
   SystemSimsListResponse,
   SystemSubscriptionPlansResponse,
   SystemTenantDeleteResponse,
+  SystemTenantBillingResponse,
   SystemTenantDetailResponse,
   SystemTenantInviteActionResponse,
   SystemTenantOnboardingReferenceDataResponse,
@@ -294,6 +295,14 @@ import type {
   UpdateProfilePayload,
   ReassignSystemSimPayload,
   SuspendSystemSimPayload,
+  CreateSystemSimPayload,
+  ImportSystemSimsPayload,
+  DeleteSystemSimPayload,
+  ActivateSystemSimPayload,
+  BulkSystemSimStatusPayload,
+  SystemSimImportResponse,
+  SystemSimBulkStatusResponse,
+  SystemSimDeleteResponse,
   UpdateSubscriptionPlanPricePayload,
   ConfirmTwoFactorPayload,
   DisableTwoFactorPayload,
@@ -882,6 +891,11 @@ export async function getSystemTenant({ id }: { id: string }) {
   return data
 }
 
+export async function getSystemTenantBilling({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemTenantBillingResponse>(`/auth/system/tenants/${id}/billing`)
+  return data
+}
+
 export async function updateTenant({ id, data }: UpdateTenantPayload) {
   const { data: res } = await axiosInstance.patch<SystemTenantDetailResponse>(`/auth/system/tenants/${id}`, data)
   return res
@@ -1003,6 +1017,31 @@ export async function reassignSystemSim({ id, data: body }: ReassignSystemSimPay
 
 export async function suspendSystemSim({ id, data: body }: SuspendSystemSimPayload) {
   const { data } = await axiosInstance.patch<SystemSimResponse>(`/auth/system/sims/${id}/suspend`, body)
+  return data
+}
+
+export async function createSystemSim(body: CreateSystemSimPayload) {
+  const { data } = await axiosInstance.post<SystemSimResponse>('/auth/system/sims', body)
+  return data
+}
+
+export async function importSystemSims(body: ImportSystemSimsPayload) {
+  const { data } = await axiosInstance.post<SystemSimImportResponse>('/auth/system/sims/import', body)
+  return data
+}
+
+export async function deleteSystemSim({ id }: DeleteSystemSimPayload) {
+  const { data } = await axiosInstance.delete<SystemSimDeleteResponse>(`/auth/system/sims/${id}`)
+  return data
+}
+
+export async function activateSystemSim({ id }: ActivateSystemSimPayload) {
+  const { data } = await axiosInstance.patch<SystemSimResponse>(`/auth/system/sims/${id}/activate`)
+  return data
+}
+
+export async function bulkSystemSimStatus(body: BulkSystemSimStatusPayload) {
+  const { data } = await axiosInstance.post<SystemSimBulkStatusResponse>('/auth/system/sims/bulk-status', body)
   return data
 }
 

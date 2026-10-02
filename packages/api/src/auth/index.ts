@@ -71,6 +71,11 @@ import {
   exportSystemDevicesCatalog,
   exportSystemDevices,
   exportSystemSims,
+  createSystemSim,
+  importSystemSims,
+  deleteSystemSim,
+  activateSystemSim,
+  bulkSystemSimStatus,
   exportSystemSimsRequests,
   exportSystemSupportTickets,
   exportSystemTenants,
@@ -137,6 +142,7 @@ import {
   getSystemSupportTicket,
   getSystemSupportTickets,
   getSystemTenant,
+  getSystemTenantBilling,
   getSystemTenants,
   getSystemTenantsSummary,
   inviteUser,
@@ -438,6 +444,7 @@ export const AUTH_QUERY_KEY = {
   systemTenants: (payload?: SystemTenantsQuery) =>
     payload ? ['systemTenants', payload] : ['systemTenants'],
   systemTenant: (id: string) => ['systemTenant', id],
+  systemTenantBilling: (id: string) => ['systemTenantBilling', id],
   systemTenantsSummary: ['systemTenantsSummary'],
 
   systemDevices: (payload?: SystemDevicesQuery) =>
@@ -1229,6 +1236,17 @@ export function getSystemTenantQueryOptions(id: string) {
   })
 }
 
+export function getSystemTenantBillingQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTenantBilling(id),
+    queryFn: () => getSystemTenantBilling({ id }),
+  })
+}
+
+export function useSystemTenantBilling(id: string, enabled = true) {
+  return useQuery({ ...getSystemTenantBillingQueryOptions(id), enabled: enabled && !!id })
+}
+
 export function getSystemTenantsExportQueryOptions(payload?: SystemTenantsQuery) {
   return queryOptions({
     queryKey: [...AUTH_QUERY_KEY.systemTenants(payload), 'export'],
@@ -1477,6 +1495,53 @@ export function useUpdateSystemSim() {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSim(id) })
+    },
+  })
+}
+
+function invalidateSystemSims(id?: string) {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
+  if (id) queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSim(id) })
+}
+
+export function useCreateSystemSim() {
+  return useMutation({
+    mutationFn: createSystemSim,
+    onSuccess: () => invalidateSystemSims(),
+  })
+}
+
+export function useImportSystemSims() {
+  return useMutation({
+    mutationFn: importSystemSims,
+    onSuccess: () => invalidateSystemSims(),
+  })
+}
+
+export function useDeleteSystemSim() {
+  return useMutation({
+    mutationFn: deleteSystemSim,
+    onSuccess: (_, { id }) => {
+      invalidateSystemSims()
+      queryClient.removeQueries({ queryKey: AUTH_QUERY_KEY.systemSim(id) })
+    },
+  })
+}
+
+export function useActivateSystemSim() {
+  return useMutation({
+    mutationFn: activateSystemSim,
+    onSuccess: (_, { id }) => invalidateSystemSims(id),
+  })
+}
+
+export function useBulkSystemSimStatus() {
+  return useMutation({
+    mutationFn: bulkSystemSimStatus,
+    onSuccess: (_, { ids }) => {
+      invalidateSystemSims()
+      ids.forEach((id) => queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSim(id) }))
     },
   })
 }

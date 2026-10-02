@@ -37,6 +37,7 @@ import {
 } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { getBillingPlansQueryOptions } from "@truckmoov/api/billing";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -87,7 +88,7 @@ const ORG_TYPE_LABELS: Record<string, string> = {
   owner_operator: "Owner-Operator",
 };
 
-const tenantFilterFields: FilterField[] = [
+const baseTenantFilterFields: FilterField[] = [
   {
     key: "status",
     label: "Status",
@@ -99,7 +100,7 @@ const tenantFilterFields: FilterField[] = [
       },
       {
         value: "pending",
-        label: "Trial",
+        label: "Pending",
       },
       {
         value: "suspended",
@@ -138,20 +139,14 @@ const tenantFilterFields: FilterField[] = [
     key: "plan",
     label: "Plan",
     type: "select",
-    options: [
-      {
-        value: "starter",
-        label: "Starter",
-      },
-      {
-        value: "professional",
-        label: "Professional",
-      },
-      {
-        value: "enterprise",
-        label: "Enterprise",
-      },
-    ],
+    options: [],
+  },
+  {
+    key: "revenue",
+    label: "Collected This Month (₦)",
+    type: "range",
+    fromPlaceholder: "Min ₦",
+    toPlaceholder: "Max ₦",
   },
   {
     key: "kyc",
@@ -181,16 +176,13 @@ const tenantFilterFields: FilterField[] = [
     ],
   },
   {
-    key: "revenue",
-    label: "Revenue (NGN)",
-    type: "range",
-  },
-  {
     key: "lastActive",
     label: "Last Active",
     type: "date",
   },
 ];
+
+const tenantFilterFields = baseTenantFilterFields;
 
 export default function TenantsPage() {
   const queryClient = useQueryClient();
@@ -236,20 +228,20 @@ export default function TenantsPage() {
   const apiStatus = advancedFilters.status?.enabled && advancedFilters.status?.value
     ? advancedFilters.status.value as "active" | "pending" | "suspended" | "inactive" | "terminated"
     : undefined;
-  const apiPlan = advancedFilters.plan?.enabled && advancedFilters.plan?.value
-    ? advancedFilters.plan.value as "starter" | "professional" | "enterprise"
+  const apiPlanCode = advancedFilters.plan?.enabled && advancedFilters.plan?.value
+    ? advancedFilters.plan.value
     : undefined;
+  const toAmount = (raw?: string) => {
+    const amount = raw ? Number(raw) : Number.NaN;
+    return Number.isFinite(amount) ? amount : undefined;
+  };
+  const apiRevenueFrom = advancedFilters.revenue?.enabled ? toAmount(advancedFilters.revenue.from) : undefined;
+  const apiRevenueTo = advancedFilters.revenue?.enabled ? toAmount(advancedFilters.revenue.to) : undefined;
   const apiOrganizationType = advancedFilters.orgType?.enabled && advancedFilters.orgType?.value
     ? advancedFilters.orgType.value as "fleet_provider" | "enterprise" | "aggregator" | "owner_operator"
     : undefined;
   const apiKycStatus = advancedFilters.kyc?.enabled && advancedFilters.kyc?.value
     ? advancedFilters.kyc.value as "not_submitted" | "pending" | "under_review" | "verified" | "rejected"
-    : undefined;
-  const apiRevenueFrom = advancedFilters.revenue?.enabled && advancedFilters.revenue?.from
-    ? Number(advancedFilters.revenue.from)
-    : undefined;
-  const apiRevenueTo = advancedFilters.revenue?.enabled && advancedFilters.revenue?.to
-    ? Number(advancedFilters.revenue.to)
     : undefined;
   const apiLastActiveFrom = advancedFilters.lastActive?.enabled && advancedFilters.lastActive?.from
     ? advancedFilters.lastActive.from
@@ -262,16 +254,26 @@ export default function TenantsPage() {
     params: {
       ...(debouncedSearch ? { search: debouncedSearch } : {}),
       ...(apiStatus ? { status: apiStatus } : {}),
-      ...(apiPlan ? { plan: apiPlan } : {}),
-      ...(apiOrganizationType ? { organizationType: apiOrganizationType } : {}),
-      ...(apiKycStatus ? { kycStatus: apiKycStatus } : {}),
+      ...(apiPlanCode ? { planCode: apiPlanCode } : {}),
       ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
       ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
+      ...(apiOrganizationType ? { organizationType: apiOrganizationType } : {}),
+      ...(apiKycStatus ? { kycStatus: apiKycStatus } : {}),
       ...(apiLastActiveFrom ? { lastActiveFrom: apiLastActiveFrom } : {}),
       ...(apiLastActiveTo ? { lastActiveTo: apiLastActiveTo } : {}),
     },
   }));
   const summaryQuery = useQuery(getSystemTenantsSummaryQueryOptions());
+  const plansQuery = useQuery(getBillingPlansQueryOptions({ params: { status: "all", limit: 100 } }));
+  const filterFields = useMemo<FilterField[]>(
+    () => tenantFilterFields.map(field => field.key === "plan"
+      ? {
+          ...field,
+          options: (plansQuery.data?.data?.items ?? []).map(plan => ({ value: plan.code, label: plan.name })),
+        }
+      : field),
+    [plansQuery.data],
+  );
 
   const tenantsPayload = tenantsQuery.data?.data;
   const summaryPayload = summaryQuery.data?.data;
@@ -292,7 +294,10 @@ export default function TenantsPage() {
     setIsDbDetailsSheetOpen,
   ] = useState(false);
 
-  const [suspendDbTenant, setSuspendDbTenant] = useState<SystemTenant | null>(null);
+  const [
+    suspendDbTenant,
+    setSuspendDbTenant,
+  ] = useState<SystemTenant | null>(null);
 
   const [
     deleteConfirmDbTenant,
@@ -326,7 +331,7 @@ export default function TenantsPage() {
     [tenantsPayload],
   );
 
-  // Stats — sourced exclusively from the summary API; show "N/A" when not available
+  // Stats — sourced exclusively from the summary API; show a dash when not available
   const {
     totalTenants,
     activeTenants,
@@ -335,11 +340,11 @@ export default function TenantsPage() {
     terminatedTenants,
   } = useMemo(
     () => ({
-      totalTenants: summaryPayload?.totalTenants ?? "N/A",
-      activeTenants: summaryPayload?.activeTenants ?? "N/A",
-      suspendedTenants: summaryPayload?.suspendedTenants ?? "N/A",
-      inactiveTenants: summaryPayload?.inactiveTenants ?? "N/A",
-      terminatedTenants: summaryPayload?.terminatedTenants ?? "N/A",
+      totalTenants: summaryPayload?.totalTenants ?? "—",
+      activeTenants: summaryPayload?.activeTenants ?? "—",
+      suspendedTenants: summaryPayload?.suspendedTenants ?? "—",
+      inactiveTenants: summaryPayload?.inactiveTenants ?? "—",
+      terminatedTenants: summaryPayload?.terminatedTenants ?? "—",
     }),
     [summaryPayload],
   );
@@ -427,16 +432,17 @@ export default function TenantsPage() {
                   </Badge>
                 ))
               )
-            : (
-                <Badge
-                  variant="outline"
-                  className="text-xs whitespace-nowrap"
-                >
-                  Enterprise
-                </Badge>
-              )}
+            : <span className="text-muted-foreground">—</span>}
         </div>
       ),
+    },
+    {
+      id: "plan",
+      accessorFn: row => row.planName ?? row.planCode ?? "",
+      header: "Plan",
+      cell: ({ row }) => row.original.planAssigned
+        ? <Badge variant="outline">{row.original.planName ?? row.original.planCode}</Badge>
+        : <span className="text-muted-foreground">No plan</span>,
     },
     {
       id: "status",
@@ -574,11 +580,11 @@ export default function TenantsPage() {
           params: {
             ...(debouncedSearch ? { search: debouncedSearch } : {}),
             ...(apiStatus ? { status: apiStatus } : {}),
-            ...(apiPlan ? { plan: apiPlan } : {}),
+            ...(apiPlanCode ? { planCode: apiPlanCode } : {}),
+      ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
+      ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
             ...(apiOrganizationType ? { organizationType: apiOrganizationType } : {}),
             ...(apiKycStatus ? { kycStatus: apiKycStatus } : {}),
-            ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
-            ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
             ...(apiLastActiveFrom ? { lastActiveFrom: apiLastActiveFrom } : {}),
             ...(apiLastActiveTo ? { lastActiveTo: apiLastActiveTo } : {}),
           },
@@ -623,8 +629,6 @@ export default function TenantsPage() {
               title="Total Tenants"
               value={totalTenants}
               icon={Building2}
-              change={12}
-              changeLabel="this month"
               loading={summaryQuery.isPending}
             />
             <StatCard
@@ -665,7 +669,7 @@ export default function TenantsPage() {
                     All Tenants
                   </CardTitle>
                   <CardDescription>
-                    Complete directory of tenant organizations with plan, lifecycle status, and quota usage.
+                    Complete directory of tenant organizations with plan, and lifecycle status.
                   </CardDescription>
                 </div>
                 <Button
@@ -721,7 +725,7 @@ export default function TenantsPage() {
                 </Select>
                 <PlatformFilterPopover
                   entity="tenants"
-                  fields={tenantFilterFields}
+                  fields={filterFields}
                   value={advancedFilters}
                   onApply={setAdvancedFilters}
                   onReset={() => setAdvancedFilters(buildEmptyDraft(tenantFilterFields))}
@@ -783,7 +787,10 @@ export default function TenantsPage() {
         onOpenChange={setIsDbDetailsSheetOpen}
       />
 
-      <SuspendAccessDialog tenant={suspendDbTenant} onClose={() => setSuspendDbTenant(null)} />
+      <SuspendAccessDialog
+        tenant={suspendDbTenant}
+        onClose={() => setSuspendDbTenant(null)}
+      />
 
       {/* Terminate DB Tenant Confirmation */}
       {deleteConfirmDbTenant && (

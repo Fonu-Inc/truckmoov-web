@@ -5,9 +5,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { DeviceCatalogManager } from "@/components/devices/DeviceCatalogManager";
-// TRU-FE-5 § 1 — the old ProvisioningQueue read a table nothing wrote to; the
-// real queue lives in DeviceSetupRequestsQueue, which is wired to the new
-// /auth/system/support/device-setup endpoint and the new payload shape.
 import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
 import { PlatformDeviceManagement } from "@/components/devices/PlatformDeviceManagement";
 import {
@@ -43,7 +40,7 @@ export default function PlatformDevices() {
               className="flex items-center gap-2"
             >
               <ClipboardCheck className="h-4 w-4" />
-              Approval Queue
+              Device Request
             </TabsTrigger>
             <TabsTrigger
               value="catalog"
