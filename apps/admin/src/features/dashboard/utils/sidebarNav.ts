@@ -89,22 +89,22 @@ export const ADMIN_ROLES: UserRole[] = [
  */
 export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   {
-    label: "Dashboard", href: "/", icon: LayoutDashboard, hasPermission: ADMIN_ROLES,
+    label: "Dashboard", href: "/", icon: LayoutDashboard, hasPermission: ADMIN_ROLES, requiredPermission: "admin.dashboard.read",
   },
   {
-    label: "Tenants", href: "/tenants", icon: Building2, hasPermission: ADMIN_ROLES,
+    label: "Tenants", href: "/tenants", icon: Building2, hasPermission: ADMIN_ROLES, requiredPermission: "admin.tenants.read",
   },
   {
-    label: "Installers", href: "/installers", icon: Wrench, hasPermission: ADMIN_ROLES,
+    label: "Installers", href: "/installers", icon: Wrench, hasPermission: ADMIN_ROLES, requiredPermission: "admin.installers.read",
   },
   {
-    label: "Devices", href: "/devices", icon: Cpu, hasPermission: ADMIN_ROLES,
+    label: "Devices", href: "/devices", icon: Cpu, hasPermission: ADMIN_ROLES, requiredPermission: "admin.devices.read",
   },
   {
-    label: "IoT SIMs", href: "/sims", icon: Wifi, hasPermission: ADMIN_ROLES,
+    label: "IoT SIMs", href: "/sims", icon: Wifi, hasPermission: ADMIN_ROLES, requiredPermission: "admin.sims.read",
   },
   {
-    label: "M2M IoT Bundles", href: "/data-bundles", icon: Database, hasPermission: ADMIN_ROLES,
+    label: "M2M IoT Bundles", href: "/data-bundles", icon: Database, hasPermission: ADMIN_ROLES, requiredPermission: "admin.billing.read",
   },
   {
     label: "Communications",
@@ -132,16 +132,16 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Billing", href: "/subscription", icon: CreditCard, hasPermission: ADMIN_ROLES,
+    label: "Billing", href: "/subscription", icon: CreditCard, hasPermission: ADMIN_ROLES, requiredPermission: "admin.billing.read",
   },
   {
-    label: "Security", href: "/security", icon: ShieldHalf, hasPermission: ADMIN_ROLES,
+    label: "Security", href: "/security", icon: ShieldHalf, hasPermission: ADMIN_ROLES, requiredPermission: "admin.security.read",
   },
   {
-    label: "Compliance & Audit", href: "/compliance-audit", icon: ShieldCheck, hasPermission: ADMIN_ROLES,
+    label: "Compliance & Audit", href: "/compliance-audit", icon: ShieldCheck, hasPermission: ADMIN_ROLES, requiredPermission: "admin.audit.read",
   },
   {
-    label: "Settings", href: "/settings", icon: Settings, hasPermission: ADMIN_ROLES,
+    label: "Settings", href: "/settings", icon: Settings, hasPermission: ADMIN_ROLES, requiredPermission: "admin.settings.read",
   },
 ];
 
@@ -212,8 +212,8 @@ export function getEntriesForRole(role: UserRole): SidebarEntry[] {
  * Deepest entry whose href matches this pathname — exact match wins, else the
  * longest href prefix.
  *
- * Permissions are deliberately ignored: this names the page you are on, and
- * whether you may be there is AuthGuard's call, not the top bar's.
+ * Permissions are ignored here: this only names the page for the top bar.
+ * Deep-link access control is route.tsx guardedByPermission + RequirePermission.
  */
 export function matchNavEntry(pathname: string): SidebarNavItem | undefined {
   let best: SidebarNavItem | undefined;

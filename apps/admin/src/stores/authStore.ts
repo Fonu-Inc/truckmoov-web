@@ -1,5 +1,6 @@
 import type { AuthUser } from "@truckmoov/api/auth";
 import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
+import { queryClient } from "@truckmoov/api/lib/query-client";
 import { create } from "zustand";
 
 type AuthState = {
@@ -35,6 +36,9 @@ export const useAuthStore = create<AuthState>(set => ({
   },
   logout: () => {
     useApiAuthStore.getState().logout();
+    // Drop every cached server answer, capabilities included, so the next
+    // user signing in on this tab is never judged by the last one's grants.
+    queryClient.clear();
     set({
       user: null,
       isAuthenticated: false,

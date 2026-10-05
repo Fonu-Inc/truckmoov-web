@@ -12,6 +12,9 @@ import { DashboardLayout } from "@/features/dashboard/components/layout/Dashboar
 import { ADMIN_ROLES } from "@/features/dashboard/utils/sidebarNav";
 import { SecurityLayout } from "@/features/security/components/layout/SecurityLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
+import {
+  guardedByPermission, guardedByPermissionNamed,
+} from "@/shared/lib/permissionRoute";
 import { useAuthStore } from "@/stores/authStore";
 
 const useRole = () => useAuthStore(s => s.user?.role);
@@ -63,19 +66,10 @@ const GuardedSecurityLayout = withGuard(
  * of per page. Auth and the 404/403 screens sit outside it — they own their
  * own chrome.
  *
- * `/settings` is the one pathful layout route: SettingsLayout owns the tab bar,
- * each tab is a child route. Tabs are routes, not local state — see the block
- * further down and features/settings/utils/settingsNav.ts.
- *
- * Pages are loaded through react-router's `lazy`, not imported at the top: each
- * becomes its own chunk that arrives when the route is first visited. Eagerly
- * importing all of them put every platform table, chart and simulator into the
- * initial bundle, so the first paint waited on code for pages nobody had opened.
- * `DashboardLayout` renders the router's pending state while a chunk loads.
- *
- * `App`, the two layouts, the auth page and the status screens stay eager —
- * they are small and on the critical path, and a spinner in place of the login
- * form would be worse than the bytes.
+ * Fine-grained permission gates use guardedByPermission (catalog keys aligned
+ * with API @Requires / @OnResource, see shared/lib/permissionRoute.tsx).
+ * Missing permission → /not-authorized, decided on every render and before
+ * the page chunk is fetched.
  */
 export const router = createBrowserRouter([
   {
@@ -99,94 +93,154 @@ export const router = createBrowserRouter([
         Component: NotAuthorized,
       },
 
-      // Everything inside the dashboard shell. Pages render their own content
-      // only; the sidebar, top bar and page title come from DashboardLayout.
       {
         Component: GuardedDashboardLayout,
         children: [
           {
             path: "/",
-            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/PlatformDashboard")).default }),
+            lazy: guardedByPermission(
+              "/",
+              () => import("@/features/dashboard/components/pages/PlatformDashboard"),
+            ),
           },
           {
             path: "/tenants",
-            lazy: async () => ({ Component: (await import("@/features/tenants/components/pages/TenantsPage")).default }),
+            lazy: guardedByPermission(
+              "/tenants",
+              () => import("@/features/tenants/components/pages/TenantsPage"),
+            ),
           },
           {
             path: "/tenants/onboarding/:id",
-            lazy: async () => ({ Component: (await import("@/features/tenants/components/pages/OnboardingApplicationPage")).default }),
+            lazy: guardedByPermission(
+              "/tenants/onboarding",
+              () => import("@/features/tenants/components/pages/OnboardingApplicationPage"),
+            ),
           },
           {
             path: "/tenants/:id",
-            lazy: async () => ({ Component: (await import("@/features/tenants/components/pages/TenantDetailPage")).default }),
+            lazy: guardedByPermission(
+              "/tenants",
+              () => import("@/features/tenants/components/pages/TenantDetailPage"),
+            ),
           },
           {
             path: "/installers",
-            lazy: async () => ({ Component: (await import("@/features/installers/components/pages/InstallersPage")).default }),
+            lazy: guardedByPermission(
+              "/installers",
+              () => import("@/features/installers/components/pages/InstallersPage"),
+            ),
           },
           {
             path: "/devices",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformDevices")).default }),
+            lazy: guardedByPermission(
+              "/devices",
+              () => import("@/pages/platform/PlatformDevices"),
+            ),
           },
           {
             path: "/sims",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSIMs")).default }),
+            lazy: guardedByPermission(
+              "/sims",
+              () => import("@/pages/platform/PlatformSIMs"),
+            ),
           },
           {
             path: "/data-bundles",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformDataBundles")).default }),
+            lazy: guardedByPermission(
+              "/data-bundles",
+              () => import("@/pages/platform/PlatformDataBundles"),
+            ),
           },
           {
             path: "/simulator",
-            lazy: async () => ({ Component: (await import("@/pages/platform/DeviceSimulator")).default }),
+            lazy: guardedByPermission(
+              "/simulator",
+              () => import("@/pages/platform/DeviceSimulator"),
+            ),
           },
           {
             path: "/messaging",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformMessagingCenter")).default }),
+            lazy: guardedByPermission(
+              "/messaging",
+              () => import("@/pages/platform/PlatformMessagingCenter"),
+            ),
           },
-          // Communications group.
           {
             path: "/whatsapp",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformWhatsAppSetup")).default }),
+            lazy: guardedByPermission(
+              "/whatsapp",
+              () => import("@/pages/platform/PlatformWhatsAppSetup"),
+            ),
           },
           {
             path: "/inbox",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformInbox")).default }),
+            lazy: guardedByPermission(
+              "/inbox",
+              () => import("@/pages/platform/PlatformInbox"),
+            ),
           },
           {
             path: "/sms-templates",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSmsTemplates")).default }),
+            lazy: guardedByPermission(
+              "/sms-templates",
+              () => import("@/pages/platform/PlatformSmsTemplates"),
+            ),
           },
           {
             path: "/voice",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformVoice")).default }),
+            lazy: guardedByPermission(
+              "/voice",
+              () => import("@/pages/platform/PlatformVoice"),
+            ),
           },
           {
             path: "/campaigns",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformCampaigns")).default }),
+            lazy: guardedByPermission(
+              "/campaigns",
+              () => import("@/pages/platform/PlatformCampaigns"),
+            ),
           },
           {
             path: "/subscription",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformCommercialBilling")).default }),
+            lazy: guardedByPermission(
+              "/subscription",
+              () => import("@/pages/platform/PlatformCommercialBilling"),
+            ),
           },
           {
             path: "/security",
             Component: GuardedSecurityLayout,
             children: [
               {
-                index: true, lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityOverviewPage")).default }),
+                index: true,
+                lazy: guardedByPermission(
+                  "/security",
+                  () => import("@/features/security/components/pages/SecurityOverviewPage"),
+                ),
               },
               {
-                path: "payments-access", lazy: async () => ({ Component: (await import("@/features/security/components/pages/PaymentsAccessPage")).default }),
+                path: "payments-access",
+                lazy: guardedByPermission(
+                  "/security",
+                  () => import("@/features/security/components/pages/PaymentsAccessPage"),
+                ),
               },
               {
-                path: "devices-sims", lazy: async () => ({ Component: (await import("@/features/security/components/pages/DevicesSimsPage")).default }),
+                path: "devices-sims",
+                lazy: guardedByPermission(
+                  "/security",
+                  () => import("@/features/security/components/pages/DevicesSimsPage"),
+                ),
               },
             ],
           },
           {
             path: "/compliance-audit",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformComplianceAudit")).default }),
+            lazy: guardedByPermission(
+              "/compliance-audit",
+              () => import("@/pages/platform/PlatformComplianceAudit"),
+            ),
           },
           // Settings is a pathful layout route: SettingsLayout owns the tab bar
           // and the Outlet, one child route per tab. The tab list it renders is
@@ -200,45 +254,83 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/GeneralSettingsPage")).default }),
+                lazy: guardedByPermission(
+                  "/settings",
+                  () => import("@/features/settings/components/pages/GeneralSettingsPage"),
+                ),
               },
               {
                 path: "team",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TeamSettingsPage")).default }),
+                lazy: guardedByPermission(
+                  "/settings/team",
+                  () => import("@/features/settings/components/pages/TeamSettingsPage"),
+                ),
               },
               {
                 path: "ai-providers",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformAISettings")).PlatformAISettings }),
+                lazy: guardedByPermissionNamed(
+                  "/settings/ai-providers",
+                  () => import("@/features/settings/components/ui/PlatformAISettings"),
+                  "PlatformAISettings",
+                ),
               },
               {
                 path: "telephony",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TelephonySettingsPage")).default }),
+                lazy: guardedByPermission(
+                  "/settings/telephony",
+                  () => import("@/features/settings/components/pages/TelephonySettingsPage"),
+                ),
                 children: [
                   {
-                    index: true, lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TelephonySettings")).TelephonySettings }),
+                    index: true,
+                    lazy: guardedByPermissionNamed(
+                      "/settings/telephony",
+                      () => import("@/features/settings/components/ui/TelephonySettings"),
+                      "TelephonySettings",
+                    ),
                   },
                   {
-                    path: "numbers", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PhoneNumberManagement")).PhoneNumberManagement }),
+                    path: "numbers",
+                    lazy: guardedByPermissionNamed(
+                      "/settings/telephony",
+                      () => import("@/features/settings/components/ui/PhoneNumberManagement"),
+                      "PhoneNumberManagement",
+                    ),
                   },
                   {
-                    path: "sender-ids", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SenderIdApprovalQueue")).SenderIdApprovalQueue }),
+                    path: "sender-ids",
+                    lazy: guardedByPermissionNamed(
+                      "/settings/telephony",
+                      () => import("@/features/settings/components/ui/SenderIdApprovalQueue"),
+                      "SenderIdApprovalQueue",
+                    ),
                   },
                 ],
               },
               {
                 path: "notifications",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/NotificationsSettingsPage")).default }),
+                lazy: guardedByPermission(
+                  "/settings/notifications",
+                  () => import("@/features/settings/components/pages/NotificationsSettingsPage"),
+                ),
               },
               {
-                // TRU-FE-23 — the signed-in admin's own two-factor, shared with the other portals.
+                // Own two-factor — no catalog permission (any signed-in admin).
                 path: "security",
-                lazy: async () => ({ Component: (await import("@truckmoov/reusables/components/auth/TwoFactorSetupCard")).TwoFactorSetupCard }),
+                lazy: guardedByPermissionNamed(
+                  "/settings/security",
+                  () => import("@truckmoov/reusables/components/auth/TwoFactorSetupCard"),
+                  "TwoFactorSetupCard",
+                ),
               },
             ],
           },
           {
             path: "/support",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSupport")).default }),
+            lazy: guardedByPermission(
+              "/support",
+              () => import("@/pages/platform/PlatformSupport"),
+            ),
           },
         ],
       },
