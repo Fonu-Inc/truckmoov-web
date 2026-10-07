@@ -1,9 +1,11 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { Printer } from "lucide-react";
 import {
   useEffect, useState,
 } from "react";
 import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 
 type PreviewRow = {
   vehicle_id: string;
@@ -73,6 +75,96 @@ const TIER_LABEL: Record<string, string> = {
   "loss-making": "Loss-Making",
 };
 
+// Header colour per accent; full class strings so Tailwind keeps them.
+const ACCENT_HEAD: Record<string, string> = {
+  blue: "[&_thead_tr]:bg-blue-600 [&_th]:text-white",
+  green: "[&_thead_tr]:bg-green-600 [&_th]:text-white",
+  amber: "[&_thead_tr]:bg-amber-600 [&_th]:text-white",
+  slate: "[&_thead_tr]:bg-slate-700 [&_th]:text-white",
+};
+// Zebra rows, as the print statement had.
+const STATEMENT_TABLE = "[&_tbody_tr:nth-child(odd)]:bg-muted/30";
+const RIGHT = { className: "text-right" };
+
+const perVehicleColumns: ColumnDef<PreviewRow>[] = [
+  {
+    accessorKey: "vehicle_name",
+    header: "Vehicle",
+    enableSorting: false,
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "revenue",
+    header: "Revenue",
+    enableSorting: false,
+    meta: { className: "text-right text-success" },
+    cell: ({ row }) => fmt(row.original.revenue),
+  },
+  {
+    accessorKey: "costs",
+    header: "Costs",
+    enableSorting: false,
+    meta: { className: "text-right text-destructive" },
+    cell: ({ row }) => fmt(row.original.costs),
+  },
+  {
+    accessorKey: "net_profit",
+    header: "Profit",
+    enableSorting: false,
+    meta: RIGHT,
+    cell: ({ row }) => (
+      <span className={`font-semibold ${row.original.net_profit >= 0 ? "text-success" : "text-destructive"}`}>
+        {fmt(row.original.net_profit)}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "margin",
+    header: "Margin",
+    enableSorting: false,
+    meta: RIGHT,
+    cell: ({ row }) => `${row.original.margin.toFixed(1)}%`,
+  },
+  {
+    accessorKey: "tier",
+    header: "Tier",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <span className={`px-2 py-0.5 rounded text-xs ${TIER_COLOR[row.original.tier] || ""}`}>
+        {TIER_LABEL[row.original.tier] || row.original.tier}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "score",
+    header: "Score",
+    enableSorting: false,
+    meta: RIGHT,
+  },
+];
+
+const costColumns: ColumnDef<PreviewRow>[] = [
+  {
+    accessorKey: "vehicle_name",
+    header: "Vehicle",
+    enableSorting: false,
+    meta: { className: "font-medium" },
+  },
+  ...([
+    "fuel",
+    "maintenance",
+    "wages",
+    "insurance",
+    "depreciation",
+  ] as const).map((key): ColumnDef<PreviewRow> => ({
+    accessorKey: key,
+    header: key.charAt(0).toUpperCase() + key.slice(1),
+    enableSorting: false,
+    meta: RIGHT,
+    cell: ({ row }) => fmt(row.original[key]),
+  })),
+];
+
 export default function VehiclePLStatementPreview() {
   const [
     payload,
@@ -122,6 +214,7 @@ export default function VehiclePLStatementPreview() {
   const margin = totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0;
   const accentBg = ACCENT_BG[options.accent];
   const accentText = ACCENT_TEXT[options.accent];
+  const accentHead = ACCENT_HEAD[options.accent];
 
   return (
     <div className="min-h-screen bg-muted/30 py-8 print:bg-white print:py-0">
@@ -202,59 +295,35 @@ export default function VehiclePLStatementPreview() {
           {options.includePerVehicle && rows.length > 0 && (
             <section>
               <h2 className={`text-2xl font-bold mb-4 ${accentText}`}>Per-Vehicle Breakdown</h2>
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className={`${accentBg} text-white`}>
-                    <th className="text-left p-2">Vehicle</th>
-                    <th className="text-right p-2">Revenue</th>
-                    <th className="text-right p-2">Costs</th>
-                    <th className="text-right p-2">Profit</th>
-                    <th className="text-right p-2">Margin</th>
-                    <th className="text-left p-2">Tier</th>
-                    <th className="text-right p-2">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r, i) => (
-                    <tr
-                      key={r.vehicle_id}
-                      className={i % 2 === 0 ? "bg-muted/30" : ""}
-                    >
-                      <td className="p-2 font-medium">{r.vehicle_name}</td>
-                      <td className="text-right p-2 text-success">{fmt(r.revenue)}</td>
-                      <td className="text-right p-2 text-destructive">{fmt(r.costs)}</td>
-                      <td className={`text-right p-2 font-semibold ${r.net_profit >= 0 ? "text-success" : "text-destructive"}`}>
-                        {fmt(r.net_profit)}
-                      </td>
-                      <td className="text-right p-2">
-                        {r.margin.toFixed(1)}
-                        %
-                      </td>
-                      <td className="p-2">
-                        <span className={`px-2 py-0.5 rounded text-xs ${TIER_COLOR[r.tier] || ""}`}>
-                          {TIER_LABEL[r.tier] || r.tier}
-                        </span>
-                      </td>
-                      <td className="text-right p-2">{r.score}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 font-bold">
-                    <td className="p-2">Total</td>
-                    <td className="text-right p-2">{fmt(totals.revenue)}</td>
-                    <td className="text-right p-2">{fmt(totals.costs)}</td>
-                    <td className={`text-right p-2 ${totals.profit >= 0 ? "text-success" : "text-destructive"}`}>
-                      {fmt(totals.profit)}
-                    </td>
-                    <td className="text-right p-2">
-                      {margin.toFixed(1)}
-                      %
-                    </td>
-                    <td colSpan={2}></td>
-                  </tr>
-                </tfoot>
-              </table>
+              <DataTable
+                className={`border-collapse ${STATEMENT_TABLE} ${accentHead}`}
+                columns={perVehicleColumns}
+                data={rows}
+              />
+              <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t-2 p-2 text-sm font-bold">
+                <span>Total</span>
+                <span>
+                  Revenue
+                  {" "}
+                  {fmt(totals.revenue)}
+                </span>
+                <span>
+                  Costs
+                  {" "}
+                  {fmt(totals.costs)}
+                </span>
+                <span className={totals.profit >= 0 ? "text-success" : "text-destructive"}>
+                  Profit
+                  {" "}
+                  {fmt(totals.profit)}
+                </span>
+                <span>
+                  Margin
+                  {" "}
+                  {margin.toFixed(1)}
+                  %
+                </span>
+              </div>
             </section>
           )}
 
@@ -262,33 +331,11 @@ export default function VehiclePLStatementPreview() {
           {options.includeCostBreakdown && rows.length > 0 && (
             <section className="page-break-before-auto">
               <h2 className={`text-2xl font-bold mb-4 ${accentText}`}>Cost Composition</h2>
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className={`${accentBg} text-white`}>
-                    <th className="text-left p-2">Vehicle</th>
-                    <th className="text-right p-2">Fuel</th>
-                    <th className="text-right p-2">Maintenance</th>
-                    <th className="text-right p-2">Wages</th>
-                    <th className="text-right p-2">Insurance</th>
-                    <th className="text-right p-2">Depreciation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r, i) => (
-                    <tr
-                      key={r.vehicle_id}
-                      className={i % 2 === 0 ? "bg-muted/30" : ""}
-                    >
-                      <td className="p-2 font-medium">{r.vehicle_name}</td>
-                      <td className="text-right p-2">{fmt(r.fuel)}</td>
-                      <td className="text-right p-2">{fmt(r.maintenance)}</td>
-                      <td className="text-right p-2">{fmt(r.wages)}</td>
-                      <td className="text-right p-2">{fmt(r.insurance)}</td>
-                      <td className="text-right p-2">{fmt(r.depreciation)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <DataTable
+                className={`border-collapse ${STATEMENT_TABLE} ${accentHead}`}
+                columns={costColumns}
+                data={rows}
+              />
             </section>
           )}
 

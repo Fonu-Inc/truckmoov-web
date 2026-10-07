@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { DataBundleAllocationsQuery } from "@truckmoov/api/auth";
 import type { DataBundlesLayoutContext } from "@/features/data-bundle/components/layout/DataBundlesLayout";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
@@ -30,9 +32,6 @@ import { Progress } from "@/components/shadcn/progress";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import {
   formatBundleSize,
   formatMobile,
@@ -127,6 +126,125 @@ export function MyBundlesPage() {
       ))
       .catch((error: Error) => toast.error(error.message));
   };
+
+  const allocationColumns: ColumnDef<(typeof filtered)[number]>[] = [
+    {
+      id: "sim",
+      header: "SIM Card",
+      cell: ({ row }) => {
+        const a = row.original;
+        const sim = simByNumber.get(formatMobile(a.msisdn));
+        return (
+          <>
+            <p className="text-sm">{formatMobile(a.msisdn)}</p>
+            <p className="text-xs text-muted-foreground">{sim?.operator ?? a.bundle?.carrier ?? "—"}</p>
+          </>
+        );
+      },
+    },
+    {
+      id: "device",
+      header: "Device Assigned To",
+      cell: ({ row }) => {
+        const sim = simByNumber.get(formatMobile(row.original.msisdn));
+        return (
+          <>
+            <p className="text-sm">{sim?.assignedDevice?.name || sim?.assignedDevice?.imei || "—"}</p>
+            <p className="text-xs text-muted-foreground">{sim?.assignedDevice?.type}</p>
+          </>
+        );
+      },
+    },
+    {
+      accessorKey: "bundle_code",
+      header: "Bundle",
+    },
+    {
+      id: "usage",
+      header: "Usage",
+      meta: { className: "w-[200px]" },
+      cell: ({ row }) => {
+        const a = row.original;
+        const pct = a.data_mb_total > 0 ? (a.data_mb_used / a.data_mb_total) * 100 : 0;
+        return (
+          <div className="space-y-1">
+            <Progress
+              value={pct}
+              className="h-2"
+            />
+            <p className="text-xs text-muted-foreground">
+              {formatBundleSize(a.data_mb_used)}
+              {" "}
+              /
+              {formatBundleSize(a.data_mb_total)}
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      id: "expires",
+      header: "Expires",
+      cell: ({ row }) => {
+        const a = row.original;
+        const days = a.days_left ?? Math.ceil((new Date(a.expires_at).getTime() - Date.now()) / 86400000);
+        const isExpired = String(a.status).toUpperCase() === "EXPIRED" || days <= 0;
+        return isExpired
+          ? <Badge variant="destructive">Expired</Badge>
+          : (
+              <span className="text-sm">
+                {days}
+                d left
+              </span>
+            );
+      },
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: a => String(a.status).toUpperCase(),
+      cell: ({ getValue }) => {
+        const status = getValue<string>();
+        return <Badge variant={status === "ACTIVE" ? "default" : "secondary"}>{status}</Badge>;
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Allocation actions"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => {
+              openViewAllocation(row.original);
+            }}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              {" "}
+              View allocation
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => openTopUp(row.original.msisdn)}>
+              <Smartphone className="h-4 w-4 mr-2" />
+              {" "}
+              Top up bundle
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -239,135 +357,15 @@ export function MyBundlesPage() {
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>SIM Card</TableHead>
-                <TableHead>Device Assigned To</TableHead>
-                <TableHead>Bundle</TableHead>
-                <TableHead>Usage</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {allocationsQuery.isError ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center py-6"
-                  >
-                    <p role="alert">{allocationsQuery.error.message}</p>
-                    <Button
-                      variant="link"
-                      onClick={() => allocationsQuery.refetch()}
-                    >
-                      Try again
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ) : isLoading
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        Loading...
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filtered.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          No bundles match your filters.
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : filtered.map((a) => {
-                      const pct = a.data_mb_total > 0 ? (a.data_mb_used / a.data_mb_total) * 100 : 0;
-                      const days = a.days_left ?? Math.ceil((new Date(a.expires_at).getTime() - Date.now()) / 86400000);
-                      const status = String(a.status).toUpperCase();
-                      const isExpired = status === "EXPIRED" || days <= 0;
-                      const sim = simByNumber.get(formatMobile(a.msisdn));
-                      return (
-                        <TableRow key={a.id}>
-                          <TableCell>
-                            <p className="text-sm">{formatMobile(a.msisdn)}</p>
-                            <p className="text-xs text-muted-foreground">{sim?.operator ?? a.bundle?.carrier ?? "—"}</p>
-                          </TableCell>
-                          <TableCell>
-                            <p className="text-sm">{sim?.assignedDevice?.name || sim?.assignedDevice?.imei || "—"}</p>
-                            <p className="text-xs text-muted-foreground">{sim?.assignedDevice?.type}</p>
-                          </TableCell>
-                          <TableCell>{a.bundle_code}</TableCell>
-                          <TableCell className="w-[200px]">
-                            <div className="space-y-1">
-                              <Progress
-                                value={pct}
-                                className="h-2"
-                              />
-                              <p className="text-xs text-muted-foreground">
-                                {formatBundleSize(a.data_mb_used)}
-                                {" "}
-                                /
-                                {formatBundleSize(a.data_mb_total)}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {isExpired
-                              ? <Badge variant="destructive">Expired</Badge>
-                              : (
-                                  <span className="text-sm">
-                                    {days}
-                                    d left
-                                  </span>
-                                )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={status === "ACTIVE" ? "default" : "secondary"}>{status}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  aria-label="Allocation actions"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => {
-                                  openViewAllocation(a);
-                                }}
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  {" "}
-                                  View allocation
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => openTopUp(a.msisdn)}>
-                                  <Smartphone className="h-4 w-4 mr-2" />
-                                  {" "}
-                                  Top up bundle
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={allocationColumns}
+            data={filtered}
+            isLoading={isLoading}
+            isError={allocationsQuery.isError}
+            errorMessage={allocationsQuery.error?.message}
+            onRetry={() => allocationsQuery.refetch()}
+            emptyState="No bundles match your filters."
+          />
         </CardContent>
       </Card>
     </div>

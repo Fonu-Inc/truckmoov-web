@@ -1,4 +1,7 @@
-import type { BulkImportSkipped } from "@truckmoov/api/fleet";
+import type { ColumnDef } from "@tanstack/react-table";
+import type {
+  BulkImportSkipped, VehicleImportColumn,
+} from "@truckmoov/api/fleet";
 import {
   downloadVehicleImportTemplate,
   useImportVehicles,
@@ -12,6 +15,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +38,48 @@ type ImportOutcome = {
 };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+const templateColumns: ColumnDef<VehicleImportColumn>[] = [
+  {
+    accessorKey: "header",
+    header: "Column",
+    enableSorting: false,
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "required",
+    header: "Required",
+    enableSorting: false,
+    cell: ({ row }) => (row.original.required ? "yes" : "no"),
+  },
+  {
+    accessorKey: "example",
+    header: "Example",
+    enableSorting: false,
+    meta: { className: "font-mono text-muted-foreground" },
+  },
+  {
+    accessorKey: "note",
+    header: "Note",
+    enableSorting: false,
+    meta: { className: "text-muted-foreground" },
+  },
+];
+
+const skippedColumns: ColumnDef<BulkImportSkipped>[] = [
+  {
+    accessorKey: "line",
+    header: "Line",
+    enableSorting: false,
+    meta: { className: "font-mono" },
+  },
+  {
+    accessorKey: "message",
+    header: "Reason",
+    enableSorting: false,
+    meta: { className: "text-destructive" },
+  },
+];
 
 export function BulkUploadDialog({
   open, onOpenChange,
@@ -184,26 +230,11 @@ export function BulkUploadDialog({
 
               {columns.length > 0 && (
                 <div className="max-h-40 overflow-y-auto rounded-lg border border-border">
-                  <table className="w-full text-xs">
-                    <thead className="bg-secondary sticky top-0">
-                      <tr>
-                        <th className="p-2 text-left">Column</th>
-                        <th className="p-2 text-left">Required</th>
-                        <th className="p-2 text-left">Example</th>
-                        <th className="p-2 text-left">Note</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {columns.map(col => (
-                        <tr key={col.header}>
-                          <td className="p-2 font-medium">{col.header}</td>
-                          <td className="p-2">{col.required ? "yes" : "no"}</td>
-                          <td className="p-2 font-mono text-muted-foreground">{col.example}</td>
-                          <td className="p-2 text-muted-foreground">{col.note}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <DataTable
+                    className="text-xs"
+                    columns={templateColumns}
+                    data={columns}
+                  />
                 </div>
               )}
 
@@ -290,22 +321,11 @@ export function BulkUploadDialog({
 
               {outcome.skipped.length > 0 && (
                 <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
-                  <table className="w-full text-xs">
-                    <thead className="bg-secondary sticky top-0">
-                      <tr>
-                        <th className="p-2 text-left">Line</th>
-                        <th className="p-2 text-left">Reason</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {outcome.skipped.map((row, idx) => (
-                        <tr key={`${row.line}-${idx}`}>
-                          <td className="p-2 font-mono">{row.line}</td>
-                          <td className="p-2 text-destructive">{row.message}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <DataTable
+                    className="text-xs"
+                    columns={skippedColumns}
+                    data={outcome.skipped}
+                  />
                 </div>
               )}
             </>

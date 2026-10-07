@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { TimeRange } from "@/components/charts/TimeRangeSelect";
 import type {
   FilterField, FilterValues,
@@ -20,16 +21,9 @@ import { Badge } from "@/components/shadcn/badge";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 const CHART_COLORS = [
@@ -401,6 +395,35 @@ const FEATURE_FILTER_FIELDS: FilterField[] = [
   },
 ];
 
+const featureColumns: ColumnDef<FeatureRow>[] = [
+  {
+    accessorKey: "name",
+    header: "Feature",
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "requests",
+    header: "Requests",
+    meta: { className: "text-right" },
+    cell: ({ row }) => row.original.requests.toLocaleString(),
+  },
+  {
+    accessorKey: "tokens",
+    header: "Tokens Used",
+    meta: { className: "text-right" },
+    cell: ({ row }) => row.original.tokens.toLocaleString(),
+  },
+  {
+    id: "avgTokens",
+    header: "Avg Tokens/Request",
+    accessorFn: f => (f.requests > 0 ? f.tokens / f.requests : 0),
+    meta: { className: "text-right" },
+    cell: ({ row }) => (row.original.requests > 0
+      ? Math.round(row.original.tokens / row.original.requests).toLocaleString()
+      : "—"),
+  },
+];
+
 function FeatureBreakdownTable({
   rows,
   search,
@@ -482,38 +505,13 @@ function FeatureBreakdownTable({
           filterValues={filters}
           onFiltersApply={onFiltersApply}
         />
-        {filtered.length > 0
-          ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Feature</TableHead>
-                    <TableHead className="text-right">Requests</TableHead>
-                    <TableHead className="text-right">Tokens Used</TableHead>
-                    <TableHead className="text-right">Avg Tokens/Request</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(feature => (
-                    <TableRow key={feature.name}>
-                      <TableCell className="font-medium">{feature.name}</TableCell>
-                      <TableCell className="text-right">{feature.requests.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{feature.tokens.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">
-                        {feature.requests > 0
-                          ? Math.round(feature.tokens / feature.requests).toLocaleString()
-                          : "—"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )
-          : (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                {rows.length === 0 ? "No AI usage recorded yet." : "No features match your filters."}
-              </p>
-            )}
+        <DataTable
+          columns={featureColumns}
+          data={filtered}
+          hasActiveFilters={rows.length > 0}
+          emptyState="No AI usage recorded yet."
+          filteredEmptyState="No features match your filters."
+        />
       </CardContent>
     </Card>
   );
@@ -526,6 +524,37 @@ type FailureRow = {
   provider: string;
   error_message?: string | null;
 };
+
+const failureColumns: ColumnDef<FailureRow>[] = [
+  {
+    accessorKey: "created_at",
+    header: "Time",
+    meta: { className: "text-sm" },
+    cell: ({ row }) => formatDayMonthTime(row.original.created_at),
+  },
+  {
+    id: "feature",
+    header: "Feature",
+    accessorFn: log => REQUEST_TYPE_LABELS[log.request_type] || log.request_type,
+    cell: ({ getValue }) => (
+      <Badge variant="outline">
+        {getValue<string>()}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: "provider",
+    header: "Provider",
+    meta: { className: "text-sm" },
+  },
+  {
+    id: "error",
+    header: "Error",
+    enableSorting: false,
+    meta: { className: "text-sm text-destructive max-w-[300px] truncate" },
+    cell: ({ row }) => row.original.error_message || "Unknown error",
+  },
+];
 
 function RecentFailuresTable({
   rows,
@@ -634,47 +663,11 @@ function RecentFailuresTable({
           filterValues={filters}
           onFiltersApply={onFiltersApply}
         />
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Time</TableHead>
-              <TableHead>Feature</TableHead>
-              <TableHead>Provider</TableHead>
-              <TableHead>Error</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0
-              ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="text-center py-6 text-sm text-muted-foreground"
-                    >
-                      No failures match your filters.
-                    </TableCell>
-                  </TableRow>
-                )
-              : (
-                  filtered.map(log => (
-                    <TableRow key={log.id}>
-                      <TableCell className="text-sm">
-                        {formatDayMonthTime(log.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {REQUEST_TYPE_LABELS[log.request_type] || log.request_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{log.provider}</TableCell>
-                      <TableCell className="text-sm text-destructive max-w-[300px] truncate">
-                        {log.error_message || "Unknown error"}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-          </TableBody>
-        </Table>
+        <DataTable
+          columns={failureColumns}
+          data={filtered}
+          emptyState="No failures match your filters."
+        />
       </CardContent>
     </Card>
   );

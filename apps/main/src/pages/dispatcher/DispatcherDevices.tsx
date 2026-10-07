@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
 import type { IoTDevice } from "@/types";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
@@ -6,7 +7,6 @@ import {
   Edit,
   Eye,
   Link,
-  Loader2,
   MoreHorizontal,
   Plus,
   RefreshCw,
@@ -32,6 +32,7 @@ import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -277,6 +278,202 @@ export default function DispatcherDevices() {
     );
   }
 
+  const deviceColumns: ColumnDef<(typeof filteredDevices)[number]>[] = [
+    {
+      id: "device",
+      header: "Device",
+      accessorKey: "manufacturer",
+      cell: ({ row }) => {
+        const device = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-lg",
+              device.status === "active"
+                ? "bg-success/10"
+                : device.status === "faulty"
+                  ? "bg-destructive/10"
+                  : "bg-secondary",
+            )}
+            >
+              <Cpu className={cn(
+                "h-5 w-5",
+                device.status === "active"
+                  ? "text-success"
+                  : device.status === "faulty"
+                    ? "text-destructive"
+                    : "text-muted-foreground",
+              )}
+              />
+            </div>
+            <div>
+              <p className="font-medium">{device.manufacturer}</p>
+              <p className="text-xs text-muted-foreground">{device.model || "—"}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "imei",
+      header: "IMEI",
+      cell: ({ row }) => (
+        <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">
+          {row.original.imei}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const { status } = row.original;
+        return (
+          <span className={cn(
+            "rounded-full px-2.5 py-1 text-xs font-medium",
+            status === "active" && "bg-success/10 text-success",
+            status === "registered" && "bg-muted text-muted-foreground",
+            status === "configured" && "bg-info/10 text-info",
+            status === "inactive" && "bg-warning/10 text-warning",
+            status === "faulty" && "bg-destructive/10 text-destructive",
+          )}
+          >
+            {status}
+          </span>
+        );
+      },
+    },
+    {
+      id: "vehicle",
+      header: "Vehicle",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const vehicle = getVehicleInfo(row.original.vehicle_id);
+        return vehicle
+          ? <span className="text-sm">{vehicle.registrationNumber}</span>
+          : <span className="text-muted-foreground">—</span>;
+      },
+    },
+    {
+      id: "signal",
+      header: "Signal",
+      accessorFn: device => device.signal_strength ?? -1,
+      cell: ({ row }) => {
+        const signal = row.original.signal_strength;
+        return signal !== undefined && signal !== null
+          ? (
+              <div className="flex items-center gap-2">
+                <Signal className={cn(
+                  "h-4 w-4",
+                  signal > 70
+                    ? "text-success"
+                    : signal > 40 ? "text-warning" : "text-destructive",
+                )}
+                />
+                <span className="text-sm">
+                  {signal}
+                  %
+                </span>
+              </div>
+            )
+          : <span className="text-muted-foreground">—</span>;
+      },
+    },
+    {
+      id: "lastSeen",
+      header: "Last Seen",
+      accessorFn: device => device.last_seen ?? "",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => (row.original.last_seen
+        ? formatRelative(row.original.last_seen)
+        : "Never"),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const device = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                setSelectedDevice(device);
+                setIsDetailsOpen(true);
+              }}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              {canEdit && (
+                <DropdownMenuItem onClick={() => {
+                  setSelectedDevice(device);
+                  setIsEditDialogOpen(true);
+                }}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              {canManage && (
+                <>
+                  <DropdownMenuSeparator />
+                  {(device.lifecycle_status === "registered" || device.status === "registered") && (
+                    <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Mark as Configured
+                    </DropdownMenuItem>
+                  )}
+                  {!device.vehicle_id && isAssignable((device.lifecycle_status || device.status) as DeviceLifecycleStatus) && (
+                    <DropdownMenuItem onClick={() => {
+                      setSelectedDevice(device);
+                      setIsAssignDialogOpen(true);
+                    }}
+                    >
+                      <Link className="mr-2 h-4 w-4" />
+                      Assign to Vehicle
+                    </DropdownMenuItem>
+                  )}
+                  {device.vehicle_id && (
+                    <DropdownMenuItem onClick={() => handleUnassignDevice(device.id)}>
+                      <Unlink className="mr-2 h-4 w-4" />
+                      Unassign Vehicle
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Update Firmware
+                  </DropdownMenuItem>
+                </>
+              )}
+              {canDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => handleDeleteDevice(device.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Device
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   return (
     <>
       <div className="space-y-6">
@@ -442,217 +639,34 @@ export default function DispatcherDevices() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading
-              ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="overflow-x-auto">
+              <DataTable
+                columns={deviceColumns}
+                data={filteredDevices}
+                isLoading={loading}
+                rowClassName={() => "group transition-colors hover:bg-secondary/30"}
+                emptyState={(
+                  <div className="flex flex-col items-center justify-center py-4 text-center">
+                    <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium text-foreground">No devices found</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {searchQuery || statusFilter !== "all" || manufacturerFilter !== "all"
+                        ? "Try adjusting your filters"
+                        : "Add your first device to get started"}
+                    </p>
+                    {canManage && !searchQuery && statusFilter === "all" && (
+                      <Button
+                        className="mt-4"
+                        onClick={() => setIsAddDialogOpen(true)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Device
+                      </Button>
+                    )}
                   </div>
-                )
-              : filteredDevices.length === 0
-                ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium">No devices found</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {searchQuery || statusFilter !== "all" || manufacturerFilter !== "all"
-                          ? "Try adjusting your filters"
-                          : "Add your first device to get started"}
-                      </p>
-                      {canManage && !searchQuery && statusFilter === "all" && (
-                        <Button
-                          className="mt-4"
-                          onClick={() => setIsAddDialogOpen(true)}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Device
-                        </Button>
-                      )}
-                    </div>
-                  )
-                : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-border text-left text-sm text-muted-foreground">
-                            <th className="pb-3 font-medium">Device</th>
-                            <th className="pb-3 font-medium">IMEI</th>
-                            <th className="pb-3 font-medium">Status</th>
-                            <th className="pb-3 font-medium">Vehicle</th>
-                            <th className="pb-3 font-medium">Signal</th>
-                            <th className="pb-3 font-medium">Last Seen</th>
-                            <th className="pb-3 font-medium text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {filteredDevices.map((device) => {
-                            const vehicle = getVehicleInfo(device.vehicle_id);
-                            return (
-                              <tr
-                                key={device.id}
-                                className="group transition-colors hover:bg-secondary/30"
-                              >
-                                <td className="py-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className={cn(
-                                      "flex h-10 w-10 items-center justify-center rounded-lg",
-                                      device.status === "active"
-                                        ? "bg-success/10"
-                                        : device.status === "faulty"
-                                          ? "bg-destructive/10"
-                                          : "bg-secondary",
-                                    )}
-                                    >
-                                      <Cpu className={cn(
-                                        "h-5 w-5",
-                                        device.status === "active"
-                                          ? "text-success"
-                                          : device.status === "faulty"
-                                            ? "text-destructive"
-                                            : "text-muted-foreground",
-                                      )}
-                                      />
-                                    </div>
-                                    <div>
-                                      <p className="font-medium">{device.manufacturer}</p>
-                                      <p className="text-xs text-muted-foreground">{device.model || "—"}</p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="py-4">
-                                  <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">
-                                    {device.imei}
-                                  </span>
-                                </td>
-                                <td className="py-4">
-                                  <span className={cn(
-                                    "rounded-full px-2.5 py-1 text-xs font-medium",
-                                    device.status === "active" && "bg-success/10 text-success",
-                                    device.status === "registered" && "bg-muted text-muted-foreground",
-                                    device.status === "configured" && "bg-info/10 text-info",
-                                    device.status === "inactive" && "bg-warning/10 text-warning",
-                                    device.status === "faulty" && "bg-destructive/10 text-destructive",
-                                  )}
-                                  >
-                                    {device.status}
-                                  </span>
-                                </td>
-                                <td className="py-4">
-                                  {vehicle
-                                    ? (
-                                        <span className="text-sm">{vehicle.registrationNumber}</span>
-                                      )
-                                    : (
-                                        <span className="text-muted-foreground">—</span>
-                                      )}
-                                </td>
-                                <td className="py-4">
-                                  {device.signal_strength !== undefined && device.signal_strength !== null
-                                    ? (
-                                        <div className="flex items-center gap-2">
-                                          <Signal className={cn(
-                                            "h-4 w-4",
-                                            device.signal_strength > 70
-                                              ? "text-success"
-                                              : device.signal_strength > 40 ? "text-warning" : "text-destructive",
-                                          )}
-                                          />
-                                          <span className="text-sm">
-                                            {device.signal_strength}
-                                            %
-                                          </span>
-                                        </div>
-                                      )
-                                    : (
-                                        <span className="text-muted-foreground">—</span>
-                                      )}
-                                </td>
-                                <td className="py-4 text-sm text-muted-foreground">
-                                  {device.last_seen
-                                    ? formatRelative(device.last_seen)
-                                    : "Never"}
-                                </td>
-                                <td className="py-4 text-right">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                      >
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => {
-                                        setSelectedDevice(device);
-                                        setIsDetailsOpen(true);
-                                      }}
-                                      >
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        View Details
-                                      </DropdownMenuItem>
-                                      {canEdit && (
-                                        <DropdownMenuItem onClick={() => {
-                                          setSelectedDevice(device);
-                                          setIsEditDialogOpen(true);
-                                        }}
-                                        >
-                                          <Edit className="mr-2 h-4 w-4" />
-                                          Edit
-                                        </DropdownMenuItem>
-                                      )}
-                                      {canManage && (
-                                        <>
-                                          <DropdownMenuSeparator />
-                                          {(device.lifecycle_status === "registered" || device.status === "registered") && (
-                                            <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
-                                              <Settings className="mr-2 h-4 w-4" />
-                                              Mark as Configured
-                                            </DropdownMenuItem>
-                                          )}
-                                          {!device.vehicle_id && isAssignable((device.lifecycle_status || device.status) as DeviceLifecycleStatus) && (
-                                            <DropdownMenuItem onClick={() => {
-                                              setSelectedDevice(device);
-                                              setIsAssignDialogOpen(true);
-                                            }}
-                                            >
-                                              <Link className="mr-2 h-4 w-4" />
-                                              Assign to Vehicle
-                                            </DropdownMenuItem>
-                                          )}
-                                          {device.vehicle_id && (
-                                            <DropdownMenuItem onClick={() => handleUnassignDevice(device.id)}>
-                                              <Unlink className="mr-2 h-4 w-4" />
-                                              Unassign Vehicle
-                                            </DropdownMenuItem>
-                                          )}
-                                          <DropdownMenuItem>
-                                            <RefreshCw className="mr-2 h-4 w-4" />
-                                            Update Firmware
-                                          </DropdownMenuItem>
-                                        </>
-                                      )}
-                                      {canDelete && (
-                                        <>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            className="text-destructive focus:text-destructive"
-                                            onClick={() => handleDeleteDevice(device.id)}
-                                          >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete Device
-                                          </DropdownMenuItem>
-                                        </>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                )}
+              />
+            </div>
           </CardContent>
         </Card>
 

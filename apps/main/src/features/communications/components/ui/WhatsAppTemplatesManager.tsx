@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   CheckCircle,
@@ -23,6 +24,7 @@ import {
   Card, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -51,14 +53,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 
 type WhatsAppTemplate = {
@@ -244,6 +238,87 @@ export function WhatsAppTemplatesManager({ tenantId: _tenantId }: WhatsAppTempla
       </div>
     );
   }
+
+  const templateColumns: ColumnDef<WhatsAppTemplate>[] = [
+    {
+      accessorKey: "name",
+      header: "Template Name",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium">{row.original.name}</p>
+          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+            {row.original.body_text}
+          </p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => <Badge variant="outline">{row.original.category || "—"}</Badge>,
+    },
+    {
+      accessorKey: "language",
+      header: "Language",
+      cell: ({ row }) => <span className="text-sm">{row.original.language}</span>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => getStatusBadge(row.original.status),
+    },
+    {
+      accessorKey: "updated_at",
+      header: "Last Updated",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {formatDate(row.original.updated_at)}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "w-[80px]" },
+      cell: ({ row }) => {
+        const template = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleOpenDialog(template)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDuplicate(template)}>
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => handleDelete(template)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -433,93 +508,11 @@ export function WhatsAppTemplatesManager({ tenantId: _tenantId }: WhatsAppTempla
             </Popover>
           </div>
         </CardHeader>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border/50">
-              <TableHead>Template Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Language</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Updated</TableHead>
-              <TableHead className="w-[80px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTemplates.length === 0
-              ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No templates found. Create your first template to get started.
-                    </TableCell>
-                  </TableRow>
-                )
-              : (
-                  filteredTemplates.map(template => (
-                    <TableRow
-                      key={template.id}
-                      className="border-border/50"
-                    >
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{template.name}</p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                            {template.body_text}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{template.category || "—"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{template.language}</span>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(template.status)}</TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {formatDate(template.updated_at)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenDialog(template)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDuplicate(template)}>
-                              <Copy className="h-4 w-4 mr-2" />
-                              Duplicate
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDelete(template)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-          </TableBody>
-        </Table>
+        <DataTable
+          columns={templateColumns}
+          data={filteredTemplates}
+          emptyState="No templates found. Create your first template to get started."
+        />
       </Card>
 
       {/* Create/Edit Dialog */}

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   TenantInvoice, TenantInvoiceFilter,
 } from "@truckmoov/api/billing";
@@ -13,6 +14,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -20,21 +22,17 @@ import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
 import { invoiceDocument } from "../../utils/billingDocuments";
 import {
   formatDate, formatLongDate, INVOICE_STATUS_LABEL, invoiceStatusKey, methodLabel, ngn, toneForStatus,
 } from "../../utils/billingHelpers";
 import {
-  ChargeBreakdown, DialogSkeleton, EmptyRow, LabelValue, Pager, PlanSummary, SectionError, SkeletonRows, StatusPill,
+  ChargeBreakdown, DialogSkeleton, LabelValue, PlanSummary, SectionError, StatusPill,
 } from "../../utils/billingShared";
 import { useBillingDownload } from "../../utils/useBillingDownload";
 
 const PAGE_SIZE = 20;
-const COLS = 11;
 
 function InvoiceStatus({ invoice }: { invoice: TenantInvoice }) {
   const key = invoiceStatusKey(invoice.status);
@@ -148,54 +146,115 @@ function InvoiceDialog({
   );
 }
 
-function InvoiceRow({
-  invoice, onView, onDownload, downloading,
+function invoiceColumns({
+  onView, onDownload, busyId,
 }: {
-  invoice: TenantInvoice; onView: () => void; onDownload: () => void; downloading: boolean;
-}) {
-  return (
-    <TableRow>
-      <TableCell className="font-medium whitespace-nowrap">{invoice.number}</TableCell>
-      <TableCell className="whitespace-nowrap">
-        {invoice.planName ? (
-          <StatusPill
-            label={invoice.planName}
-            tone="info"
-          />
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-      <TableCell className="text-right tabular-nums">{invoice.deviceCount || "—"}</TableCell>
-      <TableCell className="text-muted-foreground">{invoice.billingPeriod}</TableCell>
-      <TableCell className="whitespace-nowrap">{formatDate(invoice.issueDate)}</TableCell>
-      <TableCell className="whitespace-nowrap">{formatDate(invoice.dueDate)}</TableCell>
-      <TableCell className="text-right tabular-nums">{ngn(invoice.totalNgn)}</TableCell>
-      <TableCell className="text-right tabular-nums">{ngn(invoice.amountPaidNgn)}</TableCell>
-      <TableCell className="text-right tabular-nums">{ngn(invoice.outstandingNgn)}</TableCell>
-      <TableCell><InvoiceStatus invoice={invoice} /></TableCell>
-      <TableCell className="text-right whitespace-nowrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onView}
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          {" "}
-          View
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={downloading}
-          onClick={onDownload}
-          aria-label="Download document"
-        >
-          <Download className="h-4 w-4" />
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
+  onView: (id: string) => void; onDownload: (id: string) => void; busyId: string | null;
+}): ColumnDef<TenantInvoice>[] {
+  return [
+    {
+      accessorKey: "number",
+      header: "Invoice",
+      enableSorting: false,
+      meta: { className: "font-medium whitespace-nowrap" },
+    },
+    {
+      id: "plan",
+      header: "M2M plan",
+      enableSorting: false,
+      meta: { className: "whitespace-nowrap" },
+      cell: ({ row }) => (row.original.planName
+        ? (
+            <StatusPill
+              label={row.original.planName}
+              tone="info"
+            />
+          )
+        : <span className="text-muted-foreground">—</span>),
+    },
+    {
+      id: "devices",
+      header: "Devices",
+      enableSorting: false,
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => row.original.deviceCount || "—",
+    },
+    {
+      accessorKey: "billingPeriod",
+      header: "Billing period",
+      enableSorting: false,
+      meta: { className: "text-muted-foreground" },
+    },
+    {
+      id: "issueDate",
+      header: "Invoice date",
+      enableSorting: false,
+      meta: { className: "whitespace-nowrap" },
+      cell: ({ row }) => formatDate(row.original.issueDate),
+    },
+    {
+      id: "dueDate",
+      header: "Due date",
+      enableSorting: false,
+      meta: { className: "whitespace-nowrap" },
+      cell: ({ row }) => formatDate(row.original.dueDate),
+    },
+    {
+      id: "total",
+      header: "Total",
+      enableSorting: false,
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => ngn(row.original.totalNgn),
+    },
+    {
+      id: "paid",
+      header: "Paid",
+      enableSorting: false,
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => ngn(row.original.amountPaidNgn),
+    },
+    {
+      id: "outstanding",
+      header: "Outstanding",
+      enableSorting: false,
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => ngn(row.original.outstandingNgn),
+    },
+    {
+      id: "status",
+      header: "Status",
+      enableSorting: false,
+      cell: ({ row }) => <InvoiceStatus invoice={row.original} />,
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right whitespace-nowrap" },
+      cell: ({ row }) => (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onView(row.original.id)}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            {" "}
+            View
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={busyId === row.original.id}
+            onClick={() => onDownload(row.original.id)}
+            aria-label="Download document"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        </>
+      ),
+    },
+  ];
 }
 
 export function BillingInvoicesTab() {
@@ -280,59 +339,27 @@ export function BillingInvoicesTab() {
         </div>
       </CardHeader>
       <CardContent>
-        {invoices.isError && (
-          <SectionError
-            message="Could not load your invoices."
+        <div className="rounded-2xl border border-border overflow-x-auto">
+          <DataTable
+            columns={invoiceColumns({
+              onView: setSelectedId,
+              onDownload: download,
+              busyId,
+            })}
+            data={list?.items ?? []}
+            isLoading={invoices.isLoading}
+            isError={invoices.isError}
+            errorMessage="Could not load your invoices."
             onRetry={() => invoices.refetch()}
+            emptyState="No invoices match your filters."
+            pagination={list && {
+              page,
+              pageSize: PAGE_SIZE,
+              total: list.total,
+              onPageChange: setPage,
+            }}
           />
-        )}
-        {!invoices.isError && (
-          <div className="rounded-2xl border border-border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>M2M plan</TableHead>
-                  <TableHead className="text-right">Devices</TableHead>
-                  <TableHead>Billing period</TableHead>
-                  <TableHead>Invoice date</TableHead>
-                  <TableHead>Due date</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Paid</TableHead>
-                  <TableHead className="text-right">Outstanding</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.isLoading && <SkeletonRows cols={COLS} />}
-                {list?.items.map(i => (
-                  <InvoiceRow
-                    key={i.id}
-                    invoice={i}
-                    onView={() => setSelectedId(i.id)}
-                    onDownload={() => download(i.id)}
-                    downloading={busyId === i.id}
-                  />
-                ))}
-                {list && list.items.length === 0 && (
-                  <EmptyRow
-                    cols={COLS}
-                    text="No invoices match your filters."
-                  />
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        {list && (
-          <Pager
-            page={page}
-            pageSize={PAGE_SIZE}
-            total={list.total}
-            onPage={setPage}
-          />
-        )}
+        </div>
       </CardContent>
 
       <InvoiceDialog

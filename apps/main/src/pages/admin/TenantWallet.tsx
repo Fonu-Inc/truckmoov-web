@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   formatDate, formatTime,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -15,6 +16,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -42,14 +44,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { AutoTopupSettings } from "@/components/wallet/AutoTopupSettings";
 import { PostpaidUsageDashboard } from "@/components/wallet/PostpaidUsageDashboard";
 import { SpendingLimitSettings } from "@/components/wallet/SpendingLimitSettings";
@@ -136,6 +130,102 @@ type Transaction = {
   description: string | null;
   created_at: string;
 };
+
+function transactionColumns(getTypeIcon: (commType: string | null) => React.ReactNode): ColumnDef<Transaction>[] {
+  return [
+    {
+      id: "date",
+      header: "Date",
+      accessorFn: tx => tx.created_at,
+      meta: { className: "text-sm" },
+      cell: ({ row }) => (
+        <>
+          <div>{formatDate(row.original.created_at)}</div>
+          <div className="text-xs text-muted-foreground">
+            {formatTime(row.original.created_at)}
+          </div>
+        </>
+      ),
+    },
+    {
+      accessorKey: "transaction_type",
+      header: "Type",
+      cell: ({ row }) => {
+        const tx = row.original;
+        return (
+          <Badge
+            variant={tx.transaction_type === "debit" ? "destructive" : "default"}
+            className={
+              tx.transaction_type === "topup" ? "bg-success/10 text-success border-success/20" : ""
+            }
+          >
+            {tx.transaction_type === "debit"
+              ? (
+                  <ArrowDownRight className="h-3 w-3 mr-1" />
+                )
+              : (
+                  <ArrowUpRight className="h-3 w-3 mr-1" />
+                )}
+            {tx.transaction_type}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "communication_type",
+      header: "Channel",
+      cell: ({ row }) => row.original.communication_type && (
+        <div className="flex items-center gap-1 capitalize">
+          {getTypeIcon(row.original.communication_type)}
+          {row.original.communication_type}
+        </div>
+      ),
+    },
+    {
+      id: "details",
+      header: "Details",
+      enableSorting: false,
+      meta: { className: "text-sm text-muted-foreground max-w-[200px] truncate" },
+      cell: ({ row }) => {
+        const tx = row.original;
+        return (
+          <>
+            {tx.quantity && (
+              <span className="mr-2">
+                {tx.quantity}
+                {" "}
+                {tx.communication_type === "call" ? "min" : "msg"}
+                {tx.unit_rate_ngn && ` × ₦${tx.unit_rate_ngn}`}
+              </span>
+            )}
+            {tx.description}
+          </>
+        );
+      },
+    },
+    {
+      accessorKey: "amount_ngn",
+      header: "Amount",
+      meta: { className: "text-right font-medium" },
+      cell: ({ row }) => {
+        const tx = row.original;
+        return (
+          <span className={tx.transaction_type === "debit" ? "text-destructive" : "text-success"}>
+            {tx.transaction_type === "debit" ? "-" : "+"}
+            ₦
+            {tx.amount_ngn.toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "balance_after_ngn",
+      header: "Balance",
+      meta: { className: "text-right" },
+      cell: ({ row }) => `₦${row.original.balance_after_ngn.toLocaleString()}`,
+    },
+  ];
+}
 
 type Rate = {
   communication_type: string;
@@ -368,6 +458,47 @@ export default function TenantWallet() {
         return null;
     }
   };
+
+  const q = txSearch.trim().toLowerCase();
+  const amtFrom = txAmountEnabled && txAmountFrom !== "" ? Number.parseFloat(txAmountFrom) : null;
+  const amtTo = txAmountEnabled && txAmountTo !== "" ? Number.parseFloat(txAmountTo) : null;
+  const dateFrom = txDateEnabled && txDateFrom ? new Date(txDateFrom) : null;
+  const dateTo = txDateEnabled && txDateTo ? new Date(`${txDateTo}T23:59:59`) : null;
+  const filteredTransactions = transactions.filter((tx) => {
+    const type = (tx.transaction_type || "").toLowerCase();
+    if (txTypeEnabled && txTypeValue !== "all" && type !== txTypeValue)
+      return false;
+    const ch = (tx.communication_type || "").toLowerCase();
+    if (txChannelEnabled && txChannelValue !== "all") {
+      const matchKey = ch && [
+        "call",
+        "sms",
+        "whatsapp",
+        "email",
+      ].includes(ch)
+        ? ch
+        : "other";
+      if (matchKey !== txChannelValue)
+        return false;
+    }
+    if (amtFrom !== null && tx.amount_ngn < amtFrom)
+      return false;
+    if (amtTo !== null && tx.amount_ngn > amtTo)
+      return false;
+    if (dateFrom || dateTo) {
+      const d = new Date(tx.created_at);
+      if (dateFrom && d < dateFrom)
+        return false;
+      if (dateTo && d > dateTo)
+        return false;
+    }
+    if (q) {
+      const hay = `${tx.description || ""} ${tx.communication_type || ""} ${tx.transaction_type || ""}`.toLowerCase();
+      if (!hay.includes(q))
+        return false;
+    }
+    return true;
+  });
 
   const quickTopupAmounts = [
     5000,
@@ -1063,135 +1194,16 @@ export default function TenantWallet() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Channel</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(() => {
-                    const q = txSearch.trim().toLowerCase();
-                    const amtFrom = txAmountEnabled && txAmountFrom !== "" ? Number.parseFloat(txAmountFrom) : null;
-                    const amtTo = txAmountEnabled && txAmountTo !== "" ? Number.parseFloat(txAmountTo) : null;
-                    const dateFrom = txDateEnabled && txDateFrom ? new Date(txDateFrom) : null;
-                    const dateTo = txDateEnabled && txDateTo ? new Date(`${txDateTo}T23:59:59`) : null;
-                    const filtered = transactions.filter((tx) => {
-                      const type = (tx.transaction_type || "").toLowerCase();
-                      if (txTypeEnabled && txTypeValue !== "all" && type !== txTypeValue)
-                        return false;
-                      const ch = (tx.communication_type || "").toLowerCase();
-                      if (txChannelEnabled && txChannelValue !== "all") {
-                        const matchKey = ch && [
-                          "call",
-                          "sms",
-                          "whatsapp",
-                          "email",
-                        ].includes(ch)
-                          ? ch
-                          : "other";
-                        if (matchKey !== txChannelValue)
-                          return false;
-                      }
-                      if (amtFrom !== null && tx.amount_ngn < amtFrom)
-                        return false;
-                      if (amtTo !== null && tx.amount_ngn > amtTo)
-                        return false;
-                      if (dateFrom || dateTo) {
-                        const d = new Date(tx.created_at);
-                        if (dateFrom && d < dateFrom)
-                          return false;
-                        if (dateTo && d > dateTo)
-                          return false;
-                      }
-                      if (q) {
-                        const hay = `${tx.description || ""} ${tx.communication_type || ""} ${tx.transaction_type || ""}`.toLowerCase();
-                        if (!hay.includes(q))
-                          return false;
-                      }
-                      return true;
-                    });
-                    if (filtered.length === 0) {
-                      return (
-                        <TableRow>
-                          <TableCell
-                            colSpan={6}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            {transactions.length === 0 ? "No transactions yet" : "No transactions match your filters"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    }
-                    return filtered.slice(
-                      0,
-                      50,
-                    ).map(tx => (
-                      <TableRow key={tx.id}>
-                        <TableCell className="text-sm">
-                          <div>{formatDate(tx.created_at)}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatTime(tx.created_at)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={tx.transaction_type === "debit" ? "destructive" : "default"}
-                            className={
-                              tx.transaction_type === "topup" ? "bg-success/10 text-success border-success/20" : ""
-                            }
-                          >
-                            {tx.transaction_type === "debit"
-                              ? (
-                                  <ArrowDownRight className="h-3 w-3 mr-1" />
-                                )
-                              : (
-                                  <ArrowUpRight className="h-3 w-3 mr-1" />
-                                )}
-                            {tx.transaction_type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {tx.communication_type && (
-                            <div className="flex items-center gap-1 capitalize">
-                              {getTypeIcon(tx.communication_type)}
-                              {tx.communication_type}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                          {tx.quantity && (
-                            <span className="mr-2">
-                              {tx.quantity}
-                              {" "}
-                              {tx.communication_type === "call" ? "min" : "msg"}
-                              {tx.unit_rate_ngn && ` × ₦${tx.unit_rate_ngn}`}
-                            </span>
-                          )}
-                          {tx.description}
-                        </TableCell>
-                        <TableCell className={`text-right font-medium ${
-                          tx.transaction_type === "debit" ? "text-destructive" : "text-success"
-                        }`}
-                        >
-                          {tx.transaction_type === "debit" ? "-" : "+"}
-                          ₦
-                          {tx.amount_ngn.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₦
-                          {tx.balance_after_ngn.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ));
-                  })()}
-                </TableBody>
-              </Table>
+              <DataTable
+                columns={transactionColumns(getTypeIcon)}
+                data={filteredTransactions.slice(
+                  0,
+                  50,
+                )}
+                hasActiveFilters={transactions.length > 0}
+                emptyState="No transactions yet"
+                filteredEmptyState="No transactions match your filters"
+              />
             </CardContent>
           </Card>
         </div>

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FilterValues } from "@/components/shadcn/table-toolbar";
 import {
   formatDayMonthTime, formatWithPattern, startOfDay, subDays, toDateParam,
@@ -16,12 +17,10 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 type IVRCall = {
@@ -419,6 +418,58 @@ export function IVRDashboardTab() {
     [calls],
   );
 
+  const callColumns: ColumnDef<IVRCall>[] = [
+    {
+      accessorKey: "driver_name",
+      header: "Driver",
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.driver_name || "Unknown"}</div>
+          <div className="text-sm text-muted-foreground">{row.original.driver_phone}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "job_id",
+      header: "Job ID",
+      meta: { className: "font-mono text-sm" },
+      cell: ({ row }) => row.original.job_id || "-",
+    },
+    {
+      accessorKey: "call_type",
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge variant="outline">
+          {row.original.call_type.replace(
+            "_",
+            " ",
+          )}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "call_status",
+      header: "Call Status",
+      cell: ({ row }) => getStatusBadge(row.original.call_status),
+    },
+    {
+      accessorKey: "driver_response",
+      header: "Response",
+      cell: ({ row }) => getResponseBadge(row.original.driver_response),
+    },
+    {
+      accessorKey: "call_duration_seconds",
+      header: "Duration",
+      cell: ({ row }) => (row.original.call_duration_seconds ? `${row.original.call_duration_seconds}s` : "-"),
+    },
+    {
+      accessorKey: "created_at",
+      header: "Time",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => formatDayMonthTime(row.original.created_at),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -640,59 +691,14 @@ export function IVRDashboardTab() {
             filterValues={filters}
             onFiltersApply={setFilters}
           />
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Driver</TableHead>
-                <TableHead>Job ID</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Call Status</TableHead>
-                <TableHead>Response</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Time</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCalls.slice(
-                0,
-                20,
-              ).map(call => (
-                <TableRow key={call.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{call.driver_name || "Unknown"}</div>
-                      <div className="text-sm text-muted-foreground">{call.driver_phone}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{call.job_id || "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {call.call_type.replace(
-                        "_",
-                        " ",
-                      )}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(call.call_status)}</TableCell>
-                  <TableCell>{getResponseBadge(call.driver_response)}</TableCell>
-                  <TableCell>{call.call_duration_seconds ? `${call.call_duration_seconds}s` : "-"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDayMonthTime(call.created_at)}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredCalls.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    No IVR calls found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={callColumns}
+            data={filteredCalls.slice(
+              0,
+              20,
+            )}
+            emptyState="No IVR calls found"
+          />
         </CardContent>
       </Card>
     </div>

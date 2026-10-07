@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { DataBundleTransactionsQuery } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -19,6 +20,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -26,15 +28,16 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   formatMobile,
   useDataBundleCatalog,
   useDebouncedValue,
 } from "@/features/data-bundle/utils/dataBundle";
+
+type TopupRow = {
+  id: string; created_at: string; msisdn: string; bundle_code: string; status: string; amount_ngn?: number; bundle?: { carrier?: string };
+};
 
 export function TransactionHistoryPage() {
   const { format: fmtCurrency } = useCurrency();
@@ -137,6 +140,44 @@ export function TransactionHistoryPage() {
       .catch((error: Error) => toast.error(error.message));
   };
 
+  const amountFor = (t: TopupRow) => Number(t.amount_ngn ?? catalog.find(c => c.code === t.bundle_code)?.price_ngn ?? 0);
+  const transactionColumns: ColumnDef<TopupRow>[] = [
+    {
+      accessorKey: "created_at",
+      header: "Date",
+      meta: { className: "text-sm" },
+      cell: ({ row }) => new Date(row.original.created_at).toLocaleString(),
+    },
+    {
+      id: "msisdn",
+      header: "Mobile Number",
+      meta: { className: "text-sm" },
+      cell: ({ row }) => formatMobile(row.original.msisdn),
+    },
+    {
+      accessorKey: "bundle_code",
+      header: "Bundle",
+    },
+    {
+      id: "amount",
+      header: "Amount",
+      accessorFn: amountFor,
+      cell: ({ row }) => fmtCurrency(amountFor(row.original)),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const { status } = row.original;
+        return (
+          <Badge variant={status === "SUCCESS" ? "default" : status === "FAILED" ? "destructive" : "secondary"}>
+            {status}
+          </Badge>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-4">
       <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
@@ -238,78 +279,18 @@ export function TransactionHistoryPage() {
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Mobile Number</TableHead>
-                <TableHead>Bundle</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactionsQuery.isError ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-6"
-                  >
-                    <p role="alert">{transactionsQuery.error.message}</p>
-                    <Button
-                      variant="link"
-                      onClick={() => transactionsQuery.refetch()}
-                    >
-                      Try again
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ) : transactionsQuery.isLoading
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center py-6 text-muted-foreground"
-                      >
-                        Loading...
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filteredTopups.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="text-center py-6 text-muted-foreground"
-                        >
-                          No transactions match your filters
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : filteredTopups.slice(
-                      0,
-                      100,
-                    ).map((t: {
-                      id: string; created_at: string; msisdn: string; bundle_code: string; status: string; amount_ngn?: number; bundle?: { carrier?: string };
-                    }) => {
-                      const b = catalog.find(c => c.code === t.bundle_code);
-                      const amt = Number(t.amount_ngn ?? b?.price_ngn ?? 0);
-                      return (
-                        <TableRow key={t.id}>
-                          <TableCell className="text-sm">{new Date(t.created_at).toLocaleString()}</TableCell>
-                          <TableCell className="text-sm">{formatMobile(t.msisdn)}</TableCell>
-                          <TableCell>{t.bundle_code}</TableCell>
-                          <TableCell>{fmtCurrency(amt)}</TableCell>
-                          <TableCell>
-                            <Badge variant={t.status === "SUCCESS" ? "default" : t.status === "FAILED" ? "destructive" : "secondary"}>
-                              {t.status}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={transactionColumns}
+            data={filteredTopups.slice(
+              0,
+              100,
+            )}
+            isLoading={transactionsQuery.isLoading}
+            isError={transactionsQuery.isError}
+            errorMessage={transactionsQuery.error?.message}
+            onRetry={() => transactionsQuery.refetch()}
+            emptyState="No transactions match your filters"
+          />
         </CardContent>
       </Card>
     </div>

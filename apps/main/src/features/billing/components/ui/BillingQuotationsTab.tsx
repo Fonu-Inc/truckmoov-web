@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   TenantQuotation, TenantQuotationStatus,
 } from "@truckmoov/api/billing";
@@ -13,6 +14,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -20,21 +22,17 @@ import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
 import { quotationDocument } from "../../utils/billingDocuments";
 import {
   formatDate, formatLongDate, ngn, QUOTATION_STATUS_LABEL, toneForStatus,
 } from "../../utils/billingHelpers";
 import {
-  ChargeBreakdown, DialogSkeleton, EmptyRow, LabelValue, Pager, PlanSummary, SectionError, SkeletonRows, StatusPill,
+  ChargeBreakdown, DialogSkeleton, LabelValue, PlanSummary, SectionError, StatusPill,
 } from "../../utils/billingShared";
 import { useBillingDownload } from "../../utils/useBillingDownload";
 
 const PAGE_SIZE = 20;
-const COLS = 9;
 
 function QuotationStatus({ status }: { status: TenantQuotationStatus }) {
   return (
@@ -129,55 +127,107 @@ function QuotationDialog({
   );
 }
 
-function QuotationRow({
-  quotation, onView, onDownload, downloading,
+function quotationColumns({
+  onView, onDownload, busyId,
 }: {
-  quotation: TenantQuotation; onView: () => void; onDownload: () => void; downloading: boolean;
-}) {
-  return (
-    <TableRow>
-      <TableCell className="font-medium whitespace-nowrap">
-        {quotation.number}
-        <div className="text-xs text-muted-foreground">{quotation.category}</div>
-      </TableCell>
-      <TableCell className="whitespace-nowrap">{formatDate(quotation.date)}</TableCell>
-      <TableCell className="whitespace-nowrap">
-        {quotation.planName ? (
-          <StatusPill
-            label={quotation.planName}
-            tone="info"
-          />
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-      <TableCell className="text-right tabular-nums">{quotation.deviceCount || "—"}</TableCell>
-      <TableCell className="max-w-[280px] text-muted-foreground">{quotation.description}</TableCell>
-      <TableCell className="text-right tabular-nums">{ngn(quotation.totalNgn)}</TableCell>
-      <TableCell><QuotationStatus status={quotation.status} /></TableCell>
-      <TableCell className="text-muted-foreground">{quotation.relatedRequest ?? "—"}</TableCell>
-      <TableCell className="text-right whitespace-nowrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onView}
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          {" "}
-          View
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={downloading}
-          onClick={onDownload}
-          aria-label="Download document"
-        >
-          <Download className="h-4 w-4" />
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
+  onView: (id: string) => void; onDownload: (id: string) => void; busyId: string | null;
+}): ColumnDef<TenantQuotation>[] {
+  return [
+    {
+      id: "number",
+      header: "Quotation",
+      enableSorting: false,
+      meta: { className: "font-medium whitespace-nowrap" },
+      cell: ({ row }) => (
+        <>
+          {row.original.number}
+          <div className="text-xs text-muted-foreground">{row.original.category}</div>
+        </>
+      ),
+    },
+    {
+      id: "date",
+      header: "Date",
+      enableSorting: false,
+      meta: { className: "whitespace-nowrap" },
+      cell: ({ row }) => formatDate(row.original.date),
+    },
+    {
+      id: "plan",
+      header: "M2M plan",
+      enableSorting: false,
+      meta: { className: "whitespace-nowrap" },
+      cell: ({ row }) => (row.original.planName
+        ? (
+            <StatusPill
+              label={row.original.planName}
+              tone="info"
+            />
+          )
+        : <span className="text-muted-foreground">—</span>),
+    },
+    {
+      id: "devices",
+      header: "Devices",
+      enableSorting: false,
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => row.original.deviceCount || "—",
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      enableSorting: false,
+      meta: { className: "max-w-[280px] text-muted-foreground" },
+    },
+    {
+      id: "amount",
+      header: "Amount",
+      enableSorting: false,
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => ngn(row.original.totalNgn),
+    },
+    {
+      id: "status",
+      header: "Status",
+      enableSorting: false,
+      cell: ({ row }) => <QuotationStatus status={row.original.status} />,
+    },
+    {
+      id: "relatedRequest",
+      header: "Related request",
+      enableSorting: false,
+      meta: { className: "text-muted-foreground" },
+      cell: ({ row }) => row.original.relatedRequest ?? "—",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right whitespace-nowrap" },
+      cell: ({ row }) => (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onView(row.original.id)}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            {" "}
+            View
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={busyId === row.original.id}
+            onClick={() => onDownload(row.original.id)}
+            aria-label="Download document"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        </>
+      ),
+    },
+  ];
 }
 
 export function BillingQuotationsTab() {
@@ -265,57 +315,27 @@ export function BillingQuotationsTab() {
         </div>
       </CardHeader>
       <CardContent>
-        {quotations.isError && (
-          <SectionError
-            message="Could not load your quotations."
+        <div className="rounded-2xl border border-border overflow-x-auto">
+          <DataTable
+            columns={quotationColumns({
+              onView: setSelectedId,
+              onDownload: download,
+              busyId,
+            })}
+            data={list?.items ?? []}
+            isLoading={quotations.isLoading}
+            isError={quotations.isError}
+            errorMessage="Could not load your quotations."
             onRetry={() => quotations.refetch()}
+            emptyState="No quotations match your filters."
+            pagination={list && {
+              page,
+              pageSize: PAGE_SIZE,
+              total: list.total,
+              onPageChange: setPage,
+            }}
           />
-        )}
-        {!quotations.isError && (
-          <div className="rounded-2xl border border-border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quotation</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>M2M plan</TableHead>
-                  <TableHead className="text-right">Devices</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Related request</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {quotations.isLoading && <SkeletonRows cols={COLS} />}
-                {list?.items.map(item => (
-                  <QuotationRow
-                    key={item.id}
-                    quotation={item}
-                    onView={() => setSelectedId(item.id)}
-                    onDownload={() => download(item.id)}
-                    downloading={busyId === item.id}
-                  />
-                ))}
-                {list && list.items.length === 0 && (
-                  <EmptyRow
-                    cols={COLS}
-                    text="No quotations match your filters."
-                  />
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        {list && (
-          <Pager
-            page={page}
-            pageSize={PAGE_SIZE}
-            total={list.total}
-            onPage={setPage}
-          />
-        )}
+        </div>
       </CardContent>
 
       <QuotationDialog

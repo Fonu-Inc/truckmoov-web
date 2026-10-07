@@ -1,10 +1,27 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   AlertTriangle, Shield, Zap,
 } from "lucide-react";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { WEBHOOK_EVENTS } from "@/features/integration/utils/apiDocsData";
+
+const eventColumns: ColumnDef<(typeof WEBHOOK_EVENTS)[number]>[] = [
+  {
+    accessorKey: "event",
+    header: "Event",
+    enableSorting: false,
+    cell: ({ row }) => <code className="text-xs bg-muted px-2 py-1 rounded">{row.original.event}</code>,
+  },
+  {
+    accessorKey: "description",
+    header: "Description",
+    enableSorting: false,
+    meta: { className: "text-muted-foreground" },
+  },
+];
 
 export default function WebhookGuidePage() {
   return (
@@ -21,27 +38,10 @@ export default function WebhookGuidePage() {
         </CardHeader>
         <CardContent>
           <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-3 font-medium">Event</th>
-                  <th className="text-left p-3 font-medium">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {WEBHOOK_EVENTS.map(evt => (
-                  <tr
-                    key={evt.event}
-                    className="border-t"
-                  >
-                    <td className="p-3">
-                      <code className="text-xs bg-muted px-2 py-1 rounded">{evt.event}</code>
-                    </td>
-                    <td className="p-3 text-muted-foreground">{evt.description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <DataTable
+              columns={eventColumns}
+              data={WEBHOOK_EVENTS}
+            />
           </div>
         </CardContent>
       </Card>

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   FilterDraft, FilterField,
 } from "@/components/shadcn/platform-filter-popover";
@@ -9,12 +10,68 @@ import { Badge } from "@/components/shadcn/badge";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
   buildEmptyDraft, PlatformFilterPopover,
 } from "@/components/shadcn/platform-filter-popover";
 import { getDummyChargingSessions } from "@/lib/sustainabilityDummyData";
+
+type SessionRow = {
+  id: string;
+  vehicleName: string;
+  charging_station: string | null;
+  start_soc_percent: number | null;
+  end_soc_percent: number | null;
+  energy_kwh: number | null;
+  duration_minutes: number | null;
+  charging_type: string | null;
+};
+
+const sessionColumns: ColumnDef<SessionRow>[] = [
+  {
+    accessorKey: "vehicleName",
+    header: "Vehicle",
+  },
+  {
+    accessorKey: "charging_station",
+    header: "Station",
+    cell: ({ row }) => row.original.charging_station || "-",
+  },
+  {
+    id: "soc",
+    header: "SOC",
+    enableSorting: false,
+    meta: { className: "text-right" },
+    cell: ({ row }) => `${row.original.start_soc_percent?.toFixed(0)}% → ${row.original.end_soc_percent?.toFixed(0)}%`,
+  },
+  {
+    accessorKey: "energy_kwh",
+    header: "Energy",
+    meta: { className: "text-right" },
+    cell: ({ row }) => `${row.original.energy_kwh?.toFixed(1)} kWh`,
+  },
+  {
+    accessorKey: "duration_minutes",
+    header: "Duration",
+    meta: { className: "text-right" },
+    cell: ({ row }) => `${row.original.duration_minutes} min`,
+  },
+  {
+    accessorKey: "charging_type",
+    header: "Type",
+    meta: { className: "text-right" },
+    cell: ({ row }) => (
+      <Badge
+        variant="outline"
+        className="text-xs"
+      >
+        {row.original.charging_type}
+      </Badge>
+    ),
+  },
+];
 
 export default function EvFleetPage() {
   const evSessions: any = { data: [] };
@@ -99,16 +156,6 @@ export default function EvFleetPage() {
 
       <Card>
         {(() => {
-          type SessionRow = {
-            id: string;
-            vehicleName: string;
-            charging_station: string | null;
-            start_soc_percent: number | null;
-            end_soc_percent: number | null;
-            energy_kwh: number | null;
-            duration_minutes: number | null;
-            charging_type: string | null;
-          };
           const sourceRows: SessionRow[] = evSessions.data && evSessions.data.length > 0
             ? evSessions.data.map((s: any) => ({
                 id: s.id,
@@ -206,67 +253,14 @@ export default function EvFleetPage() {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 text-muted-foreground font-medium">Vehicle</th>
-                        <th className="text-left py-2 text-muted-foreground font-medium">Station</th>
-                        <th className="text-right py-2 text-muted-foreground font-medium">SOC</th>
-                        <th className="text-right py-2 text-muted-foreground font-medium">Energy</th>
-                        <th className="text-right py-2 text-muted-foreground font-medium">Duration</th>
-                        <th className="text-right py-2 text-muted-foreground font-medium">Type</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.slice(
-                        0,
-                        15,
-                      ).map(s => (
-                        <tr
-                          key={s.id}
-                          className="border-b border-border/50"
-                        >
-                          <td className="py-2">{s.vehicleName}</td>
-                          <td className="py-2">{s.charging_station || "-"}</td>
-                          <td className="py-2 text-right">
-                            {s.start_soc_percent?.toFixed(0)}
-                            % →
-                            {" "}
-                            {s.end_soc_percent?.toFixed(0)}
-                            %
-                          </td>
-                          <td className="py-2 text-right">
-                            {s.energy_kwh?.toFixed(1)}
-                            {" "}
-                            kWh
-                          </td>
-                          <td className="py-2 text-right">
-                            {s.duration_minutes}
-                            {" "}
-                            min
-                          </td>
-                          <td className="py-2 text-right">
-                            <Badge
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {s.charging_type}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))}
-                      {filtered.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={6}
-                            className="py-6 text-center text-muted-foreground text-xs"
-                          >
-                            No sessions match your filters
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                  <DataTable
+                    columns={sessionColumns}
+                    data={filtered.slice(
+                      0,
+                      15,
+                    )}
+                    emptyState="No sessions match your filters"
+                  />
                 </div>
               </CardContent>
             </>

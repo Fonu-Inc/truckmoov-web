@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { DataBundleRatesQuery } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -19,13 +20,11 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   formatBundleSize,
@@ -90,6 +89,40 @@ export function CurrentRatesPage() {
     ],
   );
   const filteredRates = ratesQuery.data ? ratesLive : catalog.filter(b => b.is_active);
+
+  const rateColumns: ColumnDef<(typeof filteredRates)[number]>[] = [
+    {
+      accessorKey: "name",
+      header: "Bundle",
+      meta: { className: "font-medium" },
+    },
+    {
+      accessorKey: "carrier",
+      header: "Carrier",
+    },
+    {
+      accessorKey: "data_mb",
+      header: "Data",
+      cell: ({ row }) => formatBundleSize(row.original.data_mb),
+    },
+    {
+      accessorKey: "validity_days",
+      header: "Validity",
+      cell: ({ row }) => `${row.original.validity_days}d`,
+    },
+    {
+      accessorKey: "billing_cycle",
+      header: "Cycle",
+      cell: ({ row }) => <Badge variant="secondary">{row.original.billing_cycle}</Badge>,
+    },
+    {
+      id: "price",
+      accessorFn: b => Number(b.price_ngn),
+      header: "Price",
+      meta: { className: "font-semibold" },
+      cell: ({ row }) => fmtCurrency(Number(row.original.price_ngn)),
+    },
+  ];
 
   const dataBundleCarriers = useMemo(
     () => {
@@ -222,70 +255,15 @@ export function CurrentRatesPage() {
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Bundle</TableHead>
-                <TableHead>Carrier</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Validity</TableHead>
-                <TableHead>Cycle</TableHead>
-                <TableHead>Price</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ratesQuery.isError ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-6"
-                  >
-                    <p role="alert">{ratesQuery.error.message}</p>
-                    <Button
-                      variant="link"
-                      onClick={() => ratesQuery.refetch()}
-                    >
-                      Try again
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ) : ratesQuery.isLoading
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-6 text-muted-foreground"
-                      >
-                        Loading...
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filteredRates.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="text-center py-6 text-muted-foreground"
-                        >
-                          No bundles match your filters
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : filteredRates.map(b => (
-                      <TableRow key={b.id}>
-                        <TableCell className="font-medium">{b.name}</TableCell>
-                        <TableCell>{b.carrier}</TableCell>
-                        <TableCell>{formatBundleSize(b.data_mb)}</TableCell>
-                        <TableCell>
-                          {b.validity_days}
-                          d
-                        </TableCell>
-                        <TableCell><Badge variant="secondary">{b.billing_cycle}</Badge></TableCell>
-                        <TableCell className="font-semibold">{fmtCurrency(Number(b.price_ngn))}</TableCell>
-                      </TableRow>
-                    ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={rateColumns}
+            data={filteredRates}
+            isLoading={ratesQuery.isLoading}
+            isError={ratesQuery.isError}
+            errorMessage={ratesQuery.error?.message}
+            onRetry={() => ratesQuery.refetch()}
+            emptyState="No bundles match your filters"
+          />
         </CardContent>
       </Card>
     </div>

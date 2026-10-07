@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { WaybillInvoice } from "@/features/payouts-invoicing/types";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
@@ -17,6 +18,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
@@ -32,9 +34,6 @@ import {
 import {
   Sheet, SheetContent,
 } from "@/components/shadcn/sheet";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { InvoiceDetailView } from "@/features/payouts-invoicing/components/ui/InvoiceDetailView";
 import { TabKpiCards } from "@/features/payouts-invoicing/components/ui/TabKpiCards";
@@ -171,6 +170,157 @@ export default function InvoicesPage() {
       "overdue",
     ].includes(i.status)).length,
   };
+
+  const invoiceColumns: ColumnDef<WaybillInvoice>[] = [
+    {
+      accessorKey: "invoice_number",
+      header: "Invoice #",
+      meta: { className: "font-mono font-medium" },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const ic = invoiceStatusConfig[row.original.status] || invoiceStatusConfig.draft;
+        return (
+          <Badge
+            variant="outline"
+            className={ic.color}
+          >
+            {ic.label}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "customer_name",
+      header: "Customer",
+    },
+    {
+      id: "route",
+      header: "Route",
+      enableSorting: false,
+      meta: { className: "text-sm" },
+      cell: ({ row }) => {
+        const inv = row.original;
+        return inv.origin && inv.destination
+          ? (
+              <span className="flex items-center gap-1">
+                {inv.origin}
+                {" "}
+                <ArrowRight className="h-3 w-3" />
+                {" "}
+                {inv.destination}
+              </span>
+            )
+          : inv.destination || "—";
+      },
+    },
+    {
+      accessorKey: "vehicle_number",
+      header: "Vehicle",
+      cell: ({ row }) => row.original.vehicle_number || "—",
+    },
+    {
+      accessorKey: "total_ngn",
+      header: "Amount",
+      meta: { className: "text-right font-medium" },
+      cell: ({ row }) => formatAmount(row.original.total_ngn),
+    },
+    {
+      accessorKey: "due_date",
+      header: "Due Date",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => row.original.due_date
+        ? formatWithPattern(
+            row.original.due_date,
+            "dd MMM yyyy",
+          )
+        : "—",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const inv = row.original;
+        return (
+          <div
+            className="flex gap-1 justify-end items-center"
+            onClick={e => e.stopPropagation()}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  aria-label="Invoice actions"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-52"
+              >
+                <DropdownMenuItem onClick={() => setSelectedInvoice(inv)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Invoice
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    let path = inv.pdf_storage_path;
+                    if (!path) {
+                      const res = await generateInvoicePDF(inv.id);
+                      path = res?.storage_path ?? null;
+                    }
+                    if (!path)
+                      return;
+                    const url = await getInvoicePdfUrl(path);
+                    if (url) {
+                      window.open(
+                        url,
+                        "_blank",
+                      );
+                      toast.success("Download download started");
+                    }
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Receipt
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={![
+                    "approved",
+                    "sent",
+                    "paid",
+                  ].includes(inv.status)}
+                  onClick={() => setSelectedInvoice(inv)}
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Receipt
+                </DropdownMenuItem>
+                {canDeleteAssets && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setInvoiceToDelete(inv)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Invoice
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <>
@@ -401,152 +551,19 @@ export default function InvoicesPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Route</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={8}
-                        className="text-center py-12 text-muted-foreground"
-                      >
-                        <Download className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                        <p className="font-medium">No invoices found</p>
-                        <p className="text-sm">Generate invoices from extracted waybills</p>
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filteredInvoices.map((inv) => {
-                    const ic = invoiceStatusConfig[inv.status] || invoiceStatusConfig.draft;
-                    return (
-                      <TableRow
-                        key={inv.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setSelectedInvoice(inv)}
-                      >
-                        <TableCell className="font-mono font-medium">{inv.invoice_number}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={ic.color}
-                          >
-                            {ic.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{inv.customer_name}</TableCell>
-                        <TableCell className="text-sm">
-                          {inv.origin && inv.destination
-                            ? (
-                                <span className="flex items-center gap-1">
-                                  {inv.origin}
-                                  {" "}
-                                  <ArrowRight className="h-3 w-3" />
-                                  {" "}
-                                  {inv.destination}
-                                </span>
-                              )
-                            : inv.destination || "—"}
-                        </TableCell>
-                        <TableCell>{inv.vehicle_number || "—"}</TableCell>
-                        <TableCell className="text-right font-medium">{formatAmount(inv.total_ngn)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {inv.due_date
-                            ? formatWithPattern(
-                                inv.due_date,
-                                "dd MMM yyyy",
-                              )
-                            : "—"}
-                        </TableCell>
-                        <TableCell
-                          className="text-right"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <div className="flex gap-1 justify-end items-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0"
-                                  aria-label="Invoice actions"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="w-52"
-                              >
-                                <DropdownMenuItem onClick={() => setSelectedInvoice(inv)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Invoice
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={async () => {
-                                    let path = inv.pdf_storage_path;
-                                    if (!path) {
-                                      const res = await generateInvoicePDF(inv.id);
-                                      path = res?.storage_path ?? null;
-                                    }
-                                    if (!path)
-                                      return;
-                                    const url = await getInvoicePdfUrl(path);
-                                    if (url) {
-                                      window.open(
-                                        url,
-                                        "_blank",
-                                      );
-                                      toast.success("Download download started");
-                                    }
-                                  }}
-                                >
-                                  <Download className="h-4 w-4 mr-2" />
-                                  Download Receipt
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  disabled={![
-                                    "approved",
-                                    "sent",
-                                    "paid",
-                                  ].includes(inv.status)}
-                                  onClick={() => setSelectedInvoice(inv)}
-                                >
-                                  <Share2 className="h-4 w-4 mr-2" />
-                                  Share Receipt
-                                </DropdownMenuItem>
-                                {canDeleteAssets && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
-                                      onClick={() => setInvoiceToDelete(inv)}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete Invoice
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={invoiceColumns}
+            data={filteredInvoices}
+            onRowClick={setSelectedInvoice}
+            rowClassName={() => "hover:bg-muted/50"}
+            emptyState={(
+              <div className="py-4">
+                <Download className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No invoices found</p>
+                <p className="text-sm">Generate invoices from extracted waybills</p>
+              </div>
+            )}
+          />
         </CardContent>
       </Card>
 

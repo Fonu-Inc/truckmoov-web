@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle, Archive, Database, HardDrive, TrendingUp,
@@ -8,11 +9,9 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Progress } from "@/components/shadcn/progress";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 
 function fmt(bytes: number) {
@@ -25,6 +24,61 @@ function fmt(bytes: number) {
   if (MB < 1024)
     return `${MB.toFixed(1)} MB`;
   return `${(MB / 1024).toFixed(2)} GB`;
+}
+
+type StorageRow = {
+  key: string; label: string; icon: React.ElementType; count: number; bytes: number;
+};
+
+function storageColumns(usedBytes: number): ColumnDef<StorageRow>[] {
+  return [
+    {
+      accessorKey: "label",
+      header: "Category",
+      cell: ({ row }) => {
+        const Icon = row.original.icon;
+        return (
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{row.original.label}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "count",
+      header: "Files",
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => row.original.count.toLocaleString(),
+    },
+    {
+      accessorKey: "bytes",
+      header: "Size",
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => fmt(row.original.bytes),
+    },
+    {
+      id: "share",
+      header: "Share",
+      enableSorting: false,
+      meta: { className: "w-[35%]" },
+      cell: ({ row }) => {
+        const share = usedBytes > 0 ? (row.original.bytes / usedBytes) * 100 : 0;
+        return (
+          <div className="flex items-center gap-2">
+            <Progress
+              value={share}
+              className="h-2"
+            />
+            <span className="text-xs text-muted-foreground w-10 text-right tabular-nums">
+              {share.toFixed(0)}
+              %
+            </span>
+          </div>
+        );
+      },
+    },
+  ];
 }
 
 export function StoragePanel() {
@@ -233,62 +287,12 @@ export function StoragePanel() {
           <CardDescription>Storage broken down by file category</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading
-            ? (
-                <Skeleton className="h-40 w-full" />
-              )
-            : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Files</TableHead>
-                      <TableHead className="text-right">Size</TableHead>
-                      <TableHead className="w-[35%]">Share</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {!breakdown?.rows?.length && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={4}
-                          className="py-8 text-center text-sm text-muted-foreground"
-                        >
-                          No storage usage recorded yet.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {(breakdown?.rows ?? []).map((r) => {
-                      const Icon = r.icon;
-                      const share = usedBytes > 0 ? (r.bytes / usedBytes) * 100 : 0;
-                      return (
-                        <TableRow key={r.key}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{r.label}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">{r.count.toLocaleString()}</TableCell>
-                          <TableCell className="text-right tabular-nums">{fmt(r.bytes)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Progress
-                                value={share}
-                                className="h-2"
-                              />
-                              <span className="text-xs text-muted-foreground w-10 text-right tabular-nums">
-                                {share.toFixed(0)}
-                                %
-                              </span>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
+          <DataTable
+            columns={storageColumns(usedBytes)}
+            data={breakdown?.rows ?? []}
+            isLoading={isLoading}
+            emptyState="No storage usage recorded yet."
+          />
         </CardContent>
       </Card>
 

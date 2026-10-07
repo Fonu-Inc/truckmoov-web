@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   TenantPayment, TenantPaymentStatus,
 } from "@truckmoov/api/billing";
@@ -12,6 +13,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -19,20 +21,16 @@ import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
 import { receiptDocument } from "../../utils/billingDocuments";
 import {
   downloadDocument, formatDate, formatLongDate, methodLabel, ngn, PAYMENT_STATUS_LABEL, toneForStatus,
 } from "../../utils/billingHelpers";
 import {
-  DialogSkeleton, EmptyRow, LabelValue, Pager, PlanSummary, SectionError, SkeletonRows, StatusPill,
+  DialogSkeleton, LabelValue, PlanSummary, SectionError, StatusPill,
 } from "../../utils/billingShared";
 
 const PAGE_SIZE = 20;
-const COLS = 9;
 
 function PaymentStatus({ status }: { status: TenantPaymentStatus }) {
   return (
@@ -149,58 +147,101 @@ function PaymentDialog({
   );
 }
 
-function PaymentRow({
-  payment, onView,
-}: {
-  payment: TenantPayment; onView: () => void;
-}) {
-  return (
-    <TableRow>
-      <TableCell className="font-medium whitespace-nowrap">{payment.reference}</TableCell>
-      <TableCell className="whitespace-nowrap">{formatDate(payment.date)}</TableCell>
-      <TableCell className="whitespace-nowrap">
-        {payment.planName ? (
-          <StatusPill
-            label={payment.planName}
-            tone="info"
-          />
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-      <TableCell className="text-right tabular-nums">{payment.deviceCount || "—"}</TableCell>
-      <TableCell className="text-right tabular-nums">{ngn(payment.amountNgn)}</TableCell>
-      <TableCell>{methodLabel(payment.method)}</TableCell>
-      <TableCell className="text-muted-foreground">
-        {[
-          payment.invoiceNumber,
-          payment.quotationNumber,
-        ].filter(Boolean).join(" · ") || "—"}
-      </TableCell>
-      <TableCell><PaymentStatus status={payment.status} /></TableCell>
-      <TableCell className="text-right whitespace-nowrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onView}
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          {" "}
-          View
-        </Button>
-        {payment.status === "successful" && (
+function paymentColumns(onView: (p: TenantPayment) => void): ColumnDef<TenantPayment>[] {
+  return [
+    {
+      accessorKey: "reference",
+      header: "Reference",
+      enableSorting: false,
+      meta: { className: "font-medium whitespace-nowrap" },
+    },
+    {
+      id: "date",
+      header: "Date",
+      enableSorting: false,
+      meta: { className: "whitespace-nowrap" },
+      cell: ({ row }) => formatDate(row.original.date),
+    },
+    {
+      id: "plan",
+      header: "M2M plan",
+      enableSorting: false,
+      meta: { className: "whitespace-nowrap" },
+      cell: ({ row }) => (row.original.planName
+        ? (
+            <StatusPill
+              label={row.original.planName}
+              tone="info"
+            />
+          )
+        : <span className="text-muted-foreground">—</span>),
+    },
+    {
+      id: "devices",
+      header: "Devices",
+      enableSorting: false,
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => row.original.deviceCount || "—",
+    },
+    {
+      id: "amount",
+      header: "Amount paid",
+      enableSorting: false,
+      meta: { className: "text-right tabular-nums" },
+      cell: ({ row }) => ngn(row.original.amountNgn),
+    },
+    {
+      id: "method",
+      header: "Method",
+      enableSorting: false,
+      cell: ({ row }) => methodLabel(row.original.method),
+    },
+    {
+      id: "related",
+      header: "Related invoice / quotation",
+      enableSorting: false,
+      meta: { className: "text-muted-foreground" },
+      cell: ({ row }) => [
+        row.original.invoiceNumber,
+        row.original.quotationNumber,
+      ].filter(Boolean).join(" · ") || "—",
+    },
+    {
+      id: "status",
+      header: "Status",
+      enableSorting: false,
+      cell: ({ row }) => <PaymentStatus status={row.original.status} />,
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right whitespace-nowrap" },
+      cell: ({ row }) => (
+        <>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => receipt(payment)}
-            aria-label="Download document"
+            onClick={() => onView(row.original)}
           >
-            <Download className="h-4 w-4" />
+            <Eye className="h-4 w-4 mr-1" />
+            {" "}
+            View
           </Button>
-        )}
-      </TableCell>
-    </TableRow>
-  );
+          {row.original.status === "successful" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => receipt(row.original)}
+              aria-label="Download document"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
+        </>
+      ),
+    },
+  ];
 }
 
 export function BillingPaymentsTab() {
@@ -282,55 +323,23 @@ export function BillingPaymentsTab() {
         </div>
       </CardHeader>
       <CardContent>
-        {payments.isError && (
-          <SectionError
-            message="Could not load your payments."
+        <div className="rounded-2xl border border-border overflow-x-auto">
+          <DataTable
+            columns={paymentColumns(setSelected)}
+            data={list?.items ?? []}
+            isLoading={payments.isLoading}
+            isError={payments.isError}
+            errorMessage="Could not load your payments."
             onRetry={() => payments.refetch()}
+            emptyState="No payments match your filters."
+            pagination={list && {
+              page,
+              pageSize: PAGE_SIZE,
+              total: list.total,
+              onPageChange: setPage,
+            }}
           />
-        )}
-        {!payments.isError && (
-          <div className="rounded-2xl border border-border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>M2M plan</TableHead>
-                  <TableHead className="text-right">Devices</TableHead>
-                  <TableHead className="text-right">Amount paid</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Related invoice / quotation</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.isLoading && <SkeletonRows cols={COLS} />}
-                {list?.items.map(p => (
-                  <PaymentRow
-                    key={p.id}
-                    payment={p}
-                    onView={() => setSelected(p)}
-                  />
-                ))}
-                {list && list.items.length === 0 && (
-                  <EmptyRow
-                    cols={COLS}
-                    text="No payments match your filters."
-                  />
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        {list && (
-          <Pager
-            page={page}
-            pageSize={PAGE_SIZE}
-            total={list.total}
-            onPage={setPage}
-          />
-        )}
+        </div>
       </CardContent>
 
       <PaymentDialog

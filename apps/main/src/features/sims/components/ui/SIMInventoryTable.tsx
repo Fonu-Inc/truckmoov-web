@@ -1,11 +1,4 @@
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@truckmoov/reusables/components/shadcn/pagination";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   Download,
   Edit,
@@ -28,6 +21,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,7 +62,8 @@ type Props = {
   loading?: boolean;
   isFetching?: boolean;
   page: number;
-  totalPages: number;
+  /** Server page size; omit to render without the pagination footer. */
+  pageSize?: number;
   onPageChange: (page: number) => void;
   onExport: () => void;
   getDeviceInfo: (deviceId?: string) => DeviceInfo | null;
@@ -95,7 +90,7 @@ export function SIMInventoryTable({
   loading,
   isFetching,
   page,
-  totalPages,
+  pageSize,
   onPageChange,
   onExport,
   getDeviceInfo,
@@ -115,17 +110,201 @@ export function SIMInventoryTable({
   onUnassign,
   onDelete,
 }: Props) {
-  // Windowed page numbers (current ±2) — bounded for any page count.
-  const pageNumbers: number[] = [];
-  for (let p = Math.max(
-    1,
-    page - 2,
-  ); p <= Math.min(
-      totalPages,
-      page + 2,
-    ); p++) {
-    pageNumbers.push(p);
-  }
+  const columns: ColumnDef<SIMCardExtended>[] = [
+    {
+      id: "simId",
+      header: "SIM ID",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span
+          className="rounded bg-secondary px-2 py-1 font-mono text-xs"
+          title={row.original.id}
+        >
+          {row.original.id.slice(
+            0,
+            8,
+          )}
+        </span>
+      ),
+    },
+    {
+      id: "iccid",
+      header: "ICCID",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const sim = row.original;
+        const live = sim.status === "active" || sim.status === "assigned";
+        return (
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-lg",
+                live
+                  ? "bg-success/10"
+                  : sim.status === "suspended"
+                    ? "bg-warning/10"
+                    : "bg-secondary",
+              )}
+            >
+              <Wifi
+                className={cn(
+                  "h-5 w-5",
+                  live
+                    ? "text-success"
+                    : sim.status === "suspended"
+                      ? "text-warning"
+                      : "text-muted-foreground",
+                )}
+              />
+            </div>
+            <span className="font-mono text-xs">{sim.iccid}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "mobileNumber",
+      header: "Mobile Number",
+      enableSorting: false,
+      meta: { className: "font-medium" },
+    },
+    {
+      accessorKey: "networkOperator",
+      header: "Carrier",
+      enableSorting: false,
+      meta: { className: "text-sm" },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const { status } = row.original;
+        return (
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-medium",
+              status === "active" && "bg-success/10 text-success",
+              status === "assigned" && "bg-primary/10 text-primary",
+              status === "registered" && "bg-muted text-muted-foreground",
+              status === "suspended" && "bg-warning/10 text-warning",
+              status === "deactivated" && "bg-destructive/10 text-destructive",
+            )}
+          >
+            {status}
+          </span>
+        );
+      },
+    },
+    {
+      id: "device",
+      header: "Device",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const device = getDeviceInfo(row.original.deviceId);
+        return device
+          ? <span className="text-sm font-mono">{device.imei.slice(-6)}</span>
+          : <span className="text-muted-foreground">—</span>;
+      },
+    },
+    {
+      id: "usage",
+      header: "Data Usage",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const sim = row.original;
+        const usagePercent = (sim.dataUsage / sim.dataLimit) * 100;
+        return (
+          <div className="flex items-center gap-2 w-32">
+            <Progress
+              value={usagePercent}
+              className={cn(
+                "h-2",
+                usagePercent > 90 && "[&>div]:bg-destructive",
+                usagePercent > 75 && usagePercent <= 90 && "[&>div]:bg-warning",
+              )}
+            />
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {sim.dataUsage.toFixed(1)}
+              /
+              {sim.dataLimit}
+              GB
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const sim = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onViewDetails(sim)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEdit(sim)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {sim.status === "registered" && (
+                <DropdownMenuItem onClick={() => onActivate(sim.id)}>
+                  <Power className="mr-2 h-4 w-4" />
+                  Activate SIM
+                </DropdownMenuItem>
+              )}
+              {(sim.status === "active" || sim.status === "assigned") && (
+                <DropdownMenuItem onClick={() => onSuspend(sim.id)}>
+                  <Pause className="mr-2 h-4 w-4" />
+                  Suspend SIM
+                </DropdownMenuItem>
+              )}
+              {sim.status === "suspended" && (
+                <DropdownMenuItem onClick={() => onResume(sim.id)}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Resume SIM
+                </DropdownMenuItem>
+              )}
+              {!sim.deviceId && sim.status === "active" && (
+                <DropdownMenuItem onClick={() => onAssign(sim)}>
+                  <Link className="mr-2 h-4 w-4" />
+                  Assign to Device
+                </DropdownMenuItem>
+              )}
+              {sim.deviceId && (
+                <DropdownMenuItem onClick={() => onUnassign(sim.id)}>
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Unassign Device
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(sim.id)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   return (
     <Card>
@@ -254,250 +433,28 @@ export function SIMInventoryTable({
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           )}
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border text-left text-sm text-muted-foreground">
-                <th className="pb-3 font-medium">SIM ID</th>
-                <th className="pb-3 font-medium">ICCID</th>
-                <th className="pb-3 font-medium">Mobile Number</th>
-                <th className="pb-3 font-medium">Carrier</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 font-medium">Device</th>
-                <th className="pb-3 font-medium">Data Usage</th>
-                <th className="pb-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {sims.map((sim) => {
-                const device = getDeviceInfo(sim.deviceId);
-                const usagePercent = (sim.dataUsage / sim.dataLimit) * 100;
-                return (
-                  <tr
-                    key={sim.id}
-                    className="group transition-colors hover:bg-secondary/30"
-                  >
-                    <td className="py-4">
-                      <span
-                        className="rounded bg-secondary px-2 py-1 font-mono text-xs"
-                        title={sim.id}
-                      >
-                        {sim.id.slice(0, 8)}
-                      </span>
-                    </td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-lg",
-                            sim.status === "active" || sim.status === "assigned"
-                              ? "bg-success/10"
-                              : sim.status === "suspended"
-                                ? "bg-warning/10"
-                                : "bg-secondary",
-                          )}
-                        >
-                          <Wifi
-                            className={cn(
-                              "h-5 w-5",
-                              sim.status === "active" || sim.status === "assigned"
-                                ? "text-success"
-                                : sim.status === "suspended"
-                                  ? "text-warning"
-                                  : "text-muted-foreground",
-                            )}
-                          />
-                        </div>
-                        <span className="font-mono text-xs">{sim.iccid}</span>
-                      </div>
-                    </td>
-                    <td className="py-4">
-                      <span className="font-medium">{sim.mobileNumber}</span>
-                    </td>
-                    <td className="py-4 text-sm">{sim.networkOperator}</td>
-                    <td className="py-4">
-                      <span
-                        className={cn(
-                          "rounded-full px-2.5 py-1 text-xs font-medium",
-                          sim.status === "active" && "bg-success/10 text-success",
-                          sim.status === "assigned" && "bg-primary/10 text-primary",
-                          sim.status === "registered" && "bg-muted text-muted-foreground",
-                          sim.status === "suspended" && "bg-warning/10 text-warning",
-                          sim.status === "deactivated" && "bg-destructive/10 text-destructive",
-                        )}
-                      >
-                        {sim.status}
-                      </span>
-                    </td>
-                    <td className="py-4">
-                      {device
-                        ? (
-                            <span className="text-sm font-mono">{device.imei.slice(-6)}</span>
-                          )
-                        : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                    </td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-2 w-32">
-                        <Progress
-                          value={usagePercent}
-                          className={cn(
-                            "h-2",
-                            usagePercent > 90 && "[&>div]:bg-destructive",
-                            usagePercent > 75 && usagePercent <= 90 && "[&>div]:bg-warning",
-                          )}
-                        />
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {sim.dataUsage.toFixed(1)}
-                          /
-                          {sim.dataLimit}
-                          GB
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-4 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onViewDetails(sim)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onEdit(sim)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {sim.status === "registered" && (
-                            <DropdownMenuItem onClick={() => onActivate(sim.id)}>
-                              <Power className="mr-2 h-4 w-4" />
-                              Activate SIM
-                            </DropdownMenuItem>
-                          )}
-                          {(sim.status === "active" || sim.status === "assigned") && (
-                            <DropdownMenuItem onClick={() => onSuspend(sim.id)}>
-                              <Pause className="mr-2 h-4 w-4" />
-                              Suspend SIM
-                            </DropdownMenuItem>
-                          )}
-                          {sim.status === "suspended" && (
-                            <DropdownMenuItem onClick={() => onResume(sim.id)}>
-                              <Play className="mr-2 h-4 w-4" />
-                              Resume SIM
-                            </DropdownMenuItem>
-                          )}
-                          {!sim.deviceId && sim.status === "active" && (
-                            <DropdownMenuItem onClick={() => onAssign(sim)}>
-                              <Link className="mr-2 h-4 w-4" />
-                              Assign to Device
-                            </DropdownMenuItem>
-                          )}
-                          {sim.deviceId && (
-                            <DropdownMenuItem onClick={() => onUnassign(sim.id)}>
-                              <Unlink className="mr-2 h-4 w-4" />
-                              Unassign Device
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onDelete(sim.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {loading && sims.length === 0 && (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          )}
-
-          {!loading && sims.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Wifi className="h-12 w-12 mb-4 opacity-30" />
-              <p>No SIM cards found</p>
-              <p className="text-sm">Try adjusting your search or filters</p>
-            </div>
-          )}
+          <DataTable
+            columns={columns}
+            data={sims}
+            isLoading={loading && sims.length === 0}
+            rowClassName={() => "group transition-colors hover:bg-secondary/30"}
+            emptyState={(
+              <div className="flex flex-col items-center justify-center py-4">
+                <Wifi className="h-12 w-12 mb-4 opacity-30" />
+                <p>No SIM cards found</p>
+                <p className="text-sm">Try adjusting your search or filters</p>
+              </div>
+            )}
+            pagination={pageSize
+              ? {
+                  page,
+                  pageSize,
+                  total,
+                  onPageChange,
+                }
+              : undefined}
+          />
         </div>
-
-        {totalPages > 1 && (
-          <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Page
-              {" "}
-              {page}
-              {" "}
-              of
-              {" "}
-              {totalPages}
-              {" "}
-              ·
-              {" "}
-              {total}
-              {" "}
-              total
-            </p>
-            <Pagination className="mx-0 w-auto justify-end">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    aria-disabled={page <= 1}
-                    className={cn(page <= 1 && "pointer-events-none opacity-50")}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (page > 1)
-                        onPageChange(page - 1);
-                    }}
-                  />
-                </PaginationItem>
-                {pageNumbers.map(p => (
-                  <PaginationItem key={p}>
-                    <PaginationLink
-                      href="#"
-                      isActive={p === page}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onPageChange(p);
-                      }}
-                    >
-                      {p}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    aria-disabled={page >= totalPages}
-                    className={cn(page >= totalPages && "pointer-events-none opacity-50")}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (page < totalPages)
-                        onPageChange(page + 1);
-                    }}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

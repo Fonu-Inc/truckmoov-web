@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowLeft,
@@ -18,6 +19,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -30,14 +32,6 @@ import {
   RadioGroup, RadioGroupItem,
 } from "@/components/shadcn/radio-group";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 import { mockDrivers } from "@/data/mockData";
 
@@ -62,6 +56,14 @@ const statusConfig: Record<string, {
   failed: {
     icon: X, color: "text-destructive", label: "Failed",
   },
+};
+
+type BroadcastRecipient = {
+  id: string;
+  driver_name?: string | null;
+  driver_phone?: string | null;
+  status: string;
+  reply_content?: string | null;
 };
 
 export function BroadcastTracker() {
@@ -130,6 +132,50 @@ export function BroadcastTracker() {
       </Badge>
     );
   };
+
+  const recipientColumns: ColumnDef<BroadcastRecipient>[] = [
+    {
+      accessorKey: "driver_name",
+      header: "Driver",
+      meta: { className: "font-medium" },
+    },
+    {
+      accessorKey: "driver_phone",
+      header: "Phone",
+      meta: { className: "text-muted-foreground" },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => getStatusBadge(row.original.status),
+    },
+    {
+      id: "reply",
+      header: "Reply",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const recipient = row.original;
+        if (!recipient.reply_content)
+          return <span className="text-sm text-muted-foreground">—</span>;
+        return (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSelectedReply({
+                name: recipient.driver_name || "Driver",
+                content: recipient.reply_content || "",
+              });
+              setShowReplyDialog(true);
+            }}
+          >
+            <MessageCircle className="h-4 w-4 mr-1" />
+            View
+          </Button>
+        );
+      },
+    },
+  ];
 
   if (selectedBroadcast) {
     const deliveryRate = selectedBroadcast.total_recipients > 0
@@ -226,47 +272,11 @@ export function BroadcastTracker() {
               )
             </h4>
             <ScrollArea className="h-[300px] rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Driver</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Reply</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recipients.map(recipient => (
-                    <TableRow key={recipient.id}>
-                      <TableCell className="font-medium">{recipient.driver_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{recipient.driver_phone}</TableCell>
-                      <TableCell>{getStatusBadge(recipient.status)}</TableCell>
-                      <TableCell>
-                        {recipient.reply_content
-                          ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedReply({
-                                    name: recipient.driver_name || "Driver",
-                                    content: recipient.reply_content || "",
-                                  });
-                                  setShowReplyDialog(true);
-                                }}
-                              >
-                                <MessageCircle className="h-4 w-4 mr-1" />
-                                View
-                              </Button>
-                            )
-                          : (
-                              <span className="text-sm text-muted-foreground">—</span>
-                            )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                columns={recipientColumns}
+                data={recipients}
+                emptyState="No recipients"
+              />
             </ScrollArea>
           </div>
         </CardContent>

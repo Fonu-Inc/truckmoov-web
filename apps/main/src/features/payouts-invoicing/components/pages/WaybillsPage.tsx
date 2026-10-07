@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { WaybillRecord } from "@/features/payouts-invoicing/types";
 import {
   formatWithPattern, toDateParam,
@@ -14,6 +15,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/shadcn/dialog";
@@ -32,9 +34,6 @@ import {
 import {
   Sheet, SheetContent,
 } from "@/components/shadcn/sheet";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { TabKpiCards } from "@/features/payouts-invoicing/components/ui/TabKpiCards";
 import {
@@ -232,6 +231,158 @@ export default function WaybillsPage() {
   const needsReview = displayWaybills.filter((w: any) => w.status === "needs_review").length;
   const extracted = displayWaybills.filter((w: any) => w.status === "extracted" || w.status === "approved").length;
   const invoiced = displayWaybills.filter((w: any) => w.status === "invoice_generated").length;
+
+  const waybillColumns: ColumnDef<WaybillRecord>[] = [
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const sc = statusConfig[row.original.status] || statusConfig.received;
+        return (
+          <Badge
+            variant="outline"
+            className={sc.color}
+          >
+            <sc.icon className="h-3 w-3 mr-1" />
+            {sc.label}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "source_type",
+      header: "Source",
+      cell: ({ row }) => {
+        const wb = row.original;
+        return (
+          <div className="flex items-center gap-2">
+            {wb.image_url || wb.image_storage_path
+              ? (
+                  <div className="h-8 w-8 rounded border overflow-hidden bg-muted flex-shrink-0">
+                    <WaybillThumbnail waybill={wb} />
+                  </div>
+                )
+              : (
+                  <div className="h-8 w-8 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground/50" />
+                  </div>
+                )}
+            <span className="capitalize">{wb.source_type}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "waybill_number",
+      header: "Waybill #",
+      meta: { className: "font-mono text-sm" },
+      cell: ({ row }) => row.original.waybill_number || "—",
+    },
+    {
+      accessorKey: "destination",
+      header: "Destination",
+      cell: ({ row }) => row.original.destination || "—",
+    },
+    {
+      accessorKey: "vehicle_number",
+      header: "Vehicle",
+      cell: ({ row }) => row.original.vehicle_number || "—",
+    },
+    {
+      accessorKey: "customer_name",
+      header: "Customer",
+      cell: ({ row }) => row.original.customer_name || "—",
+    },
+    {
+      accessorKey: "calculated_price_ngn",
+      header: "Price",
+      cell: ({ row }) => row.original.calculated_price_ngn ? formatAmount(row.original.calculated_price_ngn) : "—",
+    },
+    {
+      accessorKey: "created_at",
+      header: "Date",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => formatWithPattern(
+        row.original.created_at,
+        "dd MMM yyyy",
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const wb = row.original;
+        return (
+          <div
+            className="flex gap-1 justify-end items-center"
+            onClick={e => e.stopPropagation()}
+          >
+            {[
+              "received",
+              "extraction_failed",
+            ].includes(wb.status) && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={extracting === wb.id}
+                onClick={() => handleExtract(wb)}
+              >
+                {extracting === wb.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scan className="h-3.5 w-3.5" />}
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  aria-label="Waybill actions"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-52"
+              >
+                <DropdownMenuItem onClick={() => setSelectedWaybill(wb)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
+                {[
+                  "received",
+                  "extraction_failed",
+                ].includes(wb.status) && (
+                  <DropdownMenuItem
+                    disabled={extracting === wb.id}
+                    onClick={() => handleExtract(wb)}
+                  >
+                    <Scan className="h-4 w-4 mr-2" />
+                    Extract Fields
+                  </DropdownMenuItem>
+                )}
+                {[
+                  "extracted",
+                  "needs_review",
+                  "approved",
+                ].includes(wb.status) && (
+                  <DropdownMenuItem
+                    disabled={generating === wb.id}
+                    onClick={() => handleGenerateInvoice(wb.id)}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Generate Invoice
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <>
@@ -499,149 +650,19 @@ export default function WaybillsPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Waybill #</TableHead>
-                <TableHead>Destination</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredWaybills.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={9}
-                        className="text-center py-12 text-muted-foreground"
-                      >
-                        <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                        <p className="font-medium">No waybills found</p>
-                        <p className="text-sm">Upload a waybill image or adjust filters</p>
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filteredWaybills.map((wb) => {
-                    const sc = statusConfig[wb.status] || statusConfig.received;
-                    return (
-                      <TableRow
-                        key={wb.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setSelectedWaybill(wb)}
-                      >
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={sc.color}
-                          >
-                            <sc.icon className="h-3 w-3 mr-1" />
-                            {sc.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {wb.image_url || wb.image_storage_path
-                              ? (
-                                  <div className="h-8 w-8 rounded border overflow-hidden bg-muted flex-shrink-0">
-                                    <WaybillThumbnail waybill={wb} />
-                                  </div>
-                                )
-                              : (
-                                  <div className="h-8 w-8 rounded border bg-muted flex items-center justify-center flex-shrink-0">
-                                    <ImageIcon className="h-4 w-4 text-muted-foreground/50" />
-                                  </div>
-                                )}
-                            <span className="capitalize">{wb.source_type}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{wb.waybill_number || "—"}</TableCell>
-                        <TableCell>{wb.destination || "—"}</TableCell>
-                        <TableCell>{wb.vehicle_number || "—"}</TableCell>
-                        <TableCell>{wb.customer_name || "—"}</TableCell>
-                        <TableCell>{wb.calculated_price_ngn ? formatAmount(wb.calculated_price_ngn) : "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatWithPattern(
-                            wb.created_at,
-                            "dd MMM yyyy",
-                          )}
-                        </TableCell>
-                        <TableCell
-                          className="text-right"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <div className="flex gap-1 justify-end items-center">
-                            {[
-                              "received",
-                              "extraction_failed",
-                            ].includes(wb.status) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={extracting === wb.id}
-                                onClick={() => handleExtract(wb)}
-                              >
-                                {extracting === wb.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scan className="h-3.5 w-3.5" />}
-                              </Button>
-                            )}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0"
-                                  aria-label="Waybill actions"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="w-52"
-                              >
-                                <DropdownMenuItem onClick={() => setSelectedWaybill(wb)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                {[
-                                  "received",
-                                  "extraction_failed",
-                                ].includes(wb.status) && (
-                                  <DropdownMenuItem
-                                    disabled={extracting === wb.id}
-                                    onClick={() => handleExtract(wb)}
-                                  >
-                                    <Scan className="h-4 w-4 mr-2" />
-                                    Extract Fields
-                                  </DropdownMenuItem>
-                                )}
-                                {[
-                                  "extracted",
-                                  "needs_review",
-                                  "approved",
-                                ].includes(wb.status) && (
-                                  <DropdownMenuItem
-                                    disabled={generating === wb.id}
-                                    onClick={() => handleGenerateInvoice(wb.id)}
-                                  >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Generate Invoice
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={waybillColumns}
+            data={filteredWaybills}
+            onRowClick={setSelectedWaybill}
+            rowClassName={() => "hover:bg-muted/50"}
+            emptyState={(
+              <div className="py-4">
+                <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No waybills found</p>
+                <p className="text-sm">Upload a waybill image or adjust filters</p>
+              </div>
+            )}
+          />
         </CardContent>
       </Card>
 

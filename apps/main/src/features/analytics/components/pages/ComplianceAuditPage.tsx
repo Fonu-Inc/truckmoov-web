@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FleetComplianceAudit } from "@truckmoov/api/fleet";
 import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
@@ -23,15 +25,69 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
 import {
   periodLabel, periodToRange,
 } from "@/features/analytics/utils/period";
+
+type ComplianceItem = {
+  category: string; total: number; compliant: number; status: string;
+};
+
+const CATEGORY_COLUMNS: ColumnDef<ComplianceItem>[] = [
+  {
+    accessorKey: "category",
+    header: "Category",
+    cell: ({ row }) => <span className="font-medium">{row.original.category}</span>,
+  },
+  {
+    accessorKey: "total",
+    header: "Total",
+    meta: { className: "text-right" },
+  },
+  {
+    accessorKey: "compliant",
+    header: "Compliant",
+    meta: { className: "text-right" },
+  },
+  {
+    id: "rate",
+    header: "Rate",
+    meta: { className: "text-right" },
+    accessorFn: c => (c.total > 0 ? c.compliant / c.total : 0),
+    cell: ({ row }) => {
+      const c = row.original;
+      return c.total > 0 ? `${((c.compliant / c.total) * 100).toFixed(0)}%` : "—";
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => (row.original.status === "pass"
+      ? (
+          <Badge
+            variant="outline"
+            className="bg-success/10 text-success border-success/30"
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            {" "}
+            Pass
+          </Badge>
+        )
+      : (
+          <Badge
+            variant="outline"
+            className="bg-warning/10 text-warning border-warning/30"
+          >
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            {" "}
+            Review
+          </Badge>
+        )),
+  },
+];
 
 export default function ComplianceAuditPage() {
   const [
@@ -536,63 +592,11 @@ function ComplianceAuditReport({
                 ]}
               />
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Compliant</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="text-center text-muted-foreground py-6"
-                        >
-                          No categories match your filters
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : filteredItems.map(c => (
-                      <TableRow key={c.category}>
-                        <TableCell className="font-medium">{c.category}</TableCell>
-                        <TableCell className="text-right">{c.total}</TableCell>
-                        <TableCell className="text-right">{c.compliant}</TableCell>
-                        <TableCell className="text-right">
-                          {c.total > 0 ? `${((c.compliant / c.total) * 100).toFixed(0)}%` : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {c.status === "pass"
-                            ? (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-success/10 text-success border-success/30"
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  {" "}
-                                  Pass
-                                </Badge>
-                              )
-                            : (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-warning/10 text-warning border-warning/30"
-                                >
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  {" "}
-                                  Review
-                                </Badge>
-                              )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={CATEGORY_COLUMNS}
+              data={filteredItems}
+              emptyState="No categories match your filters"
+            />
           </CardContent>
         </Card>
       </div>

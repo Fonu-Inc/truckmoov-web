@@ -414,7 +414,10 @@ Every table renders through `DataTable`
 (`packages/reusables/src/components/shadcn/data-table.tsx`) — it already carries
 the three states (skeleton loading row, error row with retry, two empty states),
 sortable columns, and a sticky pagination footer with a `Rows per page` selector.
-Don't hand-roll `<Table>` + `useReactTable` in a page.
+Don't hand-roll `<Table>` + `useReactTable` in a page. That includes static
+tables — API docs, upload previews, print-styled statements — which use
+`DataTable` with `enableSorting: false`. The only exception is HTML template
+strings written into a `window.open` print window, which aren't React.
 
 For any list backed by a paginated endpoint (server returns `{ total, items }` and
 accepts `limit` + `offset`), pair `DataTable` with `useBatchedQuery`

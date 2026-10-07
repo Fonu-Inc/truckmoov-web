@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SupportTicket, SupportTicketPriority, SupportTicketStatus,
 } from "@truckmoov/api/auth";
@@ -36,14 +37,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import { DataTable } from "@/components/shadcn/data-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { TicketDetailSheet } from "./TicketDetailSheet";
 
@@ -289,6 +283,98 @@ export function MyTickets() {
   const hasFilters = search.trim() || statusFilter !== "all"
     || Object.values(filters).some(filter => filter.enabled);
 
+  const ticketColumns: ColumnDef<SupportTicket>[] = [
+    {
+      id: "id",
+      header: "Ticket ID",
+      enableSorting: false,
+      meta: { className: "font-mono text-xs" },
+      cell: ({ row }) => `#${shortId(row.original.id)}`,
+    },
+    {
+      accessorKey: "subject",
+      header: "Title",
+      meta: { className: "font-medium max-w-[200px] truncate" },
+    },
+    {
+      accessorKey: "description",
+      header: "Message",
+      enableSorting: false,
+      meta: { className: "text-sm max-w-[260px] truncate text-muted-foreground" },
+    },
+    {
+      id: "reporter",
+      header: "Reporter",
+      accessorFn: reporterName,
+      cell: ({ row }) => {
+        const reporter = reporterName(row.original);
+        return (
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+              {getInitials(reporter)}
+            </div>
+            <span className="text-sm truncate">{reporter}</span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "channel",
+      header: "Channel",
+      accessorFn: channelName,
+      meta: { className: "text-sm" },
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      meta: { className: "text-sm" },
+      cell: ({ row }) => formatCategory(row.original.category),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = statusConfig[row.original.status];
+        return <Badge variant={status.variant}>{status.label}</Badge>;
+      },
+    },
+    {
+      accessorKey: "priority",
+      header: "Priority",
+      cell: ({ row }) => {
+        const priority = priorityConfig[row.original.priority];
+        return (
+          <Badge
+            variant="outline"
+            className={priority.className}
+          >
+            {priority.label}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "action",
+      header: "Action",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8"
+          onClick={(event) => {
+            event.stopPropagation();
+            setSelectedTicketId(row.original.id);
+          }}
+        >
+          <Eye className="h-4 w-4 mr-1.5" />
+          View
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <>
       <div className="space-y-4">
@@ -361,77 +447,11 @@ export function MyTickets() {
                 )
               : (
                   <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead>Ticket ID</TableHead>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Message</TableHead>
-                          <TableHead>Reporter</TableHead>
-                          <TableHead>Channel</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Priority</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tickets.map((ticket) => {
-                          const status = statusConfig[ticket.status];
-                          const priority = priorityConfig[ticket.priority];
-                          const reporter = reporterName(ticket);
-                          return (
-                            <TableRow
-                              key={ticket.id}
-                              className="cursor-pointer border-border/50"
-                              onClick={() => setSelectedTicketId(ticket.id)}
-                            >
-                              <TableCell className="font-mono text-xs">
-                                #
-                                {shortId(ticket.id)}
-                              </TableCell>
-                              <TableCell className="font-medium max-w-[200px] truncate">{ticket.subject}</TableCell>
-                              <TableCell className="text-sm max-w-[260px] truncate text-muted-foreground">
-                                {ticket.description}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-                                    {getInitials(reporter)}
-                                  </div>
-                                  <span className="text-sm truncate">{reporter}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-sm">{channelName(ticket)}</TableCell>
-                              <TableCell className="text-sm">{formatCategory(ticket.category)}</TableCell>
-                              <TableCell><Badge variant={status.variant}>{status.label}</Badge></TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={priority.className}
-                                >
-                                  {priority.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setSelectedTicketId(ticket.id);
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4 mr-1.5" />
-                                  View
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                    <DataTable
+                      columns={ticketColumns}
+                      data={tickets}
+                      onRowClick={ticket => setSelectedTicketId(ticket.id)}
+                    />
                   </div>
                 )}
           </CardContent>

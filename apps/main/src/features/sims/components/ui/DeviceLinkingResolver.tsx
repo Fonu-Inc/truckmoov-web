@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   AlertTriangle,
   ArrowRight,
@@ -17,6 +18,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -33,14 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 
 type DeviceLinkingException = {
   row_index: number;
@@ -152,6 +146,148 @@ export function DeviceLinkingResolver({
     return manualLinks.some(l => l.device_id === deviceId && l.sim_id !== excludeSimId);
   };
 
+  const simColumns: ColumnDef<UnlinkedSIM>[] = [
+    {
+      id: "iccid",
+      header: "SIM (ICCID)",
+      meta: { className: "font-mono text-xs" },
+      cell: ({ row }) => `...${row.original.iccid.slice(-10)}`,
+    },
+    {
+      accessorKey: "msisdn",
+      header: "MSISDN",
+      meta: { className: "font-mono text-xs" },
+    },
+    {
+      id: "arrow",
+      header: "",
+      enableSorting: false,
+      meta: { className: "w-8" },
+      cell: () => <ArrowRight className="h-4 w-4 text-muted-foreground" />,
+    },
+    {
+      id: "device",
+      header: "Link to Device",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const sim = row.original;
+        return (
+          <Select
+            value={getSelectedDevice(sim.id)}
+            onValueChange={value => handleLinkSelection(
+              sim.id,
+              value,
+            )}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select device..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">-- No link --</SelectItem>
+              {unlinkedDevices.map(device => (
+                <SelectItem
+                  key={device.id}
+                  value={device.id}
+                  disabled={isDeviceUsed(
+                    device.id,
+                    sim.id,
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    {device.device_name}
+                    <span className="text-xs text-muted-foreground">
+                      (
+                      {device.imei.slice(-6)}
+                      )
+                    </span>
+                    {device.id.startsWith("pending_") && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        New
+                      </Badge>
+                    )}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      },
+    },
+    {
+      id: "status",
+      header: "Status",
+      enableSorting: false,
+      cell: ({ row }) => (getSelectedDevice(row.original.id) !== "none"
+        ? (
+            <Badge className="bg-success/10 text-success">
+              <Link className="h-3 w-3 mr-1" />
+              Linked
+            </Badge>
+          )
+        : (
+            <Badge
+              variant="outline"
+              className="text-muted-foreground"
+            >
+              <Unlink className="h-3 w-3 mr-1" />
+              Unlinked
+            </Badge>
+          )),
+    },
+  ];
+
+  const exceptionColumns: ColumnDef<DeviceLinkingException>[] = [
+    {
+      accessorKey: "device_name",
+      header: "Device",
+      meta: { className: "text-xs" },
+    },
+    {
+      id: "imei",
+      header: "IMEI",
+      meta: { className: "font-mono text-xs" },
+      cell: ({ row }) => row.original.imei || "-",
+    },
+    {
+      accessorKey: "reason",
+      header: "Issue",
+      meta: { className: "text-xs text-destructive" },
+    },
+    {
+      id: "action",
+      header: "Action",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const skipped = skippedExceptions.includes(row.original.row_index);
+        return (
+          <Button
+            size="sm"
+            variant={skipped ? "secondary" : "outline"}
+            onClick={() => handleSkipException(row.original.row_index)}
+          >
+            {skipped
+              ? (
+                  <>
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Skipped
+                  </>
+                )
+              : (
+                  <>
+                    <SkipForward className="h-3 w-3 mr-1" />
+                    Skip
+                  </>
+                )}
+          </Button>
+        );
+      },
+    },
+  ];
+
   return (
     <Dialog
       open={open}
@@ -221,108 +357,16 @@ export function DeviceLinkingResolver({
 
           {/* Manual Linking Table */}
           <ScrollArea className="h-[300px] border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>SIM (ICCID)</TableHead>
-                  <TableHead>MSISDN</TableHead>
-                  <TableHead className="w-8"></TableHead>
-                  <TableHead>Link to Device</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {unlinkedSims.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="text-center text-muted-foreground py-8"
-                        >
-                          <CheckCircle className="h-8 w-8 mx-auto mb-2 text-success" />
-                          All SIMs are linked to devices
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : (
-                      unlinkedSims.map(sim => (
-                        <TableRow key={sim.id}>
-                          <TableCell className="font-mono text-xs">
-                            ...
-                            {sim.iccid.slice(-10)}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {sim.msisdn}
-                          </TableCell>
-                          <TableCell>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={getSelectedDevice(sim.id)}
-                              onValueChange={value => handleLinkSelection(
-                                sim.id,
-                                value,
-                              )}
-                            >
-                              <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Select device..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">-- No link --</SelectItem>
-                                {unlinkedDevices.map(device => (
-                                  <SelectItem
-                                    key={device.id}
-                                    value={device.id}
-                                    disabled={isDeviceUsed(
-                                      device.id,
-                                      sim.id,
-                                    )}
-                                  >
-                                    <span className="flex items-center gap-2">
-                                      {device.device_name}
-                                      <span className="text-xs text-muted-foreground">
-                                        (
-                                        {device.imei.slice(-6)}
-                                        )
-                                      </span>
-                                      {device.id.startsWith("pending_") && (
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs"
-                                        >
-                                          New
-                                        </Badge>
-                                      )}
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            {getSelectedDevice(sim.id) !== "none"
-                              ? (
-                                  <Badge className="bg-success/10 text-success">
-                                    <Link className="h-3 w-3 mr-1" />
-                                    Linked
-                                  </Badge>
-                                )
-                              : (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-muted-foreground"
-                                  >
-                                    <Unlink className="h-3 w-3 mr-1" />
-                                    Unlinked
-                                  </Badge>
-                                )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={simColumns}
+              data={unlinkedSims}
+              emptyState={(
+                <>
+                  <CheckCircle className="h-8 w-8 mx-auto mb-2 text-success" />
+                  All SIMs are linked to devices
+                </>
+              )}
+            />
           </ScrollArea>
 
           {/* Exceptions that can be skipped */}
@@ -335,49 +379,11 @@ export function DeviceLinkingResolver({
                 )
               </p>
               <ScrollArea className="h-[120px] border border-warning/30 rounded-md bg-warning/5">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Device</TableHead>
-                      <TableHead>IMEI</TableHead>
-                      <TableHead>Issue</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {exceptions.map((ex, idx) => (
-                      <TableRow
-                        key={idx}
-                        className={skippedExceptions.includes(ex.row_index) ? "opacity-50" : ""}
-                      >
-                        <TableCell className="text-xs">{ex.device_name}</TableCell>
-                        <TableCell className="font-mono text-xs">{ex.imei || "-"}</TableCell>
-                        <TableCell className="text-xs text-destructive">{ex.reason}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant={skippedExceptions.includes(ex.row_index) ? "secondary" : "outline"}
-                            onClick={() => handleSkipException(ex.row_index)}
-                          >
-                            {skippedExceptions.includes(ex.row_index)
-                              ? (
-                                  <>
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    Skipped
-                                  </>
-                                )
-                              : (
-                                  <>
-                                    <SkipForward className="h-3 w-3 mr-1" />
-                                    Skip
-                                  </>
-                                )}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  columns={exceptionColumns}
+                  data={exceptions}
+                  rowClassName={ex => (skippedExceptions.includes(ex.row_index) ? "opacity-50" : "")}
+                />
               </ScrollArea>
             </div>
           )}

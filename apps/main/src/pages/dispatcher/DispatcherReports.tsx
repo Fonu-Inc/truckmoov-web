@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   AlertTriangle, BarChart3, Calendar, Clock, Download, Loader2, TrendingUp, Truck,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Select,
   SelectContent,
@@ -138,6 +140,42 @@ export default function DispatcherReports() {
       </div>
     );
   }
+
+  const alertTypeColumns: ColumnDef<{
+    type: string; count: number;
+  }>[] = [
+    {
+      accessorKey: "type",
+      header: "Alert Type",
+      cell: ({ row }) => <span className="font-medium capitalize">{row.original.type}</span>,
+    },
+    {
+      accessorKey: "count",
+      header: "Count",
+    },
+    {
+      id: "percentage",
+      header: "Percentage",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const pct = alerts.length > 0 ? (row.original.count / alerts.length) * 100 : 0;
+        return (
+          <div className="flex items-center gap-2">
+            <div className="w-full max-w-24 bg-muted rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {pct.toFixed(0)}
+              %
+            </span>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -347,52 +385,11 @@ export default function DispatcherReports() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 font-medium">Alert Type</th>
-                  <th className="text-left py-3 px-4 font-medium">Count</th>
-                  <th className="text-left py-3 px-4 font-medium">Percentage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topAlertTypes.map((item, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-border last:border-0"
-                  >
-                    <td className="py-3 px-4">
-                      <span className="font-medium capitalize">{item.type}</span>
-                    </td>
-                    <td className="py-3 px-4">{item.count}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-full max-w-24 bg-muted rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full"
-                            style={{ width: `${alerts.length > 0 ? (item.count / alerts.length) * 100 : 0}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {alerts.length > 0 ? ((item.count / alerts.length) * 100).toFixed(0) : 0}
-                          %
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {topAlertTypes.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className="py-8 text-center text-muted-foreground"
-                    >
-                      No alerts recorded
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <DataTable
+              columns={alertTypeColumns}
+              data={topAlertTypes}
+              emptyState="No alerts recorded"
+            />
           </div>
         </CardContent>
       </Card>

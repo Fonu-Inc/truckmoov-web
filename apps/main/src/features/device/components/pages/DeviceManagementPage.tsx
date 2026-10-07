@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   DeviceTrackerType, FleetDevice,
 } from "@truckmoov/api/fleet";
@@ -56,6 +57,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -85,8 +87,8 @@ import {
 } from "@/components/shadcn/select";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DeviceDetailsSheet } from "@/features/device/components/ui/DeviceDetailsSheet";
-import { DeviceProvisionBadge } from "@/features/device/components/ui/DeviceProvisionBadge";
 import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDialog";
+import { DeviceProvisionBadge } from "@/features/device/components/ui/DeviceProvisionBadge";
 import { DeviceRequestsTracker } from "@/features/device/components/ui/DeviceRequestsTracker";
 import { RequestDeviceDialog } from "@/features/device/components/ui/RequestDeviceDialog";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
@@ -448,6 +450,232 @@ export default function DeviceManagement() {
     },
   ];
 
+  const deviceColumns: ColumnDef<FleetDevice>[] = [
+    {
+      id: "deviceId",
+      header: "Device ID",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span
+          className="rounded bg-secondary px-2 py-1 font-mono text-xs"
+          title={row.original.id}
+        >
+          {row.original.id.slice(
+            0,
+            8,
+          )}
+        </span>
+      ),
+    },
+    {
+      id: "model",
+      header: "Manufacturer / Model",
+      accessorFn: device => device.name || device.manufacturer,
+      cell: ({ row }) => {
+        const device = row.original;
+        const state = deviceState(
+          device,
+          now,
+        );
+        return (
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-lg",
+              state === "active" ? "bg-success/10" : "bg-secondary",
+            )}
+            >
+              <Cpu className={cn(
+                "h-5 w-5",
+                state === "active" ? "text-success" : "text-muted-foreground",
+              )}
+              />
+            </div>
+            <div>
+              <p className="font-medium">{device.name || device.manufacturer}</p>
+              <p className="text-xs text-muted-foreground">
+                {device.name ? `${device.manufacturer} · ${device.model || "—"}` : device.model || "—"}
+              </p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "imei",
+      header: "IMEI",
+      cell: ({ row }) => <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">{row.original.imei}</span>,
+    },
+    {
+      id: "vehicle",
+      header: "Vehicle Assigned",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const vehicle = row.original.vehicleId ? vehicles.get(row.original.vehicleId) : undefined;
+        return vehicle
+          ? (
+              <>
+                <p className="text-sm">{vehicle.plateNumber}</p>
+                <p className="text-xs text-muted-foreground">
+                  {[
+                    vehicle.make,
+                    vehicle.model,
+                  ].filter(Boolean).join(" ")}
+                </p>
+              </>
+            )
+          : <span className="text-muted-foreground">—</span>;
+      },
+    },
+    {
+      id: "sim",
+      header: "SIM Card",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const sim = simForDevice(row.original);
+        return sim
+          ? (
+              <>
+                <p className="text-sm">{sim.mobileNumber}</p>
+                <p className="text-xs text-muted-foreground">{sim.operator}</p>
+              </>
+            )
+          : <span className="text-muted-foreground">—</span>;
+      },
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: device => deviceState(
+        device,
+        now,
+      ),
+      cell: ({ row }) => {
+        const state = deviceState(
+          row.original,
+          now,
+        );
+        return (
+          <>
+            <span className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+              STATE_BADGE[state],
+            )}
+            >
+              {state}
+            </span>
+            <DeviceProvisionBadge
+              device={row.original}
+              className="mt-1.5 max-w-64"
+            />
+          </>
+        );
+      },
+    },
+    {
+      id: "signal",
+      header: "Signal",
+      accessorFn: device => device.signalStrength ?? -1,
+      cell: ({ row }) => {
+        const signal = row.original.signalStrength;
+        return signal !== null && signal !== undefined
+          ? (
+              <div className="flex items-center gap-2">
+                <Signal className={cn(
+                  "h-4 w-4",
+                  signal > 70 ? "text-success" : signal > 40 ? "text-warning" : "text-destructive",
+                )}
+                />
+                <span className="text-sm">
+                  {signal}
+                  %
+                </span>
+              </div>
+            )
+          : <span className="text-muted-foreground">—</span>;
+      },
+    },
+    {
+      id: "lastSeen",
+      header: "Last Seen",
+      accessorFn: device => device.lastSeen ?? "",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => (row.original.lastSeen ? formatRelative(row.original.lastSeen) : "Never"),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const device = row.original;
+        const state = deviceState(
+          device,
+          now,
+        );
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                setSelectedDevice(device);
+                setIsDetailsOpen(true);
+              }}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setSelectedDevice(device);
+                setIsEditDialogOpen(true);
+              }}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                setFirmwareDevice(device);
+                setFirmwareVersion(device.firmwareVersion || "");
+              }}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Update Firmware
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {state === "suspended"
+                ? device.suspendedBy !== "platform" && (
+                  <DropdownMenuItem onClick={() => setSuspended(
+                    device,
+                    false,
+                  )}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reinstate Device
+                  </DropdownMenuItem>
+                )
+                : (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setDevicePendingSuspend(device)}
+                    >
+                      <ShieldAlert className="mr-2 h-4 w-4" />
+                      Suspend Device
+                    </DropdownMenuItem>
+                  )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   return (
     <>
       <div className="space-y-6">
@@ -649,226 +877,32 @@ export default function DeviceManagement() {
               </div>
             </CardHeader>
             <CardContent>
-              {devicesQuery.isLoading
-                ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="overflow-x-auto">
+                <DataTable
+                  columns={deviceColumns}
+                  data={filteredDevices}
+                  isLoading={devicesQuery.isLoading}
+                  isError={devicesQuery.isError}
+                  errorMessage={devicesQuery.error?.message}
+                  onRetry={() => void devicesQuery.refetch()}
+                  rowClassName={() => "group transition-colors hover:bg-secondary/30"}
+                  hasActiveFilters={!!searchQuery || statusFilter !== "all" || manufacturerFilters.length > 0 || lastSeenFilters.length > 0}
+                  emptyState={(
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium text-foreground">No devices found</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Request your first device to get started</p>
                     </div>
-                  )
-                : devicesQuery.isError
-                  ? (
-                      <div className="py-12 text-center">
-                        <p className="text-destructive">{devicesQuery.error.message}</p>
-                        <Button
-                          variant="link"
-                          onClick={() => void devicesQuery.refetch()}
-                        >
-                          Try again
-                        </Button>
-                      </div>
-                    )
-                  : filteredDevices.length === 0
-                    ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                          <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
-                          <h3 className="text-lg font-medium">No devices found</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {searchQuery || statusFilter !== "all" || manufacturerFilters.length > 0 || lastSeenFilters.length > 0
-                              ? "Try adjusting your filters"
-                              : "Request your first device to get started"}
-                          </p>
-                        </div>
-                      )
-                    : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="border-b border-border text-left text-sm text-muted-foreground">
-                                <th className="pb-3 font-medium">Device ID</th>
-                                <th className="pb-3 font-medium">Manufacturer / Model</th>
-                                <th className="pb-3 font-medium">IMEI</th>
-                                <th className="pb-3 font-medium">Vehicle Assigned</th>
-                                <th className="pb-3 font-medium">SIM Card</th>
-                                <th className="pb-3 font-medium">Status</th>
-                                <th className="pb-3 font-medium">Signal</th>
-                                <th className="pb-3 font-medium">Last Seen</th>
-                                <th className="pb-3 font-medium text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                              {filteredDevices.map((device) => {
-                                const vehicle = device.vehicleId ? vehicles.get(device.vehicleId) : undefined;
-                                const sim = simForDevice(device);
-                                const state = deviceState(
-                                  device,
-                                  now,
-                                );
-                                const signal = device.signalStrength;
-                                return (
-                                  <tr
-                                    key={device.id}
-                                    className="group transition-colors hover:bg-secondary/30"
-                                  >
-                                    <td className="py-4">
-                                      <span
-                                        className="rounded bg-secondary px-2 py-1 font-mono text-xs"
-                                        title={device.id}
-                                      >
-                                        {device.id.slice(
-                                          0,
-                                          8,
-                                        )}
-                                      </span>
-                                    </td>
-                                    <td className="py-4">
-                                      <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                          "flex h-10 w-10 items-center justify-center rounded-lg",
-                                          state === "active" ? "bg-success/10" : "bg-secondary",
-                                        )}
-                                        >
-                                          <Cpu className={cn(
-                                            "h-5 w-5",
-                                            state === "active" ? "text-success" : "text-muted-foreground",
-                                          )}
-                                          />
-                                        </div>
-                                        <div>
-                                          <p className="font-medium">{device.name || device.manufacturer}</p>
-                                          <p className="text-xs text-muted-foreground">
-                                            {device.name ? `${device.manufacturer} · ${device.model || "—"}` : device.model || "—"}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className="py-4">
-                                      <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">{device.imei}</span>
-                                    </td>
-                                    <td className="py-4">
-                                      {vehicle
-                                        ? (
-                                            <>
-                                              <p className="text-sm">{vehicle.plateNumber}</p>
-                                              <p className="text-xs text-muted-foreground">
-                                                {[
-                                                  vehicle.make,
-                                                  vehicle.model,
-                                                ].filter(Boolean).join(" ")}
-                                              </p>
-                                            </>
-                                          )
-                                        : <span className="text-muted-foreground">—</span>}
-                                    </td>
-                                    <td className="py-4">
-                                      {sim
-                                        ? (
-                                            <>
-                                              <p className="text-sm">{sim.mobileNumber}</p>
-                                              <p className="text-xs text-muted-foreground">{sim.operator}</p>
-                                            </>
-                                          )
-                                        : <span className="text-muted-foreground">—</span>}
-                                    </td>
-                                    <td className="py-4">
-                                      <span className={cn(
-                                        "rounded-full px-2.5 py-1 text-xs font-medium capitalize",
-                                        STATE_BADGE[state],
-                                      )}
-                                      >
-                                        {state}
-                                      </span>
-                                      <DeviceProvisionBadge
-                                        device={device}
-                                        className="mt-1.5 max-w-64"
-                                      />
-                                    </td>
-                                    <td className="py-4">
-                                      {signal !== null && signal !== undefined
-                                        ? (
-                                            <div className="flex items-center gap-2">
-                                              <Signal className={cn(
-                                                "h-4 w-4",
-                                                signal > 70 ? "text-success" : signal > 40 ? "text-warning" : "text-destructive",
-                                              )}
-                                              />
-                                              <span className="text-sm">
-                                                {signal}
-                                                %
-                                              </span>
-                                            </div>
-                                          )
-                                        : <span className="text-muted-foreground">—</span>}
-                                    </td>
-                                    <td className="py-4 text-sm text-muted-foreground">
-                                      {device.lastSeen ? formatRelative(device.lastSeen) : "Never"}
-                                    </td>
-                                    <td className="py-4 text-right">
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                          >
-                                            <MoreHorizontal className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem onClick={() => {
-                                            setSelectedDevice(device);
-                                            setIsDetailsOpen(true);
-                                          }}
-                                          >
-                                            <Eye className="mr-2 h-4 w-4" />
-                                            View Details
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => {
-                                            setSelectedDevice(device);
-                                            setIsEditDialogOpen(true);
-                                          }}
-                                          >
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Edit
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem onClick={() => {
-                                            setFirmwareDevice(device);
-                                            setFirmwareVersion(device.firmwareVersion || "");
-                                          }}
-                                          >
-                                            <RefreshCw className="mr-2 h-4 w-4" />
-                                            Update Firmware
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          {state === "suspended"
-                                            ? device.suspendedBy !== "platform" && (
-                                              <DropdownMenuItem onClick={() => setSuspended(
-                                                device,
-                                                false,
-                                              )}
-                                              >
-                                                <RotateCcw className="mr-2 h-4 w-4" />
-                                                Reinstate Device
-                                              </DropdownMenuItem>
-                                            )
-                                            : (
-                                                <DropdownMenuItem
-                                                  className="text-destructive focus:text-destructive"
-                                                  onClick={() => setDevicePendingSuspend(device)}
-                                                >
-                                                  <ShieldAlert className="mr-2 h-4 w-4" />
-                                                  Suspend Device
-                                                </DropdownMenuItem>
-                                              )}
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                  )}
+                  filteredEmptyState={(
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium text-foreground">No devices found</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters</p>
+                    </div>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
         )}

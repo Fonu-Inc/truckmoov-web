@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { useDownloadSimRequestDeviceMappingTemplate } from "@truckmoov/api/auth";
 import {
   AlertCircle, CheckCircle, Download, FileText, HardDrive, Upload, X,
@@ -5,6 +6,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 import { cn } from "@/lib/utils";
 
 export type DeviceMappingRow = {
@@ -16,6 +18,39 @@ export type DeviceMappingRow = {
   isValid: boolean;
   errors: string[];
 };
+
+const previewColumns: ColumnDef<DeviceMappingRow>[] = [
+  {
+    id: "status",
+    header: "Status",
+    enableSorting: false,
+    meta: { className: "p-1.5" },
+    cell: ({ row }) => (row.original.isValid
+      ? <CheckCircle className="h-3 w-3 text-success" />
+      : <AlertCircle className="h-3 w-3 text-destructive" />),
+  },
+  {
+    id: "device",
+    header: "Device",
+    enableSorting: false,
+    meta: { className: "p-1.5" },
+    cell: ({ row }) => row.original.device_name || "—",
+  },
+  {
+    id: "imei",
+    header: "IMEI",
+    enableSorting: false,
+    meta: { className: "p-1.5 font-mono" },
+    cell: ({ row }) => row.original.imei || "—",
+  },
+  {
+    id: "vehicle",
+    header: "Vehicle",
+    enableSorting: false,
+    meta: { className: "p-1.5" },
+    cell: ({ row }) => row.original.vehicle_id || "—",
+  },
+];
 
 type DeviceMappingUploadProps = {
   onDataParsed: (data: DeviceMappingRow[], fileName: string, file: File) => void;
@@ -177,53 +212,23 @@ export function DeviceMappingUpload({
 
         {/* Preview table */}
         <div className="max-h-32 overflow-y-auto rounded-md border border-border">
-          <table className="w-full text-xs">
-            <thead className="bg-secondary sticky top-0">
-              <tr>
-                <th className="p-1.5 text-left">Status</th>
-                <th className="p-1.5 text-left">Device</th>
-                <th className="p-1.5 text-left">IMEI</th>
-                <th className="p-1.5 text-left">Vehicle</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {parsedData.slice(
-                0,
-                5,
-              ).map((row, idx) => (
-                <tr
-                  key={idx}
-                  className={cn(!row.isValid && "bg-destructive/5")}
-                >
-                  <td className="p-1.5">
-                    {row.isValid
-                      ? (
-                          <CheckCircle className="h-3 w-3 text-success" />
-                        )
-                      : (
-                          <AlertCircle className="h-3 w-3 text-destructive" />
-                        )}
-                  </td>
-                  <td className="p-1.5">{row.device_name || "—"}</td>
-                  <td className="p-1.5 font-mono">{row.imei || "—"}</td>
-                  <td className="p-1.5">{row.vehicle_id || "—"}</td>
-                </tr>
-              ))}
-              {parsedData.length > 5 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="p-1.5 text-center text-muted-foreground"
-                  >
-                    +
-                    {parsedData.length - 5}
-                    {" "}
-                    more devices...
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <DataTable
+            columns={previewColumns}
+            data={parsedData.slice(
+              0,
+              5,
+            )}
+            className="text-xs"
+            rowClassName={row => cn(!row.isValid && "bg-destructive/5")}
+          />
+          {parsedData.length > 5 && (
+            <p className="p-1.5 text-center text-xs text-muted-foreground">
+              +
+              {parsedData.length - 5}
+              {" "}
+              more devices...
+            </p>
+          )}
         </div>
       </div>
     );

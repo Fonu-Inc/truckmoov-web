@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   formatDayMonthTime, formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -28,6 +29,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -55,14 +57,6 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Switch } from "@/components/shadcn/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
@@ -491,6 +485,76 @@ export function WebhookManagement() {
           ],
     }));
   };
+
+  const logColumns: ColumnDef<WebhookLog>[] = [
+    {
+      accessorKey: "webhookName",
+      header: "Webhook",
+      meta: { className: "font-medium" },
+    },
+    {
+      accessorKey: "event",
+      header: "Event",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className="text-xs"
+        >
+          {row.original.event}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => getLogStatusBadge(row.original.status),
+    },
+    {
+      accessorKey: "statusCode",
+      header: "Code",
+      cell: ({ row }) => {
+        const code = row.original.statusCode;
+        if (!code)
+          return "-";
+        return (
+          <code className={`text-xs ${code >= 200 && code < 300 ? "text-success" : "text-destructive"}`}>
+            {code}
+          </code>
+        );
+      },
+    },
+    {
+      accessorKey: "duration",
+      header: "Duration",
+      cell: ({ row }) => (row.original.duration ? `${row.original.duration}ms` : "-"),
+    },
+    {
+      accessorKey: "timestamp",
+      header: "Time",
+      meta: { className: "text-muted-foreground text-sm" },
+      cell: ({ row }) => formatWithPattern(
+        row.original.timestamp,
+        "MMM d, HH:mm:ss",
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setSelectedLog(row.original);
+            setIsLogDialogOpen(true);
+          }}
+        >
+          <Code className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -1034,71 +1098,12 @@ export function WebhookManagement() {
                   return true;
                 });
                 return (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Webhook</TableHead>
-                        <TableHead>Event</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredLogs.map(log => (
-                        <TableRow key={log.id}>
-                          <TableCell className="font-medium">{log.webhookName}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {log.event}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{getLogStatusBadge(log.status)}</TableCell>
-                          <TableCell>
-                            {log.statusCode
-                              ? (
-                                  <code
-                                    className={`text-xs ${
-                                      log.statusCode >= 200 && log.statusCode < 300
-                                        ? "text-success"
-                                        : "text-destructive"
-                                    }`}
-                                  >
-                                    {log.statusCode}
-                                  </code>
-                                )
-                              : (
-                                  "-"
-                                )}
-                          </TableCell>
-                          <TableCell>{log.duration ? `${log.duration}ms` : "-"}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {formatWithPattern(
-                              log.timestamp,
-                              "MMM d, HH:mm:ss",
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedLog(log);
-                                setIsLogDialogOpen(true);
-                              }}
-                            >
-                              <Code className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <DataTable
+                    columns={logColumns}
+                    data={filteredLogs}
+                    hasActiveFilters={!!q || logStatusFilter !== "all" || !!eventVal || logFilters.duration?.enabled || !!afterDate}
+                    emptyState="No webhook deliveries yet"
+                  />
                 );
               })()}
             </CardContent>

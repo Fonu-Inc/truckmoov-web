@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { InvoiceConfig } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
 import type { WaybillInvoice } from "@/features/payouts-invoicing/types";
 import {
@@ -8,17 +9,19 @@ import { toast } from "sonner";
 import { SendInvoiceEmailDialog } from "@/components/invoices/SendInvoiceEmailDialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 import {
   SheetDescription, SheetHeader, SheetTitle,
 } from "@/components/shadcn/sheet";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 import { invoiceStatusConfig } from "@/features/payouts-invoicing/utils/statusConfig";
+
+type LineItem = {
+  description: string; total: number;
+};
 
 export function InvoiceDetailView({
   invoice, config, formatAmount, onUpdate, onRecordShare, onGeneratePDF, onGetPdfUrl, onSendEmail,
@@ -172,6 +175,22 @@ export function InvoiceDetailView({
   const handleShareEmail = () => {
     setShowEmailDialog(true);
   };
+
+  const lineItemColumns: ColumnDef<LineItem>[] = [
+    {
+      accessorKey: "description",
+      header: "Description",
+      enableSorting: false,
+      meta: { className: "text-sm" },
+    },
+    {
+      accessorKey: "total",
+      header: "Amount",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => formatAmount(row.original.total),
+    },
+  ];
 
   return (
     <>
@@ -400,24 +419,10 @@ export function InvoiceDetailView({
               <Separator />
               <div>
                 <h3 className="text-sm font-semibold mb-2">Line Items</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(invoice.line_items as Array<{
-                      description: string; total: number;
-                    }>)?.map((item, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm">{item.description}</TableCell>
-                        <TableCell className="text-right">{formatAmount(item.total)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  columns={lineItemColumns}
+                  data={(invoice.line_items as LineItem[] | null) ?? []}
+                />
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   AlertTriangle, Clock,
 } from "lucide-react";
@@ -5,7 +6,36 @@ import { Badge } from "@/components/shadcn/badge";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ERROR_CODES } from "@/features/integration/utils/apiDocsData";
+
+const errorColumns: ColumnDef<(typeof ERROR_CODES)[number]>[] = [
+  {
+    accessorKey: "code",
+    header: "Code",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const { code } = row.original;
+      return (
+        <Badge variant={code >= 500 ? "destructive" : code >= 400 ? "secondary" : "default"}>
+          {code}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "name",
+    header: "Name",
+    enableSorting: false,
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "description",
+    header: "Description",
+    enableSorting: false,
+    meta: { className: "text-muted-foreground" },
+  },
+];
 
 export default function ErrorsPage() {
   return (
@@ -22,31 +52,10 @@ export default function ErrorsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-3 font-medium">Code</th>
-                  <th className="text-left p-3 font-medium">Name</th>
-                  <th className="text-left p-3 font-medium">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ERROR_CODES.map(err => (
-                  <tr
-                    key={err.code}
-                    className="border-t"
-                  >
-                    <td className="p-3">
-                      <Badge variant={err.code >= 500 ? "destructive" : err.code >= 400 ? "secondary" : "default"}>
-                        {err.code}
-                      </Badge>
-                    </td>
-                    <td className="p-3 font-medium">{err.name}</td>
-                    <td className="p-3 text-muted-foreground">{err.description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <DataTable
+              columns={errorColumns}
+              data={ERROR_CODES}
+            />
           </div>
 
           <div>

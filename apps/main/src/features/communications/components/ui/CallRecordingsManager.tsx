@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FilterValues } from "@/components/shadcn/table-toolbar";
 
 import {
@@ -15,6 +16,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -22,14 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 
@@ -218,6 +212,125 @@ export function CallRecordingsManager() {
     return "text-destructive";
   };
 
+  const recordingColumns: ColumnDef<CallRecording>[] = [
+    {
+      accessorKey: "driverName",
+      header: "Driver",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium">{row.original.driverName}</p>
+          <p className="text-xs text-muted-foreground">
+            {row.original.driverPhone}
+          </p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "timestamp",
+      header: "Date & Time",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1 text-sm">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          {formatDayMonthTime(row.original.timestamp)}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "duration",
+      header: "Duration",
+      cell: ({ row }) => formatClockDuration(row.original.duration),
+    },
+    {
+      id: "quality",
+      header: "Quality Score",
+      accessorFn: r => r.transcription?.qualityScore ?? -1,
+      cell: ({ row }) => {
+        const t = row.original.transcription;
+        if (!t)
+          return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex items-center gap-1">
+            <Star className={`h-4 w-4 ${getQualityColor(t.qualityScore)}`} />
+            <span className={getQualityColor(t.qualityScore)}>
+              {t.qualityScore}
+              /10
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "sentiment",
+      header: "Sentiment",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const t = row.original.transcription;
+        if (!t)
+          return <span className="text-muted-foreground">-</span>;
+        return (
+          <Badge className={sentimentColors[t.sentiment]}>
+            <span className="flex items-center gap-1">
+              {sentimentIcons[t.sentiment]}
+              {t.sentiment}
+            </span>
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const recording = row.original;
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handlePlayRecording(recording.id)}
+              disabled={!recording.recordingUrl}
+            >
+              {isPlaying === recording.id
+                ? <Pause className="h-4 w-4" />
+                : <Play className="h-4 w-4" />}
+            </Button>
+            {recording.transcription
+              ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleViewTranscript(recording)}
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                )
+              : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleTranscribe(recording)}
+                    disabled={isTranscribing || !recording.recordingUrl}
+                  >
+                    {isTranscribing
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <FileText className="h-4 w-4" />}
+                  </Button>
+                )}
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!recording.recordingUrl}
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -307,148 +420,12 @@ export function CallRecordingsManager() {
           />
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Driver</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Quality Score</TableHead>
-                <TableHead>Sentiment</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-8"
-                      >
-                        <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-muted-foreground">Loading recordings...</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filteredRecordings.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          No call recordings found. Recordings will appear here when drivers are called.
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : filteredRecordings.map(recording => (
-                      <TableRow key={recording.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{recording.driverName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {recording.driverPhone}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            {formatDayMonthTime(recording.timestamp)}
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatClockDuration(recording.duration)}</TableCell>
-                        <TableCell>
-                          {recording.transcription
-                            ? (
-                                <div className="flex items-center gap-1">
-                                  <Star
-                                    className={`h-4 w-4 ${getQualityColor(
-                                      recording.transcription.qualityScore,
-                                    )}`}
-                                  />
-                                  <span className={getQualityColor(recording.transcription.qualityScore)}>
-                                    {recording.transcription.qualityScore}
-                                    /10
-                                  </span>
-                                </div>
-                              )
-                            : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                        </TableCell>
-                        <TableCell>
-                          {recording.transcription
-                            ? (
-                                <Badge className={sentimentColors[recording.transcription.sentiment]}>
-                                  <span className="flex items-center gap-1">
-                                    {sentimentIcons[recording.transcription.sentiment]}
-                                    {recording.transcription.sentiment}
-                                  </span>
-                                </Badge>
-                              )
-                            : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handlePlayRecording(recording.id)}
-                              disabled={!recording.recordingUrl}
-                            >
-                              {isPlaying === recording.id
-                                ? (
-                                    <Pause className="h-4 w-4" />
-                                  )
-                                : (
-                                    <Play className="h-4 w-4" />
-                                  )}
-                            </Button>
-                            {recording.transcription
-                              ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleViewTranscript(recording)}
-                                  >
-                                    <FileText className="h-4 w-4" />
-                                  </Button>
-                                )
-                              : (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleTranscribe(recording)}
-                                    disabled={isTranscribing || !recording.recordingUrl}
-                                  >
-                                    {isTranscribing
-                                      ? (
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                        )
-                                      : (
-                                          <FileText className="h-4 w-4" />
-                                        )}
-                                  </Button>
-                                )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={!recording.recordingUrl}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={recordingColumns}
+            data={filteredRecordings}
+            isLoading={isLoading}
+            emptyState="No call recordings found. Recordings will appear here when drivers are called."
+          />
         </CardContent>
       </Card>
 

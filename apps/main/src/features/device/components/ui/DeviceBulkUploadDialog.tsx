@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { IoTDevice } from "@/types";
 import {
   AlertCircle, CheckCircle, Download, FileText, Upload, X,
@@ -7,6 +8,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +67,39 @@ function parseCSV(content: string): ParsedRow[] {
     .slice(1)
     .map(line => validateRow(line.split(",")));
 }
+
+const previewColumns: ColumnDef<ParsedRow>[] = [
+  {
+    id: "status",
+    header: "Status",
+    enableSorting: false,
+    meta: { className: "p-2" },
+    cell: ({ row }) => (row.original.isValid
+      ? <CheckCircle className="h-4 w-4 text-success" />
+      : <AlertCircle className="h-4 w-4 text-destructive" />),
+  },
+  {
+    id: "imei",
+    header: "IMEI",
+    enableSorting: false,
+    meta: { className: "p-2 font-mono" },
+    cell: ({ row }) => row.original.imei || "—",
+  },
+  {
+    id: "manufacturer",
+    header: "Manufacturer",
+    enableSorting: false,
+    meta: { className: "p-2" },
+    cell: ({ row }) => `${row.original.manufacturer} ${row.original.model}`,
+  },
+  {
+    id: "issues",
+    header: "Issues",
+    enableSorting: false,
+    meta: { className: "p-2 text-destructive" },
+    cell: ({ row }) => row.original.errors.join(", "),
+  },
+];
 
 export function DeviceBulkUploadDialog({
   open, onOpenChange, onUpload, onDownloadTemplate,
@@ -265,38 +300,15 @@ export function DeviceBulkUploadDialog({
 
                   {parsedData.length > 0 && (
                     <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
-                      <table className="w-full text-xs">
-                        <thead className="bg-secondary sticky top-0">
-                          <tr>
-                            <th className="p-2 text-left">Status</th>
-                            <th className="p-2 text-left">IMEI</th>
-                            <th className="p-2 text-left">Manufacturer</th>
-                            <th className="p-2 text-left">Issues</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {parsedData.slice(
-                            0,
-                            10,
-                          ).map((row, index) => (
-                            <tr
-                              key={index}
-                              className={cn(!row.isValid && "bg-destructive/5")}
-                            >
-                              <td className="p-2">
-                                {row.isValid ? <CheckCircle className="h-4 w-4 text-success" /> : <AlertCircle className="h-4 w-4 text-destructive" />}
-                              </td>
-                              <td className="p-2 font-mono">{row.imei || "—"}</td>
-                              <td className="p-2">
-                                {row.manufacturer}
-                                {" "}
-                                {row.model}
-                              </td>
-                              <td className="p-2 text-destructive">{row.errors.join(", ")}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <DataTable
+                        columns={previewColumns}
+                        data={parsedData.slice(
+                          0,
+                          10,
+                        )}
+                        className="text-xs"
+                        rowClassName={row => cn(!row.isValid && "bg-destructive/5")}
+                      />
                     </div>
                   )}
                 </>

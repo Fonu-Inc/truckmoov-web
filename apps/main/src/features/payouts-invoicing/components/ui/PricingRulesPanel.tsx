@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { PricingRule } from "@/features/payouts-invoicing/types";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
@@ -14,6 +15,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -29,9 +31,6 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 
 export function PricingRulesPanel({
@@ -164,6 +163,185 @@ export function PricingRulesPanel({
     setPricingModeFilter("all");
     setPerUnitOnly(false);
   };
+
+  const ruleColumns: ColumnDef<PricingRule>[] = [
+    {
+      accessorKey: "rule_name",
+      header: "Rule",
+      meta: { className: "font-medium" },
+    },
+    {
+      id: "route",
+      header: "Route",
+      enableSorting: false,
+      meta: { className: "text-sm" },
+      cell: ({ row }) => {
+        const rule = row.original;
+        return rule.origin
+          ? (
+              <span className="flex items-center gap-1">
+                {rule.origin}
+                {" "}
+                <ArrowRight className="h-3 w-3" />
+                {" "}
+                {rule.destination}
+              </span>
+            )
+          : rule.destination;
+      },
+    },
+    {
+      accessorKey: "vehicle_type",
+      header: "Vehicle Type",
+      cell: ({ row }) => row.original.vehicle_type || "—",
+    },
+    {
+      accessorKey: "customer_name",
+      header: "Customer",
+      cell: ({ row }) => row.original.customer_name || <span className="text-muted-foreground">Any</span>,
+    },
+    {
+      accessorKey: "price_ngn",
+      header: "Flat Price",
+      meta: { className: "text-right font-medium" },
+      cell: ({ row }) => formatAmount(row.original.price_ngn),
+    },
+    {
+      accessorKey: "price_per_unit_ngn",
+      header: "Per Unit",
+      meta: { className: "text-right text-sm" },
+      cell: ({ row }) => {
+        const rule = row.original;
+        return rule.price_per_unit_ngn ? `${formatAmount(rule.price_per_unit_ngn)}/${rule.unit_type || "unit"}` : "—";
+      },
+    },
+    {
+      accessorKey: "effective_from",
+      header: "Validity",
+      meta: { className: "text-xs text-muted-foreground" },
+      cell: ({ row }) => {
+        const rule = row.original;
+        return (
+          <>
+            {rule.effective_from
+              ? formatWithPattern(
+                  rule.effective_from,
+                  "dd MMM yy",
+                )
+              : "—"}
+            {rule.effective_to
+              ? ` → ${formatWithPattern(
+                rule.effective_to,
+                "dd MMM yy",
+              )}`
+              : ""}
+          </>
+        );
+      },
+    },
+    {
+      accessorKey: "is_active",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className={row.original.is_active ? "bg-success/10 text-success border-success/20" : "bg-muted text-muted-foreground"}
+        >
+          {row.original.is_active ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const rule = row.original;
+        return (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  aria-label="Pricing rule actions"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-44"
+              >
+                <DropdownMenuItem onClick={() => onUpdate(
+                  rule.id,
+                  { is_active: !rule.is_active } as Partial<PricingRule>,
+                )}
+                >
+                  {rule.is_active
+                    ? (
+                        <>
+                          <ToggleRight className="h-4 w-4 mr-2 text-success" />
+                          Deactivate
+                        </>
+                      )
+                    : (
+                        <>
+                          <ToggleLeft className="h-4 w-4 mr-2 text-muted-foreground" />
+                          Activate
+                        </>
+                      )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openEdit(rule)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setDeleteConfirm(rule.id)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {deleteConfirm === rule.id && (
+              <AlertDialog
+                open={true}
+                onOpenChange={o => !o && setDeleteConfirm(null)}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete pricing rule?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove "
+                      {rule.rule_name}
+                      ". This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeleteConfirm(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => {
+                        onDelete(rule.id);
+                        setDeleteConfirm(null);
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -561,161 +739,17 @@ export function PricingRulesPanel({
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Rule</TableHead>
-                <TableHead>Route</TableHead>
-                <TableHead>Vehicle Type</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="text-right">Flat Price</TableHead>
-                <TableHead className="text-right">Per Unit</TableHead>
-                <TableHead>Validity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRules.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={9}
-                        className="text-center py-12 text-muted-foreground"
-                      >
-                        <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                        <p className="font-medium">No pricing rules match these filters</p>
-                        <p className="text-sm">Adjust filters or add a new pricing agreement</p>
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filteredRules.map(rule => (
-                    <TableRow key={rule.id}>
-                      <TableCell className="font-medium">{rule.rule_name}</TableCell>
-                      <TableCell className="text-sm">
-                        {rule.origin
-                          ? (
-                              <span className="flex items-center gap-1">
-                                {rule.origin}
-                                {" "}
-                                <ArrowRight className="h-3 w-3" />
-                                {" "}
-                                {rule.destination}
-                              </span>
-                            )
-                          : rule.destination}
-                      </TableCell>
-                      <TableCell>{rule.vehicle_type || "—"}</TableCell>
-                      <TableCell>{rule.customer_name || <span className="text-muted-foreground">Any</span>}</TableCell>
-                      <TableCell className="text-right font-medium">{formatAmount(rule.price_ngn)}</TableCell>
-                      <TableCell className="text-right text-sm">
-                        {rule.price_per_unit_ngn ? `${formatAmount(rule.price_per_unit_ngn)}/${rule.unit_type || "unit"}` : "—"}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {rule.effective_from
-                          ? formatWithPattern(
-                              rule.effective_from,
-                              "dd MMM yy",
-                            )
-                          : "—"}
-                        {rule.effective_to
-                          ? ` → ${formatWithPattern(
-                            rule.effective_to,
-                            "dd MMM yy",
-                          )}`
-                          : ""}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={rule.is_active ? "bg-success/10 text-success border-success/20" : "bg-muted text-muted-foreground"}
-                        >
-                          {rule.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0"
-                              aria-label="Pricing rule actions"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-44"
-                          >
-                            <DropdownMenuItem onClick={() => onUpdate(
-                              rule.id,
-                              { is_active: !rule.is_active } as Partial<PricingRule>,
-                            )}
-                            >
-                              {rule.is_active
-                                ? (
-                                    <>
-                                      <ToggleRight className="h-4 w-4 mr-2 text-success" />
-                                      Deactivate
-                                    </>
-                                  )
-                                : (
-                                    <>
-                                      <ToggleLeft className="h-4 w-4 mr-2 text-muted-foreground" />
-                                      Activate
-                                    </>
-                                  )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEdit(rule)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setDeleteConfirm(rule.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        {deleteConfirm === rule.id && (
-                          <AlertDialog
-                            open={true}
-                            onOpenChange={o => !o && setDeleteConfirm(null)}
-                          >
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete pricing rule?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently remove "
-                                  {rule.rule_name}
-                                  ". This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel onClick={() => setDeleteConfirm(null)}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => {
-                                    onDelete(rule.id);
-                                    setDeleteConfirm(null);
-                                  }}
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={ruleColumns}
+            data={filteredRules}
+            emptyState={(
+              <div className="py-4">
+                <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No pricing rules match these filters</p>
+                <p className="text-sm">Adjust filters or add a new pricing agreement</p>
+              </div>
+            )}
+          />
         </CardContent>
       </Card>
     </div>

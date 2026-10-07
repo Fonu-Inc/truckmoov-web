@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   formatClockDuration, formatDateTime, formatDayMonthTime,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -14,6 +15,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -38,14 +40,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
@@ -505,6 +499,108 @@ export function VoiceIVRManager() {
     }
   };
 
+  const callColumns: ColumnDef<CallLog>[] = [
+    {
+      accessorKey: "driverName",
+      header: "Driver",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium">{row.original.driverName}</p>
+          <p className="text-xs text-muted-foreground">{row.original.driverPhone}</p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "direction",
+      header: "Direction",
+      cell: ({ row }) => (row.original.direction === "inbound"
+        ? (
+            <div className="flex items-center gap-1 text-success">
+              <PhoneIncoming className="h-4 w-4" />
+              <span className="text-sm">Inbound</span>
+            </div>
+          )
+        : (
+            <div className="flex items-center gap-1 text-primary">
+              <PhoneOutgoing className="h-4 w-4" />
+              <span className="text-sm">Outbound</span>
+            </div>
+          )),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge className={statusColors[row.original.status]}>
+          <span className="flex items-center gap-1">
+            {statusIcons[row.original.status]}
+            {row.original.status}
+          </span>
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "duration",
+      header: "Duration",
+      cell: ({ row }) => (row.original.duration ? formatClockDuration(row.original.duration) : "-"),
+    },
+    {
+      accessorKey: "timestamp",
+      header: "Time",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => formatDayMonthTime(row.original.timestamp),
+    },
+    {
+      accessorKey: "notes",
+      header: "Notes",
+      enableSorting: false,
+      meta: { className: "text-sm text-muted-foreground max-w-[200px] truncate" },
+      cell: ({ row }) => row.original.notes || "-",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "w-[140px] text-right" },
+      cell: ({ row }) => {
+        const call = row.original;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedCall(call)}
+            >
+              View Details
+            </Button>
+            {call.status === "ongoing"
+              ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleEndCall(call.id)}
+                    disabled={isCallLoading}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                )
+              : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleInitiateCall(call.driverPhone)}
+                    disabled={isCallLoading}
+                  >
+                    <Phone className="h-4 w-4 text-success" />
+                  </Button>
+                )}
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header Stats */}
@@ -795,94 +891,10 @@ export function VoiceIVRManager() {
                       </div>
                     )
                   : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Driver</TableHead>
-                            <TableHead>Direction</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Duration</TableHead>
-                            <TableHead>Time</TableHead>
-                            <TableHead>Notes</TableHead>
-                            <TableHead className="w-[140px] text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredCalls.map(call => (
-                            <TableRow key={call.id}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium">{call.driverName}</p>
-                                  <p className="text-xs text-muted-foreground">{call.driverPhone}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {call.direction === "inbound"
-                                  ? (
-                                      <div className="flex items-center gap-1 text-success">
-                                        <PhoneIncoming className="h-4 w-4" />
-                                        <span className="text-sm">Inbound</span>
-                                      </div>
-                                    )
-                                  : (
-                                      <div className="flex items-center gap-1 text-primary">
-                                        <PhoneOutgoing className="h-4 w-4" />
-                                        <span className="text-sm">Outbound</span>
-                                      </div>
-                                    )}
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={statusColors[call.status]}>
-                                  <span className="flex items-center gap-1">
-                                    {statusIcons[call.status]}
-                                    {call.status}
-                                  </span>
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{call.duration ? formatClockDuration(call.duration) : "-"}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {formatDayMonthTime(call.timestamp)}
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                                {call.notes || "-"}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setSelectedCall(call)}
-                                  >
-                                    View Details
-                                  </Button>
-                                  {call.status === "ongoing"
-                                    ? (
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="text-destructive hover:text-destructive"
-                                          onClick={() => handleEndCall(call.id)}
-                                          disabled={isCallLoading}
-                                        >
-                                          <XCircle className="h-4 w-4" />
-                                        </Button>
-                                      )
-                                    : (
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => handleInitiateCall(call.driverPhone)}
-                                          disabled={isCallLoading}
-                                        >
-                                          <Phone className="h-4 w-4 text-success" />
-                                        </Button>
-                                      )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <DataTable
+                        columns={callColumns}
+                        data={filteredCalls}
+                      />
                     );
               })()}
             </CardContent>

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FleetUtilization } from "@truckmoov/api/fleet";
 import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
@@ -23,9 +25,6 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
@@ -33,6 +32,74 @@ import {
   periodLabel, periodToRange,
 } from "@/features/analytics/utils/period";
 import { formatCurrency } from "@/lib/currency";
+
+type UtilizationRow = {
+  vehicle: string; status: string; completedJobs: number; revenue: number; utilization: number;
+};
+
+const UTILIZATION_COLUMNS: ColumnDef<UtilizationRow>[] = [
+  {
+    accessorKey: "vehicle",
+    header: "Vehicle",
+    cell: ({ row }) => <span className="font-medium">{row.original.vehicle}</span>,
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const { status } = row.original;
+      return (
+        <Badge
+          variant="outline"
+          className={
+            status === "active"
+              ? "bg-success/10 text-success border-success/30"
+              : status === "maintenance"
+                ? "bg-warning/10 text-warning border-warning/30"
+                : "bg-muted text-muted-foreground"
+          }
+        >
+          {status}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "completedJobs",
+    header: "Jobs",
+    meta: { className: "text-right" },
+  },
+  {
+    accessorKey: "revenue",
+    header: "Revenue",
+    meta: { className: "text-right" },
+    cell: ({ row }) => formatCurrency(row.original.revenue),
+  },
+  {
+    accessorKey: "utilization",
+    header: "Utilization",
+    meta: { className: "text-right" },
+    cell: ({ row }) => {
+      const { utilization } = row.original;
+      return (
+        <div className="flex items-center gap-2 justify-end">
+          <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${
+                utilization > 70 ? "bg-success" : utilization >= 30 ? "bg-warning" : "bg-destructive"
+              }`}
+              style={{ width: `${utilization}%` }}
+            />
+          </div>
+          <span className="text-xs w-8 text-right">
+            {utilization}
+            %
+          </span>
+        </div>
+      );
+    },
+  },
+];
 
 export default function FleetUtilizationPage() {
   const [
@@ -493,64 +560,13 @@ function FleetUtilizationReport({ report }: { report: FleetUtilization }) {
                 ]}
               />
             </div>
-            {filteredUtil.length > 0
-              ? (
-                  <div className="max-h-[300px] overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Vehicle</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Jobs</TableHead>
-                          <TableHead className="text-right">Revenue</TableHead>
-                          <TableHead className="text-right">Utilization</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredUtil.map(v => (
-                          <TableRow key={v.vehicle}>
-                            <TableCell className="font-medium">{v.vehicle}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  v.status === "active"
-                                    ? "bg-success/10 text-success border-success/30"
-                                    : v.status === "maintenance"
-                                      ? "bg-warning/10 text-warning border-warning/30"
-                                      : "bg-muted text-muted-foreground"
-                                }
-                              >
-                                {v.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">{v.completedJobs}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(v.revenue)}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center gap-2 justify-end">
-                                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full ${
-                                      v.utilization > 70 ? "bg-success" : v.utilization >= 30 ? "bg-warning" : "bg-destructive"
-                                    }`}
-                                    style={{ width: `${v.utilization}%` }}
-                                  />
-                                </div>
-                                <span className="text-xs w-8 text-right">
-                                  {v.utilization}
-                                  %
-                                </span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )
-              : (
-                  <div className="text-center py-8 text-muted-foreground">No vehicles match your filters</div>
-                )}
+            <div className="max-h-[300px] overflow-y-auto">
+              <DataTable
+                columns={UTILIZATION_COLUMNS}
+                data={filteredUtil}
+                emptyState="No vehicles match your filters"
+              />
+            </div>
           </CardContent>
         </Card>
       </div>

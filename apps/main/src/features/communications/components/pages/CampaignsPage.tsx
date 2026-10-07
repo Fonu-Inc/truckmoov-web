@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   formatDate, formatDayMonthTime, formatWithPattern, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -18,6 +19,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,14 +38,6 @@ import { Progress } from "@/components/shadcn/progress";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { CampaignBuilderDialog } from "@/features/communications/components/ui/CampaignBuilderDialog";
 
@@ -87,6 +81,142 @@ const ALL_CHANNELS = [
   },
   {
     value: "voice", label: "Voice",
+  },
+];
+
+const campaignColumns: ColumnDef<Campaign>[] = [
+  {
+    accessorKey: "name",
+    header: "Campaign",
+    cell: ({ row }) => <p className="font-medium">{row.original.name}</p>,
+  },
+  {
+    id: "channels",
+    header: "Channels",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <div className="flex gap-1">
+        {row.original.channels.map(ch => (
+          <div
+            key={ch}
+            className="p-1"
+          >
+            {channelIcons[ch]}
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "recipients",
+    header: "Recipients",
+    cell: ({ row }) => (
+      <div className="flex items-center gap-1">
+        <Users className="h-4 w-4 text-muted-foreground" />
+        <span>{row.original.recipients}</span>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge className={statusColors[row.original.status]}>
+        {row.original.status}
+      </Badge>
+    ),
+  },
+  {
+    id: "performance",
+    header: "Performance",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const campaign = row.original;
+      if (campaign.status !== "completed" && campaign.status !== "sending")
+        return <span className="text-sm text-muted-foreground">—</span>;
+      return (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground w-16">Delivered</span>
+            <Progress
+              value={(campaign.delivered / Math.max(
+                1,
+                campaign.sent,
+              )) * 100}
+              className="h-1.5 flex-1"
+            />
+            <span>
+              {campaign.delivered}
+              /
+              {campaign.sent}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground w-16">Read</span>
+            <Progress
+              value={(campaign.read / Math.max(
+                1,
+                campaign.delivered,
+              )) * 100}
+              className="h-1.5 flex-1"
+            />
+            <span>
+              {campaign.read}
+              /
+              {campaign.delivered}
+            </span>
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Date",
+    cell: ({ row }) => (
+      <div className="text-sm">
+        {row.original.scheduledFor
+          ? (
+              <div className="flex items-center gap-1 text-warning">
+                <Clock className="h-3 w-3" />
+                {formatDayMonthTime(row.original.scheduledFor)}
+              </div>
+            )
+          : formatDate(row.original.createdAt)}
+      </div>
+    ),
+  },
+  {
+    id: "actions",
+    header: "",
+    enableSorting: false,
+    meta: { className: "w-[60px]" },
+    cell: () => (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            View Analytics
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Copy className="h-4 w-4 mr-2" />
+            Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-destructive">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
   },
 ];
 
@@ -488,132 +618,12 @@ export function CampaignsPage() {
                 </Popover>
               </div>
             </CardHeader>
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border/50 hover:bg-transparent">
-                  <TableHead>Campaign</TableHead>
-                  <TableHead>Channels</TableHead>
-                  <TableHead>Recipients</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Performance</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="w-[60px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCampaigns.map(campaign => (
-                  <TableRow
-                    key={campaign.id}
-                    className="border-border/50"
-                  >
-                    <TableCell><p className="font-medium">{campaign.name}</p></TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {campaign.channels.map(ch => (
-                          <div
-                            key={ch}
-                            className="p-1"
-                          >
-                            {channelIcons[ch]}
-                          </div>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{campaign.recipients}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[campaign.status]}>
-                        {campaign.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {campaign.status === "completed" || campaign.status === "sending"
-                        ? (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-xs">
-                                <span className="text-muted-foreground w-16">Delivered</span>
-                                <Progress
-                                  value={(campaign.delivered / Math.max(
-                                    1,
-                                    campaign.sent,
-                                  )) * 100}
-                                  className="h-1.5 flex-1"
-                                />
-                                <span>
-                                  {campaign.delivered}
-                                  /
-                                  {campaign.sent}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs">
-                                <span className="text-muted-foreground w-16">Read</span>
-                                <Progress
-                                  value={(campaign.read / Math.max(
-                                    1,
-                                    campaign.delivered,
-                                  )) * 100}
-                                  className="h-1.5 flex-1"
-                                />
-                                <span>
-                                  {campaign.read}
-                                  /
-                                  {campaign.delivered}
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        : (
-                            <span className="text-sm text-muted-foreground">—</span>
-                          )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {campaign.scheduledFor
-                          ? (
-                              <div className="flex items-center gap-1 text-warning">
-                                <Clock className="h-3 w-3" />
-                                {formatDayMonthTime(campaign.scheduledFor)}
-                              </div>
-                            )
-                          : (
-                              formatDate(campaign.createdAt)
-                            )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <BarChart3 className="h-4 w-4 mr-2" />
-                            View Analytics
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={campaignColumns}
+              data={filteredCampaigns}
+              hasActiveFilters={!!searchQuery || statusFilter !== "all" || campaignChannelFilter !== "all" || !!campaignDate || campaignDateRange !== "all"}
+              emptyState="No campaigns yet"
+            />
           </Card>
         </div>
       </div>

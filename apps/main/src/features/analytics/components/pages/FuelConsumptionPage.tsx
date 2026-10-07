@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FleetFuelReport } from "@truckmoov/api/fleet";
 import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
@@ -23,9 +25,6 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
@@ -33,6 +32,54 @@ import {
   periodLabel, periodToRange,
 } from "@/features/analytics/utils/period";
 import { formatCurrency } from "@/lib/currency";
+
+type FuelRow = {
+  vehicle: string; type: string; totalKm: number; liters: number; cost: number;
+  efficiency: number | null; trips: number;
+};
+
+const FUEL_COLUMNS: ColumnDef<FuelRow>[] = [
+  {
+    accessorKey: "vehicle",
+    header: "Vehicle",
+    cell: ({ row }) => <span className="font-medium">{row.original.vehicle}</span>,
+  },
+  {
+    accessorKey: "type",
+    header: "Fuel type",
+    meta: { className: "capitalize" },
+  },
+  {
+    accessorKey: "totalKm",
+    header: "Distance (km)",
+    meta: { className: "text-right" },
+    cell: ({ row }) => row.original.totalKm.toLocaleString(),
+  },
+  {
+    accessorKey: "liters",
+    header: "Fuel (L)",
+    meta: { className: "text-right" },
+    cell: ({ row }) => row.original.liters.toLocaleString(),
+  },
+  {
+    accessorKey: "cost",
+    header: "Cost",
+    meta: { className: "text-right" },
+    cell: ({ row }) => formatCurrency(row.original.cost),
+  },
+  {
+    id: "efficiency",
+    header: "Efficiency",
+    meta: { className: "text-right" },
+    accessorFn: v => v.efficiency ?? -1,
+    cell: ({ row }) => (row.original.efficiency === null ? "—" : `${row.original.efficiency} km/L`),
+  },
+  {
+    accessorKey: "trips",
+    header: "Trips",
+    meta: { className: "text-right" },
+  },
+];
 
 export default function FuelConsumptionPage() {
   const [
@@ -697,40 +744,11 @@ function FuelConsumptionReport({ report }: { report: FleetFuelReport }) {
               ]}
             />
           </div>
-          {filteredFuel.length > 0
-            ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Fuel type</TableHead>
-                      <TableHead className="text-right">Distance (km)</TableHead>
-                      <TableHead className="text-right">Fuel (L)</TableHead>
-                      <TableHead className="text-right">Cost</TableHead>
-                      <TableHead className="text-right">Efficiency</TableHead>
-                      <TableHead className="text-right">Trips</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredFuel.map(v => (
-                      <TableRow key={v.vehicle}>
-                        <TableCell className="font-medium">{v.vehicle}</TableCell>
-                        <TableCell className="capitalize">{v.type}</TableCell>
-                        <TableCell className="text-right">{v.totalKm.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{v.liters.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(v.cost)}</TableCell>
-                        <TableCell className="text-right">
-                          {v.efficiency === null ? "—" : `${v.efficiency} km/L`}
-                        </TableCell>
-                        <TableCell className="text-right">{v.trips}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )
-            : (
-                <div className="text-center py-8 text-muted-foreground">No fuel recorded for this period or filters</div>
-              )}
+          <DataTable
+            columns={FUEL_COLUMNS}
+            data={filteredFuel}
+            emptyState="No fuel recorded for this period or filters"
+          />
         </CardContent>
       </Card>
     </div>

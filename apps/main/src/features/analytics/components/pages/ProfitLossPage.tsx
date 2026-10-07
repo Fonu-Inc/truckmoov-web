@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FleetProfitLoss } from "@truckmoov/api/fleet";
 import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
@@ -15,14 +16,12 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
@@ -30,6 +29,47 @@ import {
   formatMonthLabel, periodLabel, periodToRange,
 } from "@/features/analytics/utils/period";
 import { formatCurrency } from "@/lib/currency";
+
+const MONTHLY_COLUMNS: ColumnDef<FleetProfitLoss["monthly"][number]>[] = [
+  {
+    accessorKey: "month",
+    header: "Month",
+    enableSorting: false,
+    cell: ({ row }) => <span className="font-medium">{row.original.month}</span>,
+  },
+  {
+    accessorKey: "revenue",
+    header: "Revenue",
+    meta: { className: "text-right" },
+    cell: ({ row }) => <span className="text-success">{formatCurrency(row.original.revenue)}</span>,
+  },
+  {
+    accessorKey: "costs",
+    header: "Costs",
+    meta: { className: "text-right" },
+    cell: ({ row }) => <span className="text-destructive">{formatCurrency(row.original.costs)}</span>,
+  },
+  {
+    accessorKey: "profit",
+    header: "Net Profit",
+    meta: { className: "text-right" },
+    cell: ({ row }) => (
+      <span className={`font-semibold ${row.original.profit >= 0 ? "text-success" : "text-destructive"}`}>
+        {formatCurrency(row.original.profit)}
+      </span>
+    ),
+  },
+  {
+    id: "margin",
+    header: "Margin",
+    meta: { className: "text-right" },
+    accessorFn: m => (m.revenue > 0 ? (m.profit / m.revenue) * 100 : 0),
+    cell: ({ row }) => {
+      const m = row.original;
+      return m.revenue > 0 ? `${((m.profit / m.revenue) * 100).toFixed(1)}%` : "—";
+    },
+  },
+];
 
 export default function ProfitLossPage() {
   const [
@@ -658,42 +698,11 @@ function ProfitLossReport({ report }: { report: FleetProfitLoss }) {
             />
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Month</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
-                <TableHead className="text-right">Costs</TableHead>
-                <TableHead className="text-right">Net Profit</TableHead>
-                <TableHead className="text-right">Margin</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMonthly.map(m => (
-                <TableRow key={m.month}>
-                  <TableCell className="font-medium">{m.month}</TableCell>
-                  <TableCell className="text-right text-success">{formatCurrency(m.revenue)}</TableCell>
-                  <TableCell className="text-right text-destructive">{formatCurrency(m.costs)}</TableCell>
-                  <TableCell className={`text-right font-semibold ${m.profit >= 0 ? "text-success" : "text-destructive"}`}>
-                    {formatCurrency(m.profit)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {m.revenue > 0 ? `${((m.profit / m.revenue) * 100).toFixed(1)}%` : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredMonthly.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    No months match your filters
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={MONTHLY_COLUMNS}
+            data={filteredMonthly}
+            emptyState="No months match your filters"
+          />
         </CardContent>
       </Card>
     </div>

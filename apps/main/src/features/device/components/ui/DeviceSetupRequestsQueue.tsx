@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   formatWithPattern, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -26,6 +27,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -50,14 +52,6 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 import { cn } from "@/lib/utils";
 
@@ -284,6 +278,219 @@ export function DeviceSetupRequestsQueue({
       </Card>
     );
   }
+
+  const requestColumns: ColumnDef<any>[] = [
+    {
+      id: "device",
+      header: "Device",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const req = row.original;
+        return (
+          <div>
+            <p className="font-medium text-sm">
+              {req.manufacturer}
+              {" "}
+              {req.model}
+            </p>
+            <p className="text-xs text-muted-foreground font-mono">{req.imei}</p>
+            <Badge
+              variant="outline"
+              className="text-xs mt-1"
+            >
+              {TRACKER_LABELS[req.tracker_type] || req.tracker_type}
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
+      id: "requester",
+      header: "Requester",
+      accessorFn: req => req.requester_name ?? "",
+      cell: ({ row }) => (
+        <>
+          <p className="text-sm">{row.original.requester_name || "—"}</p>
+          {row.original.needs_sim && (
+            <Badge
+              variant="secondary"
+              className="text-xs mt-1"
+            >
+              Needs SIM
+            </Badge>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "vehicle",
+      header: "Vehicle",
+      accessorFn: req => req.vehicle_name ?? "",
+      cell: ({ row }) => <p className="text-sm">{row.original.vehicle_name || "—"}</p>,
+    },
+    {
+      id: "location",
+      header: "Location",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const req = row.original;
+        return req.installation_state || req.installation_city
+          ? (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                {[
+                  req.installation_city,
+                  req.installation_state,
+                ].filter(Boolean).join(", ")}
+              </div>
+            )
+          : "—";
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const statusCfg = STATUS_CONFIG[row.original.status] || STATUS_CONFIG.pending_review;
+        const StatusIcon = statusCfg.icon;
+        return (
+          <Badge
+            variant={statusCfg.variant}
+            className="flex items-center gap-1 w-fit"
+          >
+            <StatusIcon className="h-3 w-3" />
+            {statusCfg.label}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: "Date",
+      cell: ({ row }) => {
+        const req = row.original;
+        return (
+          <div className="text-xs text-muted-foreground">
+            {formatWithPattern(
+              req.created_at,
+              "dd MMM yyyy",
+            )}
+            {req.preferred_date && (
+              <div className="flex items-center gap-1 mt-1">
+                <Calendar className="h-3 w-3" />
+                {formatWithPattern(
+                  req.preferred_date,
+                  "dd MMM",
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
+      meta: { className: "w-[80px]" },
+      cell: ({ row }) => {
+        const req = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setDetailRequest(req)}>
+                <Eye className="h-4 w-4 mr-2" />
+                {" "}
+                View Details
+              </DropdownMenuItem>
+              {isConfigurator && req.status === "pending_review" && (
+                <>
+                  <DropdownMenuItem onClick={() => handleStatusUpdate(
+                    req.id,
+                    "assigned",
+                  )}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {" "}
+                    Assign to Me
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => {
+                      setRejectingId(req.id);
+                      setShowRejectDialog(true);
+                    }}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    {" "}
+                    Reject
+                  </DropdownMenuItem>
+                </>
+              )}
+              {isConfigurator && req.status === "assigned" && (
+                <DropdownMenuItem onClick={() => {
+                  handleStatusUpdate(
+                    req.id,
+                    "in_progress",
+                  );
+                  onOpenWizard?.(req);
+                }}
+                >
+                  <Wrench className="h-4 w-4 mr-2" />
+                  {" "}
+                  Start Configuration
+                </DropdownMenuItem>
+              )}
+              {isConfigurator && req.status === "in_progress" && (
+                <DropdownMenuItem onClick={() => handleStatusUpdate(
+                  req.id,
+                  "awaiting_heartbeat",
+                )}
+                >
+                  <Radio className="h-4 w-4 mr-2" />
+                  {" "}
+                  Mark Awaiting Heartbeat
+                </DropdownMenuItem>
+              )}
+              {isConfigurator && req.status === "awaiting_heartbeat" && (
+                <DropdownMenuItem onClick={() => handleStatusUpdate(
+                  req.id,
+                  "active",
+                )}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  {" "}
+                  Mark Active
+                </DropdownMenuItem>
+              )}
+              {req.status === "pending_review" && !isConfigurator && (
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => handleStatusUpdate(
+                    req.id,
+                    "cancelled",
+                  )}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  {" "}
+                  Cancel Request
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   return (
     <>
@@ -559,202 +766,18 @@ export function DeviceSetupRequestsQueue({
           </div>
 
           <div className="mt-4">
-            {filtered.length === 0
-              ? (
-                  <div className="text-center py-12 text-muted-foreground">
+            <div className="rounded-md border overflow-x-auto">
+              <DataTable
+                columns={requestColumns}
+                data={filtered}
+                emptyState={(
+                  <div className="py-4">
                     <Cpu className="h-10 w-10 mx-auto mb-3 opacity-40" />
                     <p>No requests in this category</p>
                   </div>
-                )
-              : (
-                  <div className="rounded-md border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Device</TableHead>
-                          <TableHead>Requester</TableHead>
-                          <TableHead>Vehicle</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="w-[80px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filtered.map((req) => {
-                          const statusCfg = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending_review;
-                          const StatusIcon = statusCfg.icon;
-                          return (
-                            <TableRow key={req.id}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium text-sm">
-                                    {req.manufacturer}
-                                    {" "}
-                                    {req.model}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground font-mono">{req.imei}</p>
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs mt-1"
-                                  >
-                                    {TRACKER_LABELS[req.tracker_type] || req.tracker_type}
-                                  </Badge>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <p className="text-sm">{req.requester_name || "—"}</p>
-                                {req.needs_sim && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs mt-1"
-                                  >
-                                    Needs SIM
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <p className="text-sm">{req.vehicle_name || "—"}</p>
-                              </TableCell>
-                              <TableCell>
-                                {req.installation_state || req.installation_city
-                                  ? (
-                                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                        <MapPin className="h-3 w-3" />
-                                        {[
-                                          req.installation_city,
-                                          req.installation_state,
-                                        ].filter(Boolean).join(", ")}
-                                      </div>
-                                    )
-                                  : "—"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={statusCfg.variant}
-                                  className="flex items-center gap-1 w-fit"
-                                >
-                                  <StatusIcon className="h-3 w-3" />
-                                  {statusCfg.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-xs text-muted-foreground">
-                                  {formatWithPattern(
-                                    req.created_at,
-                                    "dd MMM yyyy",
-                                  )}
-                                  {req.preferred_date && (
-                                    <div className="flex items-center gap-1 mt-1">
-                                      <Calendar className="h-3 w-3" />
-                                      {formatWithPattern(
-                                        req.preferred_date,
-                                        "dd MMM",
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => setDetailRequest(req)}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      {" "}
-                                      View Details
-                                    </DropdownMenuItem>
-                                    {isConfigurator && req.status === "pending_review" && (
-                                      <>
-                                        <DropdownMenuItem onClick={() => handleStatusUpdate(
-                                          req.id,
-                                          "assigned",
-                                        )}
-                                        >
-                                          <UserPlus className="h-4 w-4 mr-2" />
-                                          {" "}
-                                          Assign to Me
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          className="text-destructive"
-                                          onClick={() => {
-                                            setRejectingId(req.id);
-                                            setShowRejectDialog(true);
-                                          }}
-                                        >
-                                          <XCircle className="h-4 w-4 mr-2" />
-                                          {" "}
-                                          Reject
-                                        </DropdownMenuItem>
-                                      </>
-                                    )}
-                                    {isConfigurator && req.status === "assigned" && (
-                                      <DropdownMenuItem onClick={() => {
-                                        handleStatusUpdate(
-                                          req.id,
-                                          "in_progress",
-                                        );
-                                        onOpenWizard?.(req);
-                                      }}
-                                      >
-                                        <Wrench className="h-4 w-4 mr-2" />
-                                        {" "}
-                                        Start Configuration
-                                      </DropdownMenuItem>
-                                    )}
-                                    {isConfigurator && req.status === "in_progress" && (
-                                      <DropdownMenuItem onClick={() => handleStatusUpdate(
-                                        req.id,
-                                        "awaiting_heartbeat",
-                                      )}
-                                      >
-                                        <Radio className="h-4 w-4 mr-2" />
-                                        {" "}
-                                        Mark Awaiting Heartbeat
-                                      </DropdownMenuItem>
-                                    )}
-                                    {isConfigurator && req.status === "awaiting_heartbeat" && (
-                                      <DropdownMenuItem onClick={() => handleStatusUpdate(
-                                        req.id,
-                                        "active",
-                                      )}
-                                      >
-                                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                                        {" "}
-                                        Mark Active
-                                      </DropdownMenuItem>
-                                    )}
-                                    {req.status === "pending_review" && !isConfigurator && (
-                                      <DropdownMenuItem
-                                        className="text-destructive"
-                                        onClick={() => handleStatusUpdate(
-                                          req.id,
-                                          "cancelled",
-                                        )}
-                                      >
-                                        <XCircle className="h-4 w-4 mr-2" />
-                                        {" "}
-                                        Cancel Request
-                                      </DropdownMenuItem>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
                 )}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

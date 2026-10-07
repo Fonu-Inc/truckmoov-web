@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertCircle,
@@ -34,6 +35,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -64,14 +66,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { formatCurrency } from "@/lib/currency";
 import { downloadReceiptPDF } from "@/lib/receiptPdf";
 import { cn } from "@/lib/utils";
@@ -421,6 +415,105 @@ export function SubscriptionInvoicesPanel() {
     },
   ];
 
+  const columns: ColumnDef<SubscriptionInvoice>[] = [
+    {
+      accessorKey: "invoiceNumber",
+      header: "Invoice #",
+      meta: { className: "font-mono font-medium" },
+    },
+    {
+      accessorKey: "plan",
+      header: "Plan",
+    },
+    {
+      accessorKey: "billingType",
+      header: "Billing Type",
+      meta: { className: "text-sm" },
+    },
+    {
+      accessorKey: "billingModel",
+      header: "Billing Model",
+      cell: ({ row }) => modelBadge(row.original.billingModel),
+    },
+    {
+      accessorKey: "amount",
+      header: "Amount",
+      meta: { className: "text-right font-semibold" },
+      cell: ({ row }) => formatCurrency(
+        row.original.amount,
+        "NGN",
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => statusBadge(row.original.status),
+    },
+    {
+      id: "paymentDate",
+      header: "Payment Date",
+      enableSorting: false,
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => row.original.paidDate ?? `Due ${row.original.dueDate}`,
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const inv = row.original;
+        return (
+          // Keep menu clicks from also opening the row's detail dialog.
+          <div onClick={e => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48"
+              >
+                <DropdownMenuLabel>Invoice actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleView(inv)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View invoice
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare(inv)}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share invoice
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleDownload(inv)}
+                  disabled={inv.status !== "paid"}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download receipt
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleDelete(inv)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete invoice
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground max-w-2xl">
@@ -755,108 +848,21 @@ export function SubscriptionInvoicesPanel() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Billing Type</TableHead>
-                <TableHead>Billing Model</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Payment Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={8}
-                        className="text-center py-12 text-muted-foreground"
-                      >
-                        <Download className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                        <p className="font-medium">No subscription invoices found</p>
-                      </TableCell>
-                    </TableRow>
-                  )
-                : (
-                    filtered.map(inv => (
-                      <TableRow
-                        key={inv.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => {
-                          setSelected(inv);
-                          setOpen(true);
-                        }}
-                      >
-                        <TableCell className="font-mono font-medium">{inv.invoiceNumber}</TableCell>
-                        <TableCell>{inv.plan}</TableCell>
-                        <TableCell className="text-sm">{inv.billingType}</TableCell>
-                        <TableCell>{modelBadge(inv.billingModel)}</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatCurrency(
-                            inv.amount,
-                            "NGN",
-                          )}
-                        </TableCell>
-                        <TableCell>{statusBadge(inv.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {inv.paidDate ?? `Due ${inv.dueDate}`}
-                        </TableCell>
-                        <TableCell
-                          className="text-right"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              className="w-48"
-                            >
-                              <DropdownMenuLabel>Invoice actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleView(inv)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View invoice
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleShare(inv)}>
-                                <Share2 className="h-4 w-4 mr-2" />
-                                Share invoice
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDownload(inv)}
-                                disabled={inv.status !== "paid"}
-                              >
-                                <Download className="h-4 w-4 mr-2" />
-                                Download receipt
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(inv)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete invoice
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={filtered}
+            rowClassName={() => "hover:bg-muted/50"}
+            onRowClick={(inv) => {
+              setSelected(inv);
+              setOpen(true);
+            }}
+            emptyState={(
+              <>
+                <Download className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No subscription invoices found</p>
+              </>
+            )}
+          />
         </CardContent>
       </Card>
 

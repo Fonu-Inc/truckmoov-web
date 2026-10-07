@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   Check, Copy, Terminal,
 } from "lucide-react";
@@ -8,12 +9,54 @@ import {
 } from "@/components/shadcn/accordion";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import {
   API_BASE_URL, API_ENDPOINTS, METHOD_COLORS,
 } from "@/features/integration/utils/apiDocsData";
+
+type Param = NonNullable<(typeof API_ENDPOINTS)[number]["parameters"]>[number];
+
+const paramColumns: ColumnDef<Param>[] = [
+  {
+    accessorKey: "name",
+    header: "Name",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <>
+        <code className="text-xs">{row.original.name}</code>
+        {row.original.required && <span className="text-destructive ml-1">*</span>}
+      </>
+    ),
+  },
+  {
+    accessorKey: "type",
+    header: "Type",
+    enableSorting: false,
+    meta: { className: "text-muted-foreground" },
+  },
+  {
+    accessorKey: "location",
+    header: "Location",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <Badge
+        variant="outline"
+        className="text-xs"
+      >
+        {row.original.location}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: "description",
+    header: "Description",
+    enableSorting: false,
+    meta: { className: "text-muted-foreground" },
+  },
+];
 
 export default function EndpointsPage() {
   const [
@@ -116,39 +159,10 @@ export default function EndpointsPage() {
                 <div>
                   <h4 className="text-sm font-medium mb-2">Parameters</h4>
                   <div className="border rounded-lg overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-left p-2 font-medium">Name</th>
-                          <th className="text-left p-2 font-medium">Type</th>
-                          <th className="text-left p-2 font-medium">Location</th>
-                          <th className="text-left p-2 font-medium">Description</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {endpoint.parameters.map((param, pi) => (
-                          <tr
-                            key={pi}
-                            className="border-t"
-                          >
-                            <td className="p-2">
-                              <code className="text-xs">{param.name}</code>
-                              {param.required && <span className="text-destructive ml-1">*</span>}
-                            </td>
-                            <td className="p-2 text-muted-foreground">{param.type}</td>
-                            <td className="p-2">
-                              <Badge
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {param.location}
-                              </Badge>
-                            </td>
-                            <td className="p-2 text-muted-foreground">{param.description}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <DataTable
+                      columns={paramColumns}
+                      data={endpoint.parameters}
+                    />
                   </div>
                 </div>
               )}

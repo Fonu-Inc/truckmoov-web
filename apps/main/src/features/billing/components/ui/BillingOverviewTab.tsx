@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { TenantBillingActivity } from "@truckmoov/api/billing";
 import {
   useTenantBillingActivity, useTenantBillingOverview,
@@ -10,25 +11,20 @@ import {
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 import { CurrentPlanCard } from "@/features/billing/components/ui/CurrentPlanCard";
 import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
 import {
   formatDate, monthLabel, ngn,
 } from "../../utils/billingHelpers";
-import {
-  EmptyRow, Pager, SectionError, SkeletonRows,
-} from "../../utils/billingShared";
+import { SectionError } from "../../utils/billingShared";
 
 const PAGE_SIZE = 20;
-const COLS = 4;
 
 const CATEGORY_COLORS = [
   "hsl(var(--primary))",
@@ -239,26 +235,44 @@ function BillingCharts() {
   );
 }
 
-function ActivityRow({ item }: { item: TenantBillingActivity }) {
-  const impact = item.impactNgn;
-  return (
-    <TableRow>
-      <TableCell className="whitespace-nowrap">{formatDate(item.date)}</TableCell>
-      <TableCell className="font-medium">{item.event}</TableCell>
-      <TableCell className="text-muted-foreground">{item.resource}</TableCell>
-      <TableCell className="text-right tabular-nums">
-        {impact === null ? (
-          <span className="text-muted-foreground">No charge</span>
-        ) : (
-          <span className={impact < 0 ? "text-emerald-600" : ""}>
-            {impact < 0 ? "−" : "+"}
-            {ngn(Math.abs(impact))}
-          </span>
-        )}
-      </TableCell>
-    </TableRow>
-  );
-}
+const activityColumns: ColumnDef<TenantBillingActivity>[] = [
+  {
+    id: "date",
+    header: "Date",
+    enableSorting: false,
+    meta: { className: "whitespace-nowrap" },
+    cell: ({ row }) => formatDate(row.original.date),
+  },
+  {
+    accessorKey: "event",
+    header: "Event",
+    enableSorting: false,
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "resource",
+    header: "Related resource",
+    enableSorting: false,
+    meta: { className: "text-muted-foreground" },
+  },
+  {
+    id: "impact",
+    header: "Financial impact",
+    enableSorting: false,
+    meta: { className: "text-right tabular-nums" },
+    cell: ({ row }) => {
+      const impact = row.original.impactNgn;
+      return impact === null
+        ? <span className="text-muted-foreground">No charge</span>
+        : (
+            <span className={impact < 0 ? "text-emerald-600" : ""}>
+              {impact < 0 ? "−" : "+"}
+              {ngn(Math.abs(impact))}
+            </span>
+          );
+    },
+  },
+];
 
 function BillingActivity() {
   const [
@@ -324,49 +338,23 @@ function BillingActivity() {
         </div>
       </CardHeader>
       <CardContent>
-        {activity.isError && (
-          <SectionError
-            message="Could not load your billing activity."
+        <div className="rounded-2xl border border-border overflow-x-auto">
+          <DataTable
+            columns={activityColumns}
+            data={list?.items ?? []}
+            isLoading={activity.isLoading}
+            isError={activity.isError}
+            errorMessage="Could not load your billing activity."
             onRetry={() => activity.refetch()}
+            emptyState="No activity matches your filters."
+            pagination={list && {
+              page,
+              pageSize: PAGE_SIZE,
+              total: list.total,
+              onPageChange: setPage,
+            }}
           />
-        )}
-        {!activity.isError && (
-          <div className="rounded-2xl border border-border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Related resource</TableHead>
-                  <TableHead className="text-right">Financial impact</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activity.isLoading && <SkeletonRows cols={COLS} />}
-                {list?.items.map(a => (
-                  <ActivityRow
-                    key={a.id}
-                    item={a}
-                  />
-                ))}
-                {list && list.items.length === 0 && (
-                  <EmptyRow
-                    cols={COLS}
-                    text="No activity matches your filters."
-                  />
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        {list && (
-          <Pager
-            page={page}
-            pageSize={PAGE_SIZE}
-            total={list.total}
-            onPage={setPage}
-          />
-        )}
+        </div>
       </CardContent>
     </Card>
   );

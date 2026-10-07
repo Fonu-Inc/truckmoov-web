@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   ReportVehicleTrip, VehicleActivityQuery,
 } from "@truckmoov/api/fleet";
@@ -13,26 +14,76 @@ import {
 import { useState } from "react";
 
 import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
 import { exportToCSV } from "@/features/reports/utils/reportsUtils";
-import { ReportsGate } from "../ui/ReportsGate";
 import {
   SectionCard, SummaryStat,
 } from "../ui/ReportsShared";
 
 const PAGE_SIZE = 50;
 const EXPORT_PAGE_SIZE = 200;
+
+// Server-paged: sorting one page would mislead, so every column opts out.
+const TRIP_COLUMNS: ColumnDef<ReportVehicleTrip>[] = [
+  {
+    accessorKey: "reference",
+    header: "Reference",
+    enableSorting: false,
+    cell: ({ row }) => <span className="font-medium">{row.original.reference}</span>,
+  },
+  {
+    accessorKey: "date",
+    header: "Date",
+    enableSorting: false,
+    meta: { className: "text-sm text-muted-foreground" },
+    cell: ({ row }) => formatWithPattern(
+      row.original.date,
+      "dd MMM yyyy",
+    ),
+  },
+  {
+    accessorKey: "vehicle",
+    header: "Vehicle",
+    enableSorting: false,
+    cell: ({ row }) => row.original.vehicle ?? "Unassigned",
+  },
+  {
+    accessorKey: "driver",
+    header: "Driver",
+    enableSorting: false,
+    cell: ({ row }) => row.original.driver ?? "Unassigned",
+  },
+  {
+    id: "route",
+    header: "Route",
+    enableSorting: false,
+    meta: { className: "max-w-[280px] truncate text-sm" },
+    cell: ({ row }) => `${row.original.from ?? "—"} → ${row.original.to ?? "—"}`,
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <Badge
+        variant="secondary"
+        className="rounded-full capitalize"
+      >
+        {row.original.status.replace(
+          "_",
+          " ",
+        )}
+      </Badge>
+    ),
+  },
+];
 
 async function fetchAllTrips(queryClient: QueryClient, params: VehicleActivityQuery["params"]): Promise<ReportVehicleTrip[]> {
   const trips: ReportVehicleTrip[] = [];
@@ -106,10 +157,6 @@ export default function VehicleActivityPage() {
   }));
   const activity = activityQuery.data?.data;
   const totals = activity?.totals;
-  const pageCount = Math.max(
-    1,
-    Math.ceil((activity?.total ?? 0) / PAGE_SIZE),
-  );
 
   const changeSearch = (value: string) => {
     setSearch(value);
@@ -195,109 +242,23 @@ export default function VehicleActivityPage() {
           params,
         )}
       >
-        <ReportsGate
-          query={activityQuery}
-          skeleton={(
-            <div className="space-y-2">
-              {Array.from(
-                { length: 8 },
-                (_, i) => (
-                  <Skeleton
-                    key={i}
-                    className="h-10 w-full"
-                  />
-                ),
-              )}
-            </div>
-          )}
-        >
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Driver</TableHead>
-                  <TableHead>Route</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activity?.items.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-muted-foreground py-8"
-                    >
-                      No trips match your filters
-                    </TableCell>
-                  </TableRow>
-                )}
-                {activity?.items.map(t => (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-medium">{t.reference}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatWithPattern(
-                        t.date,
-                        "dd MMM yyyy",
-                      )}
-                    </TableCell>
-                    <TableCell>{t.vehicle ?? "Unassigned"}</TableCell>
-                    <TableCell>{t.driver ?? "Unassigned"}</TableCell>
-                    <TableCell className="max-w-[280px] truncate text-sm">
-                      {t.from ?? "\u2014"}
-                      {" "}
-                      →
-                      {" "}
-                      {t.to ?? "\u2014"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className="rounded-full capitalize"
-                      >
-                        {t.status.replace(
-                          "_",
-                          " ",
-                        )}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {pageCount > 1 && (
-            <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
-              <span>
-                Page
-                {" "}
-                {page}
-                {" "}
-                of
-                {" "}
-                {pageCount}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage(p => p - 1)}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= pageCount}
-                onClick={() => setPage(p => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </ReportsGate>
+        <div className="overflow-x-auto">
+          <DataTable
+            columns={TRIP_COLUMNS}
+            data={activity?.items ?? []}
+            isLoading={activityQuery.isPending}
+            isError={activityQuery.isError}
+            errorMessage={`Unable to load reports: ${activityQuery.error?.message ?? ""}`}
+            onRetry={() => void activityQuery.refetch()}
+            emptyState="No trips match your filters"
+            pagination={{
+              page,
+              pageSize: PAGE_SIZE,
+              total: activity?.total ?? 0,
+              onPageChange: setPage,
+            }}
+          />
+        </div>
       </SectionCard>
     </div>
   );

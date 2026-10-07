@@ -21,15 +21,15 @@ import {
   CheckCircle2, Clock, Link, PauseCircle, Plus, Upload, Wifi,
 } from "lucide-react";
 import {
-  Card, CardContent,
-} from "@/components/shadcn/card";
-import {
   useEffect, useMemo, useState,
 } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-
 import { Button } from "@/components/shadcn/button";
+
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
 
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { AssignSIMDialog } from "@/features/sims/components/ui/AssignSIMDialog";
@@ -127,10 +127,6 @@ export default function SIMManagement() {
 
   const apiSims = simsQuery.data?.data.items ?? [];
   const total = simsQuery.data?.data.total ?? 0;
-  const totalPages = Math.max(
-    1,
-    Math.ceil(total / PAGE_SIZE),
-  );
   const loading = simsQuery.isLoading;
 
   const sims: SIMCard[] = apiSims.map(s => ({
@@ -509,7 +505,7 @@ export default function SIMManagement() {
           loading={loading}
           isFetching={simsQuery.isFetching}
           page={page}
-          totalPages={totalPages}
+          pageSize={PAGE_SIZE}
           onPageChange={setPage}
           onExport={handleExport}
           getDeviceInfo={getDeviceInfo}

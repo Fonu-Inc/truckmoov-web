@@ -148,7 +148,7 @@ it(
 
     activity.fail = true;
     renderVehicleActivity();
-    expect(await screen.findByRole("alert")).toHaveTextContent("Service unavailable");
+    expect(await screen.findByText(/Service unavailable/)).toBeInTheDocument();
     activity.fail = false;
     fireEvent.click(screen.getByRole(
       "button",

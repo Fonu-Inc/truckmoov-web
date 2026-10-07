@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -51,6 +52,7 @@ import {
 } from "@/components/shadcn/card";
 import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -67,6 +69,153 @@ import { useAuthStore } from "@/features/auth/stores/authStore";
  * Aggregator Dashboard (Stub)
  * Manage linked owner-operators and execution view for aggregated fleet.
  */
+type DispatchRow = {
+  id: string; route: string; operator: string; value: string; status: string;
+};
+type PerfRow = {
+  operator: string; jobs: number; onTime: number; acceptance: number; revenueM: number; rating: number;
+};
+type SettleRow = {
+  op: string; period: string; gross: string; fee: string; net: string; netNum: number; status: string;
+};
+
+const dispatchColumns: ColumnDef<DispatchRow>[] = [
+  {
+    accessorKey: "id",
+    header: "Job",
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "route",
+    header: "Route",
+    meta: { className: "text-muted-foreground" },
+  },
+  {
+    accessorKey: "operator",
+    header: "Operator",
+  },
+  {
+    accessorKey: "value",
+    header: "Value",
+    // ponytail: formatted "₦…" strings sort lexically, so sorting is off.
+    enableSorting: false,
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const { status } = row.original;
+      return (
+        <Badge
+          variant={status === "IN_TRANSIT" ? "default" : status === "PENDING_ASSIGNMENT" ? "outline" : "secondary"}
+          className="text-[10px]"
+        >
+          {status.replace(
+            /_/g,
+            " ",
+          )}
+        </Badge>
+      );
+    },
+  },
+];
+
+const perfColumns: ColumnDef<PerfRow>[] = [
+  {
+    accessorKey: "operator",
+    header: "Operator",
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "jobs",
+    header: "Jobs",
+  },
+  {
+    accessorKey: "onTime",
+    header: "On-Time",
+    cell: ({ row }) => {
+      const { onTime } = row.original;
+      return (
+        <span className={onTime >= 95 ? "text-success" : onTime >= 90 ? "text-foreground" : "text-warning"}>
+          {onTime}
+          %
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "acceptance",
+    header: "Acceptance",
+    meta: { className: "text-muted-foreground" },
+    cell: ({ row }) => `${row.original.acceptance}%`,
+  },
+  {
+    accessorKey: "revenueM",
+    header: "Revenue",
+    meta: { className: "font-medium" },
+    cell: ({ row }) => `₦${row.original.revenueM.toFixed(1)}M`,
+  },
+  {
+    accessorKey: "rating",
+    header: "Rating",
+    cell: ({ row }) => (
+      <Badge
+        variant="secondary"
+        className="text-[10px]"
+      >
+        ★
+        {row.original.rating}
+      </Badge>
+    ),
+  },
+];
+
+const settleColumns: ColumnDef<SettleRow>[] = [
+  {
+    accessorKey: "op",
+    header: "Operator",
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "period",
+    header: "Period",
+    meta: { className: "text-muted-foreground" },
+  },
+  {
+    accessorKey: "gross",
+    header: "Gross",
+    enableSorting: false,
+  },
+  {
+    accessorKey: "fee",
+    header: "Fee",
+    enableSorting: false,
+    meta: { className: "text-muted-foreground" },
+  },
+  {
+    accessorKey: "netNum",
+    header: "Net",
+    meta: { className: "font-semibold" },
+    cell: ({ row }) => row.original.net,
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const { status } = row.original;
+      return (
+        <Badge
+          variant={status === "PAID" ? "secondary" : status === "PROCESSING" ? "default" : "outline"}
+          className="text-[10px]"
+        >
+          {status}
+        </Badge>
+      );
+    },
+  },
+];
+
 export default function AggregatorDashboard() {
   const { user } = useAuthStore();
   const [
@@ -696,62 +845,11 @@ export default function AggregatorDashboard() {
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                            <th className="py-2 pr-3 font-medium">Job</th>
-                            <th className="py-2 pr-3 font-medium">Route</th>
-                            <th className="py-2 pr-3 font-medium">Operator</th>
-                            <th className="py-2 pr-3 font-medium">Value</th>
-                            <th className="py-2 pr-3 font-medium">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredDispatch.length === 0
-                            ? (
-                                <tr>
-                                  <td
-                                    colSpan={5}
-                                    className="py-6 text-center text-xs text-muted-foreground"
-                                  >
-                                    No dispatches match your filters.
-                                  </td>
-                                </tr>
-                              )
-                            : (
-                                filteredDispatch.map(j => (
-                                  <tr
-                                    key={j.id}
-                                    className="border-b border-border/50 last:border-0"
-                                  >
-                                    <td className="py-2.5 pr-3 font-medium">{j.id}</td>
-                                    <td className="py-2.5 pr-3 text-muted-foreground">{j.route}</td>
-                                    <td className="py-2.5 pr-3">{j.operator}</td>
-                                    <td className="py-2.5 pr-3 font-medium">{j.value}</td>
-                                    <td className="py-2.5 pr-3">
-                                      <Badge
-                                        variant={
-                                          j.status === "IN_TRANSIT"
-                                            ? "default"
-                                            : j.status === "PENDING_ASSIGNMENT"
-                                              ? "outline"
-                                              : j.status === "DELIVERED"
-                                                ? "secondary"
-                                                : "secondary"
-                                        }
-                                        className="text-[10px]"
-                                      >
-                                        {j.status.replace(
-                                          /_/g,
-                                          " ",
-                                        )}
-                                      </Badge>
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                        </tbody>
-                      </table>
+                      <DataTable
+                        columns={dispatchColumns}
+                        data={filteredDispatch}
+                        emptyState="No dispatches match your filters."
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -974,66 +1072,11 @@ export default function AggregatorDashboard() {
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                            <th className="py-2 pr-3 font-medium">Operator</th>
-                            <th className="py-2 pr-3 font-medium">Jobs</th>
-                            <th className="py-2 pr-3 font-medium">On-Time</th>
-                            <th className="py-2 pr-3 font-medium">Acceptance</th>
-                            <th className="py-2 pr-3 font-medium">Revenue</th>
-                            <th className="py-2 pr-3 font-medium">Rating</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredPerf.length === 0
-                            ? (
-                                <tr>
-                                  <td
-                                    colSpan={6}
-                                    className="py-6 text-center text-xs text-muted-foreground"
-                                  >
-                                    No operators match your filters.
-                                  </td>
-                                </tr>
-                              )
-                            : (
-                                filteredPerf.map(r => (
-                                  <tr
-                                    key={r.operator}
-                                    className="border-b border-border/50 last:border-0"
-                                  >
-                                    <td className="py-2.5 pr-3 font-medium">{r.operator}</td>
-                                    <td className="py-2.5 pr-3">{r.jobs}</td>
-                                    <td className="py-2.5 pr-3">
-                                      <span className={r.onTime >= 95 ? "text-success" : r.onTime >= 90 ? "text-foreground" : "text-warning"}>
-                                        {r.onTime}
-                                        %
-                                      </span>
-                                    </td>
-                                    <td className="py-2.5 pr-3 text-muted-foreground">
-                                      {r.acceptance}
-                                      %
-                                    </td>
-                                    <td className="py-2.5 pr-3 font-medium">
-                                      ₦
-                                      {r.revenueM.toFixed(1)}
-                                      M
-                                    </td>
-                                    <td className="py-2.5 pr-3">
-                                      <Badge
-                                        variant="secondary"
-                                        className="text-[10px]"
-                                      >
-                                        ★
-                                        {r.rating}
-                                      </Badge>
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                        </tbody>
-                      </table>
+                      <DataTable
+                        columns={perfColumns}
+                        data={filteredPerf}
+                        emptyState="No operators match your filters."
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -1688,53 +1731,11 @@ export default function AggregatorDashboard() {
                       </div>
 
                       <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                              <th className="py-2 pr-3 font-medium">Operator</th>
-                              <th className="py-2 pr-3 font-medium">Period</th>
-                              <th className="py-2 pr-3 font-medium">Gross</th>
-                              <th className="py-2 pr-3 font-medium">Fee</th>
-                              <th className="py-2 pr-3 font-medium">Net</th>
-                              <th className="py-2 pr-3 font-medium">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredSettle.length === 0
-                              ? (
-                                  <tr>
-                                    <td
-                                      colSpan={6}
-                                      className="py-6 text-center text-xs text-muted-foreground"
-                                    >
-                                      No settlements match your filters.
-                                    </td>
-                                  </tr>
-                                )
-                              : (
-                                  filteredSettle.map(r => (
-                                    <tr
-                                      key={r.op}
-                                      className="border-b border-border/50 last:border-0"
-                                    >
-                                      <td className="py-2.5 pr-3 font-medium">{r.op}</td>
-                                      <td className="py-2.5 pr-3 text-muted-foreground">{r.period}</td>
-                                      <td className="py-2.5 pr-3">{r.gross}</td>
-                                      <td className="py-2.5 pr-3 text-muted-foreground">{r.fee}</td>
-                                      <td className="py-2.5 pr-3 font-semibold">{r.net}</td>
-                                      <td className="py-2.5 pr-3">
-                                        <Badge
-                                          variant={r.status === "PAID" ? "secondary" : r.status === "PROCESSING" ? "default" : "outline"}
-                                          className="text-[10px]"
-                                        >
-                                          {r.status}
-                                        </Badge>
-                                      </td>
-                                    </tr>
-                                  ))
-                                )}
-                          </tbody>
-                        </table>
+                        <DataTable
+                          columns={settleColumns}
+                          data={filteredSettle}
+                          emptyState="No settlements match your filters."
+                        />
                       </div>
                     </CardContent>
                   </Card>

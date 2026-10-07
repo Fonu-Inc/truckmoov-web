@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { DeviceSetupRequest } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -16,12 +17,10 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
 
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
@@ -229,6 +228,72 @@ export function DeviceRequestsTracker() {
     setOpenId,
   ] = useState<string | null>(null);
 
+  const requestColumns: ColumnDef<DeviceSetupRequest>[] = [
+    {
+      id: "reference",
+      header: "Reference",
+      meta: { className: "font-mono text-xs" },
+      cell: ({ row }) => reference(row.original.id),
+    },
+    {
+      id: "item",
+      header: "Item",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <>
+          <p className="font-medium">
+            {row.original.quantity}
+            {" "}
+            × devices
+          </p>
+          <p className="line-clamp-1 text-xs text-muted-foreground">{row.original.useCase}</p>
+        </>
+      ),
+    },
+    {
+      accessorKey: "quantity",
+      header: "Qty",
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Submitted",
+      meta: { className: "text-sm" },
+      cell: ({ row }) => dateOnly(row.original.createdAt),
+    },
+    {
+      // ponytail: no quotation/charges field on setup requests yet.
+      id: "charges",
+      header: "Charges",
+      enableSorting: false,
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: () => "—",
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const info = statusInfo(row.original.status);
+        return <Badge variant={info.variant}>{info.label}</Badge>;
+      },
+    },
+    {
+      id: "action",
+      header: "Action",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setOpenId(row.original.id)}
+        >
+          <Eye className="mr-1 h-3.5 w-3.5" />
+          View
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <Card>
       <CardHeader className="pb-4">
@@ -244,88 +309,15 @@ export function DeviceRequestsTracker() {
       </CardHeader>
       <CardContent>
         <div className="rounded-xl border border-border/60">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Qty</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Charges</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requestsQuery.isLoading && (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="py-8 text-center"
-                  >
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                  </TableCell>
-                </TableRow>
-              )}
-              {requestsQuery.isError && (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="py-8 text-center"
-                  >
-                    <p className="text-destructive">{requestsQuery.error.message}</p>
-                    <Button
-                      variant="link"
-                      onClick={() => void requestsQuery.refetch()}
-                    >
-                      Try again
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )}
-              {requestsQuery.isSuccess && requests.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    No device requests yet.
-                  </TableCell>
-                </TableRow>
-              )}
-              {requests.map((request) => {
-                const info = statusInfo(request.status);
-                return (
-                  <TableRow key={request.id}>
-                    <TableCell className="font-mono text-xs">{reference(request.id)}</TableCell>
-                    <TableCell>
-                      <p className="font-medium">
-                        {request.quantity}
-                        {" "}
-                        × devices
-                      </p>
-                      <p className="line-clamp-1 text-xs text-muted-foreground">{request.useCase}</p>
-                    </TableCell>
-                    <TableCell>{request.quantity}</TableCell>
-                    <TableCell className="text-sm">{dateOnly(request.createdAt)}</TableCell>
-                    {/* ponytail: no quotation/charges field on setup requests yet. */}
-                    <TableCell className="text-sm text-muted-foreground">—</TableCell>
-                    <TableCell><Badge variant={info.variant}>{info.label}</Badge></TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setOpenId(request.id)}
-                      >
-                        <Eye className="mr-1 h-3.5 w-3.5" />
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={requestColumns}
+            data={requests}
+            isLoading={requestsQuery.isLoading}
+            isError={requestsQuery.isError}
+            errorMessage={requestsQuery.error?.message}
+            onRetry={() => void requestsQuery.refetch()}
+            emptyState="No device requests yet."
+          />
         </div>
       </CardContent>
       <RequestDetailsDialog
