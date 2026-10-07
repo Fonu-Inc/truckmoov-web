@@ -142,68 +142,8 @@ export function PhoneNumberManagement() {
   // Fetch available numbers when dialog opens
   const fetchAvailableNumbers = async () => {
     setLoadingAvailable(true);
-    setAvailableNumbers([
-      {
-        phone_number: "+234 801 000 0001",
-        phone_number_type: "mobile",
-        monthly_cost_ngn: 5000,
-        capabilities: [
-          "sms",
-          "voice",
-        ],
-      },
-      {
-        phone_number: "+234 801 000 0002",
-        phone_number_type: "mobile",
-        monthly_cost_ngn: 5000,
-        capabilities: [
-          "sms",
-          "voice",
-        ],
-      },
-      {
-        phone_number: "+234 801 000 0003",
-        phone_number_type: "mobile",
-        monthly_cost_ngn: 5000,
-        capabilities: [
-          "sms",
-          "voice",
-        ],
-      },
-      {
-        phone_number: "+234 802 000 0001",
-        phone_number_type: "mobile",
-        monthly_cost_ngn: 4500,
-        capabilities: [
-          "sms",
-          "voice",
-        ],
-      },
-      {
-        phone_number: "+234 802 000 0002",
-        phone_number_type: "mobile",
-        monthly_cost_ngn: 4500,
-        capabilities: [
-          "sms",
-          "voice",
-        ],
-      },
-      {
-        phone_number: "+234 700 000 0001",
-        phone_number_type: "toll_free",
-        monthly_cost_ngn: 15000,
-        capabilities: ["voice"],
-      },
-      {
-        phone_number: "+234 1 000 0001",
-        phone_number_type: "local",
-        monthly_cost_ngn: 3000,
-        capabilities: [
-          "sms",
-          "voice",
-        ],
-      },
-    ]);
+    // ponytail: no available-numbers endpoint yet, so the picker stays empty.
+    setAvailableNumbers([]);
     setLoadingAvailable(false);
   };
 
