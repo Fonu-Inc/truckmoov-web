@@ -1,5 +1,5 @@
-import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import type { FleetProfitLoss } from "@truckmoov/api/fleet";
+import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
 import { getFleetProfitLossQueryOptions } from "@truckmoov/api/fleet";
 import {
@@ -26,7 +26,9 @@ import {
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
-import { formatMonthLabel, periodLabel, periodToRange } from "@/features/analytics/utils/period";
+import {
+  formatMonthLabel, periodLabel, periodToRange,
+} from "@/features/analytics/utils/period";
 import { formatCurrency } from "@/lib/currency";
 
 export default function ProfitLossPage() {
@@ -38,30 +40,34 @@ export default function ProfitLossPage() {
   const report = query.data?.data;
 
   return (
-    <AnalyticsGate
-      isPending={query.isPending}
-      isError={query.isError}
-      onRetry={() => query.refetch()}
-      hasData
-    >
-      {report && (
-        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
-          <ProfitLossReport
-            report={report}
-            period={period}
-            onPeriodChange={setPeriod}
-          />
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">Profit & Loss Summary</h3>
+          <p className="text-sm text-muted-foreground">{periodLabel(period)}</p>
         </div>
-      )}
-    </AnalyticsGate>
+        <ChartPeriodFilter
+          value={period}
+          onChange={setPeriod}
+        />
+      </div>
+      <AnalyticsGate
+        isPending={query.isPending}
+        isError={query.isError}
+        onRetry={() => query.refetch()}
+        hasData
+      >
+        {report && (
+          <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
+            <ProfitLossReport report={report} />
+          </div>
+        )}
+      </AnalyticsGate>
+    </div>
   );
 }
 
-function ProfitLossReport({
-  report, period, onPeriodChange,
-}: {
-  report: FleetProfitLoss; period: ChartPeriod; onPeriodChange: (v: ChartPeriod) => void;
-}) {
+function ProfitLossReport({ report }: { report: FleetProfitLoss }) {
   const {
     revenue: totalRevenue, totalCosts, netProfit, marginPercent, deliveredJobs, costs,
   } = report.summary;
@@ -282,17 +288,6 @@ function ProfitLossReport({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold">Profit & Loss Summary</h3>
-          <p className="text-sm text-muted-foreground">{periodLabel(period)}</p>
-        </div>
-        <ChartPeriodFilter
-          value={period}
-          onChange={onPeriodChange}
-        />
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-border/50 bg-success/5">
           <CardContent className="p-4">

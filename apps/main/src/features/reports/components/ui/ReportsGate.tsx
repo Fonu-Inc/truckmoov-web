@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 type GateQuery = {
   isPending: boolean;
@@ -8,18 +8,20 @@ type GateQuery = {
   refetch: () => unknown;
 };
 
+/**
+ * Gates one section on one query: skeleton while pending, error + retry on
+ * failure. Wrap only the part that uses the query so the rest of the page
+ * renders immediately.
+ */
 export function ReportsGate({
-  query, children,
+  query, children, skeleton,
 }: {
-  query: GateQuery; children: ReactNode;
+  query: GateQuery; children: ReactNode; skeleton?: ReactNode;
 }) {
   if (query.isPending) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2
-          aria-label="Loading reports"
-          className="h-8 w-8 animate-spin text-muted-foreground"
-        />
+      <div aria-label="Loading reports">
+        {skeleton ?? <Skeleton className="h-64 w-full" />}
       </div>
     );
   }

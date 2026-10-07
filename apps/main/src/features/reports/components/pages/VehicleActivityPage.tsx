@@ -18,6 +18,7 @@ import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
@@ -120,75 +121,94 @@ export default function VehicleActivityPage() {
   };
 
   return (
-    <ReportsGate query={activityQuery}>
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <SummaryStat
-            icon={Route}
-            label="Total trips"
-            value={`${totals?.trips ?? 0}`}
-            hint="All recorded movements"
-          />
-          <SummaryStat
-            icon={CheckCircle}
-            label="Completed trips"
-            value={`${totals?.completed ?? 0}`}
-            hint={`${totals?.open ?? 0} open`}
-          />
-          <SummaryStat
-            icon={MapPin}
-            label="Locations served"
-            value={`${totals?.locationsServed ?? 0}`}
-            hint="Unique delivery points"
-          />
-          <SummaryStat
-            icon={CreditCard}
-            label="Trip value"
-            value={formatCurrency(totals?.tripValueNgn ?? 0)}
-            hint="All trips"
-          />
-        </div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryStat
+          icon={Route}
+          label="Total trips"
+          value={`${totals?.trips ?? 0}`}
+          hint="All recorded movements"
+          loading={activityQuery.isPending}
+        />
+        <SummaryStat
+          icon={CheckCircle}
+          label="Completed trips"
+          value={`${totals?.completed ?? 0}`}
+          hint={`${totals?.open ?? 0} open`}
+          loading={activityQuery.isPending}
+        />
+        <SummaryStat
+          icon={MapPin}
+          label="Locations served"
+          value={`${totals?.locationsServed ?? 0}`}
+          hint="Unique delivery points"
+          loading={activityQuery.isPending}
+        />
+        <SummaryStat
+          icon={CreditCard}
+          label="Trip value"
+          value={formatCurrency(totals?.tripValueNgn ?? 0)}
+          hint="All trips"
+          loading={activityQuery.isPending}
+        />
+      </div>
 
-        <SectionCard
-          title="Vehicle movements"
-          description="Trips and operational activity per vehicle"
-          toolbar={(
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by reference, vehicle, driver or route..."
-                  value={search}
-                  onChange={e => changeSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select
-                value={statusFilter}
-                onValueChange={changeStatus}
-              >
-                <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {(activity?.statuses ?? []).map(o => (
-                    <SelectItem
-                      key={o}
-                      value={o}
-                      className="capitalize"
-                    >
-                      {String(o).replace(
-                        "_",
-                        " ",
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <SectionCard
+        title="Vehicle movements"
+        description="Trips and operational activity per vehicle"
+        toolbar={(
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by reference, vehicle, driver or route..."
+                value={search}
+                onChange={e => changeSearch(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          )}
-          onExport={() => void exportTrips(
-            queryClient,
-            params,
+            <Select
+              value={statusFilter}
+              onValueChange={changeStatus}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                {(activity?.statuses ?? []).map(o => (
+                  <SelectItem
+                    key={o}
+                    value={o}
+                    className="capitalize"
+                  >
+                    {String(o).replace(
+                      "_",
+                      " ",
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        onExport={() => void exportTrips(
+          queryClient,
+          params,
+        )}
+      >
+        <ReportsGate
+          query={activityQuery}
+          skeleton={(
+            <div className="space-y-2">
+              {Array.from(
+                { length: 8 },
+                (_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="h-10 w-full"
+                  />
+                ),
+              )}
+            </div>
           )}
         >
           <div className="overflow-x-auto">
@@ -277,8 +297,8 @@ export default function VehicleActivityPage() {
               </Button>
             </div>
           )}
-        </SectionCard>
-      </div>
-    </ReportsGate>
+        </ReportsGate>
+      </SectionCard>
+    </div>
   );
 }

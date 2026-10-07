@@ -21,13 +21,14 @@ import { Button } from "@/components/shadcn/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   exportToCSV, TREND_RANGES,
 } from "@/features/reports/utils/reportsUtils";
 import { ReportsGate } from "./ReportsGate";
 import {
-  ActivityRows, SectionCard, SummaryStat,
+  ActivityRows, RowsSkeleton, SectionCard, SummaryStat,
 } from "./ReportsShared";
 
 function TrendRangeSelect({
@@ -73,7 +74,10 @@ function ActivityTrendCard({ initialRange }: { initialRange: ReportTrendRange })
         />
       )}
     >
-      <ReportsGate query={trendQuery}>
+      <ReportsGate
+        query={trendQuery}
+        skeleton={<Skeleton className="h-[240px] w-full" />}
+      >
         <ResponsiveContainer
           width="100%"
           height={240}
@@ -215,37 +219,40 @@ function periodLabel(mode: ReportPeriod, summary: ReportsSummary) {
   )}`;
 }
 
-function SummaryContent({
-  mode, summary, licence,
-}: {
-  mode: ReportPeriod; summary: ReportsSummary; licence: TenantLicence | null | undefined;
-}) {
+export function PeriodSummary({ mode }: { mode: ReportPeriod }) {
   const { format: formatCurrency } = useCurrency();
-  const {
-    operationRows, fleetRows, adminRows,
-  } = summaryRows(
+  const summaryQuery = useQuery(getReportsSummaryQueryOptions({ params: { period: mode } }));
+  // A missing or forbidden licence only blanks the Subscription row.
+  const licenceQuery = useQuery(getTenantLicenceQueryOptions());
+  // The page shell renders immediately; only the parts fed by the summary
+  // wait on it, so the trend card's request runs in parallel.
+  const summary = summaryQuery.data?.data;
+  const rows = summary && summaryRows(
     summary,
-    licence,
+    licenceQuery.data?.data,
   );
-  const {
-    operations, fleet,
-  } = summary;
-  const sections: [string, Row[]][] = [
-    [
-      "Operations",
-      operationRows,
-    ],
-    [
-      "Fleet",
-      fleetRows,
-    ],
-    [
-      "Administration",
-      adminRows,
-    ],
-  ];
+  const loading = summaryQuery.isPending;
+  const operations = summary?.operations;
+  const fleet = summary?.fleet;
 
-  const handleExport = () => exportToCSV(
+  const sections: [string, Row[]][] = rows
+    ? [
+        [
+          "Operations",
+          rows.operationRows,
+        ],
+        [
+          "Fleet",
+          rows.fleetRows,
+        ],
+        [
+          "Administration",
+          rows.adminRows,
+        ],
+      ]
+    : [];
+
+  const handleExport = () => summary && exportToCSV(
     `${mode}_summary`,
     [
       "Section",
@@ -255,8 +262,8 @@ function SummaryContent({
     [
       ...sections.flatMap(([
         section,
-        rows,
-      ]) => rows.map(r => [
+        sectionRows,
+      ]) => sectionRows.map(r => [
         section,
         r.label,
         r.count,
@@ -274,8 +281,8 @@ function SummaryContent({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{mode === "daily" ? "Daily Summary" : "Weekly Summary"}</h2>
-          <p className="text-sm text-muted-foreground">
-            {periodLabel(
+          <p className="text-sm text-muted-foreground min-h-5">
+            {summary && periodLabel(
               mode,
               summary,
             )}
@@ -284,6 +291,7 @@ function SummaryContent({
         <Button
           variant="outline"
           size="sm"
+          disabled={!summary}
           onClick={handleExport}
         >
           <Download className="h-4 w-4 mr-2" />
@@ -296,26 +304,30 @@ function SummaryContent({
         <SummaryStat
           icon={Package}
           label="Jobs created"
-          value={`${operations.jobsCreated}`}
+          value={operations ? `${operations.jobsCreated}` : "—"}
           hint={mode === "daily" ? "Today" : "This week"}
+          loading={loading}
         />
         <SummaryStat
           icon={CheckCircle}
           label="Jobs completed"
-          value={`${operations.jobsCompleted}`}
-          hint={`${operations.jobsInProgress} in progress`}
+          value={operations ? `${operations.jobsCompleted}` : "—"}
+          hint={operations && `${operations.jobsInProgress} in progress`}
+          loading={loading}
         />
         <SummaryStat
           icon={Truck}
           label="Vehicles active"
-          value={`${fleet.activeVehicles}/${fleet.totalVehicles}`}
-          hint={`${fleet.vehiclesInMaintenance} in maintenance`}
+          value={fleet ? `${fleet.activeVehicles}/${fleet.totalVehicles}` : "—"}
+          hint={fleet && `${fleet.vehiclesInMaintenance} in maintenance`}
+          loading={loading}
         />
         <SummaryStat
           icon={CreditCard}
           label="Revenue booked"
-          value={formatCurrency(summary.revenueNgn)}
+          value={summary ? formatCurrency(summary.revenueNgn) : "—"}
           hint="Completed jobs"
+          loading={loading}
         />
       </div>
 
@@ -326,39 +338,36 @@ function SummaryContent({
           title="Operations"
           description="Job and dispatch activity"
         >
-          <ActivityRows rows={operationRows} />
+          <ReportsGate
+            query={summaryQuery}
+            skeleton={<RowsSkeleton />}
+          >
+            {rows && <ActivityRows rows={rows.operationRows} />}
+          </ReportsGate>
         </SectionCard>
         <SectionCard
           title="Fleet & people"
           description="Assets and drivers"
         >
-          <ActivityRows rows={fleetRows} />
+          <ReportsGate
+            query={summaryQuery}
+            skeleton={<RowsSkeleton />}
+          >
+            {rows && <ActivityRows rows={rows.fleetRows} />}
+          </ReportsGate>
         </SectionCard>
         <SectionCard
           title="Administration"
           description="Documents, communications and account"
         >
-          <ActivityRows rows={adminRows} />
+          <ReportsGate
+            query={summaryQuery}
+            skeleton={<RowsSkeleton />}
+          >
+            {rows && <ActivityRows rows={rows.adminRows} />}
+          </ReportsGate>
         </SectionCard>
       </div>
     </div>
-  );
-}
-
-export function PeriodSummary({ mode }: { mode: ReportPeriod }) {
-  const summaryQuery = useQuery(getReportsSummaryQueryOptions({ params: { period: mode } }));
-  // A missing or forbidden licence only blanks the Subscription row.
-  const licenceQuery = useQuery(getTenantLicenceQueryOptions());
-
-  return (
-    <ReportsGate query={summaryQuery}>
-      {summaryQuery.data && (
-        <SummaryContent
-          mode={mode}
-          summary={summaryQuery.data.data}
-          licence={licenceQuery.data?.data}
-        />
-      )}
-    </ReportsGate>
   );
 }

@@ -1,5 +1,5 @@
-import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import type { FleetComplianceAudit } from "@truckmoov/api/fleet";
+import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
 import { getFleetComplianceAuditQueryOptions } from "@truckmoov/api/fleet";
 import {
@@ -29,7 +29,9 @@ import {
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
-import { periodLabel, periodToRange } from "@/features/analytics/utils/period";
+import {
+  periodLabel, periodToRange,
+} from "@/features/analytics/utils/period";
 
 export default function ComplianceAuditPage() {
   const [
@@ -40,22 +42,29 @@ export default function ComplianceAuditPage() {
   const report = query.data?.data;
 
   return (
-    <AnalyticsGate
-      isPending={query.isPending}
-      isError={query.isError}
-      onRetry={() => query.refetch()}
-      hasData
-    >
-      {report && (
-        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
-          <ComplianceAuditReport
-            report={report}
-            chartPeriod={chartPeriod}
-            onPeriodChange={setChartPeriod}
-          />
-        </div>
-      )}
-    </AnalyticsGate>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Compliance Audit Report</h2>
+        <p className="text-sm text-muted-foreground">Monitor regulatory compliance, document expiry, and audit readiness across your fleet.</p>
+      </div>
+      <AnalyticsGate
+        isPending={query.isPending}
+        isError={query.isError}
+        onRetry={() => query.refetch()}
+        hasData
+        stats={3}
+      >
+        {report && (
+          <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
+            <ComplianceAuditReport
+              report={report}
+              chartPeriod={chartPeriod}
+              onPeriodChange={setChartPeriod}
+            />
+          </div>
+        )}
+      </AnalyticsGate>
+    </div>
   );
 }
 
@@ -218,11 +227,6 @@ function ComplianceAuditReport({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Compliance Audit Report</h2>
-        <p className="text-sm text-muted-foreground">Monitor regulatory compliance, document expiry, and audit readiness across your fleet.</p>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border-border/50">
           <CardContent className="p-4">
@@ -642,7 +646,13 @@ function AuditActivity({ activity }: { activity: FleetComplianceAudit["activity"
   );
 }
 
-function CountList({ title, rows }: { title: string; rows: { label: string; count: number }[] }) {
+function CountList({
+  title, rows,
+}: {
+  title: string; rows: {
+    label: string; count: number;
+  }[];
+}) {
   return (
     <div>
       <p className="mb-2 text-sm text-muted-foreground">{title}</p>
@@ -655,7 +665,12 @@ function CountList({ title, rows }: { title: string; rows: { label: string; coun
                   key={r.label}
                   className="flex justify-between gap-4"
                 >
-                  <span className="capitalize">{r.label.replace(/[._]/g, " ")}</span>
+                  <span className="capitalize">
+                    {r.label.replace(
+                      /[._]/g,
+                      " ",
+                    )}
+                  </span>
                   <span className="font-medium">{r.count}</span>
                 </li>
               ))}

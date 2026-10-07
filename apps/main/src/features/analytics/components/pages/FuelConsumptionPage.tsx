@@ -1,5 +1,5 @@
-import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import type { FleetFuelReport } from "@truckmoov/api/fleet";
+import type { ChartPeriod } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { useQuery } from "@tanstack/react-query";
 import { getFleetFuelReportQueryOptions } from "@truckmoov/api/fleet";
 import {
@@ -29,7 +29,9 @@ import {
 import { AnalyticsGate } from "@/features/analytics/components/ui/AnalyticsGate";
 import { ChartPeriodFilter } from "@/features/analytics/components/ui/ChartPeriodFilter";
 import { ExportCsvButton } from "@/features/analytics/components/ui/ExportCsvButton";
-import { periodLabel, periodToRange } from "@/features/analytics/utils/period";
+import {
+  periodLabel, periodToRange,
+} from "@/features/analytics/utils/period";
 import { formatCurrency } from "@/lib/currency";
 
 export default function FuelConsumptionPage() {
@@ -41,30 +43,37 @@ export default function FuelConsumptionPage() {
   const report = query.data?.data;
 
   return (
-    <AnalyticsGate
-      isPending={query.isPending}
-      isError={query.isError}
-      onRetry={() => query.refetch()}
-      hasData
-    >
-      {report && (
-        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
-          <FuelConsumptionReport
-            report={report}
-            chartPeriod={chartPeriod}
-            onPeriodChange={setChartPeriod}
-          />
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">Fuel Consumption Report</h3>
+          <p className="text-sm text-muted-foreground">
+            {periodLabel(chartPeriod)}
+            {" · recorded fuel transactions; distance is the odometer movement between fills"}
+          </p>
         </div>
-      )}
-    </AnalyticsGate>
+        <ChartPeriodFilter
+          value={chartPeriod}
+          onChange={setChartPeriod}
+        />
+      </div>
+      <AnalyticsGate
+        isPending={query.isPending}
+        isError={query.isError}
+        onRetry={() => query.refetch()}
+        hasData
+      >
+        {report && (
+          <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
+            <FuelConsumptionReport report={report} />
+          </div>
+        )}
+      </AnalyticsGate>
+    </div>
   );
 }
 
-function FuelConsumptionReport({
-  report, chartPeriod, onPeriodChange,
-}: {
-  report: FleetFuelReport; chartPeriod: ChartPeriod; onPeriodChange: (v: ChartPeriod) => void;
-}) {
+function FuelConsumptionReport({ report }: { report: FleetFuelReport }) {
   const [
     fuelSearch,
     setFuelSearch,
@@ -300,20 +309,6 @@ function FuelConsumptionReport({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold">Fuel Consumption Report</h3>
-          <p className="text-sm text-muted-foreground">
-            {periodLabel(chartPeriod)}
-            {" · recorded fuel transactions; distance is the odometer movement between fills"}
-          </p>
-        </div>
-        <ChartPeriodFilter
-          value={chartPeriod}
-          onChange={onPeriodChange}
-        />
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card className="border-border/50">
           <CardContent className="p-4">

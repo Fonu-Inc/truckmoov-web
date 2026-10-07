@@ -1,6 +1,7 @@
+import type { ExportColumn } from "@/lib/exportTable";
 import { Download } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { exportToCSV, type ExportColumn } from "@/lib/exportTable";
+import { exportToCSV } from "@/lib/exportTable";
 
 export function ExportCsvButton<T>({
   rows, columns, filename,

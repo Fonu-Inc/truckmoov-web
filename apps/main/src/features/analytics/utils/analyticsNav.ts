@@ -14,8 +14,18 @@ export type AnalyticsTab = {
   hasPermissions: UserRole[];
 };
 
-const FLEET_OPERATORS: UserRole[] = ["ENTERPRISE_ADMIN", "FLEET_ADMIN", "OWNER_OPERATOR", "OPERATIONS_MANAGER"];
-const FINANCE_READERS: UserRole[] = ["ENTERPRISE_ADMIN", "FLEET_ADMIN", "OWNER_OPERATOR", "FINANCE_VIEWER"];
+const FLEET_OPERATORS: UserRole[] = [
+  "ENTERPRISE_ADMIN",
+  "FLEET_ADMIN",
+  "OWNER_OPERATOR",
+  "OPERATIONS_MANAGER",
+];
+const FINANCE_READERS: UserRole[] = [
+  "ENTERPRISE_ADMIN",
+  "FLEET_ADMIN",
+  "OWNER_OPERATOR",
+  "FINANCE_VIEWER",
+];
 
 /**
  * The analytics tab bar, in order. One entry per child route of `/analytics` —
@@ -33,7 +43,10 @@ export const ANALYTICS_TABS: AnalyticsTab[] = [
     to: "/analytics/compliance-audit", label: "Compliance Audit", icon: Shield, hasPermissions: FLEET_OPERATORS,
   },
   {
-    to: "/analytics/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: [...FLEET_OPERATORS, "FINANCE_VIEWER"],
+    to: "/analytics/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: [
+      ...FLEET_OPERATORS,
+      "FINANCE_VIEWER",
+    ],
   },
   {
     to: "/analytics/fleet-utilization", label: "Fleet Utilization", icon: Truck, hasPermissions: FLEET_OPERATORS,

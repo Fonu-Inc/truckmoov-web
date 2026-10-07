@@ -5,11 +5,12 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 export function SummaryStat({
-  icon: Icon, label, value, hint,
+  icon: Icon, label, value, hint, loading,
 }: {
-  icon: React.ElementType; label: string; value: string; hint?: string;
+  icon: React.ElementType; label: string; value: string; hint?: string; loading?: boolean;
 }) {
   return (
     <Card className="surface-sleek border-border/50">
@@ -20,8 +21,22 @@ export function SummaryStat({
           </div>
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground truncate">{label}</p>
-            <p className="text-xl font-bold truncate">{value}</p>
-            {hint && <p className="text-[11px] text-muted-foreground truncate">{hint}</p>}
+            {loading
+              ? (
+                  <div
+                    aria-label={`Loading ${label}`}
+                    className="space-y-1.5 pt-1"
+                  >
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                )
+              : (
+                  <>
+                    <p className="text-xl font-bold truncate">{value}</p>
+                    {hint && <p className="text-[11px] text-muted-foreground truncate">{hint}</p>}
+                  </>
+                )}
           </div>
         </div>
       </CardContent>
@@ -68,6 +83,30 @@ export function SectionCard({
 export type Row = {
   label: string; count: number | string; detail: string; icon: React.ElementType;
 };
+
+/** Placeholder matching `ActivityRows` (or table rows) while a query is pending. */
+export function RowsSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div className="divide-y divide-border/60">
+      {Array.from(
+        { length: count },
+        (_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 py-3"
+          >
+            <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-2/5" />
+              <Skeleton className="h-3 w-3/5" />
+            </div>
+            <Skeleton className="h-5 w-8 rounded-full" />
+          </div>
+        ),
+      )}
+    </div>
+  );
+}
 
 export function ActivityRows({ rows }: { rows: Row[] }) {
   return (
