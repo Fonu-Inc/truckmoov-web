@@ -1,4 +1,11 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getDataBundleCarriersQueryOptions,
+  getDataBundleRatesQueryOptions,
+  useCreateSystemBundle,
+  useUpdateSystemBundle,
+} from "@truckmoov/api/auth";
 import {
   Building2,
   ChevronDown,
@@ -83,11 +90,14 @@ type BundleCatalogItem = {
   id: string;
   code: string;
   name: string;
+  /** Catalog carrier id (e.g. "carrier-mtn"); what create takes. */
+  carrierId: string;
+  /** Carrier name for display and filtering. */
   carrier: string;
   data_mb: number;
   validity_days: number;
-  price_ngn: number | string;
-  billing_cycle: "monthly" | "yearly";
+  price_ngn: number;
+  billing_cycle: string;
   is_active: boolean;
 };
 
@@ -97,123 +107,10 @@ function formatBundleSize(mb: number): string {
   return `${mb} MB`;
 }
 
-/* ── Demo fallback catalog ── */
-const DUMMY_CATALOG: BundleCatalogItem[] = [
-  {
-    id: "d1",
-    code: "MTN_1GB_M",
-    name: "MTN 1GB Monthly",
-    carrier: "MTN",
-    data_mb: 1024,
-    validity_days: 30,
-    price_ngn: 1500,
-    billing_cycle: "monthly",
-    is_active: true,
-  },
-  {
-    id: "d2",
-    code: "MTN_5GB_M",
-    name: "MTN 5GB Monthly",
-    carrier: "MTN",
-    data_mb: 5120,
-    validity_days: 30,
-    price_ngn: 5500,
-    billing_cycle: "monthly",
-    is_active: true,
-  },
-  {
-    id: "d3",
-    code: "MTN_10GB_M",
-    name: "MTN 10GB Monthly",
-    carrier: "MTN",
-    data_mb: 10240,
-    validity_days: 30,
-    price_ngn: 9500,
-    billing_cycle: "monthly",
-    is_active: true,
-  },
-  {
-    id: "d4",
-    code: "MTN_25GB_M",
-    name: "MTN 25GB Monthly",
-    carrier: "MTN",
-    data_mb: 25600,
-    validity_days: 30,
-    price_ngn: 18000,
-    billing_cycle: "monthly",
-    is_active: true,
-  },
-  {
-    id: "d5",
-    code: "MTN_60GB_Y",
-    name: "MTN 60GB Yearly",
-    carrier: "MTN",
-    data_mb: 61440,
-    validity_days: 365,
-    price_ngn: 75000,
-    billing_cycle: "yearly",
-    is_active: true,
-  },
-  {
-    id: "d6",
-    code: "AIRTEL_3GB_M",
-    name: "Airtel 3GB Monthly",
-    carrier: "Airtel",
-    data_mb: 3072,
-    validity_days: 30,
-    price_ngn: 3500,
-    billing_cycle: "monthly",
-    is_active: true,
-  },
-  {
-    id: "d7",
-    code: "GLO_2GB_M",
-    name: "Glo 2GB Monthly",
-    carrier: "Glo",
-    data_mb: 2048,
-    validity_days: 30,
-    price_ngn: 2200,
-    billing_cycle: "monthly",
-    is_active: true,
-  },
-  {
-    id: "d8",
-    code: "FONU_2GB_M",
-    name: "Fonu 2GB Monthly",
-    carrier: "Fonu",
-    data_mb: 2048,
-    validity_days: 30,
-    price_ngn: 2000,
-    billing_cycle: "monthly",
-    is_active: true,
-  },
-  {
-    id: "d9",
-    code: "FONU_10GB_M",
-    name: "Fonu 10GB Monthly",
-    carrier: "Fonu",
-    data_mb: 10240,
-    validity_days: 30,
-    price_ngn: 9000,
-    billing_cycle: "monthly",
-    is_active: true,
-  },
-  {
-    id: "d10",
-    code: "FONU_50GB_Y",
-    name: "Fonu 50GB Yearly",
-    carrier: "Fonu",
-    data_mb: 51200,
-    validity_days: 365,
-    price_ngn: 65000,
-    billing_cycle: "yearly",
-    is_active: true,
-  },
-];
-
-/* ── Per-SIM adoption demo data ──
+/* ── Per-SIM tenant adoption ──
    Each tenant has multiple SIMs; each SIM has its own MSISDN/ICCID
-   and may carry one or more active subscription / top-up bundles. */
+   and may carry one or more active subscription / top-up bundles.
+   ponytail: no backend endpoint yet, so the tab renders empty. */
 type TenantSim = {
   msisdn: string;
   iccid: string;
@@ -231,234 +128,11 @@ type TenantAdoption = {
   sims: TenantSim[];
 };
 
-const DUMMY_TENANT_USAGE: TenantAdoption[] = [
-  {
-    tenant: "Lagos Express Logistics",
-    sims: [
-      {
-        msisdn: "+2348031000111",
-        iccid: "8923401000000000111",
-        carrier: "MTN",
-        vehicle: "TRK-001",
-        bundles: [
-          {
-            name: "MTN 10GB Monthly",
-            type: "subscription",
-            price_ngn: 9500,
-            expires_in_days: 12,
-          },
-          {
-            name: "MTN 1GB Top-up",
-            type: "top-up",
-            price_ngn: 1500,
-            expires_in_days: 5,
-
-          },
-        ],
-      },
-      {
-        msisdn: "+2348031000112",
-        iccid: "8923401000000000112",
-        carrier: "MTN",
-        vehicle: "TRK-002",
-        bundles: [
-          {
-            name: "MTN 25GB Monthly",
-            type: "subscription",
-            price_ngn: 18000,
-            expires_in_days: 22,
-          },
-        ],
-      },
-      {
-        msisdn: "+2348031000113",
-        iccid: "8923401000000000113",
-        carrier: "Fonu",
-        vehicle: "TRK-003",
-        bundles: [
-          {
-            name: "Fonu 10GB Monthly",
-            type: "subscription",
-            price_ngn: 9000,
-            expires_in_days: 8,
-          },
-        ],
-      },
-      {
-        msisdn: "+2348031000114",
-        iccid: "8923401000000000114",
-        carrier: "Airtel",
-        vehicle: "TRK-004",
-        bundles: [
-          {
-            name: "Airtel 3GB Monthly",
-            type: "subscription",
-            price_ngn: 3500,
-            expires_in_days: 17,
-          },
-          {
-            name: "Airtel 500MB Top-up",
-            type: "top-up",
-            price_ngn: 800,
-            expires_in_days: 3,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    tenant: "Northern Haulage Co.",
-    sims: [
-      {
-        msisdn: "+2348091200201",
-        iccid: "8923401000000000201",
-        carrier: "MTN",
-        vehicle: "NH-101",
-        bundles: [
-          {
-            name: "MTN 5GB Monthly",
-            type: "subscription",
-            price_ngn: 5500,
-            expires_in_days: 14,
-          },
-        ],
-      },
-      {
-        msisdn: "+2348091200202",
-        iccid: "8923401000000000202",
-        carrier: "MTN",
-        vehicle: "NH-102",
-        bundles: [
-          {
-            name: "MTN 5GB Monthly",
-            type: "subscription",
-            price_ngn: 5500,
-            expires_in_days: 9,
-          },
-        ],
-      },
-      {
-        msisdn: "+2348091200203",
-        iccid: "8923401000000000203",
-        carrier: "Glo",
-        vehicle: "NH-103",
-        bundles: [
-          {
-            name: "Glo 2GB Monthly",
-            type: "subscription",
-            price_ngn: 2200,
-            expires_in_days: 25,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    tenant: "Trans-Sahara Freight",
-    sims: [
-      {
-        msisdn: "+2348051300301",
-        iccid: "8923401000000000301",
-        carrier: "Fonu",
-        vehicle: "TS-001",
-        bundles: [
-          {
-            name: "Fonu 50GB Yearly",
-            type: "subscription",
-            price_ngn: 65000,
-            expires_in_days: 220,
-          },
-          {
-            name: "Fonu 2GB Top-up",
-            type: "top-up",
-            price_ngn: 2000,
-            expires_in_days: 6,
-
-          },
-        ],
-      },
-      {
-        msisdn: "+2348051300302",
-        iccid: "8923401000000000302",
-        carrier: "MTN",
-        vehicle: "TS-002",
-        bundles: [
-          {
-            name: "MTN 10GB Monthly",
-            type: "subscription",
-            price_ngn: 9500,
-            expires_in_days: 19,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    tenant: "Niger Delta Movers",
-    sims: [
-      {
-        msisdn: "+2348071400401",
-        iccid: "8923401000000000401",
-        carrier: "Airtel",
-        vehicle: "ND-77",
-        bundles: [
-          {
-            name: "Airtel 3GB Monthly",
-            type: "subscription",
-            price_ngn: 3500,
-            expires_in_days: 11,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    tenant: "Abuja Cargo Wings",
-    sims: [
-      {
-        msisdn: "+2348061500501",
-        iccid: "8923401000000000501",
-        carrier: "MTN",
-        vehicle: "AC-12",
-        bundles: [
-          {
-            name: "MTN 25GB Monthly",
-            type: "subscription",
-            price_ngn: 18000,
-            expires_in_days: 4,
-          },
-        ],
-      },
-      {
-        msisdn: "+2348061500502",
-        iccid: "8923401000000000502",
-        carrier: "MTN",
-        vehicle: "AC-13",
-        bundles: [
-          {
-            name: "MTN 60GB Yearly",
-            type: "subscription",
-            price_ngn: 75000,
-            expires_in_days: 300,
-          },
-        ],
-      },
-    ],
-  },
-];
-
-const CARRIER_OPTIONS = [
-  "MTN",
-  "Airtel",
-  "Glo",
-  "9mobile",
-  "Fonu",
-];
-
 type BundleFormState = {
   id?: string;
   code: string;
   name: string;
+  /** Carrier id from the carriers endpoint. */
   carrier: string;
   data_mb: number;
   validity_days: number;
@@ -470,7 +144,7 @@ type BundleFormState = {
 const emptyForm: BundleFormState = {
   code: "",
   name: "",
-  carrier: "MTN",
+  carrier: "",
   data_mb: 1024,
   validity_days: 30,
   price_ngn: 1500,
@@ -480,14 +154,44 @@ const emptyForm: BundleFormState = {
 
 export default function PlatformDataBundles() {
   const { format: fmtCurrency } = useCurrency();
-  const catalogLive: BundleCatalogItem[] = [];
-  const upsert = {
-    mutateAsync: async (_data: any) => {},
-    isPending: false,
-  };
-  const toggle = { mutateAsync: async (_data: any) => {} };
+  const catalogQuery = useQuery(getDataBundleRatesQueryOptions({
+    params: {
+      page: 1, limit: 100,
+    },
+  }));
+  const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
+  const carrierList = useMemo(
+    () => carriersQuery.data?.data.carriers ?? [],
+    [carriersQuery.data],
+  );
+  const createBundle = useCreateSystemBundle();
+  const updateBundle = useUpdateSystemBundle();
 
-  const catalog = (catalogLive.length > 0 ? catalogLive : DUMMY_CATALOG) as BundleCatalogItem[];
+  // ponytail: mirrors apps/main useDataBundleCatalog; move to packages/api if a third consumer appears.
+  const catalog = useMemo<BundleCatalogItem[]>(
+    () => {
+      const nameById = new Map(carrierList.map(c => [
+        c.id,
+        c.displayName || c.name,
+      ]));
+      return (catalogQuery.data?.data.items ?? []).map(rate => ({
+        id: rate.id,
+        code: rate.code,
+        name: rate.name,
+        carrierId: rate.carrier,
+        carrier: nameById.get(rate.carrier) ?? rate.carrier,
+        data_mb: rate.dataAmountGb * 1024,
+        validity_days: rate.validityDays,
+        price_ngn: rate.price,
+        billing_cycle: rate.billingCycle,
+        is_active: rate.active,
+      }));
+    },
+    [
+      catalogQuery.data,
+      carrierList,
+    ],
+  );
 
   const [
     search,
@@ -549,31 +253,17 @@ export default function PlatformDataBundles() {
 
   const totalActive = catalog.filter(b => b.is_active).length;
   const carrierCount = carriers.length;
-  const totalSimsAcrossTenants = DUMMY_TENANT_USAGE.reduce(
-    (s, t) => s + t.sims.length,
-    0,
-  );
-  const totalMonthlySpend = DUMMY_TENANT_USAGE.reduce(
-    (s, t) => s + t.sims.reduce(
-      (ss, sim) => ss + sim.bundles.reduce(
-        (b, x) => b + x.price_ngn,
-        0,
-      ),
-      0,
-    ),
-    0,
-  );
 
   const openEdit = (b: BundleCatalogItem) => {
     setForm({
       id: b.id,
       code: b.code,
       name: b.name,
-      carrier: b.carrier,
+      carrier: b.carrierId,
       data_mb: b.data_mb,
       validity_days: b.validity_days,
-      price_ngn: Number(b.price_ngn),
-      billing_cycle: b.billing_cycle,
+      price_ngn: b.price_ngn,
+      billing_cycle: b.billing_cycle === "yearly" ? "yearly" : "monthly",
       is_active: b.is_active,
     });
     setEditing(true);
@@ -582,9 +272,9 @@ export default function PlatformDataBundles() {
 
   const handleToggle = async (b: BundleCatalogItem) => {
     try {
-      await toggle.mutateAsync({
+      await updateBundle.mutateAsync({
         id: b.id,
-        is_active: !b.is_active,
+        data: { active: !b.is_active },
       });
       toast.success(`Bundle ${!b.is_active ? "activated" : "deactivated"}`);
     }
@@ -679,27 +369,49 @@ export default function PlatformDataBundles() {
   );
 
   const handleSave = async () => {
-    if (!form.code || !form.name) {
-      toast.error("Code and name are required");
+    if (!form.code || !form.name || !form.carrier) {
+      toast.error("Carrier, code and name are required");
       return;
     }
+    const fields = {
+      name: form.name,
+      dataAmountGb: Number(form.data_mb) / 1024,
+      validityDays: Number(form.validity_days),
+      billingCycle: form.billing_cycle,
+      priceNaira: Number(form.price_ngn),
+    };
     try {
-      await upsert.mutateAsync({
-        code: form.code,
-        name: form.name,
-        carrier: form.carrier,
-        data_mb: Number(form.data_mb),
-        validity_days: Number(form.validity_days),
-        price_ngn: Number(form.price_ngn),
-        billing_cycle: form.billing_cycle,
-        is_active: form.is_active,
-      });
+      if (editing && form.id) {
+        await updateBundle.mutateAsync({
+          id: form.id,
+          data: {
+            ...fields, active: form.is_active,
+          },
+        });
+      }
+      else {
+        // ponytail: id follows the "carrier-mtn" slug convention; confirm the format with the backend.
+        const id = `bundle-${form.code.toLowerCase()}`;
+        await createBundle.mutateAsync({
+          data: {
+            ...fields, id, code: form.code, carrierId: form.carrier,
+          },
+        });
+        // Create takes no active flag, so a bundle saved as inactive needs a follow-up update.
+        if (!form.is_active) {
+          await updateBundle.mutateAsync({
+            id, data: { active: false },
+          });
+        }
+      }
+      toast.success(editing ? "Bundle updated" : "Bundle created");
       setFormOpen(false);
     }
-    catch {
-      // toast handled in hook
+    catch (e) {
+      toast.error((e as Error).message);
     }
   };
+  const isSaving = createBundle.isPending || updateBundle.isPending;
 
   const exportCsv = () => {
     const rows = [
@@ -743,23 +455,27 @@ export default function PlatformDataBundles() {
       <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <StatCard
           title="Total Active Bundles"
-          value={totalActive}
+          value={catalogQuery.isError ? "—" : totalActive}
           icon={Layers}
+          loading={catalogQuery.isPending}
         />
         <StatCard
           title="Carriers"
-          value={carrierCount}
+          value={catalogQuery.isError ? "—" : carrierCount}
           icon={Tag}
+          loading={catalogQuery.isPending}
         />
         <StatCard
           title="SIMs Across Tenants"
-          value={totalSimsAcrossTenants}
+          value="—"
           icon={Building2}
+          footer={<span className="text-xs text-muted-foreground">No data source yet</span>}
         />
         <StatCard
           title="Monthly Bundle Spend"
-          value={fmtCurrency(totalMonthlySpend)}
+          value="—"
           icon={TrendingUp}
+          footer={<span className="text-xs text-muted-foreground">No data source yet</span>}
         />
       </div>
 
@@ -783,7 +499,9 @@ export default function PlatformDataBundles() {
               variant="gradient"
               size="sm"
               onClick={() => {
-                setForm(emptyForm);
+                setForm({
+                  ...emptyForm, carrier: carrierList[0]?.id ?? "",
+                });
                 setEditing(false);
                 setFormOpen(true);
               }}
@@ -868,7 +586,11 @@ export default function PlatformDataBundles() {
                 columns={catalogColumns}
                 data={filtered}
                 hasActiveFilters={!!search || carrierFilterEnabled || statusFilter !== "all"}
-                emptyState="No bundles"
+                isLoading={catalogQuery.isPending}
+                isError={catalogQuery.isError}
+                errorMessage="Unable to load the bundle catalog."
+                onRetry={() => void catalogQuery.refetch()}
+                emptyState="No bundles in the catalog yet"
                 filteredEmptyState="No bundles match your filters"
               />
             </CardContent>
@@ -877,7 +599,7 @@ export default function PlatformDataBundles() {
 
         {/* TENANT ADOPTION */}
         <TabsContent value="adoption">
-          <TenantAdoptionTable data={DUMMY_TENANT_USAGE} />
+          <TenantAdoptionTable data={[]} />
         </TabsContent>
       </Tabs>
 
@@ -903,19 +625,22 @@ export default function PlatformDataBundles() {
                 <Label>Carrier</Label>
                 <Select
                   value={form.carrier}
+                  disabled={editing}
                   onValueChange={v => setForm(f => ({
                     ...f,
                     carrier: v,
                   }))}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder={carriersQuery.isPending ? "Loading…" : "Select carrier"} />
+                  </SelectTrigger>
                   <SelectContent>
-                    {CARRIER_OPTIONS.map(c => (
+                    {carrierList.map(c => (
                       <SelectItem
-                        key={c}
-                        value={c}
+                        key={c.id}
+                        value={c.id}
                       >
-                        {c}
+                        {c.displayName || c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1026,9 +751,9 @@ export default function PlatformDataBundles() {
             <Button
               variant="gradient"
               onClick={handleSave}
-              disabled={upsert.isPending}
+              disabled={isSaving}
             >
-              {upsert.isPending ? "Saving..." : editing ? "Save Changes" : "Create Bundle"}
+              {isSaving ? "Saving..." : editing ? "Save Changes" : "Create Bundle"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1358,7 +1083,9 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
                         colSpan={6}
                         className="text-center py-6 text-muted-foreground"
                       >
-                        No tenants match the current filters
+                        {data.length === 0
+                          ? "Tenant adoption data isn't available yet"
+                          : "No tenants match the current filters"}
                       </TableCell>
                     </TableRow>
                   )
