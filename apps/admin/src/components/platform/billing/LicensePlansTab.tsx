@@ -1,24 +1,32 @@
-import type { BillingPlanStatusFilter, PlanView } from "@truckmoov/api/billing";
+import type { ColumnDef } from "@tanstack/react-table";
+import type {
+  BillingPlanStatusFilter, PlanView,
+} from "@truckmoov/api/billing";
 import {
   useActivateBillingPlan,
   useBillingPlans,
   useDeactivateBillingPlan,
 } from "@truckmoov/api/billing";
-import { Eye, Package, Pencil, Plus, Power, Search } from "lucide-react";
+import {
+  Eye, Package, Pencil, Plus, Power, Search,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { InstallationPriceCard } from "@/components/platform/billing/InstallationPriceCard";
-import { PlanDetailsDialog } from "@/components/platform/billing/PlanDetailsDialog";
-import { PlanFormDialog } from "@/components/platform/billing/PlanFormDialog";
 import {
-  PlanStatusBadge,
   formatIsoDate,
   formatNgn,
   ListErrorBanner,
+  PlanStatusBadge,
 } from "@/components/platform/billing/billingUi";
+import { InstallationPriceCard } from "@/components/platform/billing/InstallationPriceCard";
+import { PlanDetailsDialog } from "@/components/platform/billing/PlanDetailsDialog";
+import { PlanFormDialog } from "@/components/platform/billing/PlanFormDialog";
 import { useBillingList } from "@/components/platform/billing/useBillingList";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
@@ -28,29 +36,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
-import { TableSkeleton } from "@/components/ui/skeletons";
 import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 
 const PAGE_SIZE = 10;
-const COLUMN_COUNT = 8;
 
 const EXPORT_COLUMNS = [
-  { header: "Product ID", accessor: "code" as const },
-  { header: "Product Name", accessor: "name" as const },
-  { header: "Year-1 Price (NGN)", accessor: "perDeviceYear1Ngn" as const },
-  { header: "Renewal Price (NGN)", accessor: "perDeviceRenewalNgn" as const },
-  { header: "Validity (days)", accessor: "validityDays" as const },
-  { header: "Status", accessor: (r: PlanView) => (r.isActive ? "Active" : "Inactive") },
-  { header: "Last Updated", accessor: (r: PlanView) => formatIsoDate(r.updatedAt) },
+  {
+    header: "Product ID", accessor: "code" as const,
+  },
+  {
+    header: "Product Name", accessor: "name" as const,
+  },
+  {
+    header: "Year-1 Price (NGN)", accessor: "perDeviceYear1Ngn" as const,
+  },
+  {
+    header: "Renewal Price (NGN)", accessor: "perDeviceRenewalNgn" as const,
+  },
+  {
+    header: "Validity (days)", accessor: "validityDays" as const,
+  },
+  {
+    header: "Status", accessor: (r: PlanView) => (r.isActive ? "Active" : "Inactive"),
+  },
+  {
+    header: "Last Updated", accessor: (r: PlanView) => formatIsoDate(r.updatedAt),
+  },
 ];
 
 function PlanActions({
@@ -67,12 +79,22 @@ function PlanActions({
   return (
     <div className="flex justify-end gap-1">
       <TooltipWrapper content="View details">
-        <Button variant="ghost" size="icon" aria-label="View details" onClick={onView}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="View details"
+          onClick={onView}
+        >
           <Eye className="h-4 w-4" />
         </Button>
       </TooltipWrapper>
       <TooltipWrapper content="Edit plan">
-        <Button variant="ghost" size="icon" aria-label="Edit plan" onClick={onEdit}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Edit plan"
+          onClick={onEdit}
+        >
           <Pencil className="h-4 w-4" />
         </Button>
       </TooltipWrapper>
@@ -90,70 +112,74 @@ function PlanActions({
   );
 }
 
-function PlanRow({
-  plan,
-  onView,
-  onEdit,
-  onToggle,
-}: {
-  plan: PlanView;
-  onView: () => void;
-  onEdit: () => void;
-  onToggle: () => void;
-}) {
-  return (
-    <TableRow>
-      <TableCell className="font-mono text-xs text-muted-foreground">{plan.code}</TableCell>
-      <TableCell className="font-medium">{plan.name}</TableCell>
-      <TableCell className="font-medium">{formatNgn(plan.perDeviceYear1Ngn)}</TableCell>
-      <TableCell className="font-medium">{formatNgn(plan.perDeviceRenewalNgn)}</TableCell>
-      <TableCell>{plan.validityDays} days</TableCell>
-      <TableCell>
-        <PlanStatusBadge isActive={plan.isActive} />
-      </TableCell>
-      <TableCell className="text-sm text-muted-foreground">{formatIsoDate(plan.updatedAt)}</TableCell>
-      <TableCell>
-        <PlanActions plan={plan} onView={onView} onEdit={onEdit} onToggle={onToggle} />
-      </TableCell>
-    </TableRow>
-  );
-}
-
-function PlansEmptyOrError({
-  isError,
-  message,
-  onRetry,
-}: {
-  isError: boolean;
-  message?: string;
-  onRetry: () => void;
-}) {
-  return (
-    <TableRow>
-      <TableCell colSpan={COLUMN_COUNT} className="py-12 text-center">
-        {isError ? (
-          <>
-            <p className="text-sm font-medium">Couldn't load license plans</p>
-            <p className="text-xs text-muted-foreground">{message}</p>
-            <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
-              Try again
-            </Button>
-          </>
-        ) : (
-          <>
-            <p className="text-sm font-medium">No license plans found</p>
-            <p className="text-xs text-muted-foreground">Adjust your search or add a plan.</p>
-          </>
-        )}
-      </TableCell>
-    </TableRow>
-  );
+// Server-paged list: sorting one page would mislead, so it's off.
+function planColumns(handlers: {
+  onView: (plan: PlanView) => void;
+  onEdit: (plan: PlanView) => void;
+  onToggle: (plan: PlanView) => void;
+}): ColumnDef<PlanView>[] {
+  return [
+    {
+      accessorKey: "code", header: "Product ID", enableSorting: false, meta: { className: "font-mono text-xs text-muted-foreground" },
+    },
+    {
+      accessorKey: "name", header: "Product Name", enableSorting: false, meta: { className: "font-medium" },
+    },
+    {
+      id: "year1",
+      header: "Year-1 Price",
+      enableSorting: false,
+      meta: { className: "font-medium" },
+      cell: ({ row }) => formatNgn(row.original.perDeviceYear1Ngn),
+    },
+    {
+      id: "renewal",
+      header: "Renewal Price",
+      enableSorting: false,
+      meta: { className: "font-medium" },
+      cell: ({ row }) => formatNgn(row.original.perDeviceRenewalNgn),
+    },
+    {
+      id: "validity", header: "Validity", enableSorting: false, cell: ({ row }) => `${row.original.validityDays} days`,
+    },
+    {
+      id: "status",
+      header: "Status",
+      enableSorting: false,
+      cell: ({ row }) => <PlanStatusBadge isActive={row.original.isActive} />,
+    },
+    {
+      id: "updated",
+      header: "Last Updated",
+      enableSorting: false,
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => formatIsoDate(row.original.updatedAt),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <PlanActions
+          plan={row.original}
+          onView={() => handlers.onView(row.original)}
+          onEdit={() => handlers.onEdit(row.original)}
+          onToggle={() => handlers.onToggle(row.original)}
+        />
+      ),
+    },
+  ];
 }
 
 export function LicensePlansTab() {
-  const { confirm, confirmDialog } = useConfirmAction();
+  const {
+    confirm, confirmDialog,
+  } = useConfirmAction();
   const list = useBillingList<{ status: BillingPlanStatusFilter }>({ status: "all" });
-  const { data, isLoading, isError, error, refetch } = useBillingPlans({
+  const {
+    data, isLoading, isError, error, refetch,
+  } = useBillingPlans({
     params: {
       q: list.debouncedSearch || undefined,
       status: list.filters.status,
@@ -164,13 +190,21 @@ export function LicensePlansTab() {
   const activate = useActivateBillingPlan();
   const deactivate = useDeactivateBillingPlan();
 
-  const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState<PlanView | null>(null);
-  const [viewing, setViewing] = useState<PlanView | null>(null);
+  const [
+    adding,
+    setAdding,
+  ] = useState(false);
+  const [
+    editing,
+    setEditing,
+  ] = useState<PlanView | null>(null);
+  const [
+    viewing,
+    setViewing,
+  ] = useState<PlanView | null>(null);
 
   const plans = data?.data.items ?? [];
   const total = data?.data.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const toggle = (plan: PlanView) => {
     const action = plan.isActive ? deactivate : activate;
@@ -178,7 +212,7 @@ export function LicensePlansTab() {
       { code: plan.code },
       {
         onSuccess: () => toast.success(`${plan.name} ${plan.isActive ? "deactivated" : "activated"}`),
-        onError: (err) => toast.error(err.message),
+        onError: err => toast.error(err.message),
       },
     );
   };
@@ -194,10 +228,20 @@ export function LicensePlansTab() {
       onConfirm: () => toggle(plan),
     });
 
+  // Rebuilt each render: the handlers close over the mutation hooks.
+  const columns = planColumns({
+    onView: setViewing,
+    onEdit: setEditing,
+    onToggle: askToggle,
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button className="rounded-xl" onClick={() => setAdding(true)}>
+        <Button
+          className="rounded-xl"
+          onClick={() => setAdding(true)}
+        >
           <Plus className="mr-1.5 h-4 w-4" />
           Add M2M License Plan
         </Button>
@@ -228,14 +272,17 @@ export function LicensePlansTab() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={list.search}
-                onChange={(e) => list.setSearch(e.target.value)}
+                onChange={e => list.setSearch(e.target.value)}
                 placeholder="Search by product ID or name"
                 className="rounded-xl pl-9"
               />
             </div>
             <Select
               value={list.filters.status}
-              onValueChange={(v) => list.setFilter("status", v as BillingPlanStatusFilter)}
+              onValueChange={v => list.setFilter(
+                "status",
+                v as BillingPlanStatusFilter,
+              )}
             >
               <SelectTrigger className="w-[160px] rounded-xl">
                 <SelectValue />
@@ -249,77 +296,50 @@ export function LicensePlansTab() {
           </div>
 
           {isError && plans.length > 0 && (
-            <ListErrorBanner title="Couldn't load license plans" message={error?.message} onRetry={() => void refetch()} />
+            <ListErrorBanner
+              title="Couldn't load license plans"
+              message={error?.message}
+              onRetry={() => void refetch()}
+            />
           )}
 
           <div className="overflow-x-auto rounded-xl border border-border/60">
-            <Table className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product ID</TableHead>
-                  <TableHead>Product Name</TableHead>
-                  <TableHead>Year-1 Price</TableHead>
-                  <TableHead>Renewal Price</TableHead>
-                  <TableHead>Validity</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && <TableSkeleton rows={PAGE_SIZE} columns={COLUMN_COUNT} />}
-                {plans.map((plan) => (
-                  <PlanRow
-                    key={plan.code}
-                    plan={plan}
-                    onView={() => setViewing(plan)}
-                    onEdit={() => setEditing(plan)}
-                    onToggle={() => askToggle(plan)}
-                  />
-                ))}
-                {!isLoading && plans.length === 0 && (
-                  <PlansEmptyOrError isError={isError} message={error?.message} onRetry={() => void refetch()} />
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>
-              Showing {plans.length} of {total} plans
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={list.page === 1}
-                onClick={() => list.setPage((p) => p - 1)}
-              >
-                Previous
-              </Button>
-              <span>
-                Page {list.page} of {pages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={list.page >= pages}
-                onClick={() => list.setPage((p) => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
+            <DataTable
+              className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
+              columns={columns}
+              data={plans}
+              isLoading={isLoading}
+              isError={isError && plans.length === 0}
+              errorMessage={`Couldn't load license plans${error?.message ? `: ${error.message}` : ""}`}
+              onRetry={() => void refetch()}
+              emptyState={(
+                <>
+                  <p className="text-sm font-medium text-foreground">No license plans found</p>
+                  <p className="text-xs">Adjust your search or add a plan.</p>
+                </>
+              )}
+              pagination={{
+                page: list.page, pageSize: PAGE_SIZE, total, onPageChange: list.setPage,
+              }}
+            />
           </div>
         </CardContent>
       </Card>
 
       <InstallationPriceCard />
 
-      <PlanFormDialog open={adding} onOpenChange={setAdding} />
-      <PlanFormDialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)} plan={editing} />
+      <PlanFormDialog
+        open={adding}
+        onOpenChange={setAdding}
+      />
+      <PlanFormDialog
+        open={!!editing}
+        onOpenChange={o => !o && setEditing(null)}
+        plan={editing}
+      />
       <PlanDetailsDialog
         open={!!viewing}
-        onOpenChange={(o) => !o && setViewing(null)}
+        onOpenChange={o => !o && setViewing(null)}
         plan={viewing}
         onEdit={setEditing}
       />

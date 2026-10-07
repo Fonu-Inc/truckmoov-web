@@ -1,4 +1,7 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { SystemSimImportResult } from "@truckmoov/api/auth";
+import type { DragEvent } from "react";
+import type { ParsedSimRow } from "./simCsv";
 import { useImportSystemSims } from "@truckmoov/api/auth";
 import {
   AlertTriangle,
@@ -8,10 +11,10 @@ import {
   Wifi,
   XCircle,
 } from "lucide-react";
-import type { DragEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -19,15 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
-import type { ParsedSimRow } from "./simCsv";
 import {
   downloadSimTemplate,
   MAX_IMPORT_ROWS,
@@ -144,37 +138,52 @@ function CountTile({
   );
 }
 
+const PREVIEW_COLUMNS: ColumnDef<ParsedSimRow>[] = [
+  {
+    id: "status",
+    header: "Status",
+    enableSorting: false,
+    meta: { className: "w-8" },
+    cell: ({ row }) => (
+      <span title={row.original.errors.join(", ")}>
+        {row.original.isValid
+          ? <CheckCircle className="h-4 w-4 text-success" />
+          : <XCircle className="h-4 w-4 text-destructive" />}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "iccid",
+    header: "ICCID",
+    enableSorting: false,
+    meta: { className: "font-mono text-xs" },
+  },
+  {
+    accessorKey: "msisdn",
+    header: "Phone",
+    enableSorting: false,
+    meta: { className: "text-sm" },
+  },
+  {
+    accessorKey: "carrier",
+    header: "Carrier",
+    enableSorting: false,
+    meta: { className: "text-sm" },
+  },
+];
+
 function PreviewTable({ rows }: { rows: ParsedSimRow[] }) {
   return (
     <div className="rounded-lg border">
       <div className="max-h-48 overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8">Status</TableHead>
-              <TableHead>ICCID</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Carrier</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.slice(0, PREVIEW_ROWS).map((row, index) => (
-              <TableRow
-                key={`${row.iccid}-${index}`}
-                title={row.errors.join(", ")}
-              >
-                <TableCell>
-                  {row.isValid
-                    ? <CheckCircle className="h-4 w-4 text-success" />
-                    : <XCircle className="h-4 w-4 text-destructive" />}
-                </TableCell>
-                <TableCell className="font-mono text-xs">{row.iccid}</TableCell>
-                <TableCell className="text-sm">{row.msisdn}</TableCell>
-                <TableCell className="text-sm">{row.carrier}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <DataTable
+          columns={PREVIEW_COLUMNS}
+          data={rows.slice(
+            0,
+            PREVIEW_ROWS,
+          )}
+          className="text-xs"
+        />
       </div>
       {rows.length > PREVIEW_ROWS && (
         <div className="p-2 text-center text-xs text-muted-foreground border-t">
@@ -224,6 +233,30 @@ function FileCard({
   );
 }
 
+type ImportProblem = SystemSimImportResult["results"][number];
+
+const PROBLEM_COLUMNS: ColumnDef<ImportProblem>[] = [
+  {
+    accessorKey: "row",
+    header: "Row",
+    enableSorting: false,
+    meta: { className: "w-12 text-sm" },
+  },
+  {
+    accessorKey: "iccid",
+    header: "ICCID",
+    enableSorting: false,
+    meta: { className: "font-mono text-xs" },
+  },
+  {
+    id: "result",
+    header: "Result",
+    enableSorting: false,
+    meta: { className: "text-sm" },
+    cell: ({ row }) => `${row.original.outcome === "skipped" ? "Skipped" : "Failed"}${row.original.reason ? `: ${row.original.reason}` : ""}`,
+  },
+];
+
 function ImportOutcome({ result }: { result: SystemSimImportResult }) {
   const problems = result.results.filter(item => item.outcome !== "imported");
   return (
@@ -250,27 +283,11 @@ function ImportOutcome({ result }: { result: SystemSimImportResult }) {
       </div>
       {problems.length > 0 && (
         <div className="max-h-48 overflow-auto rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">Row</TableHead>
-                <TableHead>ICCID</TableHead>
-                <TableHead>Result</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {problems.map(item => (
-                <TableRow key={`${item.row}-${item.iccid}`}>
-                  <TableCell className="text-sm">{item.row}</TableCell>
-                  <TableCell className="font-mono text-xs">{item.iccid}</TableCell>
-                  <TableCell className="text-sm">
-                    {item.outcome === "skipped" ? "Skipped" : "Failed"}
-                    {item.reason ? `: ${item.reason}` : ""}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={PROBLEM_COLUMNS}
+            data={problems}
+            className="text-xs"
+          />
         </div>
       )}
     </div>

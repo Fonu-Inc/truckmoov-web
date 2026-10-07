@@ -1,8 +1,14 @@
-import type { PaymentMethod, PaymentRow, PaymentStatus } from "@truckmoov/api/billing";
+import type { ColumnDef } from "@tanstack/react-table";
+import type {
+  PaymentMethod, PaymentRow, PaymentStatus,
+} from "@truckmoov/api/billing";
 import { useBillingPayments } from "@truckmoov/api/billing";
-import { CreditCard, Eye, Search } from "lucide-react";
-import { useState } from "react";
-import { PaymentDetailsDialog } from "@/components/platform/billing/PaymentDetailsDialog";
+import {
+  CreditCard, Eye, Search,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
 import {
   formatIsoDateTime,
   formatNgn,
@@ -12,9 +18,13 @@ import {
   PAYMENT_STATUS_LABEL,
   PaymentStatusBadge,
 } from "@/components/platform/billing/billingUi";
+import { PaymentDetailsDialog } from "@/components/platform/billing/PaymentDetailsDialog";
 import { useBillingList } from "@/components/platform/billing/useBillingList";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
@@ -24,96 +34,128 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
-import { TableSkeleton } from "@/components/ui/skeletons";
 
 const PAGE_SIZE = 10;
-const COLUMNS = 11;
 
-type Filters = { status: "all" | PaymentStatus; method: "all" | PaymentMethod };
+type Filters = {
+  status: "all" | PaymentStatus; method: "all" | PaymentMethod;
+};
 
 const EXPORT_COLUMNS = [
-  { header: "Reference", accessor: "reference" as const },
-  { header: "Customer", accessor: "customerName" as const },
-  { header: "Product", accessor: "productName" as const },
-  { header: "Devices", accessor: "deviceCount" as const },
-  { header: "Amount (NGN)", accessor: "amountNgn" as const },
-  { header: "Method", accessor: (p: PaymentRow) => methodLabel(p.method) },
-  { header: "Status", accessor: (p: PaymentRow) => PAYMENT_STATUS_LABEL[p.status] },
-  { header: "Paid at", accessor: (p: PaymentRow) => formatIsoDateTime(p.paidAt) },
-  { header: "Quotation", accessor: (p: PaymentRow) => p.quotationNumber ?? "" },
-  { header: "Invoice", accessor: (p: PaymentRow) => p.invoiceNumber ?? "" },
+  {
+    header: "Reference", accessor: "reference" as const,
+  },
+  {
+    header: "Customer", accessor: "customerName" as const,
+  },
+  {
+    header: "Product", accessor: "productName" as const,
+  },
+  {
+    header: "Devices", accessor: "deviceCount" as const,
+  },
+  {
+    header: "Amount (NGN)", accessor: "amountNgn" as const,
+  },
+  {
+    header: "Method", accessor: (p: PaymentRow) => methodLabel(p.method),
+  },
+  {
+    header: "Status", accessor: (p: PaymentRow) => PAYMENT_STATUS_LABEL[p.status],
+  },
+  {
+    header: "Paid at", accessor: (p: PaymentRow) => formatIsoDateTime(p.paidAt),
+  },
+  {
+    header: "Quotation", accessor: (p: PaymentRow) => p.quotationNumber ?? "",
+  },
+  {
+    header: "Invoice", accessor: (p: PaymentRow) => p.invoiceNumber ?? "",
+  },
 ];
 
-function PaymentRowView({ p, onView }: { p: PaymentRow; onView: () => void }) {
-  return (
-    <TableRow>
-      <TableCell className="font-medium">{p.reference}</TableCell>
-      <TableCell>{p.customerName}</TableCell>
-      <TableCell>{p.productName}</TableCell>
-      <TableCell className="tabular-nums">{p.deviceCount}</TableCell>
-      <TableCell className="font-medium">{formatNgn(p.amountNgn)}</TableCell>
-      <TableCell>{methodLabel(p.method)}</TableCell>
-      <TableCell><PaymentStatusBadge status={p.status} /></TableCell>
-      <TableCell className="text-sm text-muted-foreground">{formatIsoDateTime(p.paidAt)}</TableCell>
-      <TableCell>{p.quotationNumber ?? "-"}</TableCell>
-      <TableCell>{p.invoiceNumber ?? "-"}</TableCell>
-      <TableCell className="text-right">
-        <Button variant="ghost" size="sm" onClick={onView}>
+// Server-paged list: sorting one page would mislead, so it's off.
+function paymentColumns(onView: (id: string) => void): ColumnDef<PaymentRow>[] {
+  return [
+    {
+      accessorKey: "reference", header: "Payment Reference", enableSorting: false, meta: { className: "font-medium" },
+    },
+    {
+      accessorKey: "customerName", header: "Customer", enableSorting: false,
+    },
+    {
+      accessorKey: "productName", header: "Product", enableSorting: false,
+    },
+    {
+      accessorKey: "deviceCount", header: "Devices", enableSorting: false, meta: { className: "tabular-nums" },
+    },
+    {
+      accessorKey: "amountNgn",
+      header: "Amount Paid",
+      enableSorting: false,
+      meta: { className: "font-medium" },
+      cell: ({ row }) => formatNgn(row.original.amountNgn),
+    },
+    {
+      id: "method", header: "Method", enableSorting: false, cell: ({ row }) => methodLabel(row.original.method),
+    },
+    {
+      id: "status",
+      header: "Status",
+      enableSorting: false,
+      cell: ({ row }) => <PaymentStatusBadge status={row.original.status} />,
+    },
+    {
+      id: "paidAt",
+      header: "Paid At",
+      enableSorting: false,
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => formatIsoDateTime(row.original.paidAt),
+    },
+    {
+      id: "quotation", header: "Quotation", enableSorting: false, cell: ({ row }) => row.original.quotationNumber ?? "-",
+    },
+    {
+      id: "invoice", header: "Invoice", enableSorting: false, cell: ({ row }) => row.original.invoiceNumber ?? "-",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onView(row.original.id)}
+        >
           <Eye className="mr-1.5 h-3.5 w-3.5" />
           View Detail
         </Button>
-      </TableCell>
-    </TableRow>
-  );
-}
-
-function EmptyOrError({
-  isError,
-  message,
-  onRetry,
-}: {
-  isError: boolean;
-  message?: string;
-  onRetry: () => void;
-}) {
-  return (
-    <TableRow>
-      <TableCell colSpan={COLUMNS} className="py-12 text-center">
-        {isError
-          ? (
-              <>
-                <p className="text-sm font-medium">Couldn't load payments</p>
-                <p className="text-xs text-muted-foreground">{message}</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
-                  Try again
-                </Button>
-              </>
-            )
-          : (
-              <>
-                <p className="text-sm font-medium">No payments found</p>
-                <p className="text-xs text-muted-foreground">Adjust your search or filters.</p>
-              </>
-            )}
-      </TableCell>
-    </TableRow>
-  );
+      ),
+    },
+  ];
 }
 
 export function PaymentsTab() {
-  const list = useBillingList<Filters>({ status: "all", method: "all" });
-  const { filters, page, setPage } = list;
-  const [viewingId, setViewingId] = useState<string | null>(null);
+  const list = useBillingList<Filters>({
+    status: "all", method: "all",
+  });
+  const {
+    filters, page, setPage,
+  } = list;
+  const [
+    viewingId,
+    setViewingId,
+  ] = useState<string | null>(null);
+  const columns = useMemo(
+    () => paymentColumns(setViewingId),
+    [],
+  );
 
-  const { data, isLoading, isError, error, refetch } = useBillingPayments({
+  const {
+    data, isLoading, isError, error, refetch,
+  } = useBillingPayments({
     params: {
       q: list.debouncedSearch || undefined,
       status: filters.status === "all" ? undefined : filters.status,
@@ -125,7 +167,6 @@ export function PaymentsTab() {
 
   const rows = data?.data.items ?? [];
   const total = data?.data.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <>
@@ -160,82 +201,86 @@ export function PaymentsTab() {
             </div>
             <Select
               value={filters.status}
-              onValueChange={v => list.setFilter("status", v as Filters["status"])}
+              onValueChange={v => list.setFilter(
+                "status",
+                v as Filters["status"],
+              )}
             >
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                {Object.entries(PAYMENT_STATUS_LABEL).map(([v, l]) => (
-                  <SelectItem key={v} value={v}>{l}</SelectItem>
+                {Object.entries(PAYMENT_STATUS_LABEL).map(([
+                  v,
+                  l,
+                ]) => (
+                  <SelectItem
+                    key={v}
+                    value={v}
+                  >
+                    {l}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select
               value={filters.method}
-              onValueChange={v => list.setFilter("method", v as Filters["method"])}
+              onValueChange={v => list.setFilter(
+                "method",
+                v as Filters["method"],
+              )}
             >
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All methods</SelectItem>
-                {Object.entries(METHOD_LABEL).map(([v, l]) => (
-                  <SelectItem key={v} value={v}>{l}</SelectItem>
+                {Object.entries(METHOD_LABEL).map(([
+                  v,
+                  l,
+                ]) => (
+                  <SelectItem
+                    key={v}
+                    value={v}
+                  >
+                    {l}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           {isError && rows.length > 0 && (
-            <ListErrorBanner title="Couldn't load payments" message={error?.message} onRetry={() => void refetch()} />
+            <ListErrorBanner
+              title="Couldn't load payments"
+              message={error?.message}
+              onRetry={() => void refetch()}
+            />
           )}
 
           <div className="overflow-x-auto rounded-2xl border">
-            <Table className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Payment Reference</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Devices</TableHead>
-                  <TableHead>Amount Paid</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Paid At</TableHead>
-                  <TableHead>Quotation</TableHead>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && <TableSkeleton rows={PAGE_SIZE} columns={COLUMNS} />}
-                {rows.map(p => (
-                  <PaymentRowView key={p.id} p={p} onView={() => setViewingId(p.id)} />
-                ))}
-                {rows.length === 0 && !isLoading && (
-                  <EmptyOrError
-                    isError={isError}
-                    message={error?.message}
-                    onRetry={() => void refetch()}
-                  />
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>{`Showing ${rows.length} of ${total} payments`}</span>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                Previous
-              </Button>
-              <span>{`Page ${page} of ${pages}`}</span>
-              <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => setPage(p => p + 1)}>
-                Next
-              </Button>
-            </div>
+            <DataTable
+              className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
+              columns={columns}
+              data={rows}
+              isLoading={isLoading}
+              isError={isError && rows.length === 0}
+              errorMessage={`Couldn't load payments${error?.message ? `: ${error.message}` : ""}`}
+              onRetry={() => void refetch()}
+              emptyState={(
+                <>
+                  <p className="text-sm font-medium text-foreground">No payments found</p>
+                  <p className="text-xs">Adjust your search or filters.</p>
+                </>
+              )}
+              pagination={{
+                page, pageSize: PAGE_SIZE, total, onPageChange: setPage,
+              }}
+            />
           </div>
         </CardContent>
       </Card>
-      <PaymentDetailsDialog paymentId={viewingId} onClose={() => setViewingId(null)} />
+      <PaymentDetailsDialog
+        paymentId={viewingId}
+        onClose={() => setViewingId(null)}
+      />
     </>
   );
 }

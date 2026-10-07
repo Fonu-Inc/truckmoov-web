@@ -1,19 +1,17 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { SystemTenant } from "@truckmoov/api/auth";
-import { Building2 } from "lucide-react";
-import { EmptyState } from "@/components/dashboard/EmptyState";
-import { ListErrorBanner } from "@/components/platform/billing/billingUi";
-import { Button } from "@/components/shadcn/button";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
-import { TableSkeleton } from "@/components/ui/skeletons";
-import { CustomerTableRow } from "./CustomerRows";
-import { PAGE_SIZE } from "./paymentsAccessModel";
 import type { CustomerRow } from "./paymentsAccessModel";
+import {
+  Building2, ExternalLink,
+} from "lucide-react";
+import { useMemo } from "react";
+import { Link } from "react-router";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { DataTable } from "@/components/shadcn/data-table";
+import {
+  AccessCell, ActionCell, GraceCell, PaymentCell,
+} from "./CustomerRows";
+import { PAGE_SIZE } from "./paymentsAccessModel";
 
 type Props = {
   rows: CustomerRow[];
@@ -28,73 +26,123 @@ type Props = {
   onRestore: (t: SystemTenant) => void;
 };
 
-function Pager({ page, total, onPage }: { page: number; total: number; onPage: (p: number) => void }) {
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  return (
-    <div className="flex items-center justify-between text-sm text-muted-foreground">
-      <span>{`${total} ${total === 1 ? "customer" : "customers"}`}</span>
-      <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)}>Previous</Button>
-        <span>{`Page ${page} of ${pages}`}</span>
-        <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => onPage(page + 1)}>Next</Button>
-      </div>
-    </div>
-  );
+type ColumnOptions = {
+  walletsReady: boolean;
+  canAct: boolean;
+  onSuspend: (t: SystemTenant) => void;
+  onRestore: (t: SystemTenant) => void;
+};
+
+// Client-paged list: sorting a page slice would mislead, so every column opts out.
+function customerColumns({
+  walletsReady, canAct, onSuspend, onRestore,
+}: ColumnOptions): ColumnDef<CustomerRow>[] {
+  const columns: ColumnDef<CustomerRow>[] = [
+    {
+      id: "company",
+      header: "Company",
+      enableSorting: false,
+      meta: { className: "font-medium" },
+      cell: ({ row: { original: { tenant } } }) => (
+        <Link
+          to={`/tenants/${tenant.id}`}
+          className="inline-flex items-center gap-1 hover:underline"
+        >
+          {tenant.name}
+          <ExternalLink className="h-3 w-3 text-muted-foreground" />
+        </Link>
+      ),
+    },
+    {
+      id: "payment",
+      header: "Payment",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <PaymentCell
+          row={row.original}
+          walletsReady={walletsReady}
+        />
+      ),
+    },
+    {
+      id: "grace",
+      header: "Grace",
+      enableSorting: false,
+      cell: ({ row }) => <GraceCell row={row.original} />,
+    },
+    {
+      id: "access",
+      header: "Access",
+      enableSorting: false,
+      cell: ({ row }) => <AccessCell row={row.original} />,
+    },
+    {
+      id: "assets",
+      header: "What they have",
+      enableSorting: false,
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row: { original: { tenant } } }) =>
+        `${tenant.vehicleCount} vehicles, ${tenant.deviceCount} devices, ${tenant.simCount} SIMs`,
+    },
+  ];
+  if (canAct) {
+    columns.push({
+      id: "action",
+      header: "Action",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <ActionCell
+          tenant={row.original.tenant}
+          onSuspend={onSuspend}
+          onRestore={onRestore}
+        />
+      ),
+    });
+  }
+  return columns;
 }
 
 export function CustomerTable(props: Props) {
-  const { rows, page, isLoading, isError, onRetry, canAct } = props;
-  const columns = canAct ? 6 : 5;
+  const {
+    rows, page, isLoading, isError, onRetry, walletsReady, canAct, onSuspend, onRestore,
+  } = props;
+  const columns = useMemo(
+    () => customerColumns({
+      walletsReady, canAct, onSuspend, onRestore,
+    }),
+    [
+      walletsReady,
+      canAct,
+      onSuspend,
+      onRestore,
+    ],
+  );
 
-  if (isError) {
-    return (
-      <ListErrorBanner
-        title="Could not load customers"
-        message="Check your connection and try again."
-        onRetry={onRetry}
-      />
-    );
-  }
-
-  const visible = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const visible = rows.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
   return (
-    <div className="space-y-3">
-      <div className="rounded-xl border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Company</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead>Grace</TableHead>
-              <TableHead>Access</TableHead>
-              <TableHead>What they have</TableHead>
-              {canAct && <TableHead className="text-right">Action</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading
-              ? <TableSkeleton columns={columns} />
-              : visible.map(row => (
-                  <CustomerTableRow
-                    key={row.tenant.id}
-                    row={row}
-                    walletsReady={props.walletsReady}
-                    canAct={canAct}
-                    onSuspend={props.onSuspend}
-                    onRestore={props.onRestore}
-                  />
-                ))}
-          </TableBody>
-        </Table>
-        {!isLoading && rows.length === 0 && (
+    <div className="rounded-xl border">
+      <DataTable
+        columns={columns}
+        data={visible}
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage="Could not load customers. Check your connection and try again."
+        onRetry={onRetry}
+        emptyState={(
           <EmptyState
             icon={Building2}
             title="No customers found"
             description="Try a different search or filter."
           />
         )}
-      </div>
-      {!isLoading && rows.length > 0 && <Pager page={page} total={rows.length} onPage={props.onPage} />}
+        pagination={{
+          page, pageSize: PAGE_SIZE, total: rows.length, onPageChange: props.onPage,
+        }}
+      />
     </div>
   );
 }

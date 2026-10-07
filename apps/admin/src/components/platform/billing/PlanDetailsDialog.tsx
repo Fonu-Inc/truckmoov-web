@@ -1,14 +1,20 @@
-import type { PlanView, PriceChangeView, PriceField } from "@truckmoov/api/billing";
+import type { ColumnDef } from "@tanstack/react-table";
+import type {
+  PlanView, PriceChangeView, PriceField,
+} from "@truckmoov/api/billing";
 import { useBillingPlan } from "@truckmoov/api/billing";
-import { CalendarClock, Coins, Cpu, Hash, Pencil, RefreshCw } from "lucide-react";
 import {
-  PlanStatusBadge,
+  CalendarClock, Coins, Cpu, Hash, Pencil, RefreshCw,
+} from "lucide-react";
+import {
   formatDateOnly,
   formatIsoDate,
   formatIsoDateTime,
   formatNgn,
+  PlanStatusBadge,
 } from "@/components/platform/billing/billingUi";
 import { Button } from "@/components/shadcn/button";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -17,15 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 
 const PRICE_HISTORY_LIMIT = 10;
 
@@ -57,7 +54,8 @@ function Tile({
 }
 
 function ComponentsList({ components }: { components: string[] }) {
-  if (components.length === 0) return null;
+  if (components.length === 0)
+    return null;
   return (
     <div className="rounded-xl border border-border/60">
       <div className="border-b border-border/60 px-4 py-2.5">
@@ -67,8 +65,11 @@ function ComponentsList({ components }: { components: string[] }) {
         </p>
       </div>
       <ul className="divide-y divide-border/60">
-        {components.map((label) => (
-          <li key={label} className="flex items-center gap-3 px-4 py-3">
+        {components.map(label => (
+          <li
+            key={label}
+            className="flex items-center gap-3 px-4 py-3"
+          >
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
               <Cpu className="h-4 w-4 text-primary" />
             </span>
@@ -81,47 +82,57 @@ function ComponentsList({ components }: { components: string[] }) {
   );
 }
 
-function PriceHistory({ rows, loading }: { rows: PriceChangeView[]; loading: boolean }) {
+const PRICE_HISTORY_COLUMNS: ColumnDef<PriceChangeView>[] = [
+  {
+    id: "field", header: "Price", accessorFn: row => FIELD_LABEL[row.field],
+  },
+  {
+    accessorKey: "oldPriceNgn", header: "Old", cell: ({ row }) => formatNgn(row.original.oldPriceNgn),
+  },
+  {
+    accessorKey: "newPriceNgn",
+    header: "New",
+    meta: { className: "font-medium" },
+    cell: ({ row }) => formatNgn(row.original.newPriceNgn),
+  },
+  {
+    accessorKey: "effectiveDate", header: "Effective", cell: ({ row }) => formatDateOnly(row.original.effectiveDate),
+  },
+  {
+    accessorKey: "changedByName", header: "Changed by",
+  },
+  {
+    accessorKey: "reason",
+    header: "Reason",
+    enableSorting: false,
+    meta: { className: "max-w-[220px] whitespace-normal text-muted-foreground" },
+  },
+];
+
+function PriceHistory({
+  rows, loading,
+}: {
+  rows: PriceChangeView[]; loading: boolean;
+}) {
   return (
     <div className="rounded-xl border border-border/60">
       <div className="border-b border-border/60 px-4 py-2.5">
         <p className="text-sm font-medium">Price history</p>
         {rows.length >= PRICE_HISTORY_LIMIT && (
-          <p className="text-xs text-muted-foreground">Latest {PRICE_HISTORY_LIMIT} changes</p>
+          <p className="text-xs text-muted-foreground">
+            Latest
+            {PRICE_HISTORY_LIMIT}
+            {" "}
+            changes
+          </p>
         )}
       </div>
-      {loading && <Skeleton className="m-4 h-16" />}
-      {!loading && rows.length === 0 && (
-        <p className="px-4 py-6 text-center text-sm text-muted-foreground">No price changes recorded.</p>
-      )}
-      {!loading && rows.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Price</TableHead>
-              <TableHead>Old</TableHead>
-              <TableHead>New</TableHead>
-              <TableHead>Effective</TableHead>
-              <TableHead>Changed by</TableHead>
-              <TableHead>Reason</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{FIELD_LABEL[row.field]}</TableCell>
-                <TableCell>{formatNgn(row.oldPriceNgn)}</TableCell>
-                <TableCell className="font-medium">{formatNgn(row.newPriceNgn)}</TableCell>
-                <TableCell>{formatDateOnly(row.effectiveDate)}</TableCell>
-                <TableCell>{row.changedByName}</TableCell>
-                <TableCell className="max-w-[220px] whitespace-normal text-muted-foreground">
-                  {row.reason}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <DataTable
+        columns={PRICE_HISTORY_COLUMNS}
+        data={rows}
+        isLoading={loading}
+        emptyState="No price changes recorded."
+      />
     </div>
   );
 }
@@ -138,13 +149,17 @@ export function PlanDetailsDialog({
   onEdit: (plan: PlanView) => void;
 }) {
   const detail = useBillingPlan(plan?.code ?? "");
-  if (!plan) return null;
+  if (!plan)
+    return null;
 
   const current = detail.data?.data.plan ?? plan;
   const history = detail.data?.data.priceHistory ?? [];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto rounded-2xl">
         <DialogHeader>
           <div className="flex flex-wrap items-start justify-between gap-3 pr-6">
@@ -158,10 +173,26 @@ export function PlanDetailsDialog({
 
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Tile icon={Coins} label="Year-1 price" value={formatNgn(current.perDeviceYear1Ngn)} />
-            <Tile icon={RefreshCw} label="Renewal price" value={formatNgn(current.perDeviceRenewalNgn)} />
-            <Tile icon={CalendarClock} label="Validity" value={`${current.validityDays} days`} />
-            <Tile icon={Hash} label="Product ID" value={<span className="font-mono text-sm">{current.code}</span>} />
+            <Tile
+              icon={Coins}
+              label="Year-1 price"
+              value={formatNgn(current.perDeviceYear1Ngn)}
+            />
+            <Tile
+              icon={RefreshCw}
+              label="Renewal price"
+              value={formatNgn(current.perDeviceRenewalNgn)}
+            />
+            <Tile
+              icon={CalendarClock}
+              label="Validity"
+              value={`${current.validityDays} days`}
+            />
+            <Tile
+              icon={Hash}
+              label="Product ID"
+              value={<span className="font-mono text-sm">{current.code}</span>}
+            />
           </div>
 
           <ComponentsList components={current.components} />
@@ -184,12 +215,20 @@ export function PlanDetailsDialog({
           {detail.isError ? (
             <div className="rounded-xl border border-border/60 p-4 text-center text-sm">
               <p className="text-muted-foreground">Couldn't load price history.</p>
-              <Button variant="outline" size="sm" className="mt-2" onClick={() => void detail.refetch()}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => void detail.refetch()}
+              >
                 Try again
               </Button>
             </div>
           ) : (
-            <PriceHistory rows={history} loading={detail.isLoading} />
+            <PriceHistory
+              rows={history}
+              loading={detail.isLoading}
+            />
           )}
         </div>
 

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemOnboardingApplicationDetail,
   SystemOnboardingDocument,
@@ -41,6 +42,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { OnboardingReasonDialog } from "@/features/tenants/components/ui/OnboardingReasonDialog";
 import { OnboardingStageStepper } from "@/features/tenants/components/ui/OnboardingStageStepper";
@@ -242,9 +244,18 @@ export default function OnboardingApplicationPage() {
         <PaymentReviewNotice
           key={review.paymentId}
           review={review}
-          onResolved={() => actions.openPaymentResolved(app, review.paymentId)}
-          onRefund={() => actions.openPaymentRefund(app, review.paymentId)}
-          onIssueRefund={() => actions.openIssueRefund(app, review.paymentId)}
+          onResolved={() => actions.openPaymentResolved(
+            app,
+            review.paymentId,
+          )}
+          onRefund={() => actions.openPaymentRefund(
+            app,
+            review.paymentId,
+          )}
+          onIssueRefund={() => actions.openIssueRefund(
+            app,
+            review.paymentId,
+          )}
         />
       ))}
 
@@ -468,6 +479,63 @@ function Verified({
 }
 
 /** Why a person is looking: which registry check could not settle the application, per provider. */
+type VerificationField = SystemOnboardingApplicationDetail["verifications"][number]["fields"][number];
+
+const VERIFICATION_FIELD_COLUMNS: ColumnDef<VerificationField>[] = [
+  {
+    accessorKey: "name",
+    header: "Field",
+    enableSorting: false,
+  },
+  {
+    id: "expected",
+    header: "Submitted",
+    enableSorting: false,
+    meta: { className: "font-mono" },
+    cell: ({ row }) => row.original.expected ?? "-",
+  },
+  {
+    id: "actual",
+    header: "Registry",
+    enableSorting: false,
+    meta: { className: "font-mono" },
+    cell: ({ row }) => row.original.actual ?? "-",
+  },
+  {
+    id: "matched",
+    header: "Result",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <span className={row.original.matched ? "text-success" : "text-destructive"}>
+        {row.original.matched ? "Matched" : "Differs"}
+      </span>
+    ),
+  },
+];
+
+type ApplicationVehicle = SystemOnboardingApplicationDetail["vehicles"][number];
+
+const VEHICLE_COLUMNS: ColumnDef<ApplicationVehicle>[] = [
+  {
+    accessorKey: "registrationNumber",
+    header: "Registration",
+    meta: { className: "font-medium" },
+  },
+  {
+    accessorKey: "vehicleType",
+    header: "Type",
+    meta: { className: "capitalize" },
+  },
+  {
+    accessorKey: "make",
+    header: "Make",
+  },
+  {
+    accessorKey: "model",
+    header: "Model",
+  },
+];
+
 function VerificationsCard({ verifications }: { verifications: SystemOnboardingApplicationDetail["verifications"] }) {
   return (
     <Section
@@ -500,31 +568,11 @@ function VerificationsCard({ verifications }: { verifications: SystemOnboardingA
                   </p>
                   {v.fields.length > 0 && (
                     <div className="mt-3 overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead className="text-left text-muted-foreground">
-                          <tr>
-                            <th className="py-1 pr-3 font-medium">Field</th>
-                            <th className="py-1 pr-3 font-medium">Submitted</th>
-                            <th className="py-1 pr-3 font-medium">Registry</th>
-                            <th className="py-1 font-medium">Result</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {v.fields.map(f => (
-                            <tr
-                              key={f.name}
-                              className="border-t border-border/50"
-                            >
-                              <td className="py-1 pr-3">{f.name}</td>
-                              <td className="py-1 pr-3 font-mono">{f.expected ?? "-"}</td>
-                              <td className="py-1 pr-3 font-mono">{f.actual ?? "-"}</td>
-                              <td className={f.matched ? "py-1 text-success" : "py-1 text-destructive"}>
-                                {f.matched ? "Matched" : "Differs"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <DataTable
+                        columns={VERIFICATION_FIELD_COLUMNS}
+                        data={v.fields}
+                        className="text-xs"
+                      />
                     </div>
                   )}
                 </div>
@@ -702,35 +750,13 @@ function FleetCard({ app }: { app: SystemOnboardingApplicationDetail }) {
       title="Fleet"
       description={`${app.vehicleCount} vehicle(s) · ${app.deviceCount} device(s) requested`}
     >
-      {app.vehicles.length === 0
-        ? <p className="text-sm text-muted-foreground">No vehicles on this application.</p>
-        : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs text-muted-foreground">
-                  <tr>
-                    <th className="py-2 pr-3 font-medium">Registration</th>
-                    <th className="py-2 pr-3 font-medium">Type</th>
-                    <th className="py-2 pr-3 font-medium">Make</th>
-                    <th className="py-2 font-medium">Model</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {app.vehicles.map(v => (
-                    <tr
-                      key={v.id}
-                      className="border-t border-border/50"
-                    >
-                      <td className="py-2 pr-3 font-medium">{v.registrationNumber}</td>
-                      <td className="py-2 pr-3 capitalize">{v.vehicleType}</td>
-                      <td className="py-2 pr-3">{v.make}</td>
-                      <td className="py-2">{v.model}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <div className="overflow-x-auto">
+        <DataTable
+          columns={VEHICLE_COLUMNS}
+          data={app.vehicles}
+          emptyState="No vehicles on this application."
+        />
+      </div>
       {app.deviceRequests.length > 0 && (
         <div className="mt-4 space-y-2">
           <p className="text-xs font-medium text-muted-foreground">Device requests</p>

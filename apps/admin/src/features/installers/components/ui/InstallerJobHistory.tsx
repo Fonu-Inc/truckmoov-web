@@ -1,16 +1,9 @@
+import type { ColumnDef } from "@tanstack/react-table";
+import type { SystemInstallationJob } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import { getSystemInstallationJobsQueryOptions } from "@truckmoov/api/auth";
 import { useState } from "react";
-import { Button } from "@/components/shadcn/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
-import { TableSkeleton } from "@/components/ui/skeletons";
+import { DataTable } from "@/components/shadcn/data-table";
 import { fromApiState } from "@/features/installers/installerOptions";
 import { JobStatusBadge } from "./InstallerStatusBadge";
 
@@ -29,6 +22,53 @@ function fmt(iso?: string | null) {
     : "—";
 }
 
+// Server-paged list: sorting one page would mislead, so every column opts out.
+const JOB_COLUMNS: ColumnDef<SystemInstallationJob>[] = [
+  {
+    accessorKey: "jobNumber", header: "Job", enableSorting: false, meta: { className: "font-medium" },
+  },
+  {
+    id: "customer", header: "Customer", enableSorting: false, cell: ({ row }) => row.original.customer || "—",
+  },
+  {
+    id: "vehicle",
+    header: "Vehicle",
+    enableSorting: false,
+    cell: ({ row: { original: job } }) => (
+      <>
+        {job.firstVehicle?.registrationNumber ?? "—"}
+        {job.vehicleCount > 1 && ` +${job.vehicleCount - 1}`}
+      </>
+    ),
+  },
+  {
+    id: "device",
+    header: "Device",
+    enableSorting: false,
+    cell: ({ row: { original: job } }) => (
+      <>
+        {job.firstDevice ? `${job.firstDevice.manufacturer} ${job.firstDevice.model}` : "—"}
+        {job.deviceCount > 1 && ` +${job.deviceCount - 1}`}
+      </>
+    ),
+  },
+  {
+    id: "scheduled", header: "Scheduled", enableSorting: false, cell: ({ row }) => fmt(row.original.scheduledAt),
+  },
+  {
+    id: "location",
+    header: "Location",
+    enableSorting: false,
+    cell: ({ row }) => `${row.original.location.city}, ${fromApiState(row.original.location.state)}`,
+  },
+  {
+    id: "status", header: "Status", enableSorting: false, cell: ({ row }) => <JobStatusBadge status={row.original.status} />,
+  },
+  {
+    id: "completed", header: "Completed", enableSorting: false, cell: ({ row }) => fmt(row.original.completedAt),
+  },
+];
+
 export function InstallerJobHistory({ installerId }: { installerId: string }) {
   const [
     page,
@@ -44,108 +84,21 @@ export function InstallerJobHistory({ installerId }: { installerId: string }) {
 
   const jobs = data?.data.items ?? [];
   const total = data?.data.total ?? 0;
-  const pages = Math.max(
-    1,
-    Math.ceil(total / PAGE_SIZE),
-  );
 
   return (
-    <div className="space-y-3">
-      <div className="overflow-x-auto rounded-xl border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Job</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Device</TableHead>
-              <TableHead>Scheduled</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Completed</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
-              <TableSkeleton
-                rows={4}
-                columns={8}
-              />
-            )}
-            {jobs.map(job => (
-              <TableRow key={job.id}>
-                <TableCell className="font-medium">{job.jobNumber}</TableCell>
-                <TableCell>{job.customer || "—"}</TableCell>
-                <TableCell>
-                  {job.firstVehicle?.registrationNumber ?? "—"}
-                  {job.vehicleCount > 1 && ` +${job.vehicleCount - 1}`}
-                </TableCell>
-                <TableCell>
-                  {job.firstDevice ? `${job.firstDevice.manufacturer} ${job.firstDevice.model}` : "—"}
-                  {job.deviceCount > 1 && ` +${job.deviceCount - 1}`}
-                </TableCell>
-                <TableCell>{fmt(job.scheduledAt)}</TableCell>
-                <TableCell>
-                  {job.location.city}
-                  ,
-                  {" "}
-                  {fromApiState(job.location.state)}
-                </TableCell>
-                <TableCell><JobStatusBadge status={job.status} /></TableCell>
-                <TableCell>{fmt(job.completedAt)}</TableCell>
-              </TableRow>
-            ))}
-            {jobs.length === 0 && !isLoading && (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="py-8 text-center text-muted-foreground"
-                >
-                  {isError && (
-                    <>
-                      {error.message}
-                      {" "}
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => void refetch()}
-                      >
-                        Try again
-                      </Button>
-                    </>
-                  )}
-                  {!isError && "No installation history for this installer."}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {total > PAGE_SIZE && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{`${total} jobs`}</span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
-            >
-              Previous
-            </Button>
-            <span>{`Page ${page} of ${pages}`}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= pages}
-              onClick={() => setPage(p => p + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+    <div className="overflow-x-auto rounded-xl border">
+      <DataTable
+        columns={JOB_COLUMNS}
+        data={jobs}
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage={error?.message}
+        onRetry={() => void refetch()}
+        emptyState="No installation history for this installer."
+        pagination={{
+          page, pageSize: PAGE_SIZE, total, onPageChange: setPage,
+        }}
+      />
     </div>
   );
 }

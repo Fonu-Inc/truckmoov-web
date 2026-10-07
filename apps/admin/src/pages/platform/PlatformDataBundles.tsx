@@ -8,8 +8,6 @@ import {
 } from "@truckmoov/api/auth";
 import {
   Building2,
-  ChevronDown,
-  ChevronRight,
   Database,
   Download,
   Layers,
@@ -38,11 +36,6 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/shadcn/collapsible";
 import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
@@ -67,17 +60,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
-// ponytail: keeping raw Table primitives for TenantAdoptionTable — its per-row
-// <Collapsible> expander (tenant → SIMs → bundles) doesn't fit DataTable's
-// column model; a wrapper would cost more than it saves.
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import {
   Tabs,
   TabsContent,
@@ -771,16 +753,14 @@ const ALL_CARRIERS = [
   "Fonu",
 ] as const;
 
+type SimRow = TenantSim & { tenant: string };
+
 function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
   const { format: fmtCurrency } = useCurrency();
   const [
     search,
     setSearch,
   ] = useState("");
-  const [
-    openTenants,
-    setOpenTenants,
-  ] = useState<Record<string, boolean>>({});
   const [
     draftCarrier,
     setDraftCarrier,
@@ -809,12 +789,6 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
     popOpen,
     setPopOpen,
   ] = useState(false);
-
-  const toggle = (tenant: string) =>
-    setOpenTenants(s => ({
-      ...s,
-      [tenant]: !s[tenant],
-    }));
 
   const matchSim = (sim: TenantSim) => {
     if (carrierEnabled && appliedCarrier !== "all" && sim.carrier !== appliedCarrier)
@@ -860,14 +834,94 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
     ],
   );
 
-  const tenantSpend = (t: TenantAdoption) =>
-    t.sims.reduce(
-      (s, sim) => s + sim.bundles.reduce(
-        (b, x) => b + x.price_ngn,
-        0,
-      ),
+  const simSpend = (sim: TenantSim) =>
+    sim.bundles.reduce(
+      (b, x) => b + x.price_ngn,
       0,
     );
+
+  // One row per SIM: DataTable has no expandable rows, so the tenant is a column.
+  const simRows: SimRow[] = filtered.flatMap(t => t.sims.map(sim => ({
+    ...sim,
+    tenant: t.tenant,
+  })));
+
+  const adoptionColumns: ColumnDef<SimRow>[] = [
+    {
+      accessorKey: "tenant",
+      header: "Tenant",
+      meta: { className: "font-medium" },
+    },
+    {
+      accessorKey: "msisdn",
+      header: "Mobile Number",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 font-mono text-xs">
+          <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
+          {row.original.msisdn}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "iccid",
+      header: "ICCID",
+      meta: { className: "font-mono text-xs text-muted-foreground" },
+    },
+    {
+      accessorKey: "carrier",
+      header: "Carrier",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className="text-xs"
+        >
+          {row.original.carrier === "Fonu" ? "FONU" : row.original.carrier}
+        </Badge>
+      ),
+    },
+    {
+      id: "vehicle",
+      header: "Vehicle",
+      accessorFn: sim => sim.vehicle ?? "—",
+      meta: { className: "text-sm" },
+    },
+    {
+      id: "bundles",
+      header: "Bundles",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex flex-col gap-1">
+          {row.original.bundles.map(b => (
+            <div
+              key={`${b.type}-${b.name}`}
+              className="flex items-center gap-2 text-sm"
+            >
+              <Badge
+                variant={b.type === "subscription" ? "default" : "secondary"}
+                className="text-[10px] uppercase"
+              >
+                {b.type}
+              </Badge>
+              <span className="font-medium">{b.name}</span>
+              <span className="text-muted-foreground text-xs">
+                {fmtCurrency(b.price_ngn)}
+                {" · expires in "}
+                {b.expires_in_days}
+                d
+              </span>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "spend",
+      header: "Spend",
+      accessorFn: simSpend,
+      meta: { className: "text-right font-semibold" },
+      cell: ({ row }) => fmtCurrency(simSpend(row.original)),
+    },
+  ];
 
   const exportCsv = () => {
     const rows: string[][] = [
@@ -1064,152 +1118,13 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[36px]"></TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>SIMs</TableHead>
-                <TableHead>Active Bundles</TableHead>
-                <TableHead>Carriers</TableHead>
-                <TableHead className="text-right">Monthly Spend</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-6 text-muted-foreground"
-                      >
-                        {data.length === 0
-                          ? "Tenant adoption data isn't available yet"
-                          : "No tenants match the current filters"}
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filtered.map((t) => {
-                    const totalBundles = t.sims.reduce(
-                      (s, sim) => s + sim.bundles.length,
-                      0,
-                    );
-                    const carriersUsed = Array.from(new Set(t.sims.map(s => s.carrier)));
-                    const isOpen = !!openTenants[t.tenant];
-                    return (
-                      <Collapsible
-                        key={t.tenant}
-                        open={isOpen}
-                        onOpenChange={() => toggle(t.tenant)}
-                        asChild
-                      >
-                        <>
-                          <CollapsibleTrigger asChild>
-                            <TableRow className="cursor-pointer hover:bg-secondary/40">
-                              <TableCell>
-                                {isOpen
-                                  ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                  : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                              </TableCell>
-                              <TableCell className="font-medium">{t.tenant}</TableCell>
-                              <TableCell>{t.sims.length}</TableCell>
-                              <TableCell>{totalBundles}</TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {carriersUsed.map(c => (
-                                    <Badge
-                                      key={c}
-                                      variant="secondary"
-                                      className="text-xs"
-                                    >
-                                      {c === "Fonu" ? "FONU" : c}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right font-semibold">
-                                {fmtCurrency(tenantSpend(t))}
-                              </TableCell>
-                            </TableRow>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent asChild>
-                            <TableRow>
-                              <TableCell
-                                colSpan={6}
-                                className="bg-secondary/20 p-0"
-                              >
-                                <div className="p-4">
-                                  <div className="text-xs text-muted-foreground uppercase mb-2 font-medium">
-                                    SIMs &amp; attached bundles
-                                  </div>
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Mobile Number</TableHead>
-                                        <TableHead>ICCID</TableHead>
-                                        <TableHead>Carrier</TableHead>
-                                        <TableHead>Vehicle</TableHead>
-                                        <TableHead>Bundles</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {t.sims.map(sim => (
-                                        <TableRow key={sim.iccid}>
-                                          <TableCell className="font-mono text-xs">
-                                            <div className="flex items-center gap-2">
-                                              <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-                                              {sim.msisdn}
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="font-mono text-xs text-muted-foreground">{sim.iccid}</TableCell>
-                                          <TableCell>
-                                            <Badge
-                                              variant="outline"
-                                              className="text-xs"
-                                            >
-                                              {sim.carrier === "Fonu" ? "FONU" : sim.carrier}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-sm">{sim.vehicle ?? "—"}</TableCell>
-                                          <TableCell>
-                                            <div className="flex flex-col gap-1">
-                                              {sim.bundles.map((b, i) => (
-                                                <div
-                                                  key={i}
-                                                  className="flex items-center gap-2 text-sm"
-                                                >
-                                                  <Badge
-                                                    variant={b.type === "subscription" ? "default" : "secondary"}
-                                                    className="text-[10px] uppercase"
-                                                  >
-                                                    {b.type}
-                                                  </Badge>
-                                                  <span className="font-medium">{b.name}</span>
-                                                  <span className="text-muted-foreground text-xs">
-                                                    {fmtCurrency(b.price_ngn)}
-                                                    {" "}
-                                                    · expires in
-                                                    {b.expires_in_days}
-                                                    d
-                                                  </span>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          </CollapsibleContent>
-                        </>
-                      </Collapsible>
-                    );
-                  })}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={adoptionColumns}
+            data={simRows}
+            hasActiveFilters={data.length > 0}
+            emptyState="Tenant adoption data isn't available yet"
+            filteredEmptyState="No tenants match the current filters"
+          />
         </CardContent>
       </Card>
     </div>

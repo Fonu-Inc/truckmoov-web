@@ -1,11 +1,32 @@
-import type { QuotationPaymentStatusFilter, QuotationRow, QuotationStatus } from "@truckmoov/api/billing";
-import { getBillingQuotationsQueryOptions } from "@truckmoov/api/billing";
+import type { ColumnDef } from "@tanstack/react-table";
+import type {
+  QuotationPaymentStatusFilter, QuotationRow, QuotationStatus,
+} from "@truckmoov/api/billing";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, FileText, Search } from "lucide-react";
-import { useState } from "react";
+import { getBillingQuotationsQueryOptions } from "@truckmoov/api/billing";
+import {
+  Eye, FileText, Search,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import {
+  customerTypeLabel,
+  formatIsoDate,
+  formatNgn,
+  ListErrorBanner,
+  QUOTATION_STATUS_LABEL,
+  QuotationStatusBadge,
+} from "@/components/platform/billing/billingUi";
+import { QuotationDetailsDialog } from "@/components/platform/billing/QuotationDetailsDialog";
+import { useBillingList } from "@/components/platform/billing/useBillingList";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
@@ -15,29 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
-import { EmptyState } from "@/components/dashboard/EmptyState";
-import { TableSkeleton } from "@/components/ui/skeletons";
-import {
-  customerTypeLabel,
-  formatIsoDate,
-  ListErrorBanner,
-  formatNgn,
-  QUOTATION_STATUS_LABEL,
-  QuotationStatusBadge,
-} from "@/components/platform/billing/billingUi";
-import { QuotationDetailsDialog } from "@/components/platform/billing/QuotationDetailsDialog";
-import { useBillingList } from "@/components/platform/billing/useBillingList";
 
 const PAGE_SIZE = 10;
-const COLUMNS = 11;
 
 type Filters = {
   status: "all" | QuotationStatus;
@@ -45,24 +45,149 @@ type Filters = {
 };
 
 const EXPORT_COLUMNS = [
-  { header: "Quotation", accessor: "number" as const },
-  { header: "Customer", accessor: "customerName" as const },
-  { header: "Customer Type", accessor: (row: QuotationRow) => customerTypeLabel(row.customerType) },
-  { header: "Status", accessor: (row: QuotationRow) => QUOTATION_STATUS_LABEL[row.status] },
-  { header: "Created", accessor: (row: QuotationRow) => formatIsoDate(row.createdAt) },
-  { header: "Valid Until", accessor: (row: QuotationRow) => formatIsoDate(row.validUntil) },
-  { header: "Total (NGN)", accessor: "totalNgn" as const },
-  { header: "Paid (NGN)", accessor: "paidNgn" as const },
-  { header: "Outstanding (NGN)", accessor: "outstandingNgn" as const },
-  { header: "Payment", accessor: (row: QuotationRow) => (row.paymentComplete ? "Complete" : "Incomplete") },
+  {
+    header: "Quotation", accessor: "number" as const,
+  },
+  {
+    header: "Customer", accessor: "customerName" as const,
+  },
+  {
+    header: "Customer Type", accessor: (row: QuotationRow) => customerTypeLabel(row.customerType),
+  },
+  {
+    header: "Status", accessor: (row: QuotationRow) => QUOTATION_STATUS_LABEL[row.status],
+  },
+  {
+    header: "Created", accessor: (row: QuotationRow) => formatIsoDate(row.createdAt),
+  },
+  {
+    header: "Valid Until", accessor: (row: QuotationRow) => formatIsoDate(row.validUntil),
+  },
+  {
+    header: "Total (NGN)", accessor: "totalNgn" as const,
+  },
+  {
+    header: "Paid (NGN)", accessor: "paidNgn" as const,
+  },
+  {
+    header: "Outstanding (NGN)", accessor: "outstandingNgn" as const,
+  },
+  {
+    header: "Payment", accessor: (row: QuotationRow) => (row.paymentComplete ? "Complete" : "Incomplete"),
+  },
 ];
 
-export function QuotationsTab() {
-  const list = useBillingList<Filters>({ status: "all", paymentStatus: "all" });
-  const [viewingId, setViewingId] = useState<string | null>(null);
-  const { filters, page } = list;
+// Server-paged list: sorting one page would mislead, so it's off.
+function quotationColumns(onView: (id: string) => void): ColumnDef<QuotationRow>[] {
+  return [
+    {
+      accessorKey: "number", header: "Quotation Number", enableSorting: false, meta: { className: "font-medium" },
+    },
+    {
+      accessorKey: "customerName", header: "Customer", enableSorting: false,
+    },
+    {
+      id: "customerType",
+      header: "Customer Type",
+      enableSorting: false,
+      meta: { className: "text-muted-foreground" },
+      cell: ({ row }) => customerTypeLabel(row.original.customerType),
+    },
+    {
+      id: "status",
+      header: "Status",
+      enableSorting: false,
+      cell: ({ row }) => <QuotationStatusBadge status={row.original.status} />,
+    },
+    {
+      id: "created",
+      header: "Created",
+      enableSorting: false,
+      meta: { className: "text-muted-foreground" },
+      cell: ({ row }) => formatIsoDate(row.original.createdAt),
+    },
+    {
+      id: "validUntil",
+      header: "Valid Until",
+      enableSorting: false,
+      meta: { className: "text-muted-foreground" },
+      cell: ({ row }) => formatIsoDate(row.original.validUntil),
+    },
+    {
+      id: "total",
+      header: "Total",
+      enableSorting: false,
+      meta: { className: "font-medium tabular-nums" },
+      cell: ({ row }) => formatNgn(row.original.totalNgn),
+    },
+    {
+      id: "paid",
+      header: "Paid",
+      enableSorting: false,
+      meta: { className: "tabular-nums" },
+      cell: ({ row }) => formatNgn(row.original.paidNgn),
+    },
+    {
+      id: "outstanding",
+      header: "Outstanding",
+      enableSorting: false,
+      meta: { className: "tabular-nums" },
+      cell: ({ row }) => formatNgn(row.original.outstandingNgn),
+    },
+    {
+      id: "payment",
+      header: "Payment",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className={`rounded-full border-transparent ${row.original.paymentComplete ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}
+        >
+          {row.original.paymentComplete ? "Payment Completed" : "Payment Incomplete"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`View ${row.original.number}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onView(row.original.id);
+          }}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+}
 
-  const { data, isLoading, isError, error, refetch } = useQuery(
+export function QuotationsTab() {
+  const list = useBillingList<Filters>({
+    status: "all", paymentStatus: "all",
+  });
+  const [
+    viewingId,
+    setViewingId,
+  ] = useState<string | null>(null);
+  const {
+    filters, page,
+  } = list;
+  const columns = useMemo(
+    () => quotationColumns(setViewingId),
+    [],
+  );
+
+  const {
+    data, isLoading, isError, error, refetch,
+  } = useQuery(
     getBillingQuotationsQueryOptions({
       params: {
         q: list.debouncedSearch || undefined,
@@ -76,7 +201,6 @@ export function QuotationsTab() {
 
   const rows = data?.data.items ?? [];
   const total = data?.data.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-4">
@@ -112,21 +236,35 @@ export function QuotationsTab() {
             </div>
             <Select
               value={filters.status}
-              onValueChange={v => list.setFilter("status", v as Filters["status"])}
+              onValueChange={v => list.setFilter(
+                "status",
+                v as Filters["status"],
+              )}
             >
               <SelectTrigger className="w-[190px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                {Object.entries(QUOTATION_STATUS_LABEL).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                {Object.entries(QUOTATION_STATUS_LABEL).map(([
+                  value,
+                  label,
+                ]) => (
+                  <SelectItem
+                    key={value}
+                    value={value}
+                  >
+                    {label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select
               value={filters.paymentStatus}
-              onValueChange={v => list.setFilter("paymentStatus", v as Filters["paymentStatus"])}
+              onValueChange={v => list.setFilter(
+                "paymentStatus",
+                v as Filters["paymentStatus"],
+              )}
             >
               <SelectTrigger className="w-[210px]">
                 <SelectValue />
@@ -140,125 +278,43 @@ export function QuotationsTab() {
           </div>
 
           {isError && rows.length > 0 && (
-            <ListErrorBanner title="Couldn't load quotations" message={error.message} onRetry={() => void refetch()} />
+            <ListErrorBanner
+              title="Couldn't load quotations"
+              message={error.message}
+              onRetry={() => void refetch()}
+            />
           )}
 
           <div className="overflow-x-auto rounded-2xl border">
-            <Table className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quotation Number</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Customer Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Valid Until</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Paid</TableHead>
-                  <TableHead>Outstanding</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && <TableSkeleton rows={PAGE_SIZE} columns={COLUMNS} />}
-                {rows.map(row => (
-                  <TableRow
-                    key={row.id}
-                    className="cursor-pointer"
-                    onClick={() => setViewingId(row.id)}
-                  >
-                    <TableCell className="font-medium">{row.number}</TableCell>
-                    <TableCell>{row.customerName}</TableCell>
-                    <TableCell className="text-muted-foreground">{customerTypeLabel(row.customerType)}</TableCell>
-                    <TableCell><QuotationStatusBadge status={row.status} /></TableCell>
-                    <TableCell className="text-muted-foreground">{formatIsoDate(row.createdAt)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatIsoDate(row.validUntil)}</TableCell>
-                    <TableCell className="font-medium tabular-nums">{formatNgn(row.totalNgn)}</TableCell>
-                    <TableCell className="tabular-nums">{formatNgn(row.paidNgn)}</TableCell>
-                    <TableCell className="tabular-nums">{formatNgn(row.outstandingNgn)}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`rounded-full border-transparent ${row.paymentComplete ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}
-                      >
-                        {row.paymentComplete ? "Payment Completed" : "Payment Incomplete"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`View ${row.number}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setViewingId(row.id);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {rows.length === 0 && !isLoading && (
-                  <TableRow>
-                    <TableCell colSpan={COLUMNS}>
-                      {isError
-                        ? (
-                            <div className="py-10 text-center">
-                              <p className="text-sm font-medium">Couldn't load quotations</p>
-                              <p className="text-xs text-muted-foreground">{error.message}</p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mt-3"
-                                onClick={() => void refetch()}
-                              >
-                                Try again
-                              </Button>
-                            </div>
-                          )
-                        : (
-                            <EmptyState
-                              icon={FileText}
-                              title="No quotations found"
-                              description="Adjust your search or filters."
-                              className="mx-auto"
-                            />
-                          )}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>{`Showing ${rows.length} of ${total} quotations`}</span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => list.setPage(p => p - 1)}
-              >
-                Previous
-              </Button>
-              <span>{`Page ${page} of ${pages}`}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= pages}
-                onClick={() => list.setPage(p => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
+            <DataTable
+              className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
+              columns={columns}
+              data={rows}
+              isLoading={isLoading}
+              isError={isError && rows.length === 0}
+              errorMessage={`Couldn't load quotations${error?.message ? `: ${error.message}` : ""}`}
+              onRetry={() => void refetch()}
+              onRowClick={row => setViewingId(row.id)}
+              emptyState={(
+                <EmptyState
+                  icon={FileText}
+                  title="No quotations found"
+                  description="Adjust your search or filters."
+                  className="mx-auto"
+                />
+              )}
+              pagination={{
+                page, pageSize: PAGE_SIZE, total, onPageChange: list.setPage,
+              }}
+            />
           </div>
         </CardContent>
       </Card>
 
-      <QuotationDetailsDialog id={viewingId} onClose={() => setViewingId(null)} />
+      <QuotationDetailsDialog
+        id={viewingId}
+        onClose={() => setViewingId(null)}
+      />
     </div>
   );
 }
