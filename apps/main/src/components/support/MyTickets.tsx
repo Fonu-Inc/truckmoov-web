@@ -38,6 +38,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { DataTable } from "@/components/shadcn/data-table";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { TicketDetailSheet } from "./TicketDetailSheet";
 
@@ -256,30 +257,9 @@ export function MyTickets() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="bg-card/50 border-border/50">
-        <CardContent className="py-12 text-center">
-          <p className="text-sm text-muted-foreground">Unable to load support tickets.</p>
-          <Button
-            variant="link"
-            onClick={() => refetch()}
-          >
-            Try again
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // No early returns: KPIs, toolbar and table each show their own loading
+  // state, so a slow tickets call (or a filter change) never unmounts the
+  // search input.
   const hasFilters = search.trim() || statusFilter !== "all"
     || Object.values(filters).some(filter => filter.enabled);
 
@@ -389,7 +369,9 @@ export function MyTickets() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
-                    <p className="text-xl font-semibold leading-tight">{kpi.value}</p>
+                    {summaryQuery.isPending
+                      ? <Skeleton className="mt-1 h-6 w-10" />
+                      : <p className="text-xl font-semibold leading-tight">{summary ? kpi.value : "—"}</p>}
                   </div>
                 </CardContent>
               </Card>
@@ -435,7 +417,7 @@ export function MyTickets() {
             </div>
           </CardHeader>
           <CardContent>
-            {tickets.length === 0
+            {!isLoading && !error && tickets.length === 0
               ? (
                   <div className="py-12 text-center">
                     <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -450,6 +432,10 @@ export function MyTickets() {
                     <DataTable
                       columns={ticketColumns}
                       data={tickets}
+                      isLoading={isLoading}
+                      isError={!!error}
+                      errorMessage="Unable to load support tickets."
+                      onRetry={() => void refetch()}
                       onRowClick={ticket => setSelectedTicketId(ticket.id)}
                     />
                   </div>

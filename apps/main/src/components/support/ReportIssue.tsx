@@ -38,6 +38,7 @@ import { Label } from "@/components/shadcn/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
 
 type ReportIssueProps = { onSuccess: () => void };
@@ -221,34 +222,61 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
         </CardHeader>
         {step === 1 && (
           <CardContent>
-            {optionsQuery.isLoading || !options
-              ? <p className="text-sm text-muted-foreground">Loading categories…</p>
-              : (
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {options.categories.map((cat) => {
-                      const Icon = CATEGORY_ICONS[cat.value] ?? HelpCircle;
-                      return (
-                        <button
-                          key={cat.value}
-                          type="button"
-                          onClick={() => {
-                            setCategory(cat.value);
-                            setContextId("");
-                            setDebouncedContextId("");
-                            setContextType(DEFAULT_CONTEXT[cat.value] ?? "none");
-                            setStep(2);
-                          }}
-                          className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors hover:border-primary/50 ${
-                            category === cat.value ? "border-primary bg-primary/5" : ""
-                          }`}
-                        >
-                          <Icon className="h-5 w-5 text-muted-foreground" />
-                          <span className="font-medium">{cat.label}</span>
-                        </button>
-                      );
-                    })}
+            {optionsQuery.isError
+              ? (
+                  <div className="text-sm text-muted-foreground">
+                    Couldn&apos;t load categories.
+                    <Button
+                      variant="link"
+                      onClick={() => void optionsQuery.refetch()}
+                    >
+                      Try again
+                    </Button>
                   </div>
-                )}
+                )
+              : !options
+                  ? (
+                      <div
+                        aria-label="Loading categories"
+                        className="grid gap-3 md:grid-cols-2"
+                      >
+                        {Array.from(
+                          { length: 6 },
+                          (_, i) => (
+                            <Skeleton
+                              key={i}
+                              className="h-14 rounded-lg"
+                            />
+                          ),
+                        )}
+                      </div>
+                    )
+                  : (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {options.categories.map((cat) => {
+                          const Icon = CATEGORY_ICONS[cat.value] ?? HelpCircle;
+                          return (
+                            <button
+                              key={cat.value}
+                              type="button"
+                              onClick={() => {
+                                setCategory(cat.value);
+                                setContextId("");
+                                setDebouncedContextId("");
+                                setContextType(DEFAULT_CONTEXT[cat.value] ?? "none");
+                                setStep(2);
+                              }}
+                              className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors hover:border-primary/50 ${
+                                category === cat.value ? "border-primary bg-primary/5" : ""
+                              }`}
+                            >
+                              <Icon className="h-5 w-5 text-muted-foreground" />
+                              <span className="font-medium">{cat.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
           </CardContent>
         )}
       </Card>
