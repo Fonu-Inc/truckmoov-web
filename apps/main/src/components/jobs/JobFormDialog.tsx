@@ -595,7 +595,7 @@ export function JobFormDialog({
       open={open}
       onOpenChange={onOpenChange}
     >
-      <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto bg-card border-border p-5">
+      <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto overflow-x-hidden [&>*]:min-w-0 bg-card border-border p-5">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {isEditing ? "Edit Job" : "Create New Job"}
