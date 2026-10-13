@@ -162,7 +162,10 @@ export function DataTable<TData>({
               {row.getVisibleCells().map((cell) => (
                 <TableCell
                   key={cell.id}
-                  className={(cell.column.columnDef.meta as { className?: string } | undefined)?.className}
+                  className={cn(
+                    "whitespace-nowrap",
+                    (cell.column.columnDef.meta as { className?: string } | undefined)?.className,
+                  )}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>

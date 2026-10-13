@@ -254,7 +254,7 @@ export function DeviceLinkingResolver({
     {
       accessorKey: "reason",
       header: "Issue",
-      meta: { className: "text-xs text-destructive" },
+      meta: { className: "whitespace-normal text-xs text-destructive" },
     },
     {
       id: "action",

@@ -181,7 +181,7 @@ export function InvoiceDetailView({
       accessorKey: "description",
       header: "Description",
       enableSorting: false,
-      meta: { className: "text-sm" },
+      meta: { className: "whitespace-normal text-sm" },
     },
     {
       accessorKey: "total",

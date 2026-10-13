@@ -419,6 +419,11 @@ tables — API docs, upload previews, print-styled statements — which use
 `DataTable` with `enableSorting: false`. The only exception is HTML template
 strings written into a `window.open` print window, which aren't React.
 
+`DataTable` body cells are `whitespace-nowrap` — the wrapper already scrolls
+horizontally, so cells never squash. A column holding long free text opts out
+with `meta: { className: "min-w-[240px] whitespace-normal" }` (or truncates with
+`max-w-[…] truncate`).
+
 For any list backed by a paginated endpoint (server returns `{ total, items }` and
 accepts `limit` + `offset`), pair `DataTable` with `useBatchedQuery`
 (`packages/reusables/src/hooks/useBatchedQuery.ts`):

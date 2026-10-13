@@ -62,7 +62,7 @@ const templateColumns: ColumnDef<VehicleImportColumn>[] = [
     accessorKey: "note",
     header: "Note",
     enableSorting: false,
-    meta: { className: "text-muted-foreground" },
+    meta: { className: "whitespace-normal text-muted-foreground" },
   },
 ];
 
@@ -77,7 +77,7 @@ const skippedColumns: ColumnDef<BulkImportSkipped>[] = [
     accessorKey: "message",
     header: "Reason",
     enableSorting: false,
-    meta: { className: "text-destructive" },
+    meta: { className: "whitespace-normal text-destructive" },
   },
 ];
 

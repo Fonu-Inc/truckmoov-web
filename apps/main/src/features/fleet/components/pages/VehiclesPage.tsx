@@ -324,7 +324,7 @@ export default function VehiclesPage() {
         const v = row.original;
         return (
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <Truck className="h-4 w-4 text-primary" />
             </div>
             <div>

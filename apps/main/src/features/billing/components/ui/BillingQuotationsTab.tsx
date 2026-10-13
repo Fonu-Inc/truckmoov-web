@@ -177,7 +177,7 @@ function quotationColumns({
       accessorKey: "description",
       header: "Description",
       enableSorting: false,
-      meta: { className: "max-w-[280px] text-muted-foreground" },
+      meta: { className: "max-w-[280px] whitespace-normal text-muted-foreground" },
     },
     {
       id: "amount",

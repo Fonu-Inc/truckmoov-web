@@ -33,7 +33,7 @@ const errorColumns: ColumnDef<(typeof ERROR_CODES)[number]>[] = [
     accessorKey: "description",
     header: "Description",
     enableSorting: false,
-    meta: { className: "text-muted-foreground" },
+    meta: { className: "min-w-[240px] whitespace-normal text-muted-foreground" },
   },
 ];
 
