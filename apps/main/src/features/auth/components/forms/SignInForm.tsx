@@ -6,6 +6,7 @@ import { PasswordFieldControl } from "@truckmoov/reusables/components/app/Passwo
 import {
   ArrowRight, Mail,
 } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Link, useNavigate,
@@ -41,6 +42,8 @@ export const SIGN_IN_FORM_ID = "main-sign-in-form";
 export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: string) => void }) {
   const navigate = useNavigate();
   const login = useLogin();
+  // The mutation settles before resolvePostLoginPath (GET /auth/two-factor) returns, so track that gap too.
+  const [isResolving, setIsResolving] = useState(false);
 
   const form = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
@@ -66,6 +69,7 @@ export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: stri
             return;
           }
           // Resolve before syncing: once the store says "authenticated", AuthGuard redirects off /auth on its own.
+          setIsResolving(true);
           const to = await resolvePostLoginPath(res.data.user.role);
           useAuthStore.getState().syncFromSession();
           toast.success("Login request completed.");
@@ -143,7 +147,7 @@ export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: stri
           form={SIGN_IN_FORM_ID}
           className="w-full"
           size="lg"
-          loading={login.isPending}
+          loading={login.isPending || isResolving}
         >
           <span className="flex items-center gap-2">
             Sign In
