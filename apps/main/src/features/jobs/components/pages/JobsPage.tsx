@@ -516,6 +516,11 @@ export default function JobsPage() {
         onSuccess: () => {
           toast.success(kind === "driver" ? "Driver assigned to job" : "Vehicle assigned to job");
           setMatchingKind(null);
+          // Names/plates in the table come from the fleet lists, so refresh those with the jobs.
+          jobsQuery.refetch();
+          jobsSummaryQuery.refetch();
+          driversQuery.refetch();
+          vehiclesQuery.refetch();
         },
         onError: error => toast.error(error.message),
       },
@@ -632,7 +637,7 @@ export default function JobsPage() {
               </div>
             );
           }
-          if (job.assigned_driver_id || isAggregatorAdmin)
+          if (job.assigned_driver_id || isAggregatorAdmin || jobStatusTone(job.status || "created") === "cancelled")
             return <span className="text-xs text-muted-foreground">—</span>;
           return (
             <Button
@@ -676,7 +681,7 @@ export default function JobsPage() {
               </div>
             );
           }
-          if (job.assigned_vehicle_id || isAggregatorAdmin)
+          if (job.assigned_vehicle_id || isAggregatorAdmin || jobStatusTone(job.status || "created") === "cancelled")
             return <span className="text-xs text-muted-foreground">—</span>;
           return (
             <Button

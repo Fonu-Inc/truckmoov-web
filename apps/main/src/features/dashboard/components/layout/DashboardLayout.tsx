@@ -59,7 +59,7 @@ export function DashboardLayout() {
         </ErrorBoundary>
         <TrialBanner />
         <main className={cn(
-          "flex-1 p-6",
+          "flex-1 p-6 pb-24", // bottom room so the floating support bubble never covers the last row
           entry?.fullWidth && "p-0",
         )}
         >

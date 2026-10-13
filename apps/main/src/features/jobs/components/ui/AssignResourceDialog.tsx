@@ -110,7 +110,9 @@ export function AssignResourceDialog({
 
   const pickupLat = job?.pickup?.latitude;
   const pickupLng = job?.pickup?.longitude;
-  const vehicleType = job?.required_vehicle_type as Vehicle["type"] | undefined;
+  // Job form types are free text ("Pickup Truck"); the API only accepts truck | van | trailer.
+  const requiredType = job?.required_vehicle_type?.trim().toLowerCase();
+  const vehicleType = (["truck", "van", "trailer"] as const).find(t => t === requiredType) as Vehicle["type"] | undefined;
 
   const driversQuery = useDrivers();
   const vehiclesQuery = useVehicles();
