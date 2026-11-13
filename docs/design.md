@@ -408,12 +408,12 @@ Conventions that repeat across pages:
 - Search/status/filter state is plain `useState` in the page; filtering is done
   client-side over the query result.
 
-### Tables use `DataTable`, paginated endpoints use `useBatchedQuery`
+### Every table is paginated
 
 Every table renders through `DataTable`
 (`packages/reusables/src/components/shadcn/data-table.tsx`) — it already carries
 the three states (skeleton loading row, error row with retry, two empty states),
-sortable columns, and a sticky pagination footer with a `Rows per page` selector.
+sortable columns, and a pagination footer with a `Rows per page` selector.
 Don't hand-roll `<Table>` + `useReactTable` in a page. That includes static
 tables — API docs, upload previews, print-styled statements — which use
 `DataTable` with `enableSorting: false`. The only exception is HTML template
@@ -424,8 +424,44 @@ horizontally, so cells never squash. A column holding long free text opts out
 with `meta: { className: "min-w-[240px] whitespace-normal" }` (or truncates with
 `max-w-[…] truncate`).
 
-For any list backed by a paginated endpoint (server returns `{ total, items }` and
-accepts `limit` + `offset`), pair `DataTable` with `useBatchedQuery`
+**Every `DataTable` pages.** Which kind depends on the endpoint:
+
+| Endpoint | What the page does |
+|---|---|
+| Takes `page` + `limit`, returns `total` | `useServerPagination` — send `page` / `pageSize` to the query, pass `pagination(total)` |
+| Takes `offset` + `limit`, returns `{ total, items }` | `useBatchedQuery` (below) |
+| Returns everything, or only a capped `limit` | nothing — omit `pagination` and `DataTable` pages the rows client-side |
+
+Client paging is the default: with no `pagination` prop the table shows 10 rows a
+page and hides the footer when everything fits on one page. Filtering that shrinks
+the rows moves the user back to the last page that still exists; a new `data`
+array (a re-render, a refetch) does not reset the page. Don't `.slice()` the rows
+you pass in — that hides data the pager could show. `pagination={false}` turns
+paging off, and is only for rows that are already paged elsewhere (the cursor-paged
+WhatsApp templates panel) or must all render at once (the print-only P&L
+statement).
+
+For a `page` + `limit` endpoint, use `useServerPagination`
+(`packages/reusables/src/hooks/useServerPagination.ts`). Pass the filters as its
+argument and it returns to page 1 when one changes, in the same render, so the
+stale page is never requested. Keep `page`/`limit` out of any export payload — an
+export takes every matching row. `keepPreviousData` stops the skeleton flashing
+between pages:
+
+```tsx
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
+
+const { page, pageSize, pagination } = useServerPagination([search, status]);
+const query = useQuery({
+  ...getFooQueryOptions({ params: { search, status, page, limit: pageSize } }),
+  placeholderData: keepPreviousData,
+});
+
+<DataTable columns={columns} data={query.data?.data.items ?? []} pagination={pagination(query.data?.data.total ?? 0)} />
+```
+
+For a list backed by an `offset` + `limit` endpoint (server returns `{ total, items }`),
+pair `DataTable` with `useBatchedQuery`
 (`packages/reusables/src/hooks/useBatchedQuery.ts`):
 
 ```tsx
@@ -462,10 +498,10 @@ Non-table data (cards, lists, dialogs) gets the same three states from
 loading, the error message + **Try again** on failure, empty copy when there is
 nothing to show. Every component that calls an endpoint renders one of the two.
 
-Server-paged endpoints that take `page` + `limit` (the installer jobs API) pass
-`pagination={{ page, pageSize, total, onPageChange }}` to `DataTable` directly —
-`useBatchedQuery` needs `offset`. Set `enableSorting: false` on their columns:
-sorting one page of a server-paged list is misleading.
+`DataTable` turns sorting off by itself whenever `pagination` is an object
+(server-paged): sorting one page of a server-paged list is misleading. Older
+pages that build the `pagination` object by hand (the billing tabs, installer
+jobs) are fine as they are.
 
 ### Card grids step at `sm` / `xl`, not `md`
 

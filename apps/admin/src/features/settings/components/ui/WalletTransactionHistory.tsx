@@ -1,10 +1,13 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData, useQuery,
+} from "@tanstack/react-query";
 import { getPlatformWalletLedgerQueryOptions } from "@truckmoov/api/auth";
 import {
   formatDate,
   formatTime,
 } from "@truckmoov/app-core/utils/time-utils";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -87,14 +90,23 @@ export function WalletTransactionHistory() {
     300,
   );
 
-  const ledgerQuery = useQuery(
-    getPlatformWalletLedgerQueryOptions({
+  const {
+    page, pageSize, pagination,
+  } = useServerPagination([
+    debouncedSearch,
+    typeFilter,
+  ]);
+  const ledgerQuery = useQuery({
+    ...getPlatformWalletLedgerQueryOptions({
       params: {
         query: debouncedSearch || undefined,
         category: typeFilter !== "all" ? typeFilter : undefined,
+        page,
+        limit: pageSize,
       },
     }),
-  );
+    placeholderData: keepPreviousData,
+  });
 
   const responseData = ledgerQuery.data?.data as {
     items?: WalletTransaction[]; total?: number;
@@ -105,8 +117,9 @@ export function WalletTransactionHistory() {
   );
   const total = responseData?.total ?? transactions.length;
 
-  // ponytail: channel filter applied client-side — ledger endpoint's `direction` param
-  // doesn't map cleanly to voice/sms/whatsapp; move server-side once spec clarifies
+  // ponytail: channel filter applied client-side, to the current page only — the ledger
+  // endpoint's `direction` param doesn't map cleanly to voice/sms/whatsapp; move
+  // server-side once spec clarifies
   const filteredTransactions = useMemo(
     () =>
       transactions.filter(tx =>
@@ -346,20 +359,8 @@ export function WalletTransactionHistory() {
             hasActiveFilters={hasActiveFilters}
             emptyState="No transactions found"
             filteredEmptyState="No transactions match your filters."
+            pagination={pagination(total)}
           />
-        </div>
-
-        <div className="text-sm text-muted-foreground">
-          Showing
-          {" "}
-          {filteredTransactions.length}
-          {" "}
-          of
-          {" "}
-          {total}
-          {" "}
-          transactions
-          {/* ponytail: no pagination — add pager when result set grows */}
         </div>
       </CardContent>
     </Card>

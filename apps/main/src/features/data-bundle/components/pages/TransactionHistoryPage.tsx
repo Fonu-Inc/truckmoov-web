@@ -1,12 +1,15 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { DataBundleTransactionsQuery } from "@truckmoov/api/auth";
-import { useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData, useQuery,
+} from "@tanstack/react-query";
 import {
   exportDataBundleTransactions,
   getDataBundleCarriersQueryOptions,
   getDataBundleTransactionsQueryOptions,
 } from "@truckmoov/api/auth";
 import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   Download, Search, SlidersHorizontal,
 } from "lucide-react";
@@ -62,14 +65,20 @@ export function TransactionHistoryPage() {
   ] = useState<string[]>([]);
 
   const debouncedTransactionSearch = useDebouncedValue(txSearch.trim());
+  const {
+    page, pageSize, pagination,
+  } = useServerPagination([
+    debouncedTransactionSearch,
+    txStatus,
+    txCarriers,
+  ]);
+  // Filters only — the export takes every matching row, not the visible page.
   const transactionQueryPayload = useMemo<DataBundleTransactionsQuery>(
     () => ({
       params: {
         search: debouncedTransactionSearch || undefined,
         status: txStatus === "all" ? undefined : txStatus,
         carriers: txCarriers.length > 0 ? txCarriers : undefined,
-        page: 1,
-        limit: 100,
       },
     }),
     [
@@ -79,7 +88,16 @@ export function TransactionHistoryPage() {
     ],
   );
 
-  const transactionsQuery = useQuery(getDataBundleTransactionsQueryOptions(transactionQueryPayload));
+  const transactionsQuery = useQuery({
+    ...getDataBundleTransactionsQueryOptions({
+      params: {
+        ...transactionQueryPayload.params,
+        page,
+        limit: pageSize,
+      },
+    }),
+    placeholderData: keepPreviousData,
+  });
   const topups = useMemo(
     () => {
       return (transactionsQuery.data?.data.items ?? []).map(item => ({
@@ -281,15 +299,13 @@ export function TransactionHistoryPage() {
         <CardContent className="p-6 pt-0">
           <DataTable
             columns={transactionColumns}
-            data={filteredTopups.slice(
-              0,
-              100,
-            )}
+            data={filteredTopups}
             isLoading={transactionsQuery.isLoading}
             isError={transactionsQuery.isError}
             errorMessage={transactionsQuery.error?.message}
             onRetry={() => transactionsQuery.refetch()}
             emptyState="No transactions match your filters"
+            pagination={pagination(transactionsQuery.data?.data.total ?? 0)}
           />
         </CardContent>
       </Card>

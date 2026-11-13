@@ -1,12 +1,15 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { DataBundleRatesQuery } from "@truckmoov/api/auth";
-import { useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData, useQuery,
+} from "@tanstack/react-query";
 import {
   exportDataBundleRates,
   getDataBundleCarriersQueryOptions,
   getDataBundleRatesQueryOptions,
 } from "@truckmoov/api/auth";
 import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   Download, Search, SlidersHorizontal,
 } from "lucide-react";
@@ -51,13 +54,18 @@ export function CurrentRatesPage() {
     setRatesDraftCarriers,
   ] = useState<string[]>([]);
   const debouncedRatesSearch = useDebouncedValue(ratesSearch.trim());
+  const {
+    page, pageSize, pagination,
+  } = useServerPagination([
+    debouncedRatesSearch,
+    ratesCarriers,
+  ]);
+  // Filters only — the export takes every matching row, not the visible page.
   const ratesQueryPayload = useMemo<DataBundleRatesQuery>(
     () => ({
       params: {
         search: debouncedRatesSearch || undefined,
         carriers: ratesCarriers.length > 0 ? ratesCarriers : undefined,
-        page: 1,
-        limit: 100,
       },
     }),
     [
@@ -66,7 +74,16 @@ export function CurrentRatesPage() {
     ],
   );
 
-  const ratesQuery = useQuery(getDataBundleRatesQueryOptions(ratesQueryPayload));
+  const ratesQuery = useQuery({
+    ...getDataBundleRatesQueryOptions({
+      params: {
+        ...ratesQueryPayload.params,
+        page,
+        limit: pageSize,
+      },
+    }),
+    placeholderData: keepPreviousData,
+  });
   const carrierName = useCarrierName(carriersQuery.data?.data.carriers);
   const ratesLive = useMemo(
     () => {
@@ -263,6 +280,7 @@ export function CurrentRatesPage() {
             errorMessage={ratesQuery.error?.message}
             onRetry={() => ratesQuery.refetch()}
             emptyState="No bundles match your filters"
+            pagination={ratesQuery.data ? pagination(ratesQuery.data.data.total) : undefined}
           />
         </CardContent>
       </Card>

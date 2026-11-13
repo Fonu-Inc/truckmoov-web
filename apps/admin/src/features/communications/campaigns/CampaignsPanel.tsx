@@ -4,6 +4,7 @@ import type {
 } from "@truckmoov/api/notification";
 import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@truckmoov/app-core/utils/time-utils";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   Megaphone, Plus, Search,
 } from "lucide-react";
@@ -113,8 +114,14 @@ export function CampaignsPanel({ canManage }: { canManage: boolean }) {
     search.trim(),
     300,
   );
+  const {
+    page, pageSize, pagination,
+  } = useServerPagination([
+    query,
+    status,
+  ]);
   const list = useQuery(campaignListOptions({
-    query, status: status || undefined, limit: 50,
+    query, status: status || undefined, page, limit: pageSize,
   }));
   const summary = list.data?.summary;
 
@@ -191,6 +198,7 @@ export function CampaignsPanel({ canManage }: { canManage: boolean }) {
           errorMessage="Could not load campaigns. Check your connection and try again."
           onRetry={() => void list.refetch()}
           hasActiveFilters={Boolean(query || status)}
+          pagination={pagination(list.data?.total ?? 0)}
           emptyState={(
             <StateNotice
               icon={<Megaphone className="h-8 w-8 text-muted-foreground/50" />}

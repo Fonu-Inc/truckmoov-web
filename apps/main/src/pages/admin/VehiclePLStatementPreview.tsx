@@ -299,6 +299,7 @@ export default function VehiclePLStatementPreview() {
                 className={`border-collapse ${STATEMENT_TABLE} ${accentHead}`}
                 columns={perVehicleColumns}
                 data={rows}
+                pagination={false}
               />
               <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t-2 p-2 text-sm font-bold">
                 <span>Total</span>
@@ -335,6 +336,7 @@ export default function VehiclePLStatementPreview() {
                 className={`border-collapse ${STATEMENT_TABLE} ${accentHead}`}
                 columns={costColumns}
                 data={rows}
+                pagination={false}
               />
             </section>
           )}

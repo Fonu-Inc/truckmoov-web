@@ -255,10 +255,7 @@ export default function EvFleetPage() {
                 <div className="overflow-x-auto">
                   <DataTable
                     columns={sessionColumns}
-                    data={filtered.slice(
-                      0,
-                      15,
-                    )}
+                    data={filtered}
                     emptyState="No sessions match your filters"
                   />
                 </div>

@@ -1196,10 +1196,7 @@ export default function TenantWallet() {
             <CardContent>
               <DataTable
                 columns={transactionColumns(getTypeIcon)}
-                data={filteredTransactions.slice(
-                  0,
-                  50,
-                )}
+                data={filteredTransactions}
                 hasActiveFilters={transactions.length > 0}
                 emptyState="No transactions yet"
                 filteredEmptyState="No transactions match your filters"

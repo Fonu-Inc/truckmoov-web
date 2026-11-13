@@ -22,6 +22,7 @@ import {
   formatDateInTimezone,
   formatDateOnlyInTimezone,
 } from "@truckmoov/app-core/utils/time-utils";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -572,11 +573,20 @@ function MyTickets() {
     [applySearch],
   );
 
+  const {
+    page: currentPage, pageSize, pagination,
+  } = useServerPagination([
+    status,
+    search,
+    filters,
+  ]);
   const ticketsQuery = useInstallerSupportTickets({
     params: {
       ...(status !== "all" && { status }),
       ...(search && { search }),
       ...filters,
+      page: currentPage,
+      limit: pageSize,
     },
   });
   const page = ticketsQuery.data?.data;
@@ -735,6 +745,7 @@ function MyTickets() {
               errorMessage={ticketsQuery.error?.message || "Unable to load your tickets."}
               onRetry={() => ticketsQuery.refetch()}
               hasActiveFilters={filtering}
+              pagination={pagination(page?.total ?? 0)}
               emptyState={(
                 <div className="py-4">
                   <p className="text-sm font-medium text-foreground">No tickets yet</p>

@@ -693,10 +693,7 @@ export function IVRDashboardTab() {
           />
           <DataTable
             columns={callColumns}
-            data={filteredCalls.slice(
-              0,
-              20,
-            )}
+            data={filteredCalls}
             emptyState="No IVR calls found"
           />
         </CardContent>

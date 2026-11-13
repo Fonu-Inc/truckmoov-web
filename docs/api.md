@@ -337,8 +337,11 @@ devDependencies so its peers don't resolve to the landing page's React 19.
 - Subscription usage has no date-range parameters in the published API. Its selector is retained
   for design parity, but cannot filter the server aggregate yet.
 - The design's unused Spending Limit, Auto Top-up and wallet top-up dialogs are absent; API hooks remain.
-- Current list/catalog requests retain the existing limits (100 rows/plans, 200 SIMs).
-  Add pagination when fleets exceed these limits; exports use the server endpoints.
+- My Bundles, Transaction History and Current Rates page on the server (`page` + `limit`
+  via `useServerPagination`); exports send the filters without `page`/`limit`. The SIM
+  lookups behind them still fetch 200 SIMs, and admin's bundle catalog still fetches
+  100 rates and pages them client-side (its KPI cards and active/inactive filter need
+  the whole catalog).
 
 See [data-bundles-verification.md](data-bundles-verification.md) for endpoint evidence and ticket drafts.
 

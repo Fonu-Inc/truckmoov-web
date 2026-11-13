@@ -211,24 +211,13 @@ export function DeviceMappingUpload({
         </div>
 
         {/* Preview table */}
-        <div className="max-h-32 overflow-y-auto rounded-md border border-border">
+        <div className="overflow-x-auto rounded-md border border-border">
           <DataTable
             columns={previewColumns}
-            data={parsedData.slice(
-              0,
-              5,
-            )}
+            data={parsedData}
             className="text-xs"
             rowClassName={row => cn(!row.isValid && "bg-destructive/5")}
           />
-          {parsedData.length > 5 && (
-            <p className="p-1.5 text-center text-xs text-muted-foreground">
-              +
-              {parsedData.length - 5}
-              {" "}
-              more devices...
-            </p>
-          )}
         </div>
       </div>
     );

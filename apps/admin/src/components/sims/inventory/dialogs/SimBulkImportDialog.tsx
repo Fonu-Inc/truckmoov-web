@@ -33,8 +33,6 @@ export type SimBulkImportDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-const PREVIEW_ROWS = 10;
-
 function TemplateRow() {
   return (
     <div className="flex items-center justify-between rounded-lg border bg-secondary/30 p-3">
@@ -175,25 +173,13 @@ const PREVIEW_COLUMNS: ColumnDef<ParsedSimRow>[] = [
 function PreviewTable({ rows }: { rows: ParsedSimRow[] }) {
   return (
     <div className="rounded-lg border">
-      <div className="max-h-48 overflow-auto">
+      <div className="overflow-auto">
         <DataTable
           columns={PREVIEW_COLUMNS}
-          data={rows.slice(
-            0,
-            PREVIEW_ROWS,
-          )}
+          data={rows}
           className="text-xs"
         />
       </div>
-      {rows.length > PREVIEW_ROWS && (
-        <div className="p-2 text-center text-xs text-muted-foreground border-t">
-          And
-          {" "}
-          {rows.length - PREVIEW_ROWS}
-          {" "}
-          more records...
-        </div>
-      )}
     </div>
   );
 }

@@ -1,10 +1,12 @@
+import type { WhatsAppTemplate } from "@truckmoov/api/notification";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemWhatsAppTemplatesQueryOptions,
   useDeleteSystemWhatsAppTemplate,
 } from "@truckmoov/api/notification";
-import type { WhatsAppTemplate } from "@truckmoov/api/notification";
-import { MessageSquarePlus, Phone, Plus, Trash2 } from "lucide-react";
+import {
+  MessageSquarePlus, Phone, Plus, Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -23,7 +25,9 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { DataTable } from "@/components/shadcn/data-table";
-import { qualityTone, TONE_CLASS } from "./accountHealth";
+import {
+  qualityTone, TONE_CLASS,
+} from "./accountHealth";
 import { StartConversationDialog } from "./StartConversationDialog";
 import { bodyTextOf } from "./templateComponents";
 import { TemplateFormDialog } from "./TemplateFormDialog";
@@ -40,13 +44,27 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 export function TemplatesPanel({ connected }: { connected: boolean }) {
-  const [cursors, setCursors] = useState<string[]>([]);
-  const [creating, setCreating] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [removing, setRemoving] = useState<WhatsAppTemplate | null>(null);
+  const [
+    cursors,
+    setCursors,
+  ] = useState<string[]>([]);
+  const [
+    creating,
+    setCreating,
+  ] = useState(false);
+  const [
+    starting,
+    setStarting,
+  ] = useState(false);
+  const [
+    removing,
+    setRemoving,
+  ] = useState<WhatsAppTemplate | null>(null);
   const after = cursors.at(-1);
   const templatesQuery = useQuery({
-    ...getSystemWhatsAppTemplatesQueryOptions({ limit: PAGE_SIZE, after }),
+    ...getSystemWhatsAppTemplatesQueryOptions({
+      limit: PAGE_SIZE, after,
+    }),
     enabled: connected,
   });
   const deleteTemplate = useDeleteSystemWhatsAppTemplate();
@@ -113,7 +131,10 @@ export function TemplatesPanel({ connected }: { connected: boolean }) {
                     <p className="text-xs text-destructive">
                       Rejected:
                       {" "}
-                      {row.original.rejected_reason.replace(/_/g, " ").toLowerCase()}
+                      {row.original.rejected_reason.replace(
+                        /_/g,
+                        " ",
+                      ).toLowerCase()}
                     </p>
                   )}
                 </div>
@@ -181,6 +202,7 @@ export function TemplatesPanel({ connected }: { connected: boolean }) {
             },
           ]}
           data={templates}
+          pagination={false}
           isLoading={templatesQuery.isLoading}
           isError={templatesQuery.isError}
           errorMessage={templatesQuery.error?.message}
@@ -193,7 +215,10 @@ export function TemplatesPanel({ connected }: { connected: boolean }) {
               size="sm"
               variant="outline"
               disabled={cursors.length === 0}
-              onClick={() => setCursors(current => current.slice(0, -1))}
+              onClick={() => setCursors(current => current.slice(
+                0,
+                -1,
+              ))}
             >
               Previous
             </Button>
@@ -201,7 +226,10 @@ export function TemplatesPanel({ connected }: { connected: boolean }) {
               size="sm"
               variant="outline"
               disabled={!hasNext}
-              onClick={() => nextCursor && setCursors(current => [...current, nextCursor])}
+              onClick={() => nextCursor && setCursors(current => [
+                ...current,
+                nextCursor,
+              ])}
             >
               Next
             </Button>

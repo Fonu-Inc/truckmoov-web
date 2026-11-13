@@ -4,13 +4,17 @@ import type {
 } from "@truckmoov/api/billing";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import {
+  keepPreviousData, useQuery,
+} from "@tanstack/react-query";
+import {
   BILLING_QUERY_KEY,
+  getTenantInvoicesQueryOptions,
   usePayTenantInvoiceByCard,
   usePayTenantInvoiceFromWallet,
-  useTenantInvoices,
   useTenantLicence,
 } from "@truckmoov/api/billing";
 import { queryClient } from "@truckmoov/api/lib/query-client";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   AlertCircle, CheckCircle, Clock, CreditCard, FileText, Wallet,
 } from "lucide-react";
@@ -33,8 +37,6 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { formatCurrency } from "@/lib/currency";
-
-const PAGE_SIZE = 20;
 
 function formatDay(date: string) {
   return new Date(`${date.slice(
@@ -278,10 +280,16 @@ function refetchTenantBilling() {
 }
 
 export function SubscriptionInvoicesCard(_props: { tenantName?: string }) {
-  const invoices = useTenantInvoices({
-    params: {
-      status: "all", page: 1, pageSize: PAGE_SIZE,
-    },
+  const {
+    page, pageSize, pagination,
+  } = useServerPagination();
+  const invoices = useQuery({
+    ...getTenantInvoicesQueryOptions({
+      params: {
+        status: "all", page, pageSize,
+      },
+    }),
+    placeholderData: keepPreviousData,
   });
   const licence = useTenantLicence();
   const card = usePayTenantInvoiceByCard();
@@ -358,10 +366,8 @@ export function SubscriptionInvoicesCard(_props: { tenantName?: string }) {
             errorMessage="Could not load your invoices. Check your connection and try again."
             onRetry={() => void invoices.refetch()}
             emptyState="No invoices yet. Your renewal invoice appears here before your licence expires."
+            pagination={pagination(list?.total ?? 0)}
           />
-          {list && list.total > items.length && (
-            <p className="text-xs text-muted-foreground">{`Showing the latest ${items.length} of ${list.total} invoices.`}</p>
-          )}
         </CardContent>
       </Card>
       <PayDialog

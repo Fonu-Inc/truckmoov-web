@@ -1,13 +1,14 @@
-import type { ColumnDef, Row, SortingState } from "@tanstack/react-table";
+import type { ColumnDef, PaginationState, Row, SortingState } from "@tanstack/react-table";
 import {
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -30,6 +31,7 @@ import {
 
 const SKELETON_ROWS = 5;
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = DEFAULT_PAGE_SIZE_OPTIONS[0];
 
 export type DataTablePagination = {
   /** 1-based current page. */
@@ -55,8 +57,13 @@ export interface DataTableProps<TData> {
   onRowClick?: (row: TData) => void;
   rowClassName?: (row: TData) => string;
   className?: string;
-  /** Server-driven pagination. Omit to render without a footer (unchanged behaviour). */
-  pagination?: DataTablePagination;
+  /**
+   * Server-driven pagination: pass the current page + total from the endpoint.
+   * Omit it and the table pages the rows it was given client-side (10 per page).
+   * Pass `false` only when the rows are already paged elsewhere (cursor
+   * navigation) or must all render at once (print layouts).
+   */
+  pagination?: DataTablePagination | false;
 }
 
 export function DataTable<TData>({
@@ -75,15 +82,51 @@ export function DataTable<TData>({
   pagination,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [clientPage, setClientPage] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
+  const isClientPaged = pagination === undefined;
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: isClientPaged ? { sorting, pagination: clientPage } : { sorting },
     onSortingChange: setSorting,
+    // Sorting one server page would reorder a slice and read as the whole list.
+    enableSorting: !pagination,
+    onPaginationChange: setClientPage,
+    // The page is controlled here; never let a new `data` reference (a parent
+    // re-render, a refetch) bounce the user back to page 1.
+    autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    ...(isClientPaged && { getPaginationRowModel: getPaginationRowModel() }),
   });
   const colCount = columns.length || 1;
+
+  // Filtering can shrink the rows under the current page — step back to the last page.
+  const lastPageIndex = Math.max(0, Math.ceil(data.length / clientPage.pageSize) - 1);
+  useEffect(() => {
+    if (isClientPaged && clientPage.pageIndex > lastPageIndex)
+      setClientPage(p => ({ ...p, pageIndex: lastPageIndex }));
+  }, [isClientPaged, clientPage.pageIndex, lastPageIndex]);
+
+  let footer: DataTablePagination | null = null;
+  if (isClientPaged) {
+    // A table that fits on the smallest page gets no footer — nothing to page.
+    if (data.length > DEFAULT_PAGE_SIZE) {
+      footer = {
+        page: clientPage.pageIndex + 1,
+        pageSize: clientPage.pageSize,
+        total: data.length,
+        onPageChange: page => setClientPage(p => ({ ...p, pageIndex: page - 1 })),
+        onPageSizeChange: pageSize => setClientPage({ pageIndex: 0, pageSize }),
+      };
+    }
+  }
+  else if (pagination && pagination.total > 0) {
+    footer = pagination;
+  }
 
   return (
     <Table className={className}>
@@ -174,11 +217,11 @@ export function DataTable<TData>({
           ))
         )}
       </TableBody>
-      {pagination && pagination.total > 0 && (
+      {footer && (
         <TableFooter className="bg-transparent">
           <TableRow className="border-t border-border/50 hover:bg-transparent">
             <TableCell colSpan={colCount} className="p-0">
-              <PaginationBar pagination={pagination} />
+              <PaginationBar pagination={footer} />
             </TableCell>
           </TableRow>
         </TableFooter>

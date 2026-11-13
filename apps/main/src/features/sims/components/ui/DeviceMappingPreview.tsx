@@ -7,7 +7,6 @@ import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { DataTable } from "@/components/shadcn/data-table";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
 
 // Local type alias (hook deleted)
 type DeviceMappingRow = {
@@ -17,10 +16,7 @@ type DeviceMappingRow = {
   notes?: string;
 };
 
-type DeviceMappingPreviewProps = {
-  data: DeviceMappingRow[];
-  maxDisplay?: number;
-};
+type DeviceMappingPreviewProps = { data: DeviceMappingRow[] };
 
 const columns: ColumnDef<DeviceMappingRow>[] = [
   {
@@ -51,18 +47,10 @@ const columns: ColumnDef<DeviceMappingRow>[] = [
   },
 ];
 
-export function DeviceMappingPreview({
-  data, maxDisplay = 10,
-}: DeviceMappingPreviewProps) {
+export function DeviceMappingPreview({ data }: DeviceMappingPreviewProps) {
   if (!data || data.length === 0) {
     return null;
   }
-
-  const displayData = data.slice(
-    0,
-    maxDisplay,
-  );
-  const remaining = data.length - maxDisplay;
 
   return (
     <Card className="border-dashed">
@@ -81,22 +69,11 @@ export function DeviceMappingPreview({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[200px]">
-          <DataTable
-            columns={columns}
-            data={displayData}
-            className="text-xs"
-          />
-        </ScrollArea>
-        {remaining > 0 && (
-          <div className="px-4 py-2 bg-muted/50 text-xs text-muted-foreground text-center border-t">
-            +
-            {" "}
-            {remaining}
-            {" "}
-            more devices
-          </div>
-        )}
+        <DataTable
+          columns={columns}
+          data={data}
+          className="text-xs"
+        />
         <div className="px-4 py-2 bg-success/10 text-xs text-success flex items-center gap-1 border-t">
           <CheckCircle className="h-3 w-3" />
           All devices validated

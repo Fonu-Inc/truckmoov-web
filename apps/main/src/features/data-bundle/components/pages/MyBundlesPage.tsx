@@ -1,11 +1,14 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { DataBundleAllocationsQuery } from "@truckmoov/api/auth";
 import type { DataBundlesLayoutContext } from "@/features/data-bundle/components/layout/DataBundlesLayout";
-import { useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData, useQuery,
+} from "@tanstack/react-query";
 import {
   exportDataBundleAllocations, getDataBundleAllocationsQueryOptions, getSimsQueryOptions,
 } from "@truckmoov/api/auth";
 import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   Download, Eye, MoreHorizontal, Search, SlidersHorizontal, Smartphone, Wifi,
 } from "lucide-react";
@@ -70,14 +73,20 @@ export function MyBundlesPage() {
   ] = useState<string[]>([]);
 
   const debouncedAllocationSearch = useDebouncedValue(search.trim());
+  const {
+    page, pageSize, pagination,
+  } = useServerPagination([
+    debouncedAllocationSearch,
+    statusFilter,
+    filterCycles,
+  ]);
+  // Filters only — the export takes every matching row, not the visible page.
   const allocationQueryPayload = useMemo<DataBundleAllocationsQuery>(
     () => ({
       params: {
         search: debouncedAllocationSearch || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
         billingCycles: filterCycles.length > 0 ? filterCycles : undefined,
-        page: 1,
-        limit: 100,
       },
     }),
     [
@@ -87,7 +96,16 @@ export function MyBundlesPage() {
     ],
   );
 
-  const allocationsQuery = useQuery(getDataBundleAllocationsQueryOptions(allocationQueryPayload));
+  const allocationsQuery = useQuery({
+    ...getDataBundleAllocationsQueryOptions({
+      params: {
+        ...allocationQueryPayload.params,
+        page,
+        limit: pageSize,
+      },
+    }),
+    placeholderData: keepPreviousData,
+  });
   const isLoading = allocationsQuery.isLoading;
   const allocations = useMemo(
     () => {
@@ -365,6 +383,7 @@ export function MyBundlesPage() {
             errorMessage={allocationsQuery.error?.message}
             onRetry={() => allocationsQuery.refetch()}
             emptyState="No bundles match your filters."
+            pagination={pagination(allocationsQuery.data?.data.total ?? 0)}
           />
         </CardContent>
       </Card>

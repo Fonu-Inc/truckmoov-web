@@ -299,13 +299,10 @@ export function DeviceBulkUploadDialog({
                   </div>
 
                   {parsedData.length > 0 && (
-                    <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
+                    <div className="overflow-x-auto rounded-lg border border-border">
                       <DataTable
                         columns={previewColumns}
-                        data={parsedData.slice(
-                          0,
-                          10,
-                        )}
+                        data={parsedData}
                         className="text-xs"
                         rowClassName={row => cn(!row.isValid && "bg-destructive/5")}
                       />
