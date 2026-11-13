@@ -53,10 +53,19 @@ export type ThemeMode = "dark" | "light";
 
 // ponytail: pair encoded as "dark:light" in one string; keeps the backend
 // schema untouched. Legacy single-hex values parse as { dark: X, light: X }.
-export function parseColorPair(v: string | undefined | null): {
+export function parseColorPair(v: unknown): {
   dark: string; light: string;
 } {
-  if (!v) {
+  // API has returned non-strings here (e.g. { dark, light } objects); never crash the app shell.
+  if (v && typeof v === "object") {
+    const o = v as { dark?: unknown; light?: unknown };
+    const dark = typeof o.dark === "string" ? o.dark : "";
+    const light = typeof o.light === "string" ? o.light : dark;
+    return {
+      dark, light,
+    };
+  }
+  if (typeof v !== "string" || !v) {
     return {
       dark: "", light: "",
     };
@@ -74,7 +83,7 @@ export function formatColorPair(dark: string, light: string): string {
   return `${dark}:${light}`;
 }
 
-export function pickForTheme(v: string | undefined | null, theme: ThemeMode): string | undefined {
+export function pickForTheme(v: unknown, theme: ThemeMode): string | undefined {
   const p = parseColorPair(v);
   const primary = theme === "dark" ? p.dark : p.light;
   const fallback = theme === "dark" ? p.light : p.dark;

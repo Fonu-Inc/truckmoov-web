@@ -1,0 +1,9 @@
+# One CVE per line, with why, owner and review-by date, e.g.
+# CVE-2026-12345  # not reachable: x; owner; review 2027-01-31
+# Dev/test tooling only, never shipped; fixed by moving main/admin/installer to vite 6+ and vitest 4. Owner: web; review 2027-01-31
+CVE-2026-112942
+CVE-2026-104848
+CVE-2026-104849
+# image-size via pptxgenjs 4.0.1 (latest, still pins ^1.2.1); client-side DoS on crafted images. Owner: web; review 2027-01-31
+CVE-2025-71329
+CVE-2025-71330
