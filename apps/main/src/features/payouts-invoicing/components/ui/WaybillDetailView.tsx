@@ -1,6 +1,6 @@
 import type { WaybillRecord } from "@/features/payouts-invoicing/types";
 import {
-  Calendar, CheckCircle2, DollarSign, Download, FileText, ImageIcon, Loader2, MapPin, MessageSquare, Package, Pencil, Save, Scan, Truck, User,
+  Calendar, CheckCircle2, DollarSign, Download, FileText, ImageIcon, Loader2, MapPin, MessageSquare, Package, Pencil, Save, Truck, User,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/shadcn/badge";
@@ -27,14 +27,12 @@ export function WaybillThumbnail({ waybill }: { waybill: WaybillRecord }) {
 }
 
 export function WaybillDetailView({
-  waybill, onExtract, onGenerateInvoice, onApprove, onUpdateFields, extracting, generating, formatAmount,
+  waybill, onGenerateInvoice, onApprove, onUpdateFields, generating, formatAmount,
 }: {
   waybill: WaybillRecord;
-  onExtract: () => void;
   onGenerateInvoice: () => void;
   onApprove: () => void;
   onUpdateFields: (updates: Record<string, unknown>) => Promise<void>;
-  extracting: boolean;
   generating: boolean;
   formatAmount: (n: number) => string;
 }) {
@@ -263,9 +261,6 @@ export function WaybillDetailView({
                       icon: DollarSign, label: "Price", value: waybill.calculated_price_ngn ? formatAmount(waybill.calculated_price_ngn) : null, fieldKey: null,
                     },
                   ].map((field, i) => {
-                    const fieldConf = field.fieldKey && waybill.confidence_per_field
-                      ? (waybill.confidence_per_field as Record<string, number>)[field.fieldKey]
-                      : null;
                     return (
                       <div
                         key={i}
@@ -274,19 +269,6 @@ export function WaybillDetailView({
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <field.icon className="h-3 w-3" />
                           {field.label}
-                          {fieldConf != null && (
-                            <span className={`ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                              fieldConf >= 0.8
-                                ? "bg-success/10 text-success"
-                                : fieldConf >= 0.5
-                                  ? "bg-warning/10 text-warning"
-                                  : "bg-destructive/10 text-destructive"
-                            }`}
-                            >
-                              {Math.round(fieldConf * 100)}
-                              %
-                            </span>
-                          )}
                         </div>
                         <p className="text-sm font-medium">{field.value || "—"}</p>
                       </div>
@@ -294,6 +276,8 @@ export function WaybillDetailView({
                   })}
                 </div>
                 {[
+                  "received",
+                  "extraction_failed",
                   "extracted",
                   "needs_review",
                 ].includes(waybill.status) && (
@@ -303,27 +287,11 @@ export function WaybillDetailView({
                     onClick={() => setEditing(true)}
                   >
                     <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                    Edit Extracted Fields
+                    Edit Fields
                   </Button>
                 )}
               </>
             )}
-
-        {waybill.ai_confidence_score != null && (
-          <div className="text-xs text-muted-foreground flex items-center gap-1">
-            AI Confidence:
-            {" "}
-            <span className="font-medium">
-              {Math.round(waybill.ai_confidence_score * 100)}
-              %
-            </span>
-            <span className="text-muted-foreground/60">
-              (
-              {waybill.ai_model_used}
-              )
-            </span>
-          </div>
-        )}
 
         {waybill.source_phone && (
           <div className="text-xs text-muted-foreground">
@@ -335,31 +303,12 @@ export function WaybillDetailView({
           </div>
         )}
 
-        {waybill.extraction_error && (
-          <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
-            <strong>Error:</strong>
-            {" "}
-            {waybill.extraction_error}
-          </div>
-        )}
-
         <Separator />
 
         <div className="flex gap-2">
           {[
             "received",
             "extraction_failed",
-          ].includes(waybill.status) && (
-            <Button
-              onClick={onExtract}
-              disabled={extracting}
-              className="flex-1"
-            >
-              {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Scan className="h-4 w-4 mr-2" />}
-              {extracting ? "Extracting..." : "Extract with AI"}
-            </Button>
-          )}
-          {[
             "extracted",
             "needs_review",
           ].includes(waybill.status) && (

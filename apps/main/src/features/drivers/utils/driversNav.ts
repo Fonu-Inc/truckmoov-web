@@ -1,6 +1,6 @@
 import type { ElementType } from "react";
 import {
-  Activity, Brain, Users,
+  Activity, Users,
 } from "lucide-react";
 
 export type DriversTab = {
@@ -16,8 +16,5 @@ export const DRIVERS_TABS: DriversTab[] = [
   },
   {
     to: "/drivers/behaviour", label: "Behaviour", icon: Activity, end: true,
-  },
-  {
-    to: "/drivers/fatigue-ai", label: "Fatigue AI", icon: Brain, end: true,
   },
 ];

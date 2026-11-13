@@ -558,7 +558,6 @@ export const API_ENDPOINTS: EndpointDoc[] = [
               quantity: 20,
               quantity_unit: "tons",
               weight_kg: 20000,
-              ai_confidence_score: 0.94,
               calculated_price_ngn: 850000,
               created_at: "2026-02-15T10:30:00Z",
             },
@@ -602,42 +601,8 @@ export const API_ENDPOINTS: EndpointDoc[] = [
           weight_kg: 20000,
           matched_pricing_rule_id: "uuid",
           calculated_price_ngn: 850000,
-          ai_confidence_score: 0.94,
-          ai_model_used: "gemini-2.5-flash",
           extracted_data: { raw_fields: {} },
           created_at: "2026-02-15T10:30:00Z",
-        },
-      },
-    },
-  },
-  {
-    method: "POST",
-    path: "/waybills/{id}/extract",
-    description: "Trigger AI extraction on a waybill image. Extracts structured data from the waybill photo using Gemini vision.",
-    scope: "waybills.write",
-    category: "Waybills",
-    parameters: [
-      {
-        name: "id", type: "uuid", required: true, description: "Waybill ID", location: "path",
-      },
-    ],
-    requestBody: {
-      description: "Optional image override (uses stored image if omitted)",
-      example: { imageUrl: "https://example.com/waybill-photo.jpg" },
-    },
-    response: {
-      description: "Extraction result with extracted fields and confidence score",
-      example: {
-        success: true,
-        data: {
-          waybill_number: "WB-2026-00134",
-          origin: "Lagos Port",
-          destination: "Kano Warehouse",
-          customer_name: "Dangote Industries",
-          vehicle_number: "ABC-123-XY",
-          quantity: 20,
-          quantity_unit: "tons",
-          confidence_score: 0.94,
         },
       },
     },
@@ -1088,9 +1053,6 @@ export const WEBHOOK_EVENTS = [
   },
   {
     event: "waybill.received", description: "A new waybill image was received (e.g. via WhatsApp)",
-  },
-  {
-    event: "waybill.extracted", description: "AI extraction completed on a waybill",
   },
   {
     event: "waybill.approved", description: "Waybill data was reviewed and approved",

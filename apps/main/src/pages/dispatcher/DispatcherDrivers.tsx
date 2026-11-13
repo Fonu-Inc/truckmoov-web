@@ -1,6 +1,6 @@
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
-  Activity, Brain, Inbox,
+  Activity, Inbox,
   Loader2, Mail, MessageSquare, Send, Users,
 } from "lucide-react";
 import {
@@ -9,7 +9,6 @@ import {
 import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
 // Import the tab components
 import { DriverBehaviorTab } from "@/components/drivers/DriverBehaviorTab";
-import { DriverFatigueTab } from "@/components/drivers/DriverFatigueTab";
 import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -138,13 +137,6 @@ export default function DispatcherDrivers() {
               <Activity className="h-4 w-4" />
               Behavior
             </TabsTrigger>
-            <TabsTrigger
-              value="fatigue"
-              className="gap-2"
-            >
-              <Brain className="h-4 w-4" />
-              Fatigue AI
-            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -174,13 +166,6 @@ export default function DispatcherDrivers() {
           className="mt-0"
         >
           <DriverBehaviorTab />
-        </TabsContent>
-
-        <TabsContent
-          value="fatigue"
-          className="mt-0"
-        >
-          <DriverFatigueTab />
         </TabsContent>
       </Tabs>
 

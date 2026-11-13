@@ -386,7 +386,7 @@ export function CallRecordingsManager() {
                 Call Recordings
               </CardTitle>
               <CardDescription>
-                Review call recordings and AI-powered transcriptions for quality assurance
+                Review call recordings and transcriptions for quality assurance
               </CardDescription>
             </div>
             <Button

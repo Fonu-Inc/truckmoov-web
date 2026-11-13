@@ -3,7 +3,7 @@ import type {
   FilterField, FilterValues,
 } from "@/components/shadcn/table-toolbar";
 import {
-  Bot, Cpu, Download, MessageCircle, MessageSquare, Phone,
+  Cpu, Download, MessageCircle, MessageSquare, Phone,
   Shield, TrendingUp, Zap,
 } from "lucide-react";
 import {
@@ -38,9 +38,6 @@ const eventTypeConfig: Record<string, {
   },
   whatsapp: {
     label: "WhatsApp", icon: MessageCircle,
-  },
-  ai_request: {
-    label: "AI Optimization", icon: Bot,
   },
   iot_sim_active: {
     label: "IoT SIM", icon: Cpu,

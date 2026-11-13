@@ -48,8 +48,8 @@ type Msg = {
 type View = "home" | "topic" | "messages";
 type Tab = "faqs" | "messages";
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/support-chat`;
-const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const CHAT_AUTOMATION_UNAVAILABLE
+  = "Chat automation is currently unavailable. Please check the FAQs for quick help, or tap **Talk to a live agent** and our support team will follow up.";
 
 type FaqItem = {
   question: string;
@@ -346,7 +346,7 @@ export function SupportChatWidget({
       setMessages([
         {
           role: "assistant",
-          content: `Hi ${firstName}! 👋 Ask me anything about FleetPro — devices, SIMs, billing, drivers, you name it. If you'd rather speak with a human, tap **Talk to a live agent** below.`,
+          content: `Hi ${firstName}! 👋 Browse the FAQs for quick answers, or tap **Talk to a live agent** below and our support team will follow up.`,
 
         },
       ]);
@@ -381,179 +381,16 @@ export function SupportChatWidget({
     ]);
     setIsStreaming(true);
 
-    let assistantSoFar = "";
-    const upsertAssistant = (chunk: string) => {
-      assistantSoFar += chunk;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && assistantSoFar.length > chunk.length) {
-          return prev.map((m, i) => (i === prev.length - 1
-            ? {
-                ...m,
-                content: assistantSoFar,
-              }
-            : m));
-        }
-        return [
-          ...prev,
-          {
-            role: "assistant",
-            content: assistantSoFar,
-          },
-        ];
-      });
-    };
-
     try {
-      const resp = await fetch(
-        CHAT_URL,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${PUBLISHABLE_KEY}`,
-
-          },
-          body: JSON.stringify({
-            messages: [
-              ...messages,
-              userMsg,
-            ].map(m => ({
-              role: m.role,
-              content: m.content,
-            })),
-
-          }),
-
-        },
-      );
-
-      if (!resp.ok || !resp.body) {
-        if (resp.status === 429) {
-          toast.error(
-            "Rate limited",
-            { description: "Too many messages, slow down a moment." },
-          );
-        }
-        else if (resp.status === 402) {
-          toast.error(
-            "AI credits exhausted",
-            { description: "Please contact support." },
-          );
-        }
-        else {
-          toast.error(
-            "Chat unavailable",
-            { description: "Please try again." },
-          );
-        }
-        setMessages(prev => [
-          ...prev,
-          {
-            role: "assistant",
-            content:
-              "⚠️ I'm having trouble responding right now. Please try again in a moment, or click **Talk to a live agent** to escalate.",
-
-          },
-        ]);
-        setIsStreaming(false);
-        return;
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let streamDone = false;
-
-      while (!streamDone) {
-        const {
-          done,
-          value,
-        } = await reader.read();
-        if (done)
-          break;
-        textBuffer += decoder.decode(
-          value,
-          { stream: true },
-        );
-
-        for (;;) {
-          const newlineIndex = textBuffer.indexOf("\n");
-          if (newlineIndex === -1)
-            break;
-          let line = textBuffer.slice(
-            0,
-            newlineIndex,
-          );
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) {
-            line = line.slice(
-              0,
-              -1,
-            );
-          }
-          if (line.startsWith(":") || line.trim() === "")
-            continue;
-          if (!line.startsWith("data: "))
-            continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            streamDone = true;
-            break;
-          }
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content)
-              upsertAssistant(content);
-          }
-          catch {
-            textBuffer = `${line}\n${textBuffer}`;
-            break;
-          }
-        }
-      }
-
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw)
-            continue;
-          if (raw.endsWith("\r")) {
-            raw = raw.slice(
-              0,
-              -1,
-            );
-          }
-          if (raw.startsWith(":") || raw.trim() === "")
-            continue;
-          if (!raw.startsWith("data: "))
-            continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]")
-            continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content)
-              upsertAssistant(content);
-          }
-          catch {}
-        }
-      }
-    }
-    catch (e) {
-      console.error(
-        "chat error",
-        e,
-      );
-      toast.error("Couldn't reach support chat");
+      await new Promise(resolve => window.setTimeout(
+        resolve,
+        350,
+      ));
       setMessages(prev => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "⚠️ Network error. Please check your connection and try again, or click **Talk to a live agent**.",
-
+          content: CHAT_AUTOMATION_UNAVAILABLE,
         },
       ]);
     }
@@ -562,18 +399,14 @@ export function SupportChatWidget({
     }
   };
 
-  const askAiAbout = (question: string, topicLabel: string) => {
+  const askAgentAbout = async (question: string, topicLabel: string) => {
     setTab("messages");
     setView("messages");
     seedMessagesIfEmpty();
-    setTimeout(
-      () => {
-        const text = `I need more help with: "${question}" (topic: ${topicLabel})`;
-        setInput("");
-        void sendMessage(text);
-      },
-      0,
-    );
+    await joinQueue({
+      topic: `Help with: ${topicLabel}`,
+      contextSummary: question,
+    });
   };
 
   const handleFilesPicked = (files: FileList | null) => {
@@ -727,7 +560,7 @@ export function SupportChatWidget({
                 </p>
                 <p className="text-[11px] text-background/70 flex items-center gap-1.5 mt-0.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                  AI assistant · always online
+                  Support team · here to help
                 </p>
               </div>
             </div>
@@ -837,14 +670,14 @@ export function SupportChatWidget({
                                   {renderContent(faq.answer)}
                                 </div>
                                 <button
-                                  onClick={() => askAiAbout(
+                                  onClick={() => void askAgentAbout(
                                     faq.question,
                                     activeTopic.label,
                                   )}
                                   className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80 hover:text-foreground"
                                 >
                                   <CircleHelp className="h-3 w-3" />
-                                  Still stuck? Ask the AI
+                                  Still stuck? Talk to a live agent
                                 </button>
                               </div>
                             )}
@@ -876,7 +709,7 @@ export function SupportChatWidget({
                           , how can I help?
                         </p>
                         <p className="text-[12px] text-muted-foreground mt-1">
-                          Ask anything about FleetPro — or escalate to a live agent below.
+                          Need help? Talk to a live agent below.
                         </p>
                       </div>
                     )}

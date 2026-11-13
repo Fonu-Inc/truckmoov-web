@@ -163,7 +163,7 @@ const GuardedFleetLayout = withGuard(
 /**
  * DriversLayout wrapped in the sidebar's `/drivers` role list. Same pattern as
  * GuardedFleetLayout: the pathful layout owns the tab bar, child routes render
- * the Drivers / Behaviour / Fatigue AI panels into its Outlet.
+ * the Drivers / Behaviour panels into its Outlet.
  */
 const GuardedDriversLayout = withGuard(
   getRolesForHref("/drivers") ?? [],
@@ -477,10 +477,6 @@ export const router = createBrowserRouter([
               {
                 path: "behaviour",
                 lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/BehaviourPage")).default }),
-              },
-              {
-                path: "fatigue-ai",
-                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/FatigueAIPage")).default }),
               },
             ],
           },
@@ -886,21 +882,6 @@ export const router = createBrowserRouter([
                   settingsTabRoles("/settings/fleet") ?? [],
                   () => import("@/features/settings/components/ui/MaintenanceConfigPanel"),
                   "MaintenanceConfigPanel",
-                ),
-              },
-              {
-                path: "ai",
-                lazy: guardedBy(
-                  settingsTabRoles("/settings/ai") ?? [],
-                  () => import("@/features/settings/components/pages/AiSettingsPage"),
-                ),
-              },
-              {
-                path: "ai-usage",
-                lazy: guardedByNamed(
-                  settingsTabRoles("/settings/ai-usage") ?? [],
-                  () => import("@/features/settings/components/ui/AIUsageAnalyticsPanel"),
-                  "AIUsageAnalyticsPanel",
                 ),
               },
               {

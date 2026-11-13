@@ -207,10 +207,6 @@ export const router = createBrowserRouter([
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TeamSettingsPage")).default }),
               },
               {
-                path: "ai-providers",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformAISettings")).PlatformAISettings }),
-              },
-              {
                 path: "telephony",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TelephonySettingsPage")).default }),
                 children: [

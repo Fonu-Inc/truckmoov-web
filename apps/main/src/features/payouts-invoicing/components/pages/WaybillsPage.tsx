@@ -4,7 +4,7 @@ import {
   formatWithPattern, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, CheckCircle2, Download, Eye, FileText, ImageIcon, Loader2, MoreHorizontal, Scan, Search, SlidersHorizontal, Upload,
+  AlertTriangle, CheckCircle2, Download, Eye, FileText, ImageIcon, MoreHorizontal, Search, SlidersHorizontal, Upload,
 } from "lucide-react";
 import React, {
   useCallback, useEffect, useRef, useState,
@@ -53,7 +53,6 @@ export default function WaybillsPage() {
     fetchWaybills,
     fetchInvoices,
     createWaybill,
-    extractWaybill,
     updateWaybillFields,
     generateInvoice,
     generateInvoicePDF,
@@ -70,10 +69,6 @@ export default function WaybillsPage() {
     showUploadDialog,
     setShowUploadDialog,
   ] = useState(false);
-  const [
-    extracting,
-    setExtracting,
-  ] = useState<string | null>(null);
   const [
     generating,
     setGenerating,
@@ -175,42 +170,14 @@ export default function WaybillsPage() {
       const file = e.target.files?.[0];
       if (!file)
         return;
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        const waybill = await createWaybill({
-          source_type: "upload",
-          image_url: URL.createObjectURL(file),
-        });
-        if (waybill) {
-          setExtracting(waybill.id);
-          await extractWaybill(
-            waybill.id,
-            undefined,
-            base64,
-          );
-          setExtracting(null);
-          setShowUploadDialog(false);
-        }
-      };
-      reader.readAsDataURL(file);
+      const waybill = await createWaybill({
+        source_type: "upload",
+        image_url: URL.createObjectURL(file),
+      });
+      if (waybill)
+        setShowUploadDialog(false);
     },
-    [
-      createWaybill,
-      extractWaybill,
-    ],
-  );
-
-  const handleExtract = useCallback(
-    async (waybill: WaybillRecord) => {
-      setExtracting(waybill.id);
-      await extractWaybill(
-        waybill.id,
-        waybill.image_url || undefined,
-      );
-      setExtracting(null);
-    },
-    [extractWaybill],
+    [createWaybill],
   );
 
   const handleGenerateInvoice = useCallback(
@@ -319,19 +286,6 @@ export default function WaybillsPage() {
             className="flex gap-1 justify-end items-center"
             onClick={e => e.stopPropagation()}
           >
-            {[
-              "received",
-              "extraction_failed",
-            ].includes(wb.status) && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={extracting === wb.id}
-                onClick={() => handleExtract(wb)}
-              >
-                {extracting === wb.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scan className="h-3.5 w-3.5" />}
-              </Button>
-            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -351,18 +305,6 @@ export default function WaybillsPage() {
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
-                {[
-                  "received",
-                  "extraction_failed",
-                ].includes(wb.status) && (
-                  <DropdownMenuItem
-                    disabled={extracting === wb.id}
-                    onClick={() => handleExtract(wb)}
-                  >
-                    <Scan className="h-4 w-4 mr-2" />
-                    Extract Fields
-                  </DropdownMenuItem>
-                )}
                 {[
                   "extracted",
                   "needs_review",
@@ -400,7 +342,7 @@ export default function WaybillsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Upload Waybill Image</DialogTitle>
-              <DialogDescription>Upload a photo of a waybill. AI will extract the key fields automatically.</DialogDescription>
+              <DialogDescription>Upload a photo of a waybill, then fill in its fields from the details panel.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div
@@ -674,7 +616,6 @@ export default function WaybillsPage() {
           {selectedWaybill && (
             <WaybillDetailView
               waybill={selectedWaybill}
-              onExtract={() => handleExtract(selectedWaybill)}
               onGenerateInvoice={() => handleGenerateInvoice(selectedWaybill.id)}
               onApprove={async () => {
                 const updated = await updateWaybillFields(
@@ -692,7 +633,6 @@ export default function WaybillsPage() {
                 if (updated)
                   setSelectedWaybill(updated);
               }}
-              extracting={extracting === selectedWaybill.id}
               generating={generating === selectedWaybill.id}
               formatAmount={formatAmount}
             />

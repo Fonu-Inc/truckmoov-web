@@ -815,7 +815,7 @@ export default function ActivationOnboarding() {
                   key: "geofencing", label: "Geofencing", desc: "Zone alerts & monitoring",
                 },
                 {
-                  key: "routeOptimization", label: "Route Optimization", desc: "AI-powered route planning",
+                  key: "routeOptimization", label: "Route Optimization", desc: "Efficient route planning",
                 },
                 {
                   key: "messaging", label: "Messaging", desc: "WhatsApp & SMS integration",

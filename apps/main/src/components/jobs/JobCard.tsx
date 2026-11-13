@@ -4,8 +4,8 @@ import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity, Banknote, Calendar, Eye, Hash,
   MapPin, MessageSquare,
-  MoreHorizontal, Package, Pencil, Phone, Sparkles, Trash2,
-  Truck, User, Weight,
+  MoreHorizontal, Package, Pencil, Phone, Trash2,
+  Truck, User, UserPlus, Weight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
@@ -362,7 +362,7 @@ export function JobCard({
               className="w-full h-8 text-xs text-foreground shadow-sm hover:shadow-mtn rounded-md bg-transparent hover:bg-muted/40 border border-border/60"
               onClick={onMatch}
             >
-              <Sparkles className="h-3 w-3 mr-1" />
+              <UserPlus className="h-3 w-3 mr-1" />
               {recommendOnly ? "Recommend Driver" : "Assign Driver"}
             </Button>
           )}

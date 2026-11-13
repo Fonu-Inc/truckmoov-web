@@ -1,18 +1,18 @@
 import type { Driver } from "@/types";
-import { useDriverConsent, useRequestDriverConsent } from "@truckmoov/api/fleet";
+import {
+  useDriverConsent, useRequestDriverConsent,
+} from "@truckmoov/api/fleet";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
-  daysUntil, formatDate, formatDayMonthTime, formatRelative,
+  daysUntil, formatDate, formatRelative,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Activity, AlertTriangle, Award, Brain, Car, Clock,
-  Coffee, CreditCard, Gauge, Loader2,
-  Mail, MessageSquare, Minus, Phone, Play, RefreshCw, RotateCcw, Route,
+  Activity, AlertTriangle, Award, Car, Clock,
+  CreditCard, Gauge,
+  Mail, MessageSquare, Minus, Phone, RotateCcw, Route,
   Shield, Star, TrendingDown, TrendingUp, Truck, User, Zap,
 } from "lucide-react";
-import {
-  useMemo, useState,
-} from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -48,13 +48,6 @@ const commIcons: Record<string, React.ReactNode> = {
   sms: <Phone className="h-4 w-4" />,
   email: <Mail className="h-4 w-4" />,
   voice: <Phone className="h-4 w-4" />,
-};
-
-const riskLevelColors: Record<string, string> = {
-  low: "bg-success/20 text-success border-success/30",
-  medium: "bg-warning/20 text-warning border-warning/30",
-  high: "bg-warning/20 text-warning border-warning/30",
-  critical: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
 // Score gauge component
@@ -106,54 +99,6 @@ function ScoreGauge({
   );
 }
 
-// Fatigue gauge
-function FatigueGauge({ score }: { score: number }) {
-  const percentage = (score / 10) * 100;
-  const getColor = () => {
-    if (score <= 3)
-      return "text-success";
-    if (score <= 5)
-      return "text-warning";
-    if (score <= 7)
-      return "text-warning";
-    return "text-destructive";
-  };
-
-  return (
-    <div className="relative w-24 h-24">
-      <svg
-        className="w-full h-full transform -rotate-90"
-        viewBox="0 0 100 100"
-      >
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          className="text-muted/30"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          strokeDasharray={`${percentage * 2.51} 251`}
-          className={getColor()}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`text-xl font-bold ${getColor()}`}>{score}</span>
-        <span className="text-xs text-muted-foreground">/10</span>
-      </div>
-    </div>
-  );
-}
-
 function normalizeDeviceId(deviceId?: string) {
   if (!deviceId)
     return undefined;
@@ -185,14 +130,6 @@ export function DriverDetailsSheet({
   const requestConsent = useRequestDriverConsent();
   const events: any[] = [];
   const driverScores: any[] = [];
-  const fatigueAlerts: any[] = [];
-  const analyzeFatigue = async (..._args: any[]) => {};
-  const isAnalyzing = false;
-  const refetchFatigue = () => null;
-  const [
-    isRunningAnalysis,
-    setIsRunningAnalysis,
-  ] = useState(false);
 
   // Find device ID(s) associated with this driver via their assigned vehicle
   const driverDeviceIds = useMemo(
@@ -241,62 +178,6 @@ export function DriverDetailsSheet({
     ],
   );
 
-  const driverFatigueAlerts = useMemo(
-    () => {
-      return fatigueAlerts.filter(a =>
-        a.driver_id === driver?.id
-        || driverDeviceIds.includes(a.device_id)).slice(
-        0,
-        5,
-      );
-    },
-    [
-      fatigueAlerts,
-      driver?.id,
-      driverDeviceIds,
-    ],
-  );
-
-  const latestFatigueAlert = driverFatigueAlerts[0];
-
-  // Run fatigue analysis for the driver's device
-  const handleRunFatigueAnalysis = async () => {
-    if (!driver || driverDeviceIds.length === 0) {
-      toast.error(
-        "No Device Assigned",
-        { description: "This driver has no assigned vehicle/device to analyze." },
-      );
-      return;
-    }
-
-    setIsRunningAnalysis(true);
-    try {
-      // Use the first device ID assigned to this driver
-      const deviceId = driverDeviceIds[0];
-      // Determine tenant (for demo use tenant-001)
-      const tenantId = "tenant-001";
-
-      await analyzeFatigue(
-        deviceId,
-        tenantId,
-        driver.id,
-        driver.name,
-      );
-
-      // Refresh alerts to show the new one
-      setTimeout(
-        refetchFatigue,
-        500,
-      );
-    }
-    catch {
-      // Error handled by the hook
-    }
-    finally {
-      setIsRunningAnalysis(false);
-    }
-  };
-
   if (!driver)
     return null;
 
@@ -305,7 +186,6 @@ export function DriverDetailsSheet({
 
   // Calculate overall behavior score
   const overallBehaviorScore = driverScore?.overallScore ?? 85;
-  const fatigueScore = latestFatigueAlert ? Number(latestFatigueAlert.fatigue_score) : 2;
 
   const getEventIcon = (eventType: string) => {
     switch (eventType) {
@@ -373,16 +253,6 @@ export function DriverDetailsSheet({
                 <p className="text-xs text-muted-foreground">Behavior</p>
               </CardContent>
             </Card>
-            <Card className={`border-border/50 ${fatigueScore > 5 ? "bg-warning/10" : "bg-muted/30"}`}>
-              <CardContent className="p-3 text-center">
-                <Brain className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-xl font-bold">
-                  {fatigueScore}
-                  /10
-                </p>
-                <p className="text-xs text-muted-foreground">Fatigue</p>
-              </CardContent>
-            </Card>
             <Card className="bg-muted/30 border-border/50">
               <CardContent className="p-3 text-center">
                 <Shield className="h-5 w-5 mx-auto mb-1 text-success" />
@@ -397,10 +267,9 @@ export function DriverDetailsSheet({
           defaultValue="overview"
           className="mt-6"
         >
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="behavior">Behavior</TabsTrigger>
-            <TabsTrigger value="fatigue">Fatigue</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
@@ -462,7 +331,10 @@ export function DriverDetailsSheet({
                           ? "bg-warning/10 text-warning border-warning/30"
                           : "bg-muted text-muted-foreground border-muted";
                       return (
-                        <Badge variant="outline" className={`${cls} text-[10px]`}>
+                        <Badge
+                          variant="outline"
+                          className={`${cls} text-[10px]`}
+                        >
                           {consentQuery.isLoading ? "Checking…" : label}
                         </Badge>
                       );
@@ -474,9 +346,12 @@ export function DriverDetailsSheet({
                     className="h-7 text-xs"
                     disabled={requestConsent.isPending || !driver?.id}
                     onClick={async () => {
-                      if (!driver?.id) return;
+                      if (!driver?.id)
+                        return;
                       try {
-                        await requestConsent.mutateAsync({ id: driver.id, channel: "whatsapp" });
+                        await requestConsent.mutateAsync({
+                          id: driver.id, channel: "whatsapp",
+                        });
                         toast.success(`Opt-in request sent to ${driver.name}`);
                       }
                       catch (err) {
@@ -551,15 +426,6 @@ export function DriverDetailsSheet({
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         {getTrendIcon(driverScore?.trend)}
                         {driverScore?.trend || "stable"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <FatigueGauge score={fatigueScore} />
-                    <div>
-                      <p className="font-medium">Fatigue Level</p>
-                      <p className="text-xs text-muted-foreground">
-                        {fatigueScore <= 3 ? "Low risk" : fatigueScore <= 5 ? "Moderate" : "High risk"}
                       </p>
                     </div>
                   </div>
@@ -702,194 +568,6 @@ export function DriverDetailsSheet({
           </TabsContent>
 
           <TabsContent
-            value="fatigue"
-            className="space-y-4 mt-4"
-          >
-            {/* Current Fatigue Status */}
-            <Card className={`border-border/50 ${latestFatigueAlert && Number(latestFatigueAlert.fatigue_score) > 5 ? "bg-warning/10 border-warning/30" : "bg-muted/30"}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-primary" />
-                    Current Fatigue Status
-                  </CardTitle>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleRunFatigueAnalysis}
-                    disabled={isRunningAnalysis || isAnalyzing || driverDeviceIds.length === 0}
-                    className="gap-1.5 h-7 text-xs"
-                  >
-                    {isRunningAnalysis || isAnalyzing
-                      ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Analyzing...
-                          </>
-                        )
-                      : (
-                          <>
-                            <RefreshCw className="h-3 w-3" />
-                            Run Analysis
-                          </>
-                        )}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {latestFatigueAlert
-                  ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-4">
-                          <FatigueGauge score={Number(latestFatigueAlert.fatigue_score)} />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className={riskLevelColors[latestFatigueAlert.risk_level]}>
-                                {latestFatigueAlert.risk_level}
-                                {" "}
-                                risk
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {formatRelative(latestFatigueAlert.created_at)}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {latestFatigueAlert.driving_duration_minutes}
-                                {" "}
-                                min driving
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Coffee className="h-3 w-3" />
-                                Rest:
-                                {" "}
-                                {latestFatigueAlert.rest_compliance_score}
-                                /10
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {latestFatigueAlert.recommendations.length > 0 && (
-                          <>
-                            <Separator />
-                            <div>
-                              <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                                <Shield className="h-3 w-3 text-success" />
-                                Recommendations
-                              </p>
-                              <ul className="space-y-1">
-                                {latestFatigueAlert.recommendations.slice(
-                                  0,
-                                  3,
-                                ).map((rec, idx) => (
-                                  <li
-                                    key={idx}
-                                    className="text-xs text-muted-foreground flex items-start gap-1"
-                                  >
-                                    <span className="text-success mt-0.5">✓</span>
-                                    {rec}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </>
-                        )}
-
-                        {latestFatigueAlert.ai_analysis && (
-                          <>
-                            <Separator />
-                            <div>
-                              <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                                <Brain className="h-3 w-3 text-primary" />
-                                AI Analysis
-                              </p>
-                              <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                                {latestFatigueAlert.ai_analysis}
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )
-                  : (
-                      <div className="text-center py-6">
-                        <Brain className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                        <p className="font-medium">No Fatigue Alerts</p>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Run an AI fatigue analysis to assess this driver's condition
-                        </p>
-                        <Button
-                          onClick={handleRunFatigueAnalysis}
-                          disabled={isRunningAnalysis || isAnalyzing || driverDeviceIds.length === 0}
-                          className="gap-2"
-                        >
-                          {isRunningAnalysis || isAnalyzing
-                            ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  Analyzing...
-                                </>
-                              )
-                            : (
-                                <>
-                                  <Play className="h-4 w-4" />
-                                  Run Fatigue Analysis
-                                </>
-                              )}
-                        </Button>
-                        {driverDeviceIds.length === 0 && (
-                          <p className="text-xs text-warning mt-2">
-                            No device assigned to this driver
-                          </p>
-                        )}
-                      </div>
-                    )}
-              </CardContent>
-            </Card>
-
-            {/* Fatigue History */}
-            {driverFatigueAlerts.length > 1 && (
-              <Card className="bg-muted/30 border-border/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Fatigue History</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[200px] pr-2">
-                    <div className="space-y-2">
-                      {driverFatigueAlerts.slice(1).map(alert => (
-                        <div
-                          key={alert.id}
-                          className="p-2 rounded-lg border border-border/50 bg-muted/20"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">
-                                {alert.fatigue_score}
-                                /10
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] h-4 ${riskLevelColors[alert.risk_level]}`}
-                              >
-                                {alert.risk_level}
-                              </Badge>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground">
-                              {formatDayMonthTime(alert.created_at)}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent
             value="history"
             className="space-y-4 mt-4"
           >
@@ -931,23 +609,6 @@ export function DriverDetailsSheet({
                   </div>
                   <Progress
                     value={overallBehaviorScore}
-                    className="h-2"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm flex items-center gap-2">
-                      <Coffee className="h-4 w-4 text-primary" />
-                      Rest Compliance
-                    </span>
-                    <span className="text-sm font-medium">
-                      {latestFatigueAlert?.rest_compliance_score ?? 8}
-                      /10
-                    </span>
-                  </div>
-                  <Progress
-                    value={((latestFatigueAlert?.rest_compliance_score ?? 8) / 10) * 100}
                     className="h-2"
                   />
                 </div>

@@ -19,7 +19,6 @@ export function useWaybillInvoice() {
     fetchPricingRules: async () => {},
     fetchInvoiceConfig: async () => {},
     createWaybill: async (..._args: any[]): Promise<any> => null,
-    extractWaybill: async (..._args: any[]) => {},
     updateWaybillFields: async (..._args: any[]): Promise<any> => null,
     generateInvoice: async (..._args: any[]): Promise<any> => null,
     updateInvoice: (..._args: any[]) => {},

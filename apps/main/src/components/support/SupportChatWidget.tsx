@@ -320,7 +320,7 @@ export function SupportChatWidget({
       setMessages([
         {
           role: "assistant",
-          content: `Hi ${firstName}! 👋 Ask me anything about FleetPro — devices, SIMs, billing, drivers, you name it. If you'd rather speak with a human, tap **Talk to a live agent** below.`,
+          content: `Hi ${firstName}! 👋 Browse the FAQs for quick answers, or tap **Talk to a live agent** below and our support team will follow up.`,
         },
       ]);
     }
@@ -371,18 +371,14 @@ export function SupportChatWidget({
     }
   };
 
-  const askAiAbout = (question: string, topicLabel: string) => {
+  const askAgentAbout = async (question: string, topicLabel: string) => {
     setTab("messages");
     setView("messages");
     seedMessagesIfEmpty();
-    setTimeout(
-      () => {
-        const text = `I need more help with: "${question}" (topic: ${topicLabel})`;
-        setInput("");
-        void sendMessage(text);
-      },
-      0,
-    );
+    await joinQueue({
+      topic: `Help with: ${topicLabel}`,
+      contextSummary: question,
+    });
   };
 
   const handleFilesPicked = (files: FileList | null) => {
@@ -536,7 +532,7 @@ export function SupportChatWidget({
                 </p>
                 <p className="text-[11px] text-background/70 flex items-center gap-1.5 mt-0.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                  AI assistant · always online
+                  Support team · here to help
                 </p>
               </div>
             </div>
@@ -646,14 +642,14 @@ export function SupportChatWidget({
                                   {renderContent(faq.answer)}
                                 </div>
                                 <button
-                                  onClick={() => askAiAbout(
+                                  onClick={() => void askAgentAbout(
                                     faq.question,
                                     activeTopic.label,
                                   )}
                                   className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80 hover:text-foreground"
                                 >
                                   <CircleHelp className="h-3 w-3" />
-                                  Still stuck? Ask the AI
+                                  Still stuck? Talk to a live agent
                                 </button>
                               </div>
                             )}
@@ -689,7 +685,7 @@ export function SupportChatWidget({
                           , how can I help?
                         </p>
                         <p className="text-[12px] text-muted-foreground mt-1">
-                          Ask anything about FleetPro — or escalate to a live agent below.
+                          Need help? Talk to a live agent below.
                         </p>
                       </div>
                     )}

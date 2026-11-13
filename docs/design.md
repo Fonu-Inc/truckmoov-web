@@ -561,6 +561,27 @@ never a stack.
 - Modals are `Dialog`; mobile/side panels are `Sheet` or `Drawer`.
 - Charts use the shadcn `chart` wrapper with `--chart-*` tokens.
 
+## AI features are off
+
+No AI feature ships in `apps/main` or `apps/admin` for now. Don't add one back
+without being asked. What was removed, so it can be found again in git history:
+
+- Settings tabs: main's **AI Matching** (`/settings/ai`) and **AI Usage**
+  (`/settings/ai-usage`); admin's **AI** (`/settings/ai-providers`).
+- Drivers: the **Fatigue AI** tab (`/drivers/fatigue-ai`), the dispatcher's
+  Fatigue AI tab, and the Fatigue tab / score in `DriverDetailsSheet`.
+- Dispatch: `JobMatchingDialog` is manual-only (pick vehicle + driver);
+  `AssignResourceDialog` lost its "AI Recommendation" ranking view.
+- Waybills: no "Extract with AI" and no AI confidence badges — fields are
+  filled in by hand via **Edit Fields**.
+- Support chat: no AI assistant. Admin's widget no longer calls the
+  `support-chat` edge function; both point "Still stuck?" at a live agent.
+- The `/waybills/{id}/extract` endpoint and `waybill.extracted` webhook are out
+  of the in-app API docs.
+
+The `packages/api` services behind these (fatigue, recommend-drivers/vehicles,
+AI config) are kept so the backend contract stays typed.
+
 ## Data & state
 
 - Server data: React Query via `@truckmoov/api` (`packages/api`). Apps never

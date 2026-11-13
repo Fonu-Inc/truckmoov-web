@@ -1,21 +1,16 @@
-import type {
-  Driver, Job, Vehicle,
-} from "@/types";
+import type { Job } from "@/types";
 import {
   useDrivers, useVehicles,
 } from "@truckmoov/api/fleet";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
-  AlertCircle, Brain, CheckCircle, Clock, Eye, Info,
-  ListChecks, Loader2, Lock, MapPin, MessageSquare, Phone,
-  PhoneCall, Route, ShieldCheck, Sparkles, Star, Truck, User, Zap,
+  AlertCircle, CheckCircle, ListChecks, Loader2, MapPin, Truck, User,
 } from "lucide-react";
 import {
   useEffect, useState,
 } from "react";
 import { toast } from "sonner";
 import {
-  Alert, AlertDescription, AlertTitle,
+  Alert, AlertDescription,
 } from "@/components/shadcn/alert";
 import {
   AlertDialog,
@@ -27,7 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent,
@@ -36,7 +30,6 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
-import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
@@ -44,25 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Tabs, TabsList, TabsTrigger,
-} from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import {
-  mockDrivers, mockVehicles,
-} from "@/data/mockData";
-import { useDriverIVR } from "@/hooks/useDriverIVR";
-import { useJobMatching } from "@/hooks/useJobMatching";
-
-type MatchResult = {
-  vehicle: Vehicle;
-  driver: Driver;
-  matchScore: number;
-  confidence: number;
-  estimatedTime: string;
-  distance: number;
-  reasons: string[];
-};
 
 type JobMatchingDialogProps = {
   open: boolean;
@@ -77,226 +52,63 @@ type JobMatchingDialogProps = {
   recommendOnly?: boolean;
 };
 
+/** Manual dispatch: pick a vehicle and a driver from the tenant's roster. */
 export function JobMatchingDialog({
   open, onOpenChange, job, onAssign, onRecommend, recommendOnly = false,
 }: JobMatchingDialogProps) {
-  const [
-    selectedMatch,
-    setSelectedMatch,
-  ] = useState<MatchResult | null>(null);
   const [
     confirmRecommendOpen,
     setConfirmRecommendOpen,
   ] = useState(false);
   const [
-    isSendingWhatsApp,
-    setIsSendingWhatsApp,
-  ] = useState(false);
-  const [
-    isSendingIVR,
-    setIsSendingIVR,
-  ] = useState(false);
-  const [
-    mode,
-    setMode,
-  ] = useState<"ai" | "manual">("ai");
-  const [
-    manualVehicleId,
-    setManualVehicleId,
+    vehicleId,
+    setVehicleId,
   ] = useState<string>("");
   const [
-    manualDriverId,
-    setManualDriverId,
+    driverId,
+    setDriverId,
   ] = useState<string>("");
   const [
-    isManualAssigning,
-    setIsManualAssigning,
+    isAssigning,
+    setIsAssigning,
   ] = useState(false);
   const vehiclesQuery = useVehicles();
   const driversQuery = useDrivers();
-
-  const {
-    notifyNewJob, notifyUrgent, isLoading: isIVRLoading,
-  } = useDriverIVR();
   const { format: formatCurrency } = useCurrency();
 
-  // Use the new unified hook with mode control
-  const {
-    matches,
-    isMatching,
-    matchProgress,
-    analysis,
-    provider,
-    model,
-    overallConfidence,
-    requiresApproval,
-    runMatching,
-    reset,
-    error: matchingError,
-    // Mode control
-    modeDowngraded,
-    isSimulationMode,
-    isLiveMode,
-    // Execution capabilities from server
-    // Role-based permissions
-    canRunAIMatching,
-    canViewAIResults,
-    defaultMode,
-    // Stats
-    eligibleVehicleCount,
-    eligibleDriverCount,
-  } = useJobMatching();
-
-  const isManualMode = mode === "manual";
-
-  // Manual dispatch must use the tenant's current fleet roster from the API.
   const availableVehicles = vehiclesQuery.data?.data ?? [];
   const availableDrivers = driversQuery.data?.data ?? [];
-  const selectedManualVehicle = availableVehicles.find(v => v.id === manualVehicleId);
-  const selectedManualDriver = availableDrivers.find(d => d.id === manualDriverId);
+  const selectedVehicle = availableVehicles.find(v => v.id === vehicleId);
+  const selectedDriver = availableDrivers.find(d => d.id === driverId);
+  const isRosterLoading = vehiclesQuery.isLoading || driversQuery.isLoading;
 
   useEffect(
     () => {
-      if (open && job) {
-        setMode(canRunAIMatching ? "ai" : "manual");
-        setManualVehicleId("");
-        setManualDriverId("");
-        setSelectedMatch(null);
-
-        if (canRunAIMatching) {
-        // Request matching with the role's default mode
-          runMatching(
-            job,
-            mockVehicles,
-            mockDrivers,
-            defaultMode,
-          );
-        }
-      }
-      else {
-        reset();
-        setMode("ai");
+      if (open) {
+        setVehicleId("");
+        setDriverId("");
       }
     },
     [
       open,
       job,
-      canRunAIMatching,
-      defaultMode,
     ],
   );
 
-  // LIVE mode: Actual dispatch actions
-  const handleAssignViaWhatsApp = async (match: MatchResult) => {
-    if (isSimulationMode) {
-      toast.error(
-        "Simulation mode",
-        { description: "Cannot send offers in simulation mode. Switch to a dispatcher role for live execution." },
-      );
-      return;
-    }
-
-    setSelectedMatch(match);
-    setIsSendingWhatsApp(true);
-
-    try {
-      // In LIVE mode, this would trigger actual WhatsApp API
-      await new Promise(resolve => setTimeout(
-        resolve,
-        1500,
-      ));
-
-      toast.success(
-        `Job assignment sent to ${match.driver.name} via WhatsApp`,
-        { description: `Awaiting confirmation for job ${job?.reference}` },
-      );
-
-      onAssign(
-        match.vehicle.id,
-        match.driver.id,
-      );
-      onOpenChange(false);
-    }
-    finally {
-      setIsSendingWhatsApp(false);
-    }
-  };
-
-  const handleAssignViaIVR = async (match: MatchResult, urgent: boolean = false) => {
-    if (isSimulationMode) {
-      toast.error(
-        "Simulation mode",
-        { description: "Cannot trigger IVR calls in simulation mode. Switch to a dispatcher role for live execution." },
-      );
-      return;
-    }
-
-    setSelectedMatch(match);
-    setIsSendingIVR(true);
-
-    try {
-      const jobDetails = {
-        pickup: job!.pickup.address,
-        dropoff: job!.delivery.address,
-        cargo: job!.cargo.type,
-        amount: job!.amount,
-        deadline: job!.deadline?.toISOString(),
-      };
-
-      const result = urgent
-        ? await notifyUrgent(
-            match.driver.phone || "+2348012345678",
-            jobDetails,
-            {
-              driverName: match.driver.name, jobId: job!.id, language: "en",
-            },
-          )
-        : await notifyNewJob(
-            match.driver.phone || "+2348012345678",
-            jobDetails,
-            {
-              driverName: match.driver.name, jobId: job!.id, language: "en",
-            },
-          );
-
-      if (result?.success) {
-        toast.success(
-          `IVR call initiated to ${match.driver.name}`,
-          {
-            description: urgent
-              ? `Urgent notification with retry - Call ID: ${result.callId}`
-              : `Awaiting driver response via phone - Call ID: ${result.callId}`,
-          },
-        );
-        onAssign(
-          match.vehicle.id,
-          match.driver.id,
-        );
-        onOpenChange(false);
-      }
-    }
-    catch {
-      toast.error("Failed to initiate IVR call");
-    }
-    finally {
-      setIsSendingIVR(false);
-    }
-  };
-
-  const handleManualAssign = async () => {
-    if (!manualVehicleId || !manualDriverId) {
+  const handleAssign = async () => {
+    if (!vehicleId || !driverId) {
       toast.error("Please select both a vehicle and driver");
       return;
     }
-    if (!selectedManualVehicle || !selectedManualDriver)
+    if (!selectedVehicle || !selectedDriver)
       return;
 
-    setIsManualAssigning(true);
+    setIsAssigning(true);
     try {
       await onAssign(
-        manualVehicleId,
-        manualDriverId,
-        selectedManualDriver.phone,
+        vehicleId,
+        driverId,
+        selectedDriver.phone,
       );
       onOpenChange(false);
     }
@@ -304,21 +116,28 @@ export function JobMatchingDialog({
       // The page-level mutation handler displays the API error and keeps the modal open.
     }
     finally {
-      setIsManualAssigning(false);
+      setIsAssigning(false);
     }
+  };
+
+  const handleRecommend = () => {
+    if (!vehicleId || !driverId || !onRecommend)
+      return;
+    onRecommend(
+      vehicleId,
+      driverId,
+    );
+    toast.success(
+      selectedDriver
+        ? `${selectedDriver.name} recommended for job ${job?.reference}`
+        : "Driver recommended for job",
+    );
+    setConfirmRecommendOpen(false);
+    onOpenChange(false);
   };
 
   if (!job)
     return null;
-
-  const providerInfo = provider
-    ? {
-        provider,
-        model: model || "unknown",
-        confidence: overallConfidence || 0.75,
-        requiresApproval,
-      }
-    : null;
 
   return (
     <Dialog
@@ -328,127 +147,17 @@ export function JobMatchingDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isManualMode
-              ? (
-                  <ListChecks className="h-5 w-5 text-primary" />
-                )
-              : (
-                  <Brain className="h-5 w-5 text-primary" />
-                )}
-            {isManualMode ? "Manual Dispatch" : "AI Load Matching"}
-
-            {/* Mode Badge */}
-            <Badge
-              variant={isSimulationMode ? "secondary" : "default"}
-              className={`ml-2 ${isSimulationMode ? "bg-muted text-muted-foreground" : "bg-success/20 text-success border-success/30"}`}
-            >
-              {isSimulationMode
-                ? (
-                    <>
-                      <Eye className="h-3 w-3 mr-1" />
-                      Simulation
-                    </>
-                  )
-                : (
-                    <>
-                      <Zap className="h-3 w-3 mr-1" />
-                      Live
-                    </>
-                  )}
-            </Badge>
+            <ListChecks className="h-5 w-5 text-primary" />
+            {recommendOnly ? "Recommend Driver" : "Dispatch Job"}
           </DialogTitle>
-          <DialogDescription className="flex items-center gap-2">
-            {isManualMode
-              ? (
-                  <>
-                    Manually select vehicle and driver for job
-                    {job.reference}
-                  </>
-                )
-              : (
-                  <>
-                    AI-powered matching for job
-                    {" "}
-                    {job.reference}
-                    {providerInfo && (
-                      <Badge
-                        variant="outline"
-                        className="ml-2 capitalize"
-                      >
-                        {providerInfo.provider}
-                        {" "}
-                        /
-                        {providerInfo.model}
-                      </Badge>
-                    )}
-                  </>
-                )}
+          <DialogDescription>
+            Select a vehicle and driver for job
+            {" "}
+            {job.reference}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Simulation Mode Warning */}
-          {isSimulationMode && !isManualMode && (
-            <Alert className="bg-muted/50 border-muted-foreground/20">
-              <Info className="h-4 w-4" />
-              <AlertTitle>Simulation Mode</AlertTitle>
-              <AlertDescription>
-                You are viewing AI matching results in read-only mode.
-                {modeDowngraded
-                  ? " Your role (Admin) is restricted to simulation only."
-                  : " Dispatchers can execute assignments in live mode."}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Mode Tabs */}
-          <Tabs
-            value={mode}
-            onValueChange={(v) => {
-              const nextMode: "ai" | "manual" = v === "manual" ? "manual" : "ai";
-              setMode(nextMode);
-
-              if (nextMode === "ai" && job && canRunAIMatching && !isMatching && matches.length === 0) {
-                runMatching(
-                  job,
-                  mockVehicles,
-                  mockDrivers,
-                  defaultMode,
-                );
-              }
-            }}
-          >
-            <TabsList className="w-full bg-muted/50">
-              <TabsTrigger
-                value="ai"
-                disabled={!canRunAIMatching || !canViewAIResults}
-                className="flex-1"
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                AI
-              </TabsTrigger>
-              <TabsTrigger
-                value="manual"
-                className="flex-1"
-              >
-                <ListChecks className="h-4 w-4 mr-2" />
-                Manual
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Error Alert */}
-          {matchingError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>AI Matching Unavailable</AlertTitle>
-              <AlertDescription>
-                {matchingError}
-                . You can manually select a vehicle and driver below.
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Job Summary */}
           <Card className="bg-muted/30 border-border/50">
             <CardContent className="p-4">
@@ -475,407 +184,124 @@ export function JobMatchingDialog({
             </CardContent>
           </Card>
 
-          {/* Manual Selection Mode */}
-          {isManualMode && (
-            <Card className="border-primary/30">
-              <CardContent className="p-4 space-y-4">
-                <h4 className="font-medium text-sm flex items-center gap-2">
-                  <ListChecks className="h-4 w-4 text-primary" />
-                  Manual Selection
-                  {isSimulationMode && (
-                    <Badge
-                      variant="secondary"
-                      className="text-xs"
-                    >
-                      <Lock className="h-3 w-3 mr-1" />
-                      Read-only
-                    </Badge>
-                  )}
-                </h4>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Truck className="h-4 w-4" />
-                      Select Vehicle
-                    </Label>
-                    <Select
-                      value={manualVehicleId}
-                      onValueChange={setManualVehicleId}
-                      disabled={vehiclesQuery.isLoading || vehiclesQuery.isError}
-                    >
-                      <SelectTrigger aria-label="Select vehicle">
-                        <SelectValue placeholder="Choose a vehicle..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableVehicles.map(v => (
-                          <SelectItem
-                            key={v.id}
-                            value={v.id}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{v.registrationNumber || v.plateNumber}</span>
-                              <span className="text-muted-foreground">
-                                -
-                                {" "}
-                                {[
-                                  v.make,
-                                  v.model,
-                                ].filter(Boolean).join(" ") || v.type}
-                                {v.capacity != null ? ` (${v.capacity}t)` : ""}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Select Driver
-                    </Label>
-                    <Select
-                      value={manualDriverId}
-                      onValueChange={setManualDriverId}
-                      disabled={driversQuery.isLoading || driversQuery.isError}
-                    >
-                      <SelectTrigger aria-label="Select driver">
-                        <SelectValue placeholder="Choose a driver..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableDrivers.map(d => (
-                          <SelectItem
-                            key={d.id}
-                            value={d.id}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{d.name}</span>
-                              <span className="text-muted-foreground">{d.phone}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+          <Card className="border-primary/30">
+            <CardContent className="p-4 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    Select Vehicle
+                  </Label>
+                  <Select
+                    value={vehicleId}
+                    onValueChange={setVehicleId}
+                    disabled={vehiclesQuery.isLoading || vehiclesQuery.isError}
+                  >
+                    <SelectTrigger aria-label="Select vehicle">
+                      <SelectValue placeholder="Choose a vehicle..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableVehicles.map(v => (
+                        <SelectItem
+                          key={v.id}
+                          value={v.id}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{v.registrationNumber || v.plateNumber}</span>
+                            <span className="text-muted-foreground">
+                              -
+                              {" "}
+                              {[
+                                v.make,
+                                v.model,
+                              ].filter(Boolean).join(" ") || v.type}
+                              {v.capacity != null ? ` (${v.capacity}t)` : ""}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {(vehiclesQuery.isLoading || driversQuery.isLoading) && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading vehicles and drivers...
-                  </div>
-                )}
-
-                {(vehiclesQuery.isError || driversQuery.isError) && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>Unable to load the vehicle and driver roster. Please try again.</AlertDescription>
-                  </Alert>
-                )}
-
-                {manualVehicleId && manualDriverId && (
-                  <Alert className="bg-muted/30">
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    <AlertDescription>
-                      Ready to dispatch:
-                      {" "}
-                      {selectedManualVehicle?.registrationNumber || selectedManualVehicle?.plateNumber}
-                      {" "}
-                      with
-                      {" "}
-                      {selectedManualDriver?.name}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* AI Matching Progress */}
-          {isMatching && !isManualMode && (
-            <div className="space-y-3 py-4">
-              <div className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-primary animate-pulse" />
-                <span className="text-sm font-medium">AI analyzing fleet data...</span>
-              </div>
-              <Progress
-                value={matchProgress}
-                className="h-2"
-              />
-              <p className="text-xs text-muted-foreground text-center">
-                {matchProgress < 40 && "Processing vehicle locations and capacity..."}
-                {matchProgress >= 40 && matchProgress < 70 && "Evaluating driver ratings and availability..."}
-                {matchProgress >= 70 && matchProgress < 100 && "AI calculating optimal matches..."}
-                {matchProgress === 100 && "Generating AI recommendations..."}
-              </p>
-            </div>
-          )}
-
-          {/* AI Analysis */}
-          {!isMatching && !isManualMode && analysis && (
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="p-3">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-muted-foreground">{analysis}</p>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Select Driver
+                  </Label>
+                  <Select
+                    value={driverId}
+                    onValueChange={setDriverId}
+                    disabled={driversQuery.isLoading || driversQuery.isError}
+                  >
+                    <SelectTrigger aria-label="Select driver">
+                      <SelectValue placeholder="Choose a driver..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDrivers.map(d => (
+                        <SelectItem
+                          key={d.id}
+                          value={d.id}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{d.name}</span>
+                            <span className="text-muted-foreground">{d.phone}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Confidence & Approval Info */}
-          {!isMatching && !isManualMode && matches.length > 0 && providerInfo && (
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant={providerInfo.confidence >= 0.8 ? "default" : "secondary"}
-                  className="gap-1"
-                >
-                  <Sparkles className="h-3 w-3" />
-                  {(providerInfo.confidence * 100).toFixed(0)}
-                  % Confidence
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="text-xs"
-                >
-                  {eligibleVehicleCount}
-                  {" "}
-                  vehicles /
-                  {eligibleDriverCount}
-                  {" "}
-                  drivers eligible
-                </Badge>
               </div>
-              {providerInfo.requiresApproval && isLiveMode && (
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span>Dispatcher approval required</span>
+
+              {isRosterLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading vehicles and drivers...
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Match Results */}
-          {!isMatching && !isManualMode && matches.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-primary" />
-                Top Matches Found
-              </h4>
+              {(vehiclesQuery.isError || driversQuery.isError) && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>Unable to load the vehicle and driver roster. Please try again.</AlertDescription>
+                </Alert>
+              )}
 
-              {matches.map((match, index) => (
-                <Card
-                  key={match.vehicle.id}
-                  className={`bg-muted/30 border-border/50 transition-all cursor-pointer hover:border-primary/50 ${
-                    selectedMatch?.vehicle.id === match.vehicle.id ? "border-primary ring-1 ring-primary" : ""
-                  }`}
-                  onClick={() => setSelectedMatch(match)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                          index === 0 ? "bg-gradient-to-br from-primary to-accent" : "bg-muted"
-                        }`}
-                        >
-                          <Truck className="h-5 w-5 text-primary-foreground" />
-                        </div>
-                        <div>
-                          <p className="font-medium">
-                            {match.vehicle.make}
-                            {" "}
-                            {match.vehicle.model}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{match.vehicle.registrationNumber}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={`${
-                          match.matchScore >= 95
-                            ? "bg-success/20 text-success border-success/30"
-                            : match.matchScore >= 90
-                              ? "bg-primary/20 text-primary border-primary/30"
-                              : "bg-warning/20 text-warning border-warning/30"
-                        }`}
-                        >
-                          {match.matchScore}
-                          % Match
-                        </Badge>
-                        {index === 0 && (
-                          <p className="text-xs text-primary mt-1">Recommended</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
-                          {getInitials(match.driver.name)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{match.driver.name}</p>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-warning fill-current" />
-                            <span className="text-xs">{match.driver.rating.toFixed(1)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Route className="h-4 w-4" />
-                        <span>
-                          {match.distance}
-                          {" "}
-                          km
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{match.estimatedTime}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {match.reasons.map((reason, i) => (
-                        <Badge
-                          key={i}
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {reason}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* No Matches */}
-          {!isMatching && !isManualMode && matches.length === 0 && canRunAIMatching && !matchingError && (
-            <div className="text-center py-8">
-              <Truck className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-              <p className="font-medium">No AI Matches Found</p>
-              <p className="text-sm text-muted-foreground mb-4">
-                AI couldn't find optimal matches. You can select manually.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => setMode("manual")}
-              >
-                <ListChecks className="h-4 w-4 mr-2" />
-                Switch to Manual Selection
-              </Button>
-            </div>
-          )}
+              {vehicleId && driverId && (
+                <Alert className="bg-muted/30">
+                  <CheckCircle className="h-4 w-4 text-success" />
+                  <AlertDescription>
+                    Ready to dispatch:
+                    {" "}
+                    {selectedVehicle?.registrationNumber || selectedVehicle?.plateNumber}
+                    {" "}
+                    with
+                    {" "}
+                    {selectedDriver?.name}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-3 pt-4">
-            {isManualMode && !recommendOnly && (
-              <div className="flex justify-end">
-                <Button
-                  variant="gradient"
-                  onClick={handleManualAssign}
-                  disabled={!manualVehicleId || !manualDriverId || isManualAssigning || vehiclesQuery.isLoading || driversQuery.isLoading}
-                >
-                  {isManualAssigning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                  {isManualAssigning ? "Assigning..." : "Assign Driver"}
-                </Button>
-              </div>
-            )}
-
-            {/* Manual mode - SIMULATION shows recommend hint */}
-            {isManualMode && manualVehicleId && manualDriverId && isSimulationMode && (
-              <Alert className="bg-muted/30">
-                <Sparkles className="h-4 w-4" />
-                <AlertDescription>
-                  Preview: confirm to recommend this driver for the job. Dispatchers can later execute the live assignment.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* AI mode action buttons - ONLY in LIVE mode */}
-            {!isManualMode && selectedMatch && isLiveMode && !recommendOnly && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button
-                  variant="gradient"
-                  onClick={() => handleAssignViaWhatsApp(selectedMatch)}
-                  disabled={isSendingWhatsApp || isSendingIVR}
-                  className="flex-1"
-                >
-                  {isSendingWhatsApp
-                    ? <>Sending...</>
-                    : (
-                        <>
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          WhatsApp
-                        </>
-                      )}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => handleAssignViaIVR(
-                    selectedMatch,
-                    false,
-                  )}
-                  disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
-                  className="flex-1"
-                >
-                  {isSendingIVR
-                    ? <>Calling...</>
-                    : (
-                        <>
-                          <Phone className="h-4 w-4 mr-2" />
-                          IVR Call
-                        </>
-                      )}
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => handleAssignViaIVR(
-                    selectedMatch,
-                    true,
-                  )}
-                  disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
-                  className="flex-1"
-                >
-                  {isSendingIVR
-                    ? <>Calling...</>
-                    : (
-                        <>
-                          <PhoneCall className="h-4 w-4 mr-2" />
-                          Urgent Call
-                        </>
-                      )}
-                </Button>
-              </div>
-            )}
-
-            {/* Footer */}
-            {(() => {
-              const recommendVehicleId = isManualMode ? manualVehicleId : selectedMatch?.vehicle.id;
-              const recommendDriverId = isManualMode ? manualDriverId : selectedMatch?.driver.id;
-              const recommendDriverName = isManualMode
-                ? availableDrivers.find(d => d.id === manualDriverId)?.name
-                : selectedMatch?.driver.name;
-              const canRecommend = !!recommendVehicleId && !!recommendDriverId;
-
-              if ((!isManualMode && isSimulationMode) || recommendOnly) {
-                const verb = recommendOnly ? "Recommend" : "Assign";
-                return (
-                  <div className="flex justify-end">
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            {recommendOnly
+              ? (
+                  <>
                     <Button
                       variant="gradient"
-                      disabled={!canRecommend}
+                      disabled={!vehicleId || !driverId}
                       onClick={() => setConfirmRecommendOpen(true)}
                     >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      {verb}
-                      {" "}
-                      Driver
+                      Recommend Driver
                     </Button>
                     <AlertDialog
                       open={confirmRecommendOpen}
@@ -883,76 +309,36 @@ export function JobMatchingDialog({
                     >
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {verb}
-                            {" "}
-                            this driver?
-                          </AlertDialogTitle>
+                          <AlertDialogTitle>Recommend this driver?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {recommendOnly
-                              ? (recommendDriverName
-                                  ? `${recommendDriverName} will be recommended for job ${job?.reference}. The fleet provider or dispatcher will make the final assignment.`
-                                  : `This driver will be recommended for job ${job?.reference}. The fleet provider or dispatcher will make the final assignment.`)
-                              : (recommendDriverName
-                                  ? `${recommendDriverName} will be assigned to job ${job?.reference}.`
-                                  : `This driver will be assigned to job ${job?.reference}.`)}
+                            {selectedDriver ? selectedDriver.name : "This driver"}
+                            {" "}
+                            will be recommended for job
+                            {" "}
+                            {job.reference}
+                            . The fleet provider or dispatcher will make the final assignment.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => {
-                              if (!recommendVehicleId || !recommendDriverId)
-                                return;
-                              if (recommendOnly && onRecommend) {
-                                onRecommend(
-                                  recommendVehicleId,
-                                  recommendDriverId,
-                                );
-                                toast.success(
-                                  recommendDriverName
-                                    ? `${recommendDriverName} recommended for job ${job?.reference}`
-                                    : "Driver recommended for job",
-                                );
-                              }
-                              else {
-                                onAssign(
-                                  recommendVehicleId,
-                                  recommendDriverId,
-                                );
-                                toast.success(
-                                  recommendDriverName
-                                    ? `${recommendDriverName} assigned to job ${job?.reference}`
-                                    : "Driver assigned to job",
-                                );
-                              }
-                              setConfirmRecommendOpen(false);
-                              onOpenChange(false);
-                            }}
-                          >
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            {verb}
-                            {" "}
-                            Driver
+                          <AlertDialogAction onClick={handleRecommend}>
+                            Recommend Driver
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="flex justify-end">
+                  </>
+                )
+              : (
                   <Button
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
+                    variant="gradient"
+                    onClick={handleAssign}
+                    loading={isAssigning}
+                    disabled={!vehicleId || !driverId || isAssigning || isRosterLoading}
                   >
-                    Cancel
+                    {isAssigning ? "Assigning..." : "Assign Driver"}
                   </Button>
-                </div>
-              );
-            })()}
+                )}
           </div>
         </div>
       </DialogContent>

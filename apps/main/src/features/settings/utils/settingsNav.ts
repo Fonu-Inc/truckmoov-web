@@ -2,9 +2,7 @@ import type { UserRole } from "@truckmoov/api/auth";
 import type { ElementType } from "react";
 import {
   ArrowUpCircle,
-  BarChart3,
   Bell,
-  Bot,
   Building2,
   CreditCard,
   FileCheck,
@@ -68,12 +66,6 @@ export const SETTINGS_TABS: SettingsTab[] = [
   },
   {
     to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ORG_SETTINGS_ROLES,
-  },
-  {
-    to: "/settings/ai", label: "AI Matching", icon: Bot, hasPermissions: ORG_SETTINGS_ROLES,
-  },
-  {
-    to: "/settings/ai-usage", label: "AI Usage", icon: BarChart3, hasPermissions: ORG_SETTINGS_ROLES,
   },
   {
     to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ORG_SETTINGS_ROLES,

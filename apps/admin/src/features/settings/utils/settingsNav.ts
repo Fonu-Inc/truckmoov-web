@@ -26,9 +26,6 @@ export const SETTINGS_TABS: SettingsTab[] = [
     to: "/settings/team", label: "Team", hasPermissions: [],
   },
   {
-    to: "/settings/ai-providers", label: "AI", hasPermissions: [],
-  },
-  {
     to: "/settings/telephony", label: "Telephony", hasPermissions: [],
   },
   {

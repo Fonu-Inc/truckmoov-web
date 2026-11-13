@@ -109,7 +109,7 @@ directly instead of writing a three-line wrapper page.
 { path: "storage", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/StoragePanel")).StoragePanel }) }
 ```
 
-`features/settings` is the worked example: 13 tabs in `apps/main`, 16 in
+`features/settings` is the worked example: 15 tabs in `apps/main`, 5 in
 `apps/admin`, and only the ones needing props or holding more than one panel have
 a file in `components/pages/`. The route table plus that feature's
 `utils/settingsNav.ts` are the index of which `ui/` components are routes.

@@ -1,7 +1,6 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
 
 // Local type alias — useVehicleFinancials hook has been deleted
 export type VehicleProfitability = {
@@ -363,113 +362,6 @@ export function exportVehiclePLToPDF(
     /\s+/g,
     "_",
   )}_${Date.now()}.pdf`);
-}
-
-export function exportVehiclePLToExcel(
-  data: VehicleProfitability[],
-  nameLookup: (id: string) => string,
-  opts: StatementOptions,
-) {
-  const wb = XLSX.utils.book_new();
-  const t = totals(data);
-  const margin = t.revenue > 0 ? (t.profit / t.revenue) * 100 : 0;
-
-  const summary = [
-    [opts.title],
-    [opts.companyName],
-    [`Period: ${opts.periodLabel}`],
-    [`Generated: ${formatDate(new Date())}`],
-    [],
-    [
-      "Metric",
-      "Value",
-    ],
-    [
-      "Total Revenue",
-      t.revenue,
-    ],
-    [
-      "Total Costs",
-      t.costs,
-    ],
-    [
-      "Net Profit",
-      t.profit,
-    ],
-    [
-      "Profit Margin %",
-      margin,
-    ],
-    [
-      "Jobs Completed",
-      t.jobs,
-    ],
-    [
-      "Total Distance (km)",
-      t.km,
-    ],
-    [
-      "Vehicles Analyzed",
-      data.length,
-    ],
-  ];
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(summary),
-    "Summary",
-  );
-
-  const rows = buildRows(
-    data,
-    nameLookup,
-  );
-  const detail = [
-    [
-      "Vehicle",
-      "Revenue",
-      "Fuel",
-      "Maintenance",
-      "Wages",
-      "Insurance",
-      "Depreciation",
-      "Total Costs",
-      "Net Profit",
-      "Margin %",
-      "Tier",
-      "Score",
-      "Jobs",
-      "KM",
-    ],
-    ...rows.map(r => [
-      r.vehicle,
-      r.revenue,
-      r.fuel,
-      r.maintenance,
-      r.wages,
-      r.insurance,
-      r.depreciation,
-      r.costs,
-      r.profit,
-      r.margin,
-      r.tier,
-      r.score,
-      r.jobs,
-      r.km,
-    ]),
-  ];
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(detail),
-    "Per Vehicle",
-  );
-
-  XLSX.writeFile(
-    wb,
-    `${opts.title.replace(
-      /\s+/g,
-      "_",
-    )}_${Date.now()}.xlsx`,
-  );
 }
 
 export function exportVehiclePLToCSV(

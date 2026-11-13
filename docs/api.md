@@ -289,10 +289,11 @@ devDependencies so its peers don't resolve to the landing page's React 19.
 - **Behaviour**: `/fleet/drivers/behavior/{summary,ranking,events,geofence-alerts}`. The spec has
   no response bodies for these; `types.ts` follows the dev payloads. Geofence alerts carry ids only
   — zone names come from `/fleet/geofences`, plates from `/fleet/vehicles`.
-- **Fatigue AI**: there is no list route — the page reads `/fleet/drivers/fatigue/summary`, then
-  `GET /fleet/drivers/:id/fatigue` per driver (`useQueries`). When the deployment has fatigue
-  switched off every fatigue route answers **503 `FeatureDisabled`**; the page shows a
-  "not enabled" state and skips the per-driver calls.
+- **Fatigue AI**: removed from the UI along with every other AI feature (see
+  [design.md](design.md#ai-features-are-off)). The fatigue services stay in `packages/api/fleet`
+  for when it returns: there is no list route — read `/fleet/drivers/fatigue/summary`, then
+  `GET /fleet/drivers/:id/fatigue` per driver. When the deployment has fatigue switched off every
+  fatigue route answers **503 `FeatureDisabled`**.
 
 ### Devices page (`/devices`)
 
