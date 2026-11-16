@@ -45,6 +45,7 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 - [docs/git-workflow.md](docs/git-workflow.md) documents the Husky pre-commit hook and conventional commit message format.
 - [docs/commit-messages.md](docs/commit-messages.md) documents how to write and make a commit here — scopes, body structure, and the deploy consequences of a push.
 - [docs/tsconfig.md](docs/tsconfig.md) documents the shared TypeScript base config and app/package override conventions.
+- [docs/browser-tests.md](docs/browser-tests.md) documents the Grafana k6 browser, payment and load tests in `tests/k6/` — install k6, start an app, then run `pnpm test:k6:main` (or `admin`, `installer`, `landing`, `writes`, `payments`, `cleanup`, `load`).
 
 When adding backend calls, put the service in `packages/api` and import it from the app through `@truckmoov/api`. Apps should not call backend endpoints directly.
 

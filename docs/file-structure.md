@@ -73,6 +73,12 @@ There is no `data/` folder in `features/` or `shared/`. Hardcoded and mock data 
 of this architecture. Data comes from `packages/api`, reached through `services/` and
 `hooks/`.
 
+## Repo-level tests
+
+Browser, payment and load tests are not app code, so they live outside every `src/`, in
+`tests/k6/` at the repo root: one `<app>[.<kind>].test.js` per suite plus shared helpers in
+`tests/k6/lib/`. See `docs/browser-tests.md`. Unit tests stay next to the file they test.
+
 ## Import rules
 
 - A feature imports from `shared/` and from `packages/*`.

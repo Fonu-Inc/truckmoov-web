@@ -28,3 +28,7 @@ dist-ssr
 *.sw?
 .claude/
 .playwright-mcp/
+credential.md
+# k6 browser test output
+tests/k6/screenshots/
+tests/k6/results/

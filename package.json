@@ -13,6 +13,14 @@
     "dev:main": "turbo dev --filter main",
     "dev:admin": "turbo dev --filter admin",
     "dev:installer": "turbo dev --filter installer",
+    "test:k6:main": "k6 run tests/k6/main.test.js",
+    "test:k6:admin": "k6 run tests/k6/admin.test.js",
+    "test:k6:installer": "k6 run tests/k6/installer.test.js",
+    "test:k6:landing": "k6 run tests/k6/landing.test.js",
+    "test:k6:writes": "k6 run tests/k6/main.writes.test.js && k6 run tests/k6/admin.writes.test.js",
+    "test:k6:payments": "k6 run tests/k6/main.payments.test.js",
+    "test:k6:load": "k6 run tests/k6/load.test.js",
+    "test:k6:cleanup": "k6 run tests/k6/cleanup.test.js",
     "prepare": "husky"
   },
   "devDependencies": {
