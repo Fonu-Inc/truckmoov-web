@@ -15,7 +15,7 @@ Feature-based architecture. Applies to `apps/main` and `apps/admin`.
 
 Components use named exports. Only `src/app` files default-export. Imports use the full
 `@/…` path to the file. Templated pages keep their per-slug copy in
-`features/<feature>/utils/<x>Content.ts`, the agreed exception to [No data
+`features/<feature>/utils/<x>Content.ts` (and their slug list in `utils/<x>Slugs.ts`), the agreed exception to [No data
 folder](#no-data-folder) below.
 
 The landing page also keeps its **own copies** of the shadcn primitives it needs, in

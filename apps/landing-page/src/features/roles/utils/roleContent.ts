@@ -1,3 +1,4 @@
+import type { RoleSlug } from "@/features/roles/utils/roleSlugs";
 import type { StakeholderPageData } from "@/features/stakeholders/utils/stakeholderTypes";
 import {
   ChartPieSlice,
@@ -8,6 +9,7 @@ import {
   Users,
   Wrench,
 } from "@phosphor-icons/react/dist/ssr";
+import { ROLE_SLUGS } from "@/features/roles/utils/roleSlugs";
 
 /*
  * Copy for the seven role pages (/roles/*), rendered by <StakeholderLayout>.
@@ -307,19 +309,6 @@ const analyst: StakeholderPageData = {
   ],
   bands: { limitations: { section: "lg:pb-4" } },
 };
-
-/** URL slugs under /roles/ — must stay in sync with `routes.roles`. */
-export const ROLE_SLUGS = [
-  "operations-manager",
-  "dispatcher",
-  "finance-officer",
-  "maintenance-supervisor",
-  "viewer",
-  "driver",
-  "analyst",
-] as const;
-
-export type RoleSlug = (typeof ROLE_SLUGS)[number];
 
 const ROLES: Record<RoleSlug, StakeholderPageData> = {
   "operations-manager": operationsManager,

@@ -1,3 +1,4 @@
+import type { StakeholderSlug } from "@/features/stakeholders/utils/stakeholderSlugs";
 import type { StakeholderPageData } from "@/features/stakeholders/utils/stakeholderTypes";
 import {
   BuildingOffice,
@@ -5,6 +6,7 @@ import {
   Truck,
 } from "@phosphor-icons/react/dist/ssr";
 import { UserCog } from "lucide-react";
+import { STAKEHOLDER_SLUGS } from "@/features/stakeholders/utils/stakeholderSlugs";
 
 /*
  * Copy for the four stakeholder pages (/stalkholder/*), rendered by <StakeholderLayout>.
@@ -198,16 +200,6 @@ const aggregator: StakeholderPageData = {
     "analyst",
   ],
 };
-
-/** URL slugs under /stalkholder/ — must stay in sync with `routes.stakeholders`. */
-export const STAKEHOLDER_SLUGS = [
-  "enterprise-admin",
-  "owner-operator",
-  "fleet-provider",
-  "aggregator-admin",
-] as const;
-
-export type StakeholderSlug = (typeof STAKEHOLDER_SLUGS)[number];
 
 const STAKEHOLDERS: Record<StakeholderSlug, StakeholderPageData> = {
   "enterprise-admin": enterprise,

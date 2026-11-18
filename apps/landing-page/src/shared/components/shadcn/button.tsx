@@ -1,9 +1,8 @@
-import type { VariantProps } from "class-variance-authority";
+import type { ButtonVariantProps } from "@/shared/components/shadcn/button-variants";
 import { Slot } from "radix-ui";
 import * as React from "react";
 
 import { buttonVariants } from "@/shared/components/shadcn/button-variants";
-import { cn } from "@/shared/utils";
 
 function Button({
   className,
@@ -12,7 +11,7 @@ function Button({
   asChild = false,
   ...props
 }: React.ComponentProps<"button">
-  & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
+  & ButtonVariantProps & { asChild?: boolean }) {
   const Comp = (asChild ? Slot.Root : "button") as React.ElementType;
 
   return (
@@ -20,11 +19,12 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({
+      // buttonVariants already merges className with tailwind-merge.
+      className={buttonVariants({
         variant,
         size,
         className,
-      }))}
+      })}
       {...props}
     />
   );

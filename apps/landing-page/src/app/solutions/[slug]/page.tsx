@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { SolutionPage } from "@/features/solutions/page/SolutionPage";
-import {
-  getSolutionContent, SOLUTION_SLUGS,
-} from "@/features/solutions/utils/solutionContent";
+import { getSolutionContent } from "@/features/solutions/utils/solutionContent";
+import { SOLUTION_SLUGS } from "@/features/solutions/utils/solutionSlugs";
 import { pageMetadata } from "@/shared/seo/metadata";
 
 export async function generateStaticParams() {
@@ -24,7 +24,16 @@ export async function generateMetadata({ params }: PageProps<"/solutions/[slug]"
   });
 }
 
-export default async function Page({ params }: PageProps<"/solutions/[slug]">) {
+// params are read inside <Suspense> so the route's shared App Shell stays URL-independent.
+export default function Page({ params }: PageProps<"/solutions/[slug]">) {
+  return (
+    <Suspense fallback={<div className="min-h-dvh" />}>
+      <SolutionRoute params={params} />
+    </Suspense>
+  );
+}
+
+async function SolutionRoute({ params }: Pick<PageProps<"/solutions/[slug]">, "params">) {
   const { slug } = await params;
   if (!getSolutionContent(slug))
     notFound();

@@ -29,10 +29,12 @@ src/
     not-found.tsx
     product/[slug]/  solutions/[slug]/  stalkholder/[slug]/  roles/[slug]/  resources/*/
     sitemap.ts  robots.ts  manifest.ts  opengraph-image.tsx  apple-icon.tsx  icon.jpg
+  proxy.ts                404s unknown [slug] URLs (see "Dynamic routes")
   features/<feature>/
     page/<X>Page.tsx      the page body (one per page type)
     components/           pieces used only by this feature
     utils/<x>Content.ts   copy, icons and images (per slug for templated pages)
+    utils/<x>Slugs.ts     X_SLUGS + XSlug type for templated pages (no imports)
     hooks/  schemas/
   shared/
     components/           shared PascalCase components at the top level, plus
@@ -69,19 +71,32 @@ An `app/**/page.tsx` file is thin. It imports the page component, sets metadata 
 | `solutions/` | `SolutionPage` | `solutionContent.ts` | `/solutions/[slug]` |
 | `resources/` | `DocumentationPage`, `FaqsPage`, `HelpArticlesPage` | `resourceContent.ts` | `/resources/*` |
 
-Pages that share a layout in Figma share one page component. A content module exports
-`X_SLUGS` (`as const`) and `getXContent(slug): XPageData | null`. Per-page differences are
+Pages that share a layout in Figma share one page component. `utils/<x>Slugs.ts` exports
+`X_SLUGS` (`as const`) and the `XSlug` type. The content module keys its data by
+`Record<XSlug, XPageData>` and exports `getXContent(slug): XPageData | null`. Per-page differences are
 expressed in that data, not in new components. A page component renders a section only when
 its data is present. Per-frame spacing differences use optional `classNames` / `bands`
 fields, not forks of the component. These `utils/<x>Content.ts` files are the agreed exception
 to the "no data files" rule in [file-structure.md](file-structure.md).
 
+### Dynamic routes
+
 A dynamic route must:
 
 - return every slug from `generateStaticParams`
-- export `dynamicParams = false`
-- `await params`
+- read `params` only inside a `<Suspense>` child, never in `Page` itself. With
+  `partialPrefetching`, awaiting `params` in `Page` ties the route's shared App Shell to one URL,
+  and `next dev` logs *"Next.js encountered URL data during prerendering"*. `Page` renders
+  `<Suspense><XRoute params={params} /></Suspense>`, and the non-exported `XRoute` in the same
+  file awaits `params` and renders the cached page component. Each slug still prerenders to full
+  HTML. `generateMetadata` may await `params`.
 - call `notFound()` for an unknown slug
+- have its prefix and slug list in `src/proxy.ts`
+
+`dynamicParams` isn't allowed with cacheComponents. A `notFound()` inside the Suspense child
+runs after the shell has streamed, so it would answer **200** + `noindex`. `src/proxy.ts` rewrites
+unknown slugs to an unmatched path first, so they get a real **404**. That is why the slug lists
+live in dependency-free `<x>Slugs.ts` files the proxy can import.
 
 `app/product/[slug]/page.tsx` is the worked example.
 
@@ -161,6 +176,16 @@ To add a variable:
 save. Both variables are `NEXT_PUBLIC_*`, so they are inlined at build time. In CI they come
 from the `LANDING_ENV` secret.
 
+## Buttons
+
+`buttonVariants(...)` in `src/shared/components/shadcn/button-variants.ts` runs its classes
+through `cn` (tailwind-merge), so call it directly on links and dialog triggers. Don't use a bare
+cva recipe. Without the merge, the base `rounded-[15px]`/`px-4` and the variant's `rounded-full`/`px-[…]`
+all land on the element and CSS order picks the winner. That is how the CTAs ended up with an 8px radius.
+
+Radii from Figma: `brand`, `onDark` and `pill` (Sign In, Contact Us, the Apply CTAs, the Contact
+dialog) are full pills. The Get Started dialog buttons are 12px. The base button is 15px.
+
 ## Design tokens
 
 Colours, type sizes and shadows come from Figma and live in `src/shared/global.css`. Never
@@ -184,6 +209,7 @@ use hex values in class names. Add a token instead.
 2. Screenshot the running page in headless Edge/Chrome at 1440px wide. Hide the scrollbar and the floating support pill, and force lazy images to load. In `next dev` the first request to a route compiles it, so retry if the first shot times out.
 3. Pixel-diff the screenshot against the reference (e.g. `pixelmatch`, threshold 0.15) and fix by region. Render a side-by-side image (Figma | ours) and crop it to the region you are fixing.
 4. What's left at the end is font antialiasing and photo resampling. The baseline is about 1.9% for inner pages and about 3.3% for home. A change that moves a page above its baseline has changed the visuals.
+   - The home hero deliberately differs from Figma: it fills the screen below the header (`min-h-[calc(100dvh-5rem)]`, copy vertically centred), where Figma has it at 642px. To diff home, screenshot at a 1440×722 viewport, where the hero is exactly 642px tall.
 
 ## Content still to supply
 

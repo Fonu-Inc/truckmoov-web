@@ -1,3 +1,4 @@
+import type { SolutionSlug } from "@/features/solutions/utils/solutionSlugs";
 import type { SolutionPageData } from "@/features/solutions/utils/solutionTypes";
 import {
   Brain,
@@ -7,6 +8,7 @@ import {
   Truck,
   WifiHigh,
 } from "@phosphor-icons/react/dist/ssr";
+import { SOLUTION_SLUGS } from "@/features/solutions/utils/solutionSlugs";
 
 /*
  * Copy for the six solution pages (/solutions/*), rendered by <SolutionLayout>.
@@ -237,25 +239,18 @@ const aiLogisticsOperations: SolutionPageData = {
   ],
 };
 
-/** URL slug (`/solutions/<slug>`) → page copy. */
-const SOLUTIONS = {
+/** URL slug (`/solutions/<slug>`) → page copy. The slugs live in `solutionSlugs.ts`. */
+const SOLUTIONS: Record<SolutionSlug, SolutionPageData> = {
   "enterprise-logistics": enterpriseLogistics,
   "delivery-operations": deliveryOperations,
   "fleet-operations": fleetOperations,
   "third-party-logistics": thirdPartyLogistics,
   "smart-fleet-tracking": smartFleetTracking,
   "ai-logistics-operations": aiLogisticsOperations,
-} satisfies Record<string, SolutionPageData>;
-
-export type SolutionSlug = keyof typeof SOLUTIONS;
-
-export const SOLUTION_SLUGS = Object.keys(SOLUTIONS) as SolutionSlug[];
+};
 
 function isSolutionSlug(slug: string): slug is SolutionSlug {
-  return Object.hasOwn(
-    SOLUTIONS,
-    slug,
-  );
+  return (SOLUTION_SLUGS as readonly string[]).includes(slug);
 }
 
 /** Page copy for a `/solutions/<slug>` URL, or null for an unknown slug. */

@@ -6,12 +6,14 @@ import { CtaButtons } from "@/shared/components/sections/CtaButtons";
  * Home hero (Figma "Frame 8", 642px tall at 1440). The photo is stretched over a
  * 1440x840 box that starts 152px above the hero, darkened by the "Rectangle 6" overlay.
  * The white <ContentSheet> overlaps its bottom 60px.
+ * It fills the screen below the fixed 80px header (min-h dvh), with the copy vertically
+ * centred; the photo box grows with it on screens taller than the Figma frame.
  */
 export function HomeHero() {
   return (
-    <section className="relative overflow-hidden bg-ink-gradient pt-16 pb-[124px] lg:pt-[89px] lg:pb-[131px]">
+    <section className="relative flex min-h-[calc(100dvh-5rem)] flex-col justify-center overflow-hidden bg-ink-gradient pt-16 pb-[124px] lg:pt-[89px] lg:pb-[131px]">
       {/* LCP image: preloaded, served as AVIF/WebP by next/image. */}
-      <div className="pointer-events-none absolute inset-0 lg:top-[-152px] lg:left-[3px] lg:h-[840px] lg:w-[calc(100%-3px)]">
+      <div className="pointer-events-none absolute inset-0 lg:top-[-152px] lg:left-[3px] lg:h-[max(840px,calc(100%+152px))] lg:w-[calc(100%-3px)]">
         <Image
           src={hero.image}
           alt=""
@@ -24,7 +26,7 @@ export function HomeHero() {
       </div>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--ink)_60%,transparent)_17%,color-mix(in_srgb,var(--ink-800)_30%,transparent)_36%,transparent_61%,transparent_88%,color-mix(in_srgb,var(--ink)_50%,transparent)_100%)] lg:top-[-4px] lg:bottom-auto lg:h-[603px]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--ink)_60%,transparent)_17%,color-mix(in_srgb,var(--ink-800)_30%,transparent)_36%,transparent_61%,transparent_88%,color-mix(in_srgb,var(--ink)_50%,transparent)_100%)] lg:top-[-4px] lg:bottom-auto lg:h-[max(603px,calc(100%-39px))]"
       />
       <div className="page-container relative">
         <div className="max-w-[664px] xl:-ml-[3px]">

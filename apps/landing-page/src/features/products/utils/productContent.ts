@@ -1,3 +1,4 @@
+import type { ProductSlug } from "@/features/products/utils/productSlugs";
 import type { ProductPageData } from "@/features/products/utils/productTypes";
 import {
   Brain,
@@ -7,6 +8,7 @@ import {
   Truck,
 } from "@phosphor-icons/react/dist/ssr";
 import { FileChartPie } from "lucide-react";
+import { PRODUCT_SLUGS } from "@/features/products/utils/productSlugs";
 
 /*
  * Copy for the six product feature pages (/products/*), rendered by <ProductLayout>.
@@ -158,25 +160,18 @@ const iotSimsDevices: ProductPageData = {
   howItFitsClassName: "lg:mt-0.5",
 };
 
-/** URL slug (`/product/<slug>`) → page copy. "ai-optimisation" keeps the published URL spelling. */
-const PRODUCTS = {
+/** URL slug (`/product/<slug>`) → page copy. The slugs live in `productSlugs.ts`. */
+const PRODUCTS: Record<ProductSlug, ProductPageData> = {
   "fleet-management": fleetManagement,
   "live-tracking": liveTracking,
   "dispatch-management": dispatchManagement,
   "ai-optimisation": aiOptimization,
   "analytics-reporting": analyticsReporting,
   "iot-sims-devices": iotSimsDevices,
-} satisfies Record<string, ProductPageData>;
-
-export type ProductSlug = keyof typeof PRODUCTS;
-
-export const PRODUCT_SLUGS = Object.keys(PRODUCTS) as ProductSlug[];
+};
 
 function isProductSlug(slug: string): slug is ProductSlug {
-  return Object.hasOwn(
-    PRODUCTS,
-    slug,
-  );
+  return (PRODUCT_SLUGS as readonly string[]).includes(slug);
 }
 
 /** Page copy for a `/product/<slug>` URL, or null for an unknown slug. */
