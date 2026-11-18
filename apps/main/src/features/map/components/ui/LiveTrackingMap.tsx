@@ -1,6 +1,9 @@
 import type {
   Geofence, TrackingStatus, TrackingVehicle,
 } from "@truckmoov/api/fleet";
+import {
+  MAP_ATTRIBUTION, MAP_TILES_LIGHT,
+} from "@truckmoov/reusables/lib/map";
 import L from "leaflet";
 import {
   useEffect, useRef,
@@ -79,17 +82,16 @@ export function LiveTrackingMap({
         return;
       const map = L.map(
         containerRef.current,
-        {
-          zoomControl: false,
-          attributionControl: false,
-        },
+        { zoomControl: false },
       ).setView(
         LAGOS,
         11,
       );
       L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        { maxZoom: 19 },
+        MAP_TILES_LIGHT,
+        {
+          attribution: MAP_ATTRIBUTION, maxZoom: 19,
+        },
       ).addTo(map);
       geofenceLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;

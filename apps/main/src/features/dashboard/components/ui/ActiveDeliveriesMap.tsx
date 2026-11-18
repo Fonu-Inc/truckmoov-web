@@ -1,3 +1,6 @@
+import {
+  MAP_ATTRIBUTION, MAP_TILES_LIGHT,
+} from "@truckmoov/reusables/lib/map";
 import L from "leaflet";
 import {
   Map, MapPin, Maximize2, Minimize2, Truck,
@@ -128,12 +131,13 @@ function initMap(container: HTMLDivElement, deliveryPoints: DeliveryPoint[]) {
       ],
       zoom: 6,
       zoomControl: true,
-      attributionControl: false,
     },
   );
   L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { maxZoom: 19 },
+    MAP_TILES_LIGHT,
+    {
+      attribution: MAP_ATTRIBUTION, maxZoom: 19,
+    },
   ).addTo(map);
 
   const pickupIcon = L.divIcon({

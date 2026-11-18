@@ -1,4 +1,7 @@
 import type { SimulatedDevice } from "@/hooks/useMQTTSimulator";
+import {
+  MAP_ATTRIBUTION, MAP_TILES_LIGHT,
+} from "@truckmoov/reusables/lib/map";
 import L from "leaflet";
 import { Locate } from "lucide-react";
 import React, {
@@ -124,11 +127,8 @@ export const SimulatorDeviceMap: React.FC<SimulatorDeviceMapProps> = ({
       );
 
       L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          attribution:
-        "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
-        },
+        MAP_TILES_LIGHT,
+        { attribution: MAP_ATTRIBUTION },
       ).addTo(map);
 
       mapRef.current = map;

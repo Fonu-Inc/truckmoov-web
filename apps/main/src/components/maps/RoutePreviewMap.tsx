@@ -2,6 +2,9 @@ import type {
   LatLngExpression, LatLngTuple, Map as LeafletMap,
 } from "leaflet";
 import { formatHumanDuration } from "@truckmoov/app-core/utils/time-utils";
+import {
+  MAP_ATTRIBUTION, MAP_TILES_LIGHT,
+} from "@truckmoov/reusables/lib/map";
 import L from "leaflet";
 import {
   Check, Loader2, Minus, Plus, Sparkles,
@@ -58,9 +61,6 @@ const DEFAULT_CENTER: LatLngExpression = [
   6.5244,
   3.3792,
 ];
-const LIGHT_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OPEN_STREET_MAP_ATTRIBUTION
-  = "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors";
 const OSRM_ROUTE_URL = "https://router.project-osrm.org/route/v1/driving";
 
 function createLocationPin(color: string) {
@@ -96,10 +96,10 @@ export function RoutePreviewMap({
   zoom = 12,
   minZoom = 3,
   maxZoom = 19,
-  attributionControl = false,
+  attributionControl = true,
   className,
-  tileUrl = LIGHT_TILE_URL,
-  tileAttribution = OPEN_STREET_MAP_ATTRIBUTION,
+  tileUrl = MAP_TILES_LIGHT,
+  tileAttribution = MAP_ATTRIBUTION,
   markers = [],
   fitMarkers = false,
   routeCoordinates = [],
