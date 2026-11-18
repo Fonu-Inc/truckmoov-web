@@ -2,6 +2,9 @@ import { usePublicTrack } from "@truckmoov/api/fleet";
 import {
   formatDateTime, formatRelative,
 } from "@truckmoov/app-core/utils/time-utils";
+import {
+  MAP_ATTRIBUTION, MAP_TILES_LIGHT,
+} from "@truckmoov/reusables/lib/map";
 import L from "leaflet";
 import {
   Loader2, Package,
@@ -41,8 +44,8 @@ export default function PublicTrackPage() {
         15,
       );
       L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        { attribution: "&copy; OpenStreetMap contributors" },
+        MAP_TILES_LIGHT,
+        { attribution: MAP_ATTRIBUTION },
       ).addTo(map);
       L.circleMarker(
         [
