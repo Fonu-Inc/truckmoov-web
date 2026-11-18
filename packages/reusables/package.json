@@ -54,7 +54,7 @@
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
-    "vaul": "^0.9.9"
+    "vaul": "^1.1.2"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.83.0",
