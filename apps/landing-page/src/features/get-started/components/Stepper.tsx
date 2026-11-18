@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import { cn } from "@/shared/utils";
 
-// 6-step progress wizard (Figma "Progress-wizard"): one grey track behind the
+// Progress wizard (Figma "Progress-wizard"): one grey track behind the
 // dots, done = filled deep-yellow with a check, active = yellow ring.
 export function Stepper({
   steps,
@@ -45,7 +45,7 @@ export function Stepper({
               )}
             </span>
             <span className={cn(
-              "w-full max-w-20 truncate text-center text-xs leading-[15px]",
+              "w-full max-w-28 truncate text-center text-xs leading-[15px]",
               done && "font-semibold text-heading",
               active && "font-medium text-heading",
               !done && !active && "text-faint-foreground",

@@ -53,11 +53,29 @@ export function DialogHost() {
     [pathname],
   );
 
+  // Declared after the close-on-navigate effect so it wins on first load: a resume link
+  // (`?token=…&applicationId=…`) or the payment provider's return (`?payment=return`)
+  // reopens the application wizard where the applicant left off.
+  useEffect(
+    () => {
+      const params = new URLSearchParams(window.location.search);
+      const resumeLink = params.has("token") && (params.has("applicationId") || params.has("id"));
+      if (resumeLink || params.has("payment")) {
+        dialogStore.open(
+          "get-started",
+          "returning",
+        );
+      }
+    },
+    [],
+  );
+
   return (
     <>
       {loaded.has("get-started") && (
         <GetStartedHost
           open={openId === "get-started"}
+          intent={dialogStore.getIntent()}
           onOpenChange={closeDialog}
         />
       )}

@@ -379,7 +379,9 @@ The tenant-onboarding landing page uses a separate axios instance, `onboardingIn
 
 - No JWT. `POST /auth/onboarding/applications` returns an `applicationToken` once. Every subsequent call carries it as `X-Application-Token`.
 - `useCreateOnboardingApplication()` persists the token via `setOnboardingToken` on success.
-- The token is kept in memory and mirrored to `sessionStorage` under the key `truckmoov_onboarding_token` — per tab, never in a URL or cookie. If it is lost, the application cannot be resumed.
+- The token is kept in memory and mirrored to web storage under the key `truckmoov_onboarding_token`, never in a URL or cookie. If it is lost, the application cannot be resumed.
+  - By default that storage is `sessionStorage` (per tab), which is what the main app's `/apply` uses.
+  - `setOnboardingTokenStorage("local")` switches it to `localStorage`. Call it once, before the first request. The landing page does this in `GetStartedHost`, so "Apply as Returning Customer" can resume days later. The app that opts in owns clearing the token (`setOnboardingToken(null)`) when the flow ends.
 - A wrong or missing token returns **404 deliberately** — do not treat it as "not found" in the UI. The `admin request-changes` flow re-issues a fresh token by email; the app's resume route should call `setOnboardingToken` with the token from the query string.
 - The onboarding-applications endpoints are the only ones that go through `onboardingInstance`. Everything else (including admin review at `/auth/system/onboarding/applications/*`) still goes through `axiosInstance` with a bearer.
 

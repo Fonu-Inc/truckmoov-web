@@ -1,9 +1,16 @@
 /** The site-wide dialogs. Each is mounted once, in the root layout's DialogHost. */
 export type DialogId = "get-started" | "contact";
 
+/**
+ * Which button opened the dialog. For Get Started: "new" (Apply for Account Creation) offers
+ * a fresh application, "returning" (Apply as Returning Customer) resumes the saved one.
+ */
+export type DialogIntent = "new" | "returning";
+
 type Listener = () => void;
 
 let openDialogId: DialogId | null = null;
+let openIntent: DialogIntent = "new";
 const listeners = new Set<Listener>();
 
 function emit() {
@@ -18,16 +25,19 @@ function emit() {
 export const dialogStore = {
   getSnapshot: (): DialogId | null => openDialogId,
   getServerSnapshot: (): DialogId | null => null,
+  /** The intent of the latest `open`. Read alongside the snapshot; it only changes with it. */
+  getIntent: (): DialogIntent => openIntent,
   subscribe(listener: Listener) {
     listeners.add(listener);
     return () => {
       listeners.delete(listener);
     };
   },
-  open(id: DialogId) {
+  open(id: DialogId, intent: DialogIntent = "new") {
     if (openDialogId === id)
       return;
     openDialogId = id;
+    openIntent = intent;
     emit();
   },
   close() {

@@ -234,7 +234,7 @@ export function applicationToDetails(app: OnboardingApplication): BusinessDetail
   const [
     firstName = "",
     ...rest
-  ] = app.contact.fullName.split(/s+/);
+  ] = app.contact.fullName.split(/\s+/);
   return {
     organizationName: app.organization.organizationName,
     businessEmail: app.organization.businessEmail,

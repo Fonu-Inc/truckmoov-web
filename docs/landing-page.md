@@ -134,11 +134,81 @@ The site should not render anything it doesn't need to:
    hydrates differently from the server HTML. The trigger writes to
    `shared/stores/dialogStore.ts` and holds no state. The host is the
    store's only subscriber, so opening a dialog re-renders nothing else.
+   `<DialogTrigger dialog="get-started" intent="returning">` opens the wizard in resume mode
+   (see [Apply wizard](#apply-wizard-get-started)).
 6. **Header.** The desktop mega menu is CSS-only. `MobileMenu` is the header's only client
    island.
 7. **Images** use `next/image` with an explicit `width`/`height`, or `fill` + `sizes`. The
    above-the-fold LCP image gets `preload`. Public assets live in `public/brand/*` and
    `public/images/*`.
+
+## Apply wizard (Get Started)
+
+`features/get-started/` is the "Apply for Account Creation" dialog.
+
+### Parity with the main app
+
+It runs the same flow, fields and onboarding-applications API calls as the main app's `/apply`
+(`apps/main/src/features/apply/`). The steps are:
+
+1. customer type
+2. details, M2M plan and indemnity signature
+3. email code
+4. phone code
+5. fleet (vehicles and device requests)
+6. documents
+7. review / submit
+8. status
+9. payment
+10. installation scheduling
+
+The orchestrator is `GetStartedDialog.tsx`, a port of `ApplyForAccount.tsx`. Each step
+component names the main component it mirrors. `schemas/applySchemas.ts`,
+`utils/applyTypes.ts` and `utils/applyHelpers.ts` are copies of the main app's files, so
+**change both apps together**. The look follows the Figma Get Started dialog:
+- `StepLayout` + `DialogFooter` for each step
+- `SubDialog` for nested dialogs
+- the class recipes in `utils/getStartedContent.ts`
+- native `<select>`, and `CityInput` (a datalist of `CITIES_BY_STATE`) in place of the
+  main app's Radix select and combobox
+
+### Resume
+
+Progress is kept in this browser so the applicant can come back to the step they stopped at.
+
+| Where | What |
+|---|---|
+| localStorage `truckmoov_onboarding_token` | draft token (`setOnboardingTokenStorage("local")` in `GetStartedHost`) |
+| localStorage `truckmoov_landing_apply_*` | application id, customer type, current step, step 1 fields typed before the application exists, `saved_at`, and the persisted zustand store (`_draft`: plan, indemnity tick, installation form) |
+| IndexedDB `truckmoov_landing_apply` / `files` | `signature` (indemnity signature drawn before the application exists) and `doc:<slot>` (uploads that failed on network or 5xx, retried from the Documents step) |
+
+All of it goes through `utils/applyDraftStorage.ts` and `utils/draftFiles.ts`.
+
+Entry points (`dialogStore.open("get-started", intent)`):
+
+- **Apply for Account Creation** (`intent: "new"`): starts fresh. If a draft is saved, it
+  first asks "Continue my application" or "Start a new application".
+- **Apply as Returning Customer** (`intent: "returning"`): rehydrates the saved draft. The
+  server stage decides payment, installation or status; otherwise the stored step, never
+  past the first unfinished step. With nothing saved, it asks for the business email and
+  sends a resume link (`useResumeOnboardingApplication`).
+- `DialogHost` reopens the wizard in "returning" mode on page load in two cases:
+  - a resume link `?token=…&applicationId=…`, which is adopted and then stripped from the
+    URL;
+  - the payment provider's return, `?payment=return`.
+
+  `PaymentStep` sends `redirectUrl` = the current page + `?payment=return`.
+
+Cleanup:
+
+- **`clearApplyDraft()`** removes every key above and deletes the IndexedDB database. It
+  runs when installation is booked or the applicant goes to sign in, on "Start a new
+  application", and when the draft is dead. A draft is dead after a 404 from the API or
+  when `saved_at` is more than 30 days old, matching the server's idle expiry.
+- **`clearSubmittedDraft()`** runs on submit. It drops the step 1 draft and all IndexedDB
+  files, which are now on the server, but keeps the token and id so status, payment and
+  installation can resume.
+- Closing the dialog never clears anything.
 
 ## SEO
 

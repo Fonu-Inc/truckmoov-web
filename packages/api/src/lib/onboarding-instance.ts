@@ -17,10 +17,26 @@ export const ONBOARDING_TOKEN_STORAGE_KEY = 'truckmoov_onboarding_token'
 
 let inMemoryToken: string | null = null
 
+export type OnboardingTokenStorage = 'session' | 'local'
+
+// The main app keeps the draft token per tab (sessionStorage). The landing page keeps it in
+// localStorage so "Apply as Returning Customer" can resume in a new tab or days later.
+let tokenStorage: OnboardingTokenStorage = 'session'
+
+function storage(): Storage {
+  return tokenStorage === 'local' ? window.localStorage : window.sessionStorage
+}
+
+/** Choose where the draft token is kept. Call once, before the first onboarding request. */
+export function setOnboardingTokenStorage(kind: OnboardingTokenStorage): void {
+  tokenStorage = kind
+  inMemoryToken = null
+}
+
 export function getOnboardingToken(): string | null {
   if (inMemoryToken) return inMemoryToken
   if (typeof window === 'undefined') return null
-  const stored = window.sessionStorage.getItem(ONBOARDING_TOKEN_STORAGE_KEY)
+  const stored = storage().getItem(ONBOARDING_TOKEN_STORAGE_KEY)
   if (stored) inMemoryToken = stored
   return stored
 }
@@ -29,9 +45,9 @@ export function setOnboardingToken(token: string | null): void {
   inMemoryToken = token
   if (typeof window === 'undefined') return
   if (token) {
-    window.sessionStorage.setItem(ONBOARDING_TOKEN_STORAGE_KEY, token)
+    storage().setItem(ONBOARDING_TOKEN_STORAGE_KEY, token)
   } else {
-    window.sessionStorage.removeItem(ONBOARDING_TOKEN_STORAGE_KEY)
+    storage().removeItem(ONBOARDING_TOKEN_STORAGE_KEY)
   }
 }
 

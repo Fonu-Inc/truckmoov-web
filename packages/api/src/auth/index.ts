@@ -2742,8 +2742,10 @@ export function useUpdatePlatformWalletCreditSettings() {
 export {
   getOnboardingToken,
   setOnboardingToken,
+  setOnboardingTokenStorage,
   ONBOARDING_TOKEN_STORAGE_KEY,
 } from '../lib/onboarding-instance'
+export type { OnboardingTokenStorage } from '../lib/onboarding-instance'
 
 export function useCreateOnboardingApplication() {
   return useMutation({

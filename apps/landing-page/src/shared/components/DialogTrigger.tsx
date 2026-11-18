@@ -1,12 +1,17 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import type { DialogId } from "@/shared/stores/dialogStore";
+import type {
+  DialogId,
+  DialogIntent,
+} from "@/shared/stores/dialogStore";
 import { dialogStore } from "@/shared/stores/dialogStore";
 
 type DialogTriggerProps = Omit<ComponentProps<"button">, "type"> & {
   /** Which site dialog this button opens. */
   dialog: DialogId;
+  /** Get Started only: "returning" resumes the application saved in this browser. */
+  intent?: DialogIntent;
 };
 
 /**
@@ -19,6 +24,7 @@ type DialogTriggerProps = Omit<ComponentProps<"button">, "type"> & {
  */
 export function DialogTrigger({
   dialog,
+  intent,
   onClick,
   ...props
 }: DialogTriggerProps) {
@@ -28,7 +34,10 @@ export function DialogTrigger({
       aria-haspopup="dialog"
       onClick={(event) => {
         onClick?.(event);
-        dialogStore.open(dialog);
+        dialogStore.open(
+          dialog,
+          intent,
+        );
       }}
       {...props}
     />

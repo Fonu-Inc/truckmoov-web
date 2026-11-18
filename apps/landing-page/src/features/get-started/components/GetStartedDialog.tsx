@@ -1,113 +1,202 @@
 "use client";
 
-import type { OnboardingUploadableDocumentType } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
-import type { OrganizationFormValues } from "@/features/get-started/schemas/organizationSchema";
-import type { VerifyCodeValues } from "@/features/get-started/schemas/verifyCodeSchema";
-import type {
-  DocumentEntry,
-  Uploads,
-  VerifyStatus,
-} from "@/features/get-started/utils/getStartedContent";
+import type { Resolver } from "react-hook-form";
+import type { BusinessDetailsValues } from "@/features/get-started/schemas/applySchemas";
+import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
+import type { DialogIntent } from "@/shared/stores/dialogStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getOnboardingApplicationQueryOptions,
-  getOnboardingApplicationStatusQueryOptions,
-  getOnboardingToken,
-  setOnboardingToken,
+  AUTH_QUERY_KEY,
   useCreateOnboardingApplication,
   useDeleteOnboardingApplicationDocument,
+  useResumeOnboardingApplication,
   useSendOnboardingApplicationEmailVerification,
   useSendOnboardingApplicationPhoneVerification,
+  useSignOnboardingIndemnity,
   useSubmitOnboardingApplication,
   useUpdateOnboardingApplication,
-  useUploadOnboardingApplicationDocument,
   useVerifyOnboardingApplicationEmail,
   useVerifyOnboardingApplicationPhone,
 } from "@truckmoov/api/auth";
 import {
-  useEffect, useEffectEvent, useRef, useState,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
 } from "react";
-
 import { useForm } from "react-hook-form";
-import { DialogFooter } from "@/features/get-started/components/DialogFooter";
+import { ApplicationStatusScreen } from "@/features/get-started/components/ApplicationStatusScreen";
+import { BusinessDetailsStep } from "@/features/get-started/components/BusinessDetailsStep";
+import { CustomerTypeStep } from "@/features/get-started/components/CustomerTypeStep";
 import { DialogHeader } from "@/features/get-started/components/DialogHeader";
-import { DocumentCheckStep } from "@/features/get-started/components/DocumentCheckStep";
-import { OrganizationStep } from "@/features/get-started/components/OrganizationStep";
-import { OtpStep } from "@/features/get-started/components/OtpStep";
+import { DocumentsStep } from "@/features/get-started/components/DocumentsStep";
+import {
+  DraftChoiceScreen,
+  ResumeByEmailScreen,
+} from "@/features/get-started/components/EntryScreens";
+import { FleetRequirementsStep } from "@/features/get-started/components/FleetRequirementsStep";
+import { PaymentStep } from "@/features/get-started/components/PaymentStep";
 import { ReviewStep } from "@/features/get-started/components/ReviewStep";
-import { StatusScreen } from "@/features/get-started/components/StatusScreen";
+import { ScheduleInstallationStep } from "@/features/get-started/components/ScheduleInstallationStep";
+import {
+  LoadingBlock,
+  StepLayout,
+} from "@/features/get-started/components/StepParts";
 import { Stepper } from "@/features/get-started/components/Stepper";
-import { SubmittedStep } from "@/features/get-started/components/SubmittedStep";
-import { UploadStep } from "@/features/get-started/components/UploadStep";
+import { VerificationStep } from "@/features/get-started/components/VerificationStep";
+import { useApplySession } from "@/features/get-started/hooks/useApplySession";
+import { useConfirmDialog } from "@/features/get-started/hooks/useConfirmDialog";
 import { useCountdown } from "@/features/get-started/hooks/useCountdown";
-import { organizationSchema } from "@/features/get-started/schemas/organizationSchema";
-import { verifyCodeSchema } from "@/features/get-started/schemas/verifyCodeSchema";
 import {
-  checkFile,
-  DOCUMENTS,
-  EMPTY_UPLOADS,
-  STEPS,
-} from "@/features/get-started/utils/getStartedContent";
-import {
-  applicationToOrgValues,
-  EMPTY_ORG_VALUES,
-  getStoredApplicationId,
-  orgValuesToPayload,
+  applicationToDetails,
+  businessDetailsSchemaFor,
+  describeClaims,
+  detailsToPayload,
+  EMPTY_BUSINESS_DETAILS,
   SERVER_FIELD_TO_FORM_FIELD,
-  setStoredApplicationId,
-} from "@/features/get-started/utils/getStartedHelpers";
+} from "@/features/get-started/schemas/applySchemas";
+import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
+import {
+  clearSubmittedDraft,
+  hasStoredDraft,
+  readDraft,
+  readStoredCustomerType,
+  writeDraft,
+} from "@/features/get-started/utils/applyDraftStorage";
+import {
+  documentsComplete,
+  isIndemnitySigned,
+} from "@/features/get-started/utils/applyHelpers";
+import {
+  APPLY_STEPS,
+  displayStep,
+  documentsForCustomerType,
+} from "@/features/get-started/utils/applyTypes";
 import {
   Dialog,
   DialogContent,
 } from "@/shared/components/shadcn/dialog";
-
-type GetStartedDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+import { cn } from "@/shared/utils";
+import { SIGN_IN_URL } from "@/shared/utils/routes";
 
 /**
- * Resume a previous application in this tab. The dialog mounts on first open (DialogHost) and
- * is client-only, so sessionStorage is readable here; afterwards state and storage stay in sync.
- * The token itself is loaded lazily by onboardingInstance's interceptor from the same storage.
+ * Internal step numbers, matching the main app's /apply:
+ *   1 customer details · 2 email OTP · 3 phone OTP · 4 fleet · 5 documents
+ *   6 payment · 7 installation · 8 review
+ * `displayStep` folds these into the five visible steps.
  */
-function storedApplicationId() {
-  const stored = getStoredApplicationId();
-  return stored && getOnboardingToken() ? stored : null;
+type Phase = "form" | "status" | "payment";
+/** Screens shown before the flow: "continue or start new?", or "email me a resume link". */
+type Entry = "choice" | "resume" | null;
+type Banner = {
+  tone: "error" | "info" | "success";
+  message: string;
+} | null;
+
+/** Form steps in the order the applicant moves through them. */
+const STEP_ORDER = [
+  1,
+  2,
+  3,
+  4,
+  5,
+  8,
+];
+const STEP_LABELS = APPLY_STEPS.map(step => step.label);
+
+function readStoredStep() {
+  const step = Number(readDraft("step"));
+  return STEP_ORDER.includes(step) ? step : null;
 }
 
-/** Onboarding wizard. Controlled by the root DialogHost: every "Apply…" button opens this one instance. */
+function readDetailsDraft(): BusinessDetailsValues {
+  try {
+    const raw = readDraft("detailsDraft");
+    return raw
+      ? {
+          ...EMPTY_BUSINESS_DETAILS,
+          ...JSON.parse(raw),
+        }
+      : EMPTY_BUSINESS_DETAILS;
+  }
+  catch {
+    return EMPTY_BUSINESS_DETAILS;
+  }
+}
+
+/**
+ * The "Apply for Account Creation" wizard: a port of the main app's
+ * `ApplyForAccount` page (same steps, same onboarding-applications API calls) in the
+ * landing dialog. Progress is saved in this browser (localStorage + IndexedDB, see
+ * `utils/applyDraftStorage.ts`), so "Apply as Returning Customer" resumes on the step the
+ * applicant stopped at. Controlled by the root DialogHost.
+ */
 export function GetStartedDialog({
   open,
+  intent,
   onOpenChange,
-}: GetStartedDialogProps) {
+}: {
+  open: boolean;
+  intent: DialogIntent;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  // First: adopts a resume link and drops an expired draft before anything reads storage.
+  const session = useApplySession();
+  const {
+    application,
+    applicationId,
+  } = session;
+
+  const [
+    entry,
+    setEntry,
+  ] = useState<Entry>(null);
+  const [
+    wasOpen,
+    setWasOpen,
+  ] = useState(false);
+  const [
+    customerType,
+    setCustomerType,
+  ] = useState<ApplicantCustomerType | null>(readStoredCustomerType);
   const [
     step,
     setStep,
-  ] = useState(0);
+  ] = useState(1);
   const [
-    submitted,
-    setSubmitted,
+    phase,
+    setPhase,
+  ] = useState<Phase>("form");
+  const [
+    saving,
+    setSaving,
   ] = useState(false);
   const [
-    uploads,
-    setUploads,
-  ] = useState<Uploads>(EMPTY_UPLOADS);
+    saveError,
+    setSaveError,
+  ] = useState<string | null>(null);
   const [
-    emailStatus,
-    setEmailStatus,
-  ] = useState<VerifyStatus>("idle");
+    indemnityNotice,
+    setIndemnityNotice,
+  ] = useState<string | null>(null);
   const [
-    phoneStatus,
-    setPhoneStatus,
-  ] = useState<VerifyStatus>("idle");
+    submitError,
+    setSubmitError,
+  ] = useState<string | null>(null);
   const [
-    applicationId,
-    setApplicationId,
-  ] = useState<string | null>(storedApplicationId);
+    banner,
+    setBanner,
+  ] = useState<Banner>(null);
+  const [
+    destinations,
+    setDestinations,
+  ] = useState<{
+    email?: string;
+    phone?: string;
+  }>({});
   const [
     emailCooldownSeed,
     setEmailCooldownSeed,
@@ -116,577 +205,705 @@ export function GetStartedDialog({
     phoneCooldownSeed,
     setPhoneCooldownSeed,
   ] = useState(0);
-  const [
-    emailCooldown,
-    setEmailCooldown,
-  ] = useCountdown(emailCooldownSeed);
-  const [
-    phoneCooldown,
-    setPhoneCooldown,
-  ] = useCountdown(phoneCooldownSeed);
-  const [
-    busyDocs,
-    setBusyDocs,
-  ] = useState<Partial<Record<string, boolean>>>({});
-  const [
-    banner,
-    setBanner,
-  ] = useState<string | null>(null);
+  const [emailCooldown] = useCountdown(emailCooldownSeed);
+  const [phoneCooldown] = useCountdown(phoneCooldownSeed);
+  const sentRef = useRef<{
+    email?: boolean;
+    phone?: boolean;
+  }>({});
   const rehydratedRef = useRef(false);
+  // Read before the first render can overwrite it with the default step.
+  const storedStepRef = useRef(readStoredStep());
 
-  const orgForm = useForm<OrganizationFormValues>({
-    resolver: zodResolver(organizationSchema),
+  // Each time the dialog opens, the button that opened it decides the first screen.
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      const saved = Boolean(applicationId) || hasStoredDraft();
+      setEntry(intent === "returning"
+        ? (saved ? null : "resume")
+        : (saved ? "choice" : null));
+    }
+  }
+
+  const licence = useApplyDraftStore(state => state.licence);
+  const setLicence = useApplyDraftStore(state => state.setLicence);
+  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
+  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
+
+  const createApplication = useCreateOnboardingApplication();
+  const updateApplication = useUpdateOnboardingApplication();
+  const signIndemnity = useSignOnboardingIndemnity();
+  const sendEmail = useSendOnboardingApplicationEmailVerification();
+  const sendPhone = useSendOnboardingApplicationPhoneVerification();
+  const verifyEmail = useVerifyOnboardingApplicationEmail();
+  const verifyPhone = useVerifyOnboardingApplicationPhone();
+  const submitApplication = useSubmitOnboardingApplication();
+  const resume = useResumeOnboardingApplication();
+  const deleteDocument = useDeleteOnboardingApplicationDocument();
+  const {
+    confirm,
+    dialog: confirmDialog,
+  } = useConfirmDialog();
+
+  const form = useForm<BusinessDetailsValues>({
+    // The per-type schema is a union of the two branches; both output BusinessDetailsValues.
+    resolver: zodResolver(businessDetailsSchemaFor(customerType ?? "enterprise")) as Resolver<BusinessDetailsValues>,
     mode: "onTouched",
-    defaultValues: EMPTY_ORG_VALUES,
+    // Before the application exists, step 1 is only in this browser: restore what was typed.
+    defaultValues: applicationId ? EMPTY_BUSINESS_DETAILS : readDetailsDraft(),
   });
 
-  const emailForm = useForm<VerifyCodeValues>({
-    resolver: zodResolver(verifyCodeSchema),
-    mode: "onChange",
-    defaultValues: { code: "" },
-  });
-
-  const phoneForm = useForm<VerifyCodeValues>({
-    resolver: zodResolver(verifyCodeSchema),
-    mode: "onChange",
-    defaultValues: { code: "" },
-  });
-
-  const orgValues = orgForm.watch();
-
-  const createMutation = useCreateOnboardingApplication();
-  const updateMutation = useUpdateOnboardingApplication();
-  const uploadMutation = useUploadOnboardingApplicationDocument();
-  const deleteMutation = useDeleteOnboardingApplicationDocument();
-  const sendEmailMutation = useSendOnboardingApplicationEmailVerification();
-  const verifyEmailMutation = useVerifyOnboardingApplicationEmail();
-  const sendPhoneMutation = useSendOnboardingApplicationPhoneVerification();
-  const verifyPhoneMutation = useVerifyOnboardingApplicationPhone();
-  const submitMutation = useSubmitOnboardingApplication();
-
-  const applicationQuery = useQuery({
-    ...getOnboardingApplicationQueryOptions(applicationId ?? ""),
-    enabled: Boolean(applicationId) && open,
-  });
-
-  const statusQuery = useQuery({
-    ...getOnboardingApplicationStatusQueryOptions(applicationId ?? ""),
-    enabled: Boolean(applicationId) && submitted,
-    refetchInterval: 5000,
-  });
-
-  const application = applicationQuery.data?.data;
-
-  // Rehydrate from server once when the modal opens with a known token+id.
+  // Keep typed-but-unsaved details until the first save creates the application.
   useEffect(
     () => {
-      if (!open) {
-        rehydratedRef.current = false;
+      if (applicationId) {
+        writeDraft(
+          "detailsDraft",
+          null,
+        );
         return;
       }
-      if (rehydratedRef.current)
-        return;
-      if (!application)
-        return;
-      rehydratedRef.current = true;
-
-      orgForm.reset(applicationToOrgValues(application));
-
-      if (application.verification.emailVerified)
-        setEmailStatus("verified");
-      if (application.verification.phoneVerified)
-        setPhoneStatus("verified");
-
-      // Land on the earliest unfinished step so the applicant continues where they left off.
-      const missingDocs = application.missingDocuments.length > 0;
-      const nextStep = missingDocs
-        ? 1
-        : !application.verification.emailVerified
-            ? 3
-            : !application.verification.phoneVerified
-                ? 4
-                : 5;
-      setStep(nextStep);
+      const subscription = form.watch((values) => {
+        // An empty form (e.g. after "Start new") is not a draft worth resuming.
+        const typed = Object.values(values).some(value => typeof value === "string" && value.trim());
+        writeDraft(
+          "detailsDraft",
+          typed ? JSON.stringify(values) : null,
+        );
+      });
+      return () => subscription.unsubscribe();
     },
     [
-      application,
-      open,
-      orgForm,
+      applicationId,
+      form,
     ],
   );
 
-  // documentsReady is driven by server state when we have it; before the first
-  // upload lands, fall back to local uploads.
-  const documentsReady = application
-    ? application.missingDocuments.length === 0
-    : Object.values(uploads).every(upload => upload.file && !upload.error);
-
-  const canContinue = [
-    orgForm.formState.isValid,
-    documentsReady,
-    documentsReady,
-    emailStatus === "verified",
-    phoneStatus === "verified",
-    true,
-  ][step];
-
-  function bindServerError(error: ServerErrorResponse) {
-    setBanner(error.message);
-    if (error.field) {
-      const formField = SERVER_FIELD_TO_FORM_FIELD[error.field];
-      if (formField) {
-        orgForm.setError(
-          formField,
-          { message: error.message },
-        );
-      }
-    }
-  }
-
-  function reset() {
-    setStep(0);
-    setSubmitted(false);
-    setUploads(EMPTY_UPLOADS);
-    setEmailStatus("idle");
-    setPhoneStatus("idle");
-    setApplicationId(null);
-    setEmailCooldownSeed(0);
-    setPhoneCooldownSeed(0);
-    setBusyDocs({});
-    setBanner(null);
-    orgForm.reset(EMPTY_ORG_VALUES);
-    emailForm.reset({ code: "" });
-    phoneForm.reset({ code: "" });
-  }
-
-  async function handleOrgSubmit() {
-    setBanner(null);
-    const ok = await orgForm.trigger();
-    if (!ok)
-      return false;
-
-    const payload = orgValuesToPayload(orgForm.getValues());
-
-    if (!applicationId) {
-      try {
-        const res = await createMutation.mutateAsync({ data: payload });
-        setApplicationId(res.data.id);
-        setStoredApplicationId(res.data.id);
-        return true;
-      }
-      catch (error) {
-        bindServerError(error as ServerErrorResponse);
-        return false;
-      }
-    }
-
-    try {
-      await updateMutation.mutateAsync({
-        id: applicationId, data: payload,
-      });
-      return true;
-    }
-    catch (error) {
-      bindServerError(error as ServerErrorResponse);
-      return false;
-    }
-  }
-
-  async function handleUpload(id: string, file: File) {
-    const entry = DOCUMENTS.find(d => d.id === id) as DocumentEntry | undefined;
-    const localError = checkFile(
-      file,
-      entry?.pdfOnly,
-    );
-    setUploads(prev => ({
-      ...prev, [id]: {
-        file, error: localError,
-      },
-    }));
-    if (localError || !applicationId)
-      return;
-
-    setBusyDocs(prev => ({
-      ...prev, [id]: true,
-    }));
-    try {
-      await uploadMutation.mutateAsync({
-        id: applicationId,
-        documentType: id as OnboardingUploadableDocumentType,
-        file,
-      });
-    }
-    catch (error) {
-      const err = error as ServerErrorResponse;
-      setUploads(prev => ({
-        ...prev, [id]: {
-          file, error: err.message,
-        },
-      }));
-    }
-    finally {
-      setBusyDocs(prev => ({
-        ...prev, [id]: false,
-      }));
-    }
-  }
-
-  async function handleRemove(id: string) {
-    setUploads(prev => ({
-      ...prev, [id]: {
-        file: null, error: null,
-      },
-    }));
-    if (!applicationId || !application)
-      return;
-    const serverDoc = application.documents.find(d => d.documentType === id);
-    if (!serverDoc)
-      return;
-
-    setBusyDocs(prev => ({
-      ...prev, [id]: true,
-    }));
-    try {
-      await deleteMutation.mutateAsync({
-        id: applicationId, documentId: serverDoc.id,
-      });
-    }
-    catch (error) {
-      setBanner((error as ServerErrorResponse).message);
-    }
-    finally {
-      setBusyDocs(prev => ({
-        ...prev, [id]: false,
-      }));
-    }
-  }
-
-  async function sendEmail() {
-    if (!applicationId)
-      return;
-    setBanner(null);
-    try {
-      const res = await sendEmailMutation.mutateAsync({ id: applicationId });
-      const cooldown = Math.min(
-        res.data.expiresInSeconds,
-        60,
-      );
-      setEmailCooldownSeed(cooldown);
-    }
-    catch (error) {
-      const err = error as ServerErrorResponse;
-      setBanner(err.message);
-      if (err.retryAfterSeconds)
-        setEmailCooldownSeed(err.retryAfterSeconds);
-    }
-  }
-
-  async function sendPhone() {
-    if (!applicationId)
-      return;
-    setBanner(null);
-    try {
-      const res = await sendPhoneMutation.mutateAsync({ id: applicationId });
-      const cooldown = Math.min(
-        res.data.expiresInSeconds,
-        60,
-      );
-      setPhoneCooldownSeed(cooldown);
-    }
-    catch (error) {
-      const err = error as ServerErrorResponse;
-      setBanner(err.message);
-      if (err.retryAfterSeconds)
-        setPhoneCooldownSeed(err.retryAfterSeconds);
-    }
-  }
-
-  async function verifyEmail(values: VerifyCodeValues) {
-    if (!applicationId)
-      return;
-    setBanner(null);
-    setEmailStatus("verifying");
-    try {
-      await verifyEmailMutation.mutateAsync({
-        id: applicationId, data: values,
-      });
-      setEmailStatus("verified");
-    }
-    catch (error) {
-      setEmailStatus("idle");
-      setBanner((error as ServerErrorResponse).message);
-      emailForm.reset({ code: "" });
-    }
-  }
-
-  async function verifyPhone(values: VerifyCodeValues) {
-    if (!applicationId)
-      return;
-    setBanner(null);
-    setPhoneStatus("verifying");
-    try {
-      await verifyPhoneMutation.mutateAsync({
-        id: applicationId, data: values,
-      });
-      setPhoneStatus("verified");
-    }
-    catch (error) {
-      setPhoneStatus("idle");
-      setBanner((error as ServerErrorResponse).message);
-      phoneForm.reset({ code: "" });
-    }
-  }
-
-  // Reads the latest verification/cooldown state without making it a trigger: a code should
-  // be sent when the applicant enters a verify step, not again whenever a cooldown ends.
-  const sendCodeForStep = useEffectEvent((currentStep: number) => {
-    if (currentStep === 3 && emailStatus === "idle" && emailCooldown === 0 && !sendEmailMutation.isPending)
-      void sendEmail();
-    if (currentStep === 4 && phoneStatus === "idle" && phoneCooldown === 0 && !sendPhoneMutation.isPending)
-      void sendPhone();
-  });
-
-  // Entering the email / phone step (or reopening the dialog on it) sends a code once.
+  // Remember the screen, so "Apply as Returning Customer" lands back on it.
   useEffect(
     () => {
-      if (open && applicationId)
-        sendCodeForStep(step);
+      if (phase === "form" && customerType) {
+        writeDraft(
+          "step",
+          String(step),
+        );
+      }
     },
     [
       step,
-      applicationId,
-      open,
+      phase,
+      customerType,
     ],
   );
 
-  async function handleSubmit() {
-    if (!applicationId)
-      return;
-    setBanner(null);
-    try {
-      const res = await submitMutation.mutateAsync({ id: applicationId });
-      if ("incomplete" in res && res.incomplete) {
-        setBanner(res.message);
-        if (res.missingDocuments.length > 0) {
-          setStep(1);
-          return;
-        }
-        if (!res.emailVerified) {
-          setEmailStatus("idle");
-          setStep(3);
-          return;
-        }
-        if (!res.phoneVerified) {
-          setPhoneStatus("idle");
-          setStep(4);
-          return;
-        }
+  // A new screen starts without the last one's message.
+  useEffect(
+    () => {
+      setBanner(null);
+    },
+    [
+      step,
+      phase,
+      entry,
+    ],
+  );
+
+  const requiredDocuments = customerType ? documentsForCustomerType(customerType) : [];
+  const emailVerified = Boolean(application?.verification.emailVerified);
+  const phoneVerified = Boolean(application?.verification.phoneVerified);
+
+  // A stored draft that turned out to be gone (30 days idle, or a stale token).
+  useEffect(
+    () => {
+      if (!session.expired)
+        return;
+      setCustomerType(null);
+      setStep(1);
+      setPhase("form");
+      setBanner({
+        tone: "error",
+        message: "Your saved application has expired. Please start a new one.",
+      });
+    },
+    [session.expired],
+  );
+
+  // Land a returning applicant where they left off, once, on the first load.
+  useEffect(
+    () => {
+      if (!application || rehydratedRef.current)
+        return;
+      rehydratedRef.current = true;
+      const type = application.applicantType;
+      setCustomerType(type);
+      writeDraft(
+        "customerType",
+        type,
+      );
+      form.reset(applicationToDetails(application));
+      if (application.m2mPlanCode)
+        setLicence({ licensePlan: application.m2mPlanCode });
+
+      // Past review, the stage decides the screen: payment opens after provisioning, and the
+      // provider redirects back to this page (`?payment=return`) to confirm.
+      if (application.stage === "payment") {
+        setPhase("payment");
+        setStep(6);
         return;
       }
-      setSubmitted(true);
+      if (application.stage === "installation_scheduling") {
+        setPhase("payment");
+        setStep(7);
+        return;
+      }
+      if (application.status !== "draft" && application.status !== "changes_requested") {
+        setPhase("status");
+        return;
+      }
+      const detailsDone = Boolean(application.m2mPlanCode) && isIndemnitySigned(application);
+      const firstUnfinished = !detailsDone
+        ? 1
+        : !application.verification.emailVerified
+            ? 2
+            : !application.verification.phoneVerified
+                ? 3
+                : application.vehicles.length === 0
+                  ? 4
+                  : !documentsComplete(application)
+                      ? 5
+                      : 8;
+      // Back to the step they were on, but never past one that isn't finished yet.
+      const stored = storedStepRef.current;
+      setStep(stored !== null && STEP_ORDER.indexOf(stored) <= STEP_ORDER.indexOf(firstUnfinished)
+        ? stored
+        : firstUnfinished);
+    },
+    [
+      application,
+      form,
+      setLicence,
+    ],
+  );
+
+  function showError(message: string) {
+    setBanner({
+      tone: "error",
+      message,
+    });
+  }
+
+  async function sendCode(channel: "email" | "phone") {
+    if (!applicationId)
+      return;
+    const mutation = channel === "email" ? sendEmail : sendPhone;
+    const setCooldown = channel === "email" ? setEmailCooldownSeed : setPhoneCooldownSeed;
+    try {
+      const res = await mutation.mutateAsync({ id: applicationId });
+      sentRef.current[channel] = true;
+      setDestinations(previous => ({
+        ...previous,
+        [channel]: res.data.destination,
+      }));
+      setCooldown(res.data.resendAfterSeconds);
     }
     catch (error) {
-      setBanner((error as ServerErrorResponse).message);
+      const err = error as ServerErrorResponse;
+      if (err.retryAfterSeconds)
+        setCooldown(err.retryAfterSeconds);
+      showError(err.message || "The code couldn't be sent. Try again.");
     }
   }
 
-  async function onContinue() {
-    if (step === 0) {
-      const ok = await handleOrgSubmit();
+  // Reads the latest state without making it a trigger: a code is sent on arriving at a
+  // verification screen (or reopening the dialog on it), not again on every render.
+  const sendCodeForStep = useEffectEvent(() => {
+    if (phase !== "form" || !applicationId || entry)
+      return;
+    if (step === 2 && !emailVerified && !sentRef.current.email)
+      void sendCode("email");
+    if (step === 3 && !phoneVerified && !sentRef.current.phone)
+      void sendCode("phone");
+  });
+
+  useEffect(
+    () => {
+      if (open)
+        sendCodeForStep();
+    },
+    [
+      open,
+      step,
+      phase,
+      entry,
+      applicationId,
+      emailVerified,
+      phoneVerified,
+    ],
+  );
+
+  async function handleVerify(channel: "email" | "phone", code: string) {
+    if (!applicationId)
+      return false;
+    try {
+      const mutation = channel === "email" ? verifyEmail : verifyPhone;
+      await mutation.mutateAsync({
+        id: applicationId,
+        data: { code },
+      });
+      setBanner(null);
+      return true;
+    }
+    catch (error) {
+      showError((error as ServerErrorResponse).message || "That code didn't work. Try again.");
+      return false;
+    }
+  }
+
+  function applyDetailsError(error: unknown) {
+    const err = error as ServerErrorResponse;
+    const claims = describeClaims(err.claimTypes);
+    if (claims) {
+      setSaveError(claims);
+      return;
+    }
+    const field = err.field ? SERVER_FIELD_TO_FORM_FIELD[err.field] : undefined;
+    if (field) {
+      form.setError(
+        field === "contactName" && customerType === "owner_operator" ? "firstName" : field,
+        { message: err.message },
+      );
+      return;
+    }
+    if (err.statusCode === 409 && /email/i.test(err.message)) {
+      form.setError(
+        "businessEmail",
+        { message: err.message },
+      );
+      return;
+    }
+    setSaveError(err.message || "Your details couldn't be saved. Try again.");
+  }
+
+  async function handleDetailsSubmit(values: BusinessDetailsValues) {
+    if (!customerType)
+      return;
+    setSaving(true);
+    setSaveError(null);
+    const payload = detailsToPayload(
+      values,
+      customerType,
+      licence.licensePlan,
+    );
+    let id = applicationId;
+    try {
+      if (id) {
+        await updateApplication.mutateAsync({
+          id,
+          data: payload,
+        });
+      }
+      else {
+        const res = await createApplication.mutateAsync({ data: payload });
+        id = res.data.id;
+        session.start(id);
+      }
+    }
+    catch (error) {
+      applyDetailsError(error);
+      setSaving(false);
+      return;
+    }
+
+    if (pendingSignature) {
+      try {
+        await signIndemnity.mutateAsync({
+          id,
+          signerName: pendingSignature.name,
+          templateVersion: pendingSignature.version,
+          method: pendingSignature.method,
+          file: pendingSignature.image,
+        });
+        setPendingSignature(null);
+        setIndemnityNotice(null);
+      }
+      catch (error) {
+        const err = error as ServerErrorResponse;
+        if (err.statusCode === 409 && /version/i.test(err.message)) {
+          // Signed against a superseded version: re-read and sign again, don't retry.
+          setPendingSignature(null);
+          setLicence({ indemnityAccepted: false });
+          void queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingIndemnityAgreement });
+          setIndemnityNotice("The indemnity agreement has been updated. Read the current version and sign it again.");
+        }
+        else {
+          // Keep the pending signature: pressing Continue again retries the upload.
+          setSaveError(err.message || "Your signature couldn't be saved. Try again.");
+        }
+        setSaving(false);
+        return;
+      }
+    }
+
+    setSaving(false);
+    setStep(!emailVerified ? 2 : !phoneVerified ? 3 : 4);
+  }
+
+  async function handleSaveForLater() {
+    const email = form.getValues("businessEmail").trim() || application?.organization.businessEmail;
+    if (!email) {
+      showError("Enter your business email first.");
+      return;
+    }
+    try {
+      await resume.mutateAsync({ data: { businessEmail: email } });
+      // The reply is the same whether or not an application exists, so never branch on it.
+      setBanner({
+        tone: "success",
+        message: "Your progress is saved in this browser. If your business email is verified, we've also emailed you a link to continue on another device.",
+      });
+    }
+    catch (error) {
+      showError((error as ServerErrorResponse).message || "We couldn't send the link. Try again.");
+    }
+  }
+
+  /** The type decides the documents asked for, so switching it clears any already uploaded. */
+  async function handleCustomerTypeChange(next: ApplicantCustomerType) {
+    const uploaded = (application?.documents ?? []).filter(document => document.documentType !== "signed_indemnity_form");
+    if (application && next !== application.applicantType && uploaded.length > 0) {
+      const ok = await confirm({
+        title: "Change customer type?",
+        description: `The documents asked for depend on the customer type, so the ${uploaded.length} document(s) you've uploaded will be removed.`,
+        confirmLabel: "Change and remove documents",
+      });
       if (!ok)
         return;
-      setStep(1);
+      try {
+        for (const document of uploaded) {
+          await deleteDocument.mutateAsync({
+            id: application.id,
+            documentId: document.id,
+          });
+        }
+      }
+      catch (error) {
+        showError((error as ServerErrorResponse).message || "Your documents couldn't be cleared.");
+        return;
+      }
+    }
+    setCustomerType(next);
+    writeDraft(
+      "customerType",
+      next,
+    );
+    setStep(1);
+  }
+
+  async function handleSubmitApplication() {
+    if (!applicationId)
+      return;
+    setSubmitError(null);
+    try {
+      const res = await submitApplication.mutateAsync({ id: applicationId });
+      if ("incomplete" in res) {
+        setSubmitError(res.message);
+        setStep(!res.planSelected || !res.indemnitySigned
+          ? 1
+          : !res.emailVerified
+              ? 2
+              : !res.phoneVerified
+                  ? 3
+                  : res.vehicleCount === 0 || !res.deviceAllocationComplete
+                    ? 4
+                    : 5);
+        showError(res.message);
+        return;
+      }
+      // Everything is on the server now; keep only what's needed to come back to the status.
+      void clearSubmittedDraft();
+      setPhase("status");
+    }
+    catch (error) {
+      const err = error as ServerErrorResponse;
+      setSubmitError(describeClaims(err.claimTypes) ?? err.message ?? "Your application couldn't be submitted.");
+    }
+  }
+
+  /** Forget everything saved in this browser and show a blank application. */
+  async function startOver() {
+    await session.clear();
+    sentRef.current = {};
+    storedStepRef.current = null;
+    form.reset(EMPTY_BUSINESS_DETAILS);
+    setCustomerType(null);
+    setStep(1);
+    setPhase("form");
+    setSaveError(null);
+    setSubmitError(null);
+    setIndemnityNotice(null);
+    setDestinations({});
+    setEntry(null);
+  }
+
+  async function confirmStartOver() {
+    const ok = await confirm({
+      title: "Start a new application?",
+      description: "The application saved in this browser, and any files not yet uploaded, will be removed from this device.",
+      confirmLabel: "Start new application",
+    });
+    if (ok)
+      await startOver();
+  }
+
+  /** The flow is finished: the account exists and sign-in happens from the emailed link. */
+  async function goToSignIn() {
+    await session.clear();
+    window.location.assign(SIGN_IN_URL);
+  }
+
+  function close() {
+    onOpenChange(false);
+  }
+
+  function handleBack() {
+    if (step === 1) {
+      setCustomerType(null);
+      writeDraft(
+        "customerType",
+        null,
+      );
       return;
     }
-    if (step === STEPS.length - 1) {
-      await handleSubmit();
+    if (step === 8) {
+      setStep(5);
       return;
     }
-    setStep(step + 1);
+    setStep(step - 1);
   }
 
-  function onBack() {
-    if (step === 0)
-      onOpenChange(false);
-    else setStep(step - 1);
+  /** Visible step (1..5); after submission the payment step is highlighted. */
+  const visibleStep = phase === "status" ? 4 : displayStep(step);
+  // Steps after 1 need the saved application; send anyone without one back to the details.
+  const needsApplication = phase === "form" && step > 1 && !application;
+  const showStepper = !entry && Boolean(customerType) && !session.isRestoring;
+
+  function renderScreen() {
+    if (entry === "choice") {
+      return (
+        <DraftChoiceScreen
+          onContinue={() => setEntry(null)}
+          onStartNew={() => void confirmStartOver()}
+          onClose={close}
+        />
+      );
+    }
+    if (entry === "resume") {
+      return (
+        <ResumeByEmailScreen
+          onStartNew={() => void startOver()}
+          onClose={close}
+        />
+      );
+    }
+    if (session.isRestoring)
+      return <StepLayout><LoadingBlock /></StepLayout>;
+
+    if (phase === "status" && applicationId) {
+      return (
+        <ApplicationStatusScreen
+          applicationId={applicationId}
+          onContinue={() => {
+            setPhase("payment");
+            setStep(6);
+          }}
+          onEdit={() => {
+            setPhase("form");
+            setStep(1);
+          }}
+          onSignIn={() => void goToSignIn()}
+          onStartNew={() => void startOver()}
+          onClose={close}
+        />
+      );
+    }
+
+    if (phase === "payment" && step === 6 && applicationId) {
+      return (
+        <PaymentStep
+          applicationId={applicationId}
+          businessEmail={application?.organization.businessEmail ?? ""}
+          onBack={() => setPhase("status")}
+          onContinue={() => setStep(7)}
+          onEditFleet={() => {
+            setPhase("form");
+            setStep(4);
+          }}
+        />
+      );
+    }
+
+    if (phase === "payment" && step === 7 && applicationId) {
+      return (
+        <ScheduleInstallationStep
+          applicationId={applicationId}
+          vehicles={application?.vehicles ?? []}
+          defaults={{
+            streetAddress: form.getValues("streetAddress"),
+            city: form.getValues("city"),
+            state: form.getValues("state"),
+            contactName: form.getValues("contactName") || undefined,
+            contactPhone: form.getValues("phoneNumber"),
+          }}
+          onBack={() => setStep(6)}
+          onDone={() => void goToSignIn()}
+        />
+      );
+    }
+
+    if (!customerType) {
+      return (
+        <CustomerTypeStep
+          value={customerType}
+          onChange={value => void handleCustomerTypeChange(value)}
+          onBack={close}
+        />
+      );
+    }
+
+    if (step === 1) {
+      return (
+        <BusinessDetailsStep
+          form={form}
+          customerType={customerType}
+          submitting={saving}
+          indemnitySigned={isIndemnitySigned(application)}
+          indemnityNotice={indemnityNotice}
+          saveError={saveError}
+          applicationId={applicationId}
+          savingForLater={resume.isPending}
+          onSubmit={values => void handleDetailsSubmit(values)}
+          onBack={handleBack}
+          onSaveForLater={() => void handleSaveForLater()}
+        />
+      );
+    }
+
+    if (needsApplication || !application) {
+      return (
+        <StepLayout>
+          <p className="pt-[60px] text-center text-sm text-muted-foreground">
+            Save your customer details first.
+            {" "}
+            <button
+              type="button"
+              className="cursor-pointer font-semibold text-brand-deep hover:underline"
+              onClick={() => setStep(1)}
+            >
+              Go to Customer Details
+            </button>
+          </p>
+        </StepLayout>
+      );
+    }
+
+    if (step === 2 || step === 3) {
+      const channel = step === 2 ? "email" : "phone";
+      return (
+        <VerificationStep
+          key={channel}
+          channel={channel}
+          destination={channel === "email"
+            ? (destinations.email ?? application.organization.businessEmail)
+            : (destinations.phone ?? application.organization.organizationPhone)}
+          verified={channel === "email" ? emailVerified : phoneVerified}
+          sending={channel === "email" ? sendEmail.isPending : sendPhone.isPending}
+          cooldown={channel === "email" ? emailCooldown : phoneCooldown}
+          onSend={() => void sendCode(channel)}
+          onVerify={code => handleVerify(
+            channel,
+            code,
+          )}
+          onBack={() => setStep(step - 1)}
+          onNext={() => setStep(step + 1)}
+          onChangeContact={() => setStep(1)}
+        />
+      );
+    }
+
+    if (step === 4) {
+      return (
+        <FleetRequirementsStep
+          application={application}
+          onBack={() => setStep(3)}
+          onNext={() => setStep(5)}
+          onError={showError}
+        />
+      );
+    }
+
+    if (step === 5) {
+      return (
+        <DocumentsStep
+          application={application}
+          required={requiredDocuments}
+          onBack={() => setStep(4)}
+          onNext={() => setStep(8)}
+        />
+      );
+    }
+
+    return (
+      <ReviewStep
+        customerType={customerType}
+        application={application}
+        requiredDocuments={requiredDocuments}
+        submitting={submitApplication.isPending}
+        submitError={submitError}
+        onBack={() => setStep(5)}
+        onEditDetails={() => setStep(1)}
+        onEditFleet={() => setStep(4)}
+        onEditDocuments={() => setStep(5)}
+        onSubmit={() => void handleSubmitApplication()}
+      />
+    );
   }
-
-  async function changeEmailFromReview() {
-    // Jump back to Organization to let the applicant edit the email. Once they
-    // continue, updateMutation clears emailVerified server-side.
-    setEmailStatus("idle");
-    emailForm.reset({ code: "" });
-    setEmailCooldownSeed(0);
-    setEmailCooldown(0);
-    setStep(0);
-  }
-
-  async function changePhoneFromReview() {
-    setPhoneStatus("idle");
-    phoneForm.reset({ code: "" });
-    setPhoneCooldownSeed(0);
-    setPhoneCooldown(0);
-    setStep(0);
-  }
-
-  const continueLabel = step === STEPS.length - 1
-    ? (submitMutation.isPending ? "Submitting…" : "Submit")
-    : step === 0 && (createMutation.isPending || updateMutation.isPending)
-      ? "Saving…"
-      : "Continue";
-
-  // The verifying screens have no footer in the design — the request is in flight.
-  const verifyingNow = (step === 3 && emailStatus === "verifying")
-    || (step === 4 && phoneStatus === "verifying");
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        onOpenChange(next);
-        if (!next) {
-          // Keep the token+id in sessionStorage so the applicant can resume.
-          // Only reset local UI state.
-          setBanner(null);
-        }
-      }}
+      onOpenChange={onOpenChange}
     >
       <DialogContent
         showCloseButton={false}
-        className="flex h-[800px] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden rounded-[30px] border-border-field p-0 shadow-float sm:max-w-[600px]"
+        className="flex h-[860px] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden rounded-[30px] border-border-field p-0 shadow-float sm:max-w-[680px]"
       >
-        <DialogHeader
-          onClose={() => {
-            if (submitted) {
-              setOnboardingToken(null);
-              setStoredApplicationId(null);
-              reset();
-            }
-          }}
-        />
+        <DialogHeader />
 
-        <Stepper
-          steps={STEPS}
-          current={step}
-          submitted={submitted}
-        />
+        {showStepper && (
+          <Stepper
+            steps={STEP_LABELS}
+            current={visibleStep - 1}
+            submitted={false}
+          />
+        )}
 
         {banner && (
           <div
-            role="alert"
-            className="shrink-0 border-b border-destructive/20 bg-destructive/10 px-7 py-3 text-sm text-destructive"
+            role={banner.tone === "error" ? "alert" : "status"}
+            className={cn(
+              "shrink-0 border-b px-7 py-3 text-sm",
+              banner.tone === "error" && "border-destructive/20 bg-destructive/10 text-destructive",
+              banner.tone === "success" && "border-success/20 bg-success-soft text-success-deep",
+              banner.tone === "info" && "border-border bg-surface text-heading",
+            )}
           >
-            {banner}
+            {banner.message}
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-7">
-          {submitted && (
-            <SubmittedStep
-              email={orgValues.businessEmail}
-              timeline={statusQuery.data?.data.timeline}
-            />
-          )}
-
-          {!submitted && step === 0 && <OrganizationStep form={orgForm} />}
-
-          {!submitted && step === 1 && (
-            <UploadStep
-              uploads={uploads}
-              busy={busyDocs}
-              onSelect={handleUpload}
-              onRemove={handleRemove}
-            />
-          )}
-
-          {!submitted && step === 2 && <DocumentCheckStep uploads={uploads} />}
-
-          {!submitted && step === 3 && (
-            emailStatus === "idle"
-              ? (
-                  <OtpStep
-                    form={emailForm}
-                    title="Verify your email"
-                    description={(
-                      <>
-                        We've Sent A Verification Code To
-                        {" "}
-                        <span className="font-semibold">{orgValues.businessEmail}</span>
-                      </>
-                    )}
-                    onVerify={verifyEmail}
-                    onResend={sendEmail}
-                    onChangeContact={changeEmailFromReview}
-                    cooldownSeconds={emailCooldown}
-                    isSending={sendEmailMutation.isPending}
-                    isVerifying={verifyEmailMutation.isPending}
-                    resendPrompt="Didn't receive the Email?"
-                    resendLabel="Resend Email"
-                    changePrompt="Made a mistake with the Email?"
-                    changeLabel="Change Email"
-                    actionLabel="Verify Email"
-                  />
-                )
-              : (
-                  <StatusScreen
-                    status={emailStatus}
-                    verifyingTitle="Verifying Your Email"
-                    verifyingDescription="We Are Currently Verifying Your Email."
-                    verifiedTitle="Email Verified"
-                    verifiedDescription="We Have Successfully Verified Your Email."
-                  />
-                )
-          )}
-
-          {!submitted && step === 4 && (
-            phoneStatus === "idle"
-              ? (
-                  <OtpStep
-                    form={phoneForm}
-                    title="Verify your phone number"
-                    description="We'll Use This Number For Important Updates About Your Fleet Pro Application."
-                    onVerify={verifyPhone}
-                    onResend={sendPhone}
-                    onChangeContact={changePhoneFromReview}
-                    cooldownSeconds={phoneCooldown}
-                    isSending={sendPhoneMutation.isPending}
-                    isVerifying={verifyPhoneMutation.isPending}
-                    resendPrompt="Didn't receive the Code?"
-                    resendLabel="Resend Code"
-                    changePrompt="Made a mistake with the Phone Number?"
-                    changeLabel="Change Phone Number"
-                    actionLabel="Verify Phone Number"
-                  />
-                )
-              : (
-                  <StatusScreen
-                    status={phoneStatus}
-                    verifyingTitle="Verifying Your Phone Number"
-                    verifyingDescription="We Are Currently Verifying Your Phone Number."
-                    verifiedTitle="Phone Number Verified"
-                    verifiedDescription="We Have Successfully Verified Your Phone Number."
-                  />
-                )
-          )}
-
-          {!submitted && step === 5 && (
-            <ReviewStep
-              values={orgValues}
-              uploads={uploads}
-              onEdit={setStep}
-            />
-          )}
-        </div>
-
-        {!submitted && !verifyingNow && (
-          <DialogFooter
-            onBack={onBack}
-            onContinue={onContinue}
-            continueLabel={continueLabel}
-            continueDisabled={!canContinue || createMutation.isPending || updateMutation.isPending || submitMutation.isPending}
-            backMuted={step === 0}
-          />
-        )}
+        {renderScreen()}
+        {confirmDialog}
       </DialogContent>
     </Dialog>
   );

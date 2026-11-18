@@ -26,6 +26,7 @@ export function CtaButtons({ className }: CtaButtonsProps) {
       </DialogTrigger>
       <DialogTrigger
         dialog="get-started"
+        intent="returning"
         className={buttonVariants({
           variant: "onDark",
           size: "pill",
