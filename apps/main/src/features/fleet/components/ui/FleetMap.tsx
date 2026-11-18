@@ -1,5 +1,8 @@
 import type { RealtimeVehicleLocation } from "@/hooks/useRealtimeTracking";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  MAP_ATTRIBUTION, MAP_TILES_LIGHT,
+} from "@truckmoov/reusables/lib/map";
 import L from "leaflet";
 import {
   Wifi, WifiOff,
@@ -496,8 +499,8 @@ export function FleetMap({
       onMapReady?.(map);
 
       L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        { attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>" },
+        MAP_TILES_LIGHT,
+        { attribution: MAP_ATTRIBUTION },
       ).addTo(map);
 
       mapRef.current = map;

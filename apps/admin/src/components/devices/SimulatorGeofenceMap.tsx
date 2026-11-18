@@ -2,6 +2,9 @@ import type {
   GeofenceAlert,
   GeofenceZone,
 } from "@/hooks/useMQTTSimulator";
+import {
+  MAP_ATTRIBUTION, MAP_TILES_LIGHT,
+} from "@truckmoov/reusables/lib/map";
 import L from "leaflet";
 import { MapPin } from "lucide-react";
 import React, {
@@ -52,11 +55,8 @@ export const SimulatorGeofenceMap: React.FC<SimulatorGeofenceMapProps> = ({
       );
 
       L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          attribution:
-        "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
-        },
+        MAP_TILES_LIGHT,
+        { attribution: MAP_ATTRIBUTION },
       ).addTo(map);
 
       alertLayerRef.current = L.layerGroup().addTo(map);
