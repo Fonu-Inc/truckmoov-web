@@ -159,6 +159,15 @@ them immediately:
   the deployed app runs without it. PR builds never receive these secrets and
   always build from `.env.example`.
   Always name new env vars in the body.
+- `LANDING_ENV` must contain `NEXT_PUBLIC_BACKEND_URL`, `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_MAIN_APP_URL`.
+  The landing page validates them at build time, so a missing one fails the build. Next
+  inlines them into the build, so changing the secret takes effect only on the next deploy.
+- The Vite apps ship their `dist/` folder. The landing page ships
+  `apps/landing-page/.next/standalone`, a Node server (`server.js`) with `.next/static` and
+  `public/` copied in, which the server runs behind nginx. A landing change that touches
+  `next.config.ts` `output`, the standalone layout or the port also needs the server-side
+  `deploy truckmoov-landing` wrapper updated. Call it out in the body. See
+  [landing-deploy.md](landing-deploy.md).
 
 ## Example
 

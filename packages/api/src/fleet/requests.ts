@@ -1,3 +1,4 @@
+import { requireBackendUrl } from '../lib/env'
 import { axiosInstance } from '../lib/axios-instance'
 
 import type {
@@ -1284,7 +1285,7 @@ export async function shareVehicleLocation({ id }: ShareVehicleLocationPayload) 
  * 410 = expired, revoked or never existed — deliberately indistinguishable.
  */
 export async function getPublicTrack(token: string): Promise<PublicTrack | 'gone'> {
-  const res = await fetch(new URL(`/fleet/track/${encodeURIComponent(token)}`, import.meta.env.VITE_BACKEND_URL))
+  const res = await fetch(new URL(`/fleet/track/${encodeURIComponent(token)}`, requireBackendUrl()))
   if (res.status === 410 || res.status === 404)
     return 'gone'
   if (!res.ok)

@@ -4,18 +4,34 @@ All backend communication lives in `packages/api` (`@truckmoov/api`). Apps never
 
 ## Environment
 
-Apps that import from `@truckmoov/api` must define `VITE_BACKEND_URL` in their environment.
+Apps that import from `@truckmoov/api` must define the backend origin in their environment:
 
-`packages/api/src/lib/axios-instance.ts` reads the value with `import.meta.env.VITE_BACKEND_URL` and uses it as the Axios `baseURL`. If the value is missing, the package throws:
+| App | Variable |
+|---|---|
+| Vite apps (`main`, `admin`, `installer`) | `VITE_BACKEND_URL` |
+| Next.js landing page | `NEXT_PUBLIC_BACKEND_URL` |
+
+`packages/api/src/lib/env.ts` is the only file that reads the backend URL. It exports:
+
+- `BACKEND_URL`: `import.meta.env.VITE_BACKEND_URL`, otherwise
+  `process.env.NEXT_PUBLIC_BACKEND_URL`, otherwise `""`.
+- `IS_DEV`
+- `requireBackendUrl()`
+
+`axios-instance.ts`, `onboarding-instance.ts` and `realtime-socket.ts` import from it.
+Next inlines `NEXT_PUBLIC_*` values only where it sees the literal
+`process.env.NEXT_PUBLIC_BACKEND_URL` expression, so that read must stay spelled out. If the
+value is missing, the first request throws:
 
 ```text
-[truckmoov/api] VITE_BACKEND_URL is not set. Add it to your .env file.
+[truckmoov/api] Backend URL is not set. Add VITE_BACKEND_URL (Vite apps) or NEXT_PUBLIC_BACKEND_URL (landing page) to your .env file.
 ```
 
-Example app `.env` value:
+Example app `.env` values:
 
 ```sh
-VITE_BACKEND_URL="your value"
+VITE_BACKEND_URL="your value"          # apps/main, apps/admin, apps/installer
+NEXT_PUBLIC_BACKEND_URL="your value"   # apps/landing-page
 ```
 
 Use a local backend URL for development when needed.
@@ -27,6 +43,7 @@ packages/api/src/
 ├── lib/
 │   ├── auth-store.ts          — zustand session store (accessToken, refreshToken, user, setSession, logout)
 │   ├── axios-instance.ts      — axios instance with token injection and 401-refresh interceptors
+│   ├── env.ts                 — BACKEND_URL / IS_DEV / requireBackendUrl (Vite or Next env)
 │   ├── http-errors.ts         — shared isServerErrorResponse + normalizeError helpers
 │   ├── onboarding-instance.ts — axios instance for the public onboarding-applications flow (X-Application-Token)
 │   └── query-client.ts        — shared QueryClient singleton

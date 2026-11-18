@@ -1,6 +1,6 @@
 # Lint
 
-All three apps share one ESLint config. It lives in the `app-core` package and
+Every app (the Vite apps and the Next.js landing page) shares one ESLint config. It lives in the `app-core` package and
 each app's `eslint.config.js` is a three-line re-export of it — put rule changes
 in the shared file, never in an app.
 
@@ -34,9 +34,24 @@ export default truckmoov(
 indent, semicolons. The rule overrides on top of it force one argument, array
 element, object property, and JSX prop per line once there are two of them.
 
-Only `**/dist/**` is ignored. Everything else in an app — `vite.config.ts`,
-`index.html`, `tsconfig*.json`, tests — is linted, and `formatters: true` runs
-Prettier over the CSS, HTML, and Markdown that ESLint itself does not cover.
+Ignored:
+
+- `**/dist/**`
+- the landing page's `**/.next/**` and `**/next-env.d.ts`
+- `**/shared/env/env.ts`, which type-envgen generates (`pnpm env:generate`)
+
+Everything else in an app is linted, including `vite.config.ts`, `next.config.ts`,
+`index.html`, `tsconfig*.json` and tests. `formatters: true` runs Prettier over the CSS, HTML
+and Markdown that ESLint itself does not cover.
+
+## Next.js and env overrides
+
+| Files | Override | Why |
+|---|---|---|
+| `**/src/app/**` | `react-refresh/only-export-components` allows `metadata`, `generateMetadata`, `generateStaticParams`, `viewport`, `dynamicParams`, `alt`, `size`, `contentType` | App Router files export these framework values next to the component. The image routes (`opengraph-image.tsx`, `apple-icon.tsx`) export `alt` / `size` / `contentType`. |
+| everywhere | `node/no-process-env` is **on** | app code reads env through its validated env module, never `process.env` |
+| `**/env.ts`, `**/next.config.ts` | `node/no-process-env` off | these are the single place `process.env` is read |
+| `**/contexts/**` | `react-refresh/only-export-components` off | a context module exports its provider next to its hook |
 
 The plugin deps (`@antfu/eslint-config`, `@eslint-react/eslint-plugin`,
 `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`,

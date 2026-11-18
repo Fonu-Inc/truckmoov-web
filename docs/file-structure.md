@@ -2,16 +2,28 @@
 
 Feature-based architecture. Applies to `apps/main` and `apps/admin`.
 
-`apps/landing-page` is the exception — it is a marketing site with no features to speak of,
-so it uses `src/ui/{pages,components,shadcn}` plus `src/lib`, wired that way in its
-`components.json`. It also keeps its **own copies** of the shadcn primitives it needs in
-`src/ui/shadcn/` rather than importing `packages/reusables`, which targets React 18 +
-Tailwind v3 + the split `@radix-ui/react-*` packages and cannot be consumed by a React 19 +
-Tailwind v4 + unified `radix-ui` app. A multi-part component gets its own folder under
-`src/ui/components/` (`get-started/` is the worked example: dialog shell, step bodies, and a
-`.ts` data module — the `react-refresh/only-export-components` lint rule forbids exporting
-constants from a file that also exports components). Pages that share a Figma layout share one
-template folder and are data-only — see [landing-page.md](landing-page.md).
+`apps/landing-page` is the exception. It is a Next.js app laid out like
+`elvis-business/main-frontend`:
+
+- `src/app/` holds route and metadata files only.
+- `src/features/<feature>/{page,components,hooks,utils,schemas}/` holds the features. A
+  feature's page body is `page/<X>Page.tsx`.
+- `src/shared/components/{layout,sections,icons,providers,shadcn}/` holds the shared
+  components, with shared PascalCase components at the top level.
+- `src/shared/{hooks,stores,seo,env,utils}/` and `src/shared/global.css` hold everything else
+  that is shared.
+
+Components use named exports. Only `src/app` files default-export. Imports use the full
+`@/…` path to the file. Templated pages keep their per-slug copy in
+`features/<feature>/utils/<x>Content.ts`, the agreed exception to [No data
+folder](#no-data-folder) below.
+
+The landing page also keeps its **own copies** of the shadcn primitives it needs, in
+`src/shared/components/shadcn/` (wired in its `components.json`), rather than importing
+`packages/reusables`. That package targets React 18, Tailwind v3 and the split
+`@radix-ui/react-*` packages, and a React 19 + Tailwind v4 + unified `radix-ui` app cannot
+consume it. The rest of this doc describes the Vite apps. See
+[landing-page.md](landing-page.md) for the landing page.
 
 `src/` has exactly two buckets plus entry files:
 

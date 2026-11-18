@@ -3,17 +3,12 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
 import type { AuthSession } from '../auth'
 import { useAuthStore } from './auth-store'
+import { BACKEND_URL, requireBackendUrl } from './env'
 import { normalizeError } from './http-errors'
 import type { ServerErrorResponse, ServerResponse } from './types'
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL
-
-if (!BASE_URL) {
-  throw new Error('[truckmoov/api] VITE_BACKEND_URL is not set. Add it to your .env file.')
-}
-
 export const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: BACKEND_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,6 +17,7 @@ export const axiosInstance = axios.create({
 // ─── Request interceptor: inject access token ─────────────────────────────────
 
 axiosInstance.interceptors.request.use((config) => {
+  requireBackendUrl()
   const { accessToken } = useAuthStore.getState()
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
@@ -31,7 +27,7 @@ axiosInstance.interceptors.request.use((config) => {
 
 // ─── 401 refresh queue ────────────────────────────────────────────────────────
 
-const refreshClient = axios.create({ baseURL: BASE_URL })
+const refreshClient = axios.create({ baseURL: BACKEND_URL })
 
 let isRefreshing = false
 let pendingQueue: Array<{

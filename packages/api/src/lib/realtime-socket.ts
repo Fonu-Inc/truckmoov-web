@@ -3,6 +3,7 @@ import { io } from 'socket.io-client'
 
 import { axiosInstance } from './axios-instance'
 import { useAuthStore } from './auth-store'
+import { IS_DEV, requireBackendUrl } from './env'
 
 // Realtime gateway (TRU-FE-6 §1): one tenant-roomed, server-to-client socket.io
 // connection shared by every screen that listens. The room comes from the token's
@@ -21,7 +22,8 @@ export type RealtimeStatus =
   | { state: 'disconnected' }
   | { state: 'refused', reason: RealtimeRefusedReason | string }
 
-const ORIGIN = new URL(import.meta.env.VITE_BACKEND_URL).origin
+/** Socket origin; resolved on connect so importing this module never throws. */
+const getOrigin = () => new URL(requireBackendUrl()).origin
 
 let socket: Socket | null = null
 let refCount = 0
@@ -49,7 +51,7 @@ function teardown() {
 }
 
 function create(): Socket {
-  const s = io(ORIGIN, {
+  const s = io(getOrigin(), {
     path: '/realtime/socket.io',
     transports: ['websocket'],
     // Handshake auth frame, never the query string: query strings land in proxy/access logs.
@@ -140,5 +142,5 @@ export function realtimeDebugState(event?: string) {
 }
 
 // Dev-only handle for checking cleanup from the browser console / Playwright.
-if (import.meta.env.DEV)
+if (IS_DEV)
   (globalThis as { __realtimeDebug?: typeof realtimeDebugState }).__realtimeDebug = realtimeDebugState

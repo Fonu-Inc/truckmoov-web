@@ -12,6 +12,15 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "paths": {
+      // Pin React types to this app's own @types/react 18. Libraries such as react-router are shared
+      // with the React 19 landing page in the pnpm store and would otherwise pick up @types/react 19.
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "react-dom": ["./node_modules/@types/react-dom"],
+      "react-dom/*": ["./node_modules/@types/react-dom/*"],
+      // Same for zod: @hookform/resolvers 3 resolves its zod types from the store, where the
+      // landing page's zod 4 now also lives.
+      "zod": ["./node_modules/zod"],
       "@/components/shadcn/*": [
         "../../packages/reusables/src/components/shadcn/*"
       ],

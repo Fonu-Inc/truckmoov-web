@@ -6,13 +6,12 @@
 import axios from 'axios'
 import type { AxiosError } from 'axios'
 
+import { BACKEND_URL, requireBackendUrl } from './env'
 import { normalizeError } from './http-errors'
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL
-
-if (!BASE_URL) {
-  throw new Error('[truckmoov/api] VITE_BACKEND_URL is not set. Add it to your .env file.')
-}
+// A missing URL throws on the first request (requireBackendUrl), not at import, so the
+// Next.js landing page can prerender pages that import this module.
+const BASE_URL = BACKEND_URL
 
 export const ONBOARDING_TOKEN_STORAGE_KEY = 'truckmoov_onboarding_token'
 
@@ -44,6 +43,7 @@ export const onboardingInstance = axios.create({
 })
 
 onboardingInstance.interceptors.request.use((config) => {
+  requireBackendUrl()
   const token = getOnboardingToken()
   if (token) {
     config.headers['X-Application-Token'] = token

@@ -36,7 +36,8 @@ Screenshots of failed steps go to `tests/k6/screenshots/` (gitignored).
 Every suite's `setup()` calls `requireApps()` (`lib/preflight.js`), which stops the run with
 one message naming the `pnpm dev:*` command when an app it needs isn't reachable. k6's HTTP
 client connects over IPv4, so every app's Vite config must set `server.host: "::"` (all
-interfaces) — a server bound to `::1` only works in the browser but fails this check.
+interfaces). The landing page does the same with `next dev -p 3000 -H ::` in its `dev` script.
+A server bound to `::1` only works in the browser and fails this check.
 
 ## Configuration
 
@@ -81,7 +82,8 @@ The apps talk to the shared dev API, which auto-blocks IPs under heavy traffic.
   pending payment intents on the dev API; no money moves. Never add card details.
 - The landing "Get Started" wizard calls real APIs: tests open and close it only.
 - `load.test.js` refuses to start without `K6_ALLOW_LOAD=1` and should target deployed or
-  `vite preview` builds, not the Vite dev servers (those serve hundreds of unbundled modules).
+  production builds (`vite preview` for the Vite apps, `next start` for the landing page), not
+  the dev servers (those serve hundreds of unbundled modules and compile routes on first hit).
   Its HTTP scenario fetches static HTML/JS/CSS only; two browser users add light API traffic.
 
 ## Thresholds

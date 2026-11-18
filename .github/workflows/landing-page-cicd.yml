@@ -68,12 +68,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # NEXT_PUBLIC_BACKEND_URL, NEXT_PUBLIC_SITE_URL and NEXT_PUBLIC_MAIN_APP_URL are inlined at build time, so the
+      # values in LANDING_ENV are baked into this build (type-envgen validates them first).
       - name: Build environment file
         run: |
           if [ -n "${LANDING_ENV}" ]; then
@@ -87,10 +89,20 @@ jobs:
       - name: Build landing page
         run: pnpm turbo build --filter landing-page
 
+      # output: "standalone" leaves static assets out of the server bundle. Copy them in so
+      # server.js serves /_next/static and public/ itself (see docs/landing-deploy.md).
+      # Runs on pull requests too, so a build that stops emitting server.js fails the PR.
+      - name: Assemble standalone server
+        run: |
+          STANDALONE=apps/landing-page/.next/standalone
+          test -f "$STANDALONE/apps/landing-page/server.js"
+          cp -r apps/landing-page/.next/static "$STANDALONE/apps/landing-page/.next/static"
+          cp -r apps/landing-page/public "$STANDALONE/apps/landing-page/public"
+
       - name: Package release
         if: github.event_name != 'pull_request'
         run: |
-          tar --owner=0 --group=0 --mode='go-w' -czf "${RELEASE_ARCHIVE}" -C apps/landing-page/dist .
+          tar --owner=0 --group=0 --mode='go-w' -czf "${RELEASE_ARCHIVE}" -C apps/landing-page/.next/standalone .
           ls -lh "${RELEASE_ARCHIVE}"
           test -f "${RELEASE_ARCHIVE}"
 

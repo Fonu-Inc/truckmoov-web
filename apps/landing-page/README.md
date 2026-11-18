@@ -1,79 +1,28 @@
-# React + TypeScript + Vite
+# landing-page
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The FleetPro Enterprise public marketing site. Built with Next.js 16 (App Router), React 19
+and Tailwind v4, and matched to the Figma file "Fleet Pro (Landing Page)". Every page is
+prerendered at build time.
 
-Currently, two official plugins are available:
+## Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: [
-          "./tsconfig.node.json",
-          "./tsconfig.app.json"
-        ],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```sh
+cp .env.example .env     # NEXT_PUBLIC_BACKEND_URL, NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_MAIN_APP_URL
+pnpm dev:landing          # from the repo root; http://localhost:3000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+| Script                                          | What it does                                                                  |
+| ----------------------------------------------- | ----------------------------------------------------------------------------- |
+| `pnpm dev`                                      | `next dev` on port 3000, all interfaces                                       |
+| `pnpm build`                                    | production build to `.next/` (standalone server in `.next/standalone/`)       |
+| `pnpm start`                                    | serves the production build on port 3000                                      |
+| `pnpm lint`                                     | shared ESLint config (`@truckmoov/app-core/eslint-config`)                    |
+| `pnpm env:generate` / `env:check` / `env:watch` | regenerate / verify / watch `src/shared/env/env.ts` from `.env` (type-envgen) |
 
-```js
-import reactDom from "eslint-plugin-react-dom";
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
+## Docs
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: [
-          "./tsconfig.node.json",
-          "./tsconfig.app.json"
-        ],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
+- [docs/landing-page.md](../../docs/landing-page.md): structure, rendering and caching rules,
+  env, design tokens, and how to verify against Figma.
+- [docs/landing-deploy.md](../../docs/landing-deploy.md): how CI packages the standalone
+  server and what the server runs.
+- [docs/file-structure.md](../../docs/file-structure.md): where files go.
