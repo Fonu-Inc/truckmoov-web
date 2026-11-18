@@ -27,7 +27,7 @@ Start the app(s) first (`pnpm dev:main`, `pnpm dev:admin`, `pnpm dev:installer`,
 | `pnpm test:k6:installer` | `installer.test.js` | Login page, redirect, login, jobs list, job detail, other pages |
 | `pnpm test:k6:landing` | `landing.test.js` | Home, product and stakeholder pages, header nav, Get Started dialog (opened only) |
 | `pnpm test:k6:writes` | `main.writes.test.js`, `admin.writes.test.js` | Vehicle create → delete, driver form validation, SMS template create → delete |
-| `pnpm test:k6:payments` | `main.payments.test.js` | `/onboarding` payment dialog, Paystack redirect, MoMo USSD code |
+| `pnpm test:k6:payments` | `main.payments.test.js` | `/onboarding` payment dialog, Paystack redirect, MoMo USSD code. The API only creates onboarding intents for a tenant **without a plan** (409 "already has a plan" otherwise), so the Paystack and MoMo steps are skipped with that reason when the account is subscribed; the dialog check still runs. Any other API error fails the step and is printed |
 | `pnpm test:k6:cleanup` | `cleanup.test.js` | Deletes `k6-test-*` vehicles and SMS templates left by a crashed run |
 | `pnpm test:k6:load` | `load.test.js` | Opt-in load test (see below) |
 

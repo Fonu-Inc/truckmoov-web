@@ -24,6 +24,11 @@ export const options = base;
 const DIALOG = "//*[@role=\"dialog\"]";
 const PHONE = "input[name=\"phone\"]";
 const PAYMENT_ERROR = byText("Failed to initiate payment", { exact: false });
+const INTENT_PATH = "/auth/onboarding/payment/intent";
+// /onboarding checkout is for a tenant without a plan; once it has one the API
+// answers 409 "Tenant already has a plan; use the upgrade flow ...".
+const HAS_PLAN = /already has a plan/i;
+const NO_PLAN_NEEDED = "this account already has a plan — onboarding checkout needs a tenant without one";
 
 /** /onboarding → pick the first non-custom plan → open the payment dialog. */
 async function openPaymentDialog(page) {
@@ -51,6 +56,24 @@ export default async function () {
   try {
     if (!(await step(page, "login", () => login(page, BASE, CREDS)))) return;
 
+    // The dialog only says "Failed to initiate payment"; keep the API's reason.
+    let intentError = "";
+    page.on("response", async (res) => {
+      if (!res.url().includes(INTENT_PATH) || res.request().method() !== "POST" || res.status() < 400) return;
+      try {
+        intentError = JSON.parse(await res.text()).message || `HTTP ${res.status()}`;
+      }
+      catch {
+        intentError = `HTTP ${res.status()}`;
+      }
+    });
+    /** Fail with the API's reason; returns true when the account already has a plan. */
+    const intentFailed = (what) => {
+      if (HAS_PLAN.test(intentError)) return true;
+      throw new Error(`the app could not initiate a ${what} payment${intentError ? `: ${intentError}` : ""}`);
+    };
+    let hasPlan = false;
+
     await step(page, "P1 gateway dialog switches and validates", async () => {
       await openPaymentDialog(page);
       if (await isVisible(page, PHONE)) throw new Error("phone field shown for card payment");
@@ -72,13 +95,21 @@ export default async function () {
         if (await isVisible(page, PAYMENT_ERROR)) return "error";
         return null;
       }, { timeout: 30000, message: "the Paystack checkout redirect" });
-      if (outcome === "error") throw new Error("the app could not initiate a Paystack payment");
+      if (outcome === "error") {
+        hasPlan = intentFailed("Paystack");
+        skip("P2 Paystack checkout", NO_PLAN_NEEDED);
+        return;
+      }
       await page.waitForLoadState("domcontentloaded");
       // Stop here: never fill in card details.
     });
 
     if (!MOMO_TEST_PHONE) {
       skip("P3 MoMo shows a USSD code", "MOMO_TEST_PHONE is not set");
+      return;
+    }
+    if (hasPlan) {
+      skip("P3 MoMo shows a USSD code", NO_PLAN_NEEDED);
       return;
     }
     await step(page, "P3 MoMo shows a USSD code", async () => {
@@ -91,7 +122,11 @@ export default async function () {
         if (await isVisible(page, PAYMENT_ERROR)) return "error";
         return null;
       }, { timeout: 30000, message: "the USSD code" });
-      if (outcome === "error") throw new Error("the app could not initiate a MoMo payment");
+      if (outcome === "error") {
+        intentFailed("MoMo");
+        skip("P3 MoMo USSD code", NO_PLAN_NEEDED);
+        return;
+      }
       const code = (await page.locator(`${DIALOG}//p[contains(@class, "font-mono")]`).first().textContent()) || "";
       if (!code.trim()) throw new Error("USSD code is empty");
       // Stop here: the USSD code is never dialled.

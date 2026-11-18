@@ -48,7 +48,9 @@ export default async function () {
           await page.locator(`${DIALOG} input[name="${name}"]`).fill(value);
         }
         await page.locator(`${DIALOG} button[type="submit"]`).click();
-        await waitVisible(page, byText("Vehicle added", { exact: false }));
+        // The toast waits for the create plus a refetch of the vehicle list and
+        // summary; on the dev API with ~5k vehicles that has taken ~21 s.
+        await waitVisible(page, byText("Vehicle added", { exact: false }), 60000);
       });
 
       if (created) {

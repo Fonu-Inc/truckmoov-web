@@ -4,6 +4,7 @@
 import { browser } from "k6/browser";
 import { expectRedirectToAuth, login } from "./lib/auth.js";
 import {
+  assertNoErrorState,
   byText,
   isVisible,
   navigateViaSidebar,
@@ -71,8 +72,17 @@ export default async function () {
       skip("I5 job detail opens", "no installation jobs for this installer");
     }
 
+    // Notifications has no sidebar link: it is reached from the header bell's
+    // "View all" (apps/installer/src/features/dashboard/utils/sidebarNav.ts).
+    await step(page, "I6 header bell → View all (/notifications)", async () => {
+      await page.locator("header button[aria-label^=\"Installer notifications\"]").first().click();
+      await page.locator(byText("View all", { tag: "button" })).first().click();
+      await waitForPath(page, "/notifications");
+      await waitForHeading(page, "Notifications");
+      await assertNoErrorState(page);
+    });
+
     for (const [href, heading] of [
-      ["/notifications", "Notifications"],
       ["/settings", "Settings"],
       ["/support", "Support"],
     ]) {
