@@ -20,9 +20,14 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-foreground underline-offset-4 underline",
+        // FleetPro pill buttons (Figma component "Button")
+        brand: "rounded-full border border-brand/20 bg-primary text-primary-foreground shadow-button hover:bg-brand",
+        onDark: "rounded-full border border-on-ink/20 bg-transparent text-on-ink hover:bg-on-ink/10",
+        pill: "rounded-full border border-border-strong bg-background text-foreground-soft hover:bg-surface",
       },
       size: {
         "default": "has-[>svg]:px-3",
+        "pill": "h-[46px] px-[15px] text-sm leading-[14px] font-medium [&_svg:not([class*='size-'])]:size-4",
         "icon": "size-9",
         "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",

@@ -1,7 +1,4 @@
-import type {
-  OnboardingApplication,
-  OnboardingUploadableDocumentType,
-} from "@truckmoov/api/auth";
+import type { OnboardingUploadableDocumentType } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type {
   DocumentEntry,
@@ -29,210 +26,42 @@ import {
   useVerifyOnboardingApplicationPhone,
 } from "@truckmoov/api/auth";
 import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Rocket,
-  X,
-} from "lucide-react";
-import {
   useEffect, useMemo, useRef, useState,
 } from "react";
 
 import { useForm } from "react-hook-form";
-import { cn } from "@/lib/utils";
-import { Button } from "@/ui/shadcn/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
-  DialogTitle,
   DialogTrigger,
 } from "@/ui/shadcn/dialog";
+import { DialogFooter } from "./dialog-footer";
+import { DialogHeader } from "./dialog-header";
+import { DocumentCheckStep } from "./document-check-step";
 import {
   checkFile,
   DOCUMENTS,
   EMPTY_UPLOADS,
-  normalizePhone,
   organizationSchema,
   STEPS,
   verifyCodeSchema,
 } from "./get-started-data";
 import {
-  DocumentCheckStep,
-  OrganizationStep,
-  ReviewStep,
-  StatusScreen,
-  SubmittedStep,
-  UploadStep,
-  VerifyStep,
-} from "./get-started-steps";
-
-const APPLICATION_ID_KEY = "truckmoov_onboarding_application_id";
-
-const EMPTY_ORG_VALUES: OrganizationFormValues = {
-  applicantType: undefined as unknown as OrganizationFormValues["applicantType"],
-  organizationName: "",
-  businessEmail: "",
-  phone: "",
-  contactName: "",
-  address: "",
-  city: "",
-  state: undefined as unknown as OrganizationFormValues["state"],
-};
-
-// contactRole is required by the server but the applicant never types it —
-// it's implied by the Enterprise Admin / Owner Operator card they pick.
-const APPLICANT_TYPE_TO_ROLE: Record<OrganizationFormValues["applicantType"], string> = {
-  enterprise: "Enterprise Admin",
-  owner_operator: "Owner Operator",
-};
-
-function getStoredApplicationId(): string | null {
-  if (typeof window === "undefined")
-    return null;
-  return window.sessionStorage.getItem(APPLICATION_ID_KEY);
-}
-
-function setStoredApplicationId(id: string | null) {
-  if (typeof window === "undefined")
-    return;
-  if (id) {
-    window.sessionStorage.setItem(
-      APPLICATION_ID_KEY,
-      id,
-    );
-  }
-  else {
-    window.sessionStorage.removeItem(APPLICATION_ID_KEY);
-  }
-}
-
-function applicationToOrgValues(app: OnboardingApplication): OrganizationFormValues {
-  return {
-    applicantType: app.applicantType,
-    organizationName: app.organization.organizationName,
-    businessEmail: app.organization.businessEmail,
-    phone: app.organization.organizationPhone,
-    contactName: app.contact.fullName,
-    address: app.organization.streetAddress,
-    city: app.organization.city,
-    state: app.organization.state as OrganizationFormValues["state"],
-  };
-}
-
-function orgValuesToPayload(values: OrganizationFormValues) {
-  return {
-    applicantType: values.applicantType,
-    organizationName: values.organizationName,
-    businessEmail: values.businessEmail,
-    organizationPhone: normalizePhone(values.phone),
-    contactFullName: values.contactName,
-    contactRole: APPLICANT_TYPE_TO_ROLE[values.applicantType],
-    streetAddress: values.address,
-    city: values.city,
-    state: values.state as string,
-  };
-}
-
-// The organization form and the OnboardingApplication use different field names.
-// Server 400 errors reference the *server* field name — this table maps them
-// back to the RHF field so setError lands on the right input.
-const SERVER_FIELD_TO_FORM_FIELD: Record<string, keyof OrganizationFormValues> = {
-  applicantType: "applicantType",
-  organizationName: "organizationName",
-  businessEmail: "businessEmail",
-  organizationPhone: "phone",
-  contactFullName: "contactName",
-  contactRole: "applicantType",
-  streetAddress: "address",
-  city: "city",
-  state: "state",
-};
-
-function useCountdown(seconds: number) {
-  const [
-    remaining,
-    setRemaining,
-  ] = useState(seconds);
-
-  useEffect(
-    () => {
-      setRemaining(seconds);
-    },
-    [seconds],
-  );
-
-  useEffect(
-    () => {
-      if (remaining <= 0)
-        return;
-      const id = window.setInterval(
-        () => {
-          setRemaining(prev => (prev <= 1 ? 0 : prev - 1));
-        },
-        1000,
-      );
-      return () => window.clearInterval(id);
-    },
-    [remaining],
-  );
-
-  return [
-    remaining,
-    setRemaining,
-  ] as const;
-}
-
-function Stepper({
-  current,
-  submitted,
-}: {
-  current: number;
-  submitted: boolean;
-}) {
-  return (
-    <div className="flex border-b border-border-100 px-9 py-5">
-      {STEPS.map((label, index) => {
-        const done = submitted || index < current;
-        const active = !submitted && index === current;
-
-        return (
-          <div
-            key={label}
-            className="relative flex flex-1 flex-col items-center gap-2"
-          >
-            {index > 0 && (
-              <span className="absolute top-3 right-[calc(50%+12px)] h-px w-[calc(100%-24px)] bg-border" />
-            )}
-            <span className={cn(
-              "flex size-6 shrink-0 items-center justify-center rounded-full",
-              done && "bg-primary-100",
-              active && "border-2 border-primary bg-background",
-              !done && !active && "bg-[#EAEAEA]",
-            )}
-            >
-              {done && (
-                <Check
-                  className="size-3.5 text-white"
-                  strokeWidth={3.5}
-                />
-              )}
-            </span>
-            <span className={cn(
-              "w-[92px] truncate text-center text-[13px]",
-              done || active ? "font-bold text-foreground" : "text-[#9A9A9A]",
-            )}
-            >
-              {label}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+  applicationToOrgValues,
+  EMPTY_ORG_VALUES,
+  getStoredApplicationId,
+  orgValuesToPayload,
+  SERVER_FIELD_TO_FORM_FIELD,
+  setStoredApplicationId,
+} from "./get-started-helpers";
+import { OrganizationStep } from "./organization-step";
+import { OtpStep } from "./otp-step";
+import { ReviewStep } from "./review-step";
+import { StatusScreen } from "./status-screen";
+import { Stepper } from "./stepper";
+import { SubmittedStep } from "./submitted-step";
+import { UploadStep } from "./upload-step";
+import { useCountdown } from "./use-countdown";
 
 export default function GetStartedDialog({ children }: { children: React.ReactNode }) {
   const [
@@ -713,6 +542,10 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
     ],
   );
 
+  // The verifying screens have no footer in the design — the request is in flight.
+  const verifyingNow = (step === 3 && emailStatus === "verifying")
+    || (step === 4 && phoneStatus === "verifying");
+
   return (
     <Dialog
       open={open}
@@ -728,45 +561,34 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[92vh] max-h-[940px] flex-col gap-0 overflow-hidden rounded-[28px] p-0 sm:max-w-[720px]"
+        className="flex h-[800px] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden rounded-[30px] border-border-field p-0 shadow-float sm:max-w-[600px]"
       >
-        <header className="flex items-start gap-5 border-b border-border-100 px-9 py-8">
-          <span className="flex size-18 shrink-0 items-center justify-center rounded-2xl bg-[#FDF1CE]">
-            <Rocket className="size-8 text-primary-100" />
-          </span>
-          <div className="flex-1 space-y-1">
-            <DialogTitle className="text-2xl font-bold">Get Started</DialogTitle>
-            <DialogDescription className="text-base text-[#4D4D4D]">
-              Start Your Fleet Journey With Us By Following These Simple Steps.
-            </DialogDescription>
-          </div>
-          <DialogClose
-            className="cursor-pointer p-1"
-            onClick={() => {
-              if (submitted) {
-                setOnboardingToken(null);
-                setStoredApplicationId(null);
-                reset();
-              }
-            }}
-          >
-            <X className="size-6" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
-        </header>
+        <DialogHeader
+          onClose={() => {
+            if (submitted) {
+              setOnboardingToken(null);
+              setStoredApplicationId(null);
+              reset();
+            }
+          }}
+        />
 
         <Stepper
+          steps={STEPS}
           current={step}
           submitted={submitted}
         />
 
         {banner && (
-          <div className="border-b border-[#F8D7DA] bg-[#FDECEE] px-9 py-3 text-sm text-[#8B1F26]">
+          <div
+            role="alert"
+            className="shrink-0 border-b border-destructive/20 bg-destructive/10 px-7 py-3 text-sm text-destructive"
+          >
             {banner}
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-9 py-10">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-7">
           {submitted && (
             <SubmittedStep
               email={orgValues.businessEmail}
@@ -790,13 +612,14 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
           {!submitted && step === 3 && (
             emailStatus === "idle"
               ? (
-                  <VerifyStep
+                  <OtpStep
                     form={emailForm}
+                    title="Verify your email"
                     description={(
                       <>
                         We've Sent A Verification Code To
                         {" "}
-                        <span className="font-bold text-foreground">{orgValues.businessEmail}</span>
+                        <span className="font-semibold">{orgValues.businessEmail}</span>
                       </>
                     )}
                     onVerify={verifyEmail}
@@ -826,8 +649,9 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
           {!submitted && step === 4 && (
             phoneStatus === "idle"
               ? (
-                  <VerifyStep
+                  <OtpStep
                     form={phoneForm}
+                    title="Verify your phone number"
                     description="We'll Use This Number For Important Updates About Your Fleet Pro Application."
                     onVerify={verifyPhone}
                     onResend={sendPhone}
@@ -862,25 +686,14 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
           )}
         </div>
 
-        {!submitted && (
-          <footer className="flex items-center justify-between border-t border-border-100 px-9 py-6">
-            <Button
-              variant="ghost"
-              onClick={onBack}
-              className="h-13 gap-3 text-base font-medium"
-            >
-              <ArrowLeft className="size-5" />
-              Back
-            </Button>
-            <Button
-              onClick={onContinue}
-              disabled={!canContinue || createMutation.isPending || updateMutation.isPending || submitMutation.isPending}
-              className="h-13 gap-3 px-10 text-base font-bold"
-            >
-              {continueLabel}
-              <ArrowRight className="size-5" />
-            </Button>
-          </footer>
+        {!submitted && !verifyingNow && (
+          <DialogFooter
+            onBack={onBack}
+            onContinue={onContinue}
+            continueLabel={continueLabel}
+            continueDisabled={!canContinue || createMutation.isPending || updateMutation.isPending || submitMutation.isPending}
+            backMuted={step === 0}
+          />
         )}
       </DialogContent>
     </Dialog>

@@ -17,7 +17,9 @@ const PRODUCTS = [
   ["/product/fleet-management", "Fleet Management"],
   ["/product/live-tracking", "Live Tracking"],
   ["/product/dispatch-management", "Dispatch Management"],
-  ["/product/ai-optimisation", "AI Optimisation"],
+  ["/product/ai-optimisation", "AI Optimization"],
+  ["/product/analytics-reporting", "Analytics & Reporting"],
+  ["/product/iot-sims-devices", "IoT SIMs & Devices"],
 ];
 
 // The route segment really is spelled "stalkholder".
@@ -26,6 +28,17 @@ const STAKEHOLDERS = [
   ["/stalkholder/enterprise-admin", "Enterprise"],
   ["/stalkholder/owner-operator", "Owner Operator"],
   ["/stalkholder/aggregator-admin", "Aggregator"],
+];
+
+// Role, solution and resource pages share the stakeholder / solution / resource templates.
+const OTHER_PAGES = [
+  ["/roles/operations-manager", "Operations Manager"],
+  ["/roles/driver", "Driver"],
+  ["/solutions/enterprise-logistics", "Enterprise Logistics"],
+  ["/solutions/ai-logistics-operations", "AI Logistics Operations"],
+  ["/resources/documentation", "Documentation"],
+  ["/resources/faqs", "FAQs"],
+  ["/resources/help-articles", "Help Articles"],
 ];
 
 export function setup() {
@@ -46,6 +59,10 @@ export default async function () {
       await step(page, `L3 stakeholder page ${path}`, () => visit(page, `${BASE}${path}`, h1(title)));
     }
 
+    for (const [path, title] of OTHER_PAGES) {
+      await step(page, `L3 page ${path}`, () => visit(page, `${BASE}${path}`, h1(title)));
+    }
+
     await step(page, "L4 header nav reaches a product page and home", async () => {
       await visit(page, `${BASE}/`, h1("Modern Fleet Management Built for Africa"));
       await page.locator(byText("Products", { tag: "a" })).first().hover();
@@ -59,8 +76,8 @@ export default async function () {
       await waitVisible(page, h1("Modern Fleet Management Built for Africa"));
     });
 
-    await step(page, "L4 Get Started opens its dialog", async () => {
-      await page.locator(byText("Get Started", { tag: "button", exact: false })).first().click();
+    await step(page, "L4 Apply for Account Creation opens the Get Started dialog", async () => {
+      await page.locator(byText("Apply for Account Creation", { tag: "button", exact: false })).first().click();
       await waitVisible(page, "[role=\"dialog\"]");
       await page.keyboard.press("Escape");
     });

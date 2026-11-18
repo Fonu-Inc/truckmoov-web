@@ -1,6 +1,8 @@
 import { Link } from "react-router";
-import { appLinks } from "@/lib/app-links";
-import { Button } from "../shadcn/button";
+import {
+  footerColumns,
+  legalLinks,
+} from "@/lib/app-links";
 import {
   GmailIcon,
   InstagramIcon,
@@ -8,85 +10,99 @@ import {
   XIcon,
 } from "../svgs";
 import Logo from "./logo";
-import SectionContainer from "./section-container";
 
-const FOOTER_LINK = [
+const SOCIALS = [
   {
-    label: "Privacy Policy",
-    to: "#",
+    label: "LinkedIn",
+    href: "#",
+    icon: LinkedinIcon,
   },
   {
-    label: "Terms of Service",
-    to: "#",
+    label: "Instagram",
+    href: "#",
+    icon: InstagramIcon,
   },
   {
-    label: "Contact",
-    to: "#",
+    label: "X",
+    href: "#",
+    icon: XIcon,
+  },
+  {
+    label: "Email",
+    href: "#",
+    icon: GmailIcon,
   },
 ];
 
 export default function Footer() {
   return (
-    <SectionContainer
-      rootAs="footer"
-      containerClassName="space-y-10"
-    >
-      <section className="flex gap-10 items-start">
-        <section className="flex flex-col gap-1">
-          <Logo />
-          <p className="font-medium text-xs text-primary-300">
-            AI-powered logistics intelligence for modern, multi-tenant fleet operations.
-          </p>
-          <div className="flex items-center gap-1.5">
-            <LinkedinIcon />
-            <InstagramIcon />
-            <XIcon />
-            <GmailIcon />
-          </div>
-        </section>
-        <section className="flex gap-2 items-start justify-between w-full">
-          {appLinks.map(link => (
-            <div
-              key={link.title}
-              className="space-y-4"
-            >
-              <h1 className="uppercase font-bold text-base">{link.title}</h1>
-              <div className="space-y-2">
-                {link.children.map(child => (
-                  <Link
-                    to={child.href}
-                    key={child.title}
-                    className="text-sm block"
-                  >
-                    {child.title}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
-      </section>
-      <section className="py-2 border-t border-border flex items-center justify-between gap-2">
-        <p className="text-xs">
-          © 2026 FleetPro Enterprise. All rights reserved.
-        </p>
-        <section className="flex items-center">
-          {
-            FOOTER_LINK.map(link => (
-              <Button
-                key={link.label}
-                variant="link"
-              >
-                <Link
-                  to={link.to}
+    <footer className="relative rounded-t-[50px] bg-background pt-[60px] pb-[78px]">
+      <div className="mx-auto w-full max-w-[1324px] px-4">
+        <div className="flex flex-col gap-10 lg:flex-row lg:gap-[120px]">
+          <div className="flex w-full max-w-[288px] flex-col gap-2.5">
+            <Logo />
+            <p className="text-xs leading-[16.8px] text-muted-foreground">
+              AI-powered logistics intelligence for modern, multi-tenant fleet operations.
+            </p>
+            <div className="flex items-center gap-[13px]">
+              {SOCIALS.map(({
+                label,
+                href,
+                icon: Icon,
+              }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
                 >
-                  {link.label}
+                  <Icon />
+                </a>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-4 lg:flex lg:gap-5">
+            {footerColumns.map(column => (
+              <div
+                key={column.title}
+                className="flex flex-col gap-2.5 lg:w-[177px]"
+              >
+                <h2 className="h-[29px] text-base leading-[19.5px] font-bold text-foreground uppercase">
+                  {column.title}
+                </h2>
+                <ul className="flex flex-col gap-[5px]">
+                  {column.links.map(link => (
+                    <li key={link.title}>
+                      <Link
+                        to={link.href}
+                        className="block h-[29px] text-sm leading-[17.1px] text-foreground capitalize hover:text-brand-deep"
+                      >
+                        {link.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-[57px] flex flex-col gap-3 border-t border-border/50 pt-5 sm:flex-row sm:items-center sm:justify-between lg:mr-[-2px]">
+          <p className="h-[29px] text-sm leading-[17.1px] text-foreground">
+            © 2026 FleetPro Enterprise. All Rights Reserved.
+          </p>
+          <ul className="flex items-center gap-5">
+            {legalLinks.map(link => (
+              <li key={link.title}>
+                <Link
+                  to={link.href}
+                  className="block h-[29px] text-sm leading-[17.1px] text-foreground capitalize underline underline-offset-2 hover:text-brand-deep"
+                >
+                  {link.title}
                 </Link>
-              </Button>
-            ))
-          }
-        </section>
-      </section>
-    </SectionContainer>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </footer>
   );
 }

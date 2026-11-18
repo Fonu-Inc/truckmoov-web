@@ -10,26 +10,35 @@ type SectionContainerProps = {
   containerClassName?: string;
   rootAs?: keyof JSX.IntrinsicElements;
   containerAs?: keyof JSX.IntrinsicElements;
+  /** Rendered inside the root but outside the centred container (backgrounds, decorations). */
   rootChildren?: ReactNode;
+  id?: string;
 } & PropsWithChildren;
 
+/**
+ * Full-width band with a centred 1200px content column (`page-container`).
+ * Every page section is built on this.
+ */
 export default function SectionContainer({
   rootClassName,
   containerClassName,
   rootAs: Root = "section",
-  containerAs: Container = "main",
+  containerAs: Container = "div",
   children,
   rootChildren,
+  id,
 }: SectionContainerProps) {
   return (
-    <Root className={cn(
-      "w-full px-4 py-2 h-auto",
-      rootClassName,
-    )}
+    <Root
+      id={id}
+      className={cn(
+        "relative w-full",
+        rootClassName,
+      )}
     >
       {rootChildren}
       <Container className={cn(
-        "container mx-auto py-8",
+        "page-container relative",
         containerClassName,
       )}
       >

@@ -4,10 +4,12 @@ import {
   useLocation,
 } from "react-router";
 
+import CtaBand from "./cta-band";
 import Footer from "./footer";
-import NavBar from "./nav-bar";
-import OptimizeYourFleet from "./optimize-your-fleet";
+import NavBar from "./nav-bar/nav-bar";
+import SupportPill from "./support-pill";
 
+/** Site shell: fixed nav, page content, CTA band, footer and the floating support widget. */
 export default function Layout() {
   const { pathname } = useLocation();
 
@@ -16,20 +18,20 @@ export default function Layout() {
       window.scrollTo({
         top: 0,
         left: 0,
-        behavior: "smooth",
       });
     },
     [pathname],
   );
 
   return (
-    <section className="w-full min-h-dvh text-foreground relative flex flex-col space-y-10">
+    <div className="relative flex min-h-dvh w-full flex-col overflow-x-clip text-foreground">
       <NavBar />
-      <main className="mt-18 flex-1 mb-25">
+      <main className="flex-1 pt-20">
         <Outlet />
       </main>
-      <OptimizeYourFleet />
+      <CtaBand />
       <Footer />
-    </section>
+      <SupportPill />
+    </div>
   );
 }

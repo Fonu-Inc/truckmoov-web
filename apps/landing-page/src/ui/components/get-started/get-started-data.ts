@@ -1,59 +1,87 @@
-import type { OnboardingApplicationDocumentType } from "@truckmoov/api/auth";
+import type {
+  OnboardingApplicationDocumentType,
+  OnboardingApplicationTimelineEntry,
+} from "@truckmoov/api/auth";
 import * as z from "zod";
 import mapIllustration from "@/ui/images/map.png";
 import truckIllustration from "@/ui/images/truck.png";
 
 export const STEPS = [
-  "Organization Details",
+  "Organization",
   "Upload Documents",
   "Document Check",
   "Verify Email",
-  "Verify Phone Number",
+  "Verify Phone",
   "Review",
 ];
+
+// The organisation form is grouped into the three Figma sections; `half` fields
+// share a row (City sits beside the State select in the address section).
+export const ORG_SECTIONS = [
+  {
+    id: "organization",
+    title: "Organization Details",
+  },
+  {
+    id: "contact",
+    title: "Contact Person Details",
+  },
+  {
+    id: "address",
+    title: "Address Details",
+  },
+] as const;
+
+export type OrgSectionId = typeof ORG_SECTIONS[number]["id"];
 
 export const ORG_FIELDS = [
   {
     key: "organizationName",
+    section: "organization",
     label: "Organization Name",
-    reviewLabel: "Organization Name",
     placeholder: "Arne logistics Ltd",
     type: "text",
+    half: false,
   },
   {
     key: "businessEmail",
+    section: "organization",
     label: "Business Email",
-    reviewLabel: "Business Email",
     placeholder: "jane@arne.com",
     type: "email",
+    half: false,
   },
   {
     key: "phone",
+    section: "organization",
     label: "Organization Phone no.",
-    reviewLabel: "Phone Number",
     placeholder: "+234 80 0000 0000",
     type: "tel",
+    half: false,
   },
   {
     key: "contactName",
-    label: "Contact Name",
-    reviewLabel: "Contact Name",
+    section: "contact",
+    label: "Full Name",
     placeholder: "Jane Doe",
     type: "text",
+    half: false,
   },
   {
     key: "address",
-    label: "Organization Address",
-    reviewLabel: "Organization Address",
+    section: "address",
+    label: "Street Address",
     placeholder: "Mazi Fedelis Street",
     type: "text",
+    half: false,
   },
   {
     key: "city",
+    section: "address",
     label: "City",
-    reviewLabel: "City",
     placeholder: "Abuja",
     type: "text",
+    half: true,
   },
 ] as const;
 
@@ -98,20 +126,30 @@ export const DOCUMENTS: DocumentEntry[] = [
   },
 ];
 
+// `description` keeps the Figma line break (rendered with whitespace-pre-line).
 export const ORG_TYPES = [
   {
     id: "enterprise",
-    title: "Enterprise Admin",
-    description: "Operates An Internal Logistics Organisation With Full Authority Over Fleet, Depots, Drivers And Dispatch.",
+    title: "Fleet Provider",
+    description: "Operates Vehicles & Drivers,\nExecutes Transport Jobs.",
     illustration: mapIllustration,
+    illustrationClassName: "top-[37px] -right-2.5 h-[65px] w-[100px] rotate-[8.25deg] drop-shadow-[0_4px_2px_rgb(0_0_0/0.25)]",
   },
   {
     id: "owner_operator",
     title: "Owner Operator",
-    description: "Independent Operator With Own Vehicle(S)",
+    description: "Independent Operator With\nOwn Vehicle(S)",
     illustration: truckIllustration,
+    illustrationClassName: "top-[50px] right-[3px] h-[68px] w-[95px]",
   },
 ] as const;
+
+// contactRole is required by the server but the applicant never types it —
+// it's implied by the Fleet Provider / Owner Operator card they pick.
+export const APPLICANT_TYPE_TO_ROLE: Record<typeof ORG_TYPES[number]["id"], string> = {
+  enterprise: "Enterprise Admin",
+  owner_operator: "Owner Operator",
+};
 
 export type FieldKey = typeof ORG_FIELDS[number]["key"];
 export type Upload = {
@@ -282,3 +320,53 @@ export const verifyCodeSchema = z.object({
 });
 
 export type VerifyCodeValues = z.infer<typeof verifyCodeSchema>;
+
+// Review step summary (Figma "Organization Details" card), in reading order.
+export const REVIEW_ROWS: {
+  label: string; value: (values: OrganizationFormValues) => string;
+}[] = [
+  {
+    label: "Organisation Name",
+    value: values => values.organizationName,
+  },
+  {
+    label: "Business Email",
+    value: values => values.businessEmail,
+  },
+  {
+    label: "Phone Number",
+    value: values => values.phone,
+  },
+  {
+    label: "Contact Name",
+    value: values => values.contactName,
+  },
+  {
+    label: "Contact Role",
+    value: values => (values.applicantType ? APPLICANT_TYPE_TO_ROLE[values.applicantType] : ""),
+  },
+  {
+    label: "Organization Address",
+    value: values => [
+      values.address,
+      values.city,
+      values.state,
+    ].filter(Boolean).join(", "),
+  },
+];
+
+// Shown on the submitted screen until the status endpoint returns a timeline.
+export const FALLBACK_TIMELINE: OnboardingApplicationTimelineEntry[] = [
+  {
+    key: "submitted", label: "Application submitted", complete: true, inProgress: false,
+  },
+  {
+    key: "details", label: "Organization details received", complete: true, inProgress: false,
+  },
+  {
+    key: "documents", label: "Documents received", complete: true, inProgress: false,
+  },
+  {
+    key: "review", label: "Application Review", complete: false, inProgress: true,
+  },
+];

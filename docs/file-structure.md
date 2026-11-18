@@ -10,7 +10,8 @@ Tailwind v3 + the split `@radix-ui/react-*` packages and cannot be consumed by a
 Tailwind v4 + unified `radix-ui` app. A multi-part component gets its own folder under
 `src/ui/components/` (`get-started/` is the worked example: dialog shell, step bodies, and a
 `.ts` data module — the `react-refresh/only-export-components` lint rule forbids exporting
-constants from a file that also exports components).
+constants from a file that also exports components). Pages that share a Figma layout share one
+template folder and are data-only — see [landing-page.md](landing-page.md).
 
 `src/` has exactly two buckets plus entry files:
 
