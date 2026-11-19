@@ -2307,7 +2307,8 @@ export type FleetOverviewAlertItem = {
   type: string
   severity: string
   status: string
-  details: string
+  /** The API sends the alert frame here as an object (alert_type, vehicle_id, nested details…), not text. */
+  details: string | Record<string, unknown> | null
   vehicleId: string | null
   triggeredAt: string
 }

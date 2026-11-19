@@ -10,6 +10,7 @@ import {
 } from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { alertHeadline, zoneNameOf } from "@/features/map/lib/alertText";
 import { ActiveDeliveriesMap, type DeliveryPoint } from "../ui/ActiveDeliveriesMap";
 import {
   DriversOverviewCard,
@@ -108,13 +109,22 @@ export default function EnterpriseLogisticsDashboard() {
 
   const overviewAlerts = useMemo<OverviewAlert[]>(() => {
     if (!overview) return [];
-    return overview.alerts.items.map((a) => ({
-      id: a.id,
-      title: a.type,
-      description: a.details,
-      severity: severityFromAlert(a.severity),
-      time: a.triggeredAt,
-    }));
+    return overview.alerts.items.map((a) => {
+      const raw = a.details;
+      const nested = raw && typeof raw === "object" && raw.details && typeof raw.details === "object"
+        ? raw.details as Record<string, unknown>
+        : {};
+      const details = raw && typeof raw === "object" ? { ...raw, ...nested } : {};
+      return {
+        id: a.id,
+        title: alertHeadline({
+          id: a.id, type: a.type, severity: a.severity, vehicleId: a.vehicleId, details,
+        }),
+        description: typeof raw === "string" ? raw : zoneNameOf(details) ?? undefined,
+        severity: severityFromAlert(a.severity),
+        time: a.triggeredAt,
+      };
+    });
   }, [overview]);
 
   const recentActivity = useMemo<OverviewActivity[]>(() => {
