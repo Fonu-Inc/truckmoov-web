@@ -667,7 +667,6 @@ export default function ApplyForAccount() {
           applicationId && (
             <PaymentStep
               applicationId={applicationId}
-              businessEmail={application?.organization.businessEmail ?? ""}
               onContinue={() => setStep(7)}
               onEditFleet={() => {
                 setPhase("form");

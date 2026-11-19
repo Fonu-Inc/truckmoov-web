@@ -2926,6 +2926,9 @@ export type PaymentIntentPayload = {
 export type PaymentIntentData = {
   authorizationUrl?: string
   ussdString?: string
+  /** True when the server settled the payment without a hosted checkout. */
+  paid?: boolean
+  message?: string
 }
 
 export type PaymentIntentResponse = ServerResponse<PaymentIntentData>
@@ -3978,6 +3981,8 @@ export type StartOnboardingPaymentResponse = ServerResponse<{
   authorizationUrl: string | null
   provider: string
   order: OnboardingOrder
+  /** True when the server settled the payment without a hosted checkout. */
+  paid?: boolean
 }>
 
 export type OnboardingTimeSlot = 'morning' | 'afternoon'

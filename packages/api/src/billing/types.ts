@@ -479,9 +479,12 @@ export type TenantInvoicePayWallet = {
 }
 
 export type TenantInvoicePayCard = {
-  authorizationUrl: string
+  /** Null when the server settled the invoice without a hosted checkout. */
+  authorizationUrl: string | null
   reference: string
   amountNgn: number
+  newPeriodEnd?: string | null
+  paid?: boolean
 }
 
 export type TenantQuotation = {

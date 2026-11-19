@@ -267,7 +267,7 @@ function invoiceColumns({
             onClick={() => onCard(row.original)}
           >
             <CreditCard className="h-3.5 w-3.5 mr-1.5" />
-            Pay by card
+            Pay now
           </Button>
         </div>
       ),
@@ -317,7 +317,15 @@ export function SubscriptionInvoicesCard(_props: { tenantName?: string }) {
       { id: invoice.id },
       {
         onSuccess: (res) => {
-          window.location.assign(res.data.authorizationUrl);
+          if (res.data.authorizationUrl) {
+            window.location.assign(res.data.authorizationUrl);
+            return;
+          }
+          // Demo checkout settles on the server, so refresh the invoice list.
+          refetchTenantBilling();
+          toast.success(res.data.newPeriodEnd
+            ? `Paid. Your licence now runs until ${formatDay(res.data.newPeriodEnd)}.`
+            : "Paid. Thank you.");
         },
         onError: err => toast.error(payErrorMessage(err)),
       },

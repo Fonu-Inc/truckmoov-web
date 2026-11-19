@@ -3,10 +3,7 @@ import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import { useQuery } from "@tanstack/react-query";
 import {
   getOnboardingOrderQueryOptions,
-  useSendOnboardingBillingEmailVerification,
-  useSetOnboardingBillingEmail,
   useStartOnboardingPayment,
-  useVerifyOnboardingBillingEmail,
 } from "@truckmoov/api/auth";
 import {
   AlertCircle,
@@ -22,20 +19,10 @@ import {
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from "@/components/shadcn/input-otp";
-import { Label } from "@/components/shadcn/label";
 import { formatCurrency } from "@/lib/currency";
 
 type PaymentStepProps = {
   applicationId: string;
-  /** Pre-fills the billing email when none is saved yet. */
-  businessEmail: string;
   onContinue: () => void;
   /** Sends the applicant back to Fleet Requirements when the order can't be priced. */
   onEditFleet: () => void;
@@ -66,12 +53,12 @@ function paymentError(error: unknown) {
 /**
  * Step 4 (TRU-FE-14). Runs on the draft token — no account exists yet. The order is
  * priced by the server from the application's device rows, so nothing here computes or
- * sends a total. Paying redirects to the provider; the result is confirmed by polling
- * the order, because the provider tells the server by webhook, not on the redirect.
+ * sends a total. In demo mode the server settles the payment immediately and the order
+ * refreshes as paid; a real provider, when enabled, still redirects and is confirmed by
+ * the webhook.
  */
 export function PaymentStep({
   applicationId,
-  businessEmail,
   onContinue,
   onEditFleet,
 }: PaymentStepProps) {
@@ -95,39 +82,11 @@ export function PaymentStep({
   // Paid, or the stage has already moved past payment (the webhook landed).
   const paid = payment?.status === "paid" || STAGES_AFTER_PAYMENT.includes(orderData?.stage ?? "");
 
-  const setBillingEmail = useSetOnboardingBillingEmail();
-  const sendCode = useSendOnboardingBillingEmailVerification();
-  const verifyCode = useVerifyOnboardingBillingEmail();
   const startPayment = useStartOnboardingPayment();
-
-  const [
-    email,
-    setEmail,
-  ] = useState("");
-  const [
-    emailError,
-    setEmailError,
-  ] = useState<string | null>(null);
-  const [
-    code,
-    setCode,
-  ] = useState("");
-  const [
-    codeSent,
-    setCodeSent,
-  ] = useState(false);
-  const [
-    cooldown,
-    setCooldown,
-  ] = useState(0);
   const [
     payError,
     setPayError,
   ] = useState<string | null>(null);
-
-  const savedEmail = orderData?.billingEmail ?? null;
-  const verified = Boolean(orderData?.billingEmailVerified);
-  const emailDirty = email.trim() !== (savedEmail ?? "");
 
   // Strip the return marker so a reload doesn't restart the confirmation wait.
   useEffect(
@@ -146,87 +105,6 @@ export function PaymentStep({
     [],
   );
 
-  // Fill the address field once the order has loaded.
-  useEffect(
-    () => {
-      if (orderData && !email)
-        setEmail(orderData.billingEmail ?? businessEmail);
-    },
-    // ponytail: seeds once from the first order; later edits are the applicant's.
-    // eslint-disable-next-line react/exhaustive-deps
-    [orderData],
-  );
-
-  useEffect(
-    () => {
-      if (cooldown <= 0)
-        return;
-      const timer = setTimeout(
-        () => setCooldown(value => value - 1),
-        1000,
-      );
-      return () => clearTimeout(timer);
-    },
-    [cooldown],
-  );
-
-  async function saveEmail() {
-    setEmailError(null);
-    try {
-      await setBillingEmail.mutateAsync({
-        id: applicationId,
-        data: { billingEmail: email.trim() },
-      });
-      setCodeSent(false);
-      setCode("");
-      await send();
-    }
-    catch (error) {
-      setEmailError((error as ServerErrorResponse).message || "The billing email couldn't be saved.");
-    }
-  }
-
-  async function send() {
-    setEmailError(null);
-    try {
-      const res = await sendCode.mutateAsync({ id: applicationId });
-      setCodeSent(true);
-      setCooldown(res.data.resendAfterSeconds);
-    }
-    catch (error) {
-      const err = error as ServerErrorResponse;
-      if (err.retryAfterSeconds) {
-        setCodeSent(true);
-        setCooldown(err.retryAfterSeconds);
-      }
-      setEmailError(err.message || "The code couldn't be sent.");
-    }
-  }
-
-  // Verify as soon as all six digits are in, like the other verification steps.
-  useEffect(
-    () => {
-      if (code.length !== 6 || verifyCode.isPending)
-        return;
-      verifyCode.mutate(
-        {
-          id: applicationId,
-          data: { code },
-        },
-        {
-          onSuccess: () => setEmailError(null),
-          onError: (error) => {
-            setEmailError(error.message || "That code didn't work.");
-            setCode("");
-          },
-        },
-      );
-    },
-    // ponytail: fires when the code reaches six digits, not on mutation identity changes.
-    // eslint-disable-next-line react/exhaustive-deps
-    [code],
-  );
-
   async function pay() {
     setPayError(null);
     try {
@@ -238,9 +116,19 @@ export function PaymentStep({
         window.location.assign(res.data.authorizationUrl);
         return;
       }
+      if (res.data.paid) {
+        onContinue();
+        return;
+      }
+      // The provider may have settled without a redirect; confirm by polling.
+      const refreshed = await orderQuery.refetch();
+      const data = refreshed.data?.data;
+      if (data?.payment?.status === "paid" || STAGES_AFTER_PAYMENT.includes(data?.stage ?? "")) {
+        onContinue();
+        return;
+      }
       // No hosted page to visit: wait for the webhook here instead.
       setConfirming(true);
-      void orderQuery.refetch();
     }
     catch (error) {
       setPayError(paymentError(error));
@@ -344,117 +232,6 @@ export function PaymentStep({
         </dl>
       </div>
 
-      {!paid && (
-        <div className="space-y-4 rounded-2xl border border-border/70 bg-card/60 p-5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h3 className="text-base font-semibold text-foreground">Billing Email</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Where your invoice and receipt are sent. Confirm it with a code before paying.
-              </p>
-            </div>
-            {verified && !emailDirty && (
-              <Badge className="rounded-full bg-success/15 text-success hover:bg-success/15">Verified</Badge>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-1.5">
-              <Label htmlFor="billing-email">Billing email address</Label>
-              <Input
-                id="billing-email"
-                type="email"
-                value={email}
-                onChange={event => setEmail(event.target.value)}
-              />
-            </div>
-            {(emailDirty || !savedEmail) && (
-              <Button
-                variant="outline"
-                loading={setBillingEmail.isPending || sendCode.isPending}
-                disabled={!email.trim()}
-                onClick={() => void saveEmail()}
-              >
-                {savedEmail ? "Save & send code" : "Send code"}
-              </Button>
-            )}
-          </div>
-          {emailDirty && savedEmail && verified && (
-            <p className="text-xs text-muted-foreground">Changing the address means confirming the new one with a code.</p>
-          )}
-
-          {savedEmail && !emailDirty && !verified && (
-            <div className="flex flex-col items-center gap-2 pt-2">
-              {codeSent
-                ? (
-                    <>
-                      <p className="text-sm text-muted-foreground">
-                        {`Enter the 6-digit code sent to ${savedEmail}.`}
-                      </p>
-                      <InputOTP
-                        maxLength={6}
-                        value={code}
-                        onChange={setCode}
-                        disabled={verifyCode.isPending}
-                      >
-                        <InputOTPGroup>
-                          {[
-                            0,
-                            1,
-                            2,
-                          ].map(index => (
-                            <InputOTPSlot
-                              key={index}
-                              index={index}
-                            />
-                          ))}
-                        </InputOTPGroup>
-                        <InputOTPSeparator />
-                        <InputOTPGroup>
-                          {[
-                            3,
-                            4,
-                            5,
-                          ].map(index => (
-                            <InputOTPSlot
-                              key={index}
-                              index={index}
-                            />
-                          ))}
-                        </InputOTPGroup>
-                      </InputOTP>
-                      {verifyCode.isPending && (
-                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          Verifying…
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => void send()}
-                        disabled={sendCode.isPending || cooldown > 0}
-                        className="text-sm font-medium text-primary underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
-                      >
-                        {sendCode.isPending ? "Sending…" : cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
-                      </button>
-                    </>
-                  )
-                : (
-                    <Button
-                      variant="outline"
-                      loading={sendCode.isPending}
-                      onClick={() => void send()}
-                    >
-                      Send verification code
-                    </Button>
-                  )}
-            </div>
-          )}
-
-          {emailError && <p className="text-sm text-destructive">{emailError}</p>}
-        </div>
-      )}
-
       {waitingForWebhook && !pollTimedOut && (
         <p className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
@@ -507,7 +284,7 @@ export function PaymentStep({
               <Button
                 size="lg"
                 loading={startPayment.isPending}
-                disabled={!orderData.payable || !verified || emailDirty || waitingForWebhook}
+                disabled={!orderData.payable || waitingForWebhook}
                 onClick={() => void pay()}
               >
                 {`Pay ${formatCurrency(order.totalNgn)}`}

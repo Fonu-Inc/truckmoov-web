@@ -2,6 +2,12 @@
 
 A reusable payment dialog that handles gateway selection (Paystack card or MTN MoMo USSD), loading state, and post-payment outcomes. It lives in `@truckmoov/reusables` and has no dependency on `@truckmoov/api` — you bring the API call.
 
+> **Demo checkout is the current path.** The onboarding subscription and
+> application payment screens settle server-side (`PAYMENT_DEMO_MODE`) and do
+> not render this dialog. The component stays for a real-gateway flow; turning
+> `PAYMENT_DEMO_MODE` off also means restoring the application payment step's
+> billing-email verification block, which the demo path removed.
+
 ## How it works
 
 1. The user picks a gateway — **Card (Paystack)** or **Mobile Money (MoMo)**

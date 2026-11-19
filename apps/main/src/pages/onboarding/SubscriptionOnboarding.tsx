@@ -5,7 +5,6 @@ import {
   getOnboardingSubscriptionCapsQueryOptions,
   useCreatePaymentIntent,
 } from "@truckmoov/api/auth";
-import { PaymentGatewayDialog } from "@truckmoov/reusables/components/app/PaymentGatewayDialog";
 import {
   AlertCircle,
   Check,
@@ -18,6 +17,8 @@ import {
   Users,
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { EnterpriseEnquiryDialog } from "@/components/onboarding/EnterpriseEnquiryDialog";
 import { Button } from "@/components/shadcn/button";
 import { Label } from "@/components/shadcn/label";
@@ -33,6 +34,7 @@ function formatCurrentCap(value: number | null): string {
 }
 
 export default function SubscriptionOnboarding() {
+  const navigate = useNavigate();
   const plansQuery = useQuery(getOnboardingPlansQueryOptions());
   const exchangeRateQuery = useQuery(getOnboardingExchangeRateQueryOptions());
   const capsQuery = useQuery(getOnboardingSubscriptionCapsQueryOptions());
@@ -52,10 +54,6 @@ export default function SubscriptionOnboarding() {
   const [
     enquiryOpen,
     setEnquiryOpen,
-  ] = useState(false);
-  const [
-    paymentOpen,
-    setPaymentOpen,
   ] = useState(false);
   const paymentMutation = useCreatePaymentIntent();
 
@@ -80,14 +78,35 @@ export default function SubscriptionOnboarding() {
     return `₦${ngn.toLocaleString()}`;
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!picked)
       return;
     if (picked.customPricing) {
       setEnquiryOpen(true);
       return;
     }
-    setPaymentOpen(true);
+    try {
+      const res = await paymentMutation.mutateAsync({
+        data: {
+          planCode: picked.code,
+          billingCycle: billing,
+          gateway: "paystack",
+        },
+      });
+      if (res.data.authorizationUrl) {
+        window.location.assign(res.data.authorizationUrl);
+        return;
+      }
+      if (res.data.paid) {
+        // Checkout is settled server-side in demo mode; carry on with onboarding.
+        navigate("/onboarding/kyc");
+        return;
+      }
+      toast.error(res.data.message || "The payment couldn't be started. Try again.");
+    }
+    catch (error) {
+      toast.error((error as Error).message || "The payment couldn't be completed. Try again.");
+    }
   };
 
   return (
@@ -164,7 +183,7 @@ export default function SubscriptionOnboarding() {
 
                     return (
                       <button
-                        key={plan.id}
+                        key={plan.code}
                         type="button"
                         onClick={() => setPickedTier(plan.tier)}
                         className={cn(
@@ -342,8 +361,9 @@ export default function SubscriptionOnboarding() {
 
       <div className="mt-8 flex justify-end border-t border-border/60 pt-6">
         <Button
-          onClick={handlePay}
+          onClick={() => void handlePay()}
           disabled={!picked}
+          loading={paymentMutation.isPending}
           size="lg"
           className="min-w-[180px]"
         >
@@ -360,23 +380,6 @@ export default function SubscriptionOnboarding() {
         />
       )}
 
-      {picked && !picked.customPricing && (
-        <PaymentGatewayDialog
-          open={paymentOpen}
-          onOpenChange={setPaymentOpen}
-          context={{
-            type: "subscription", planName: picked.name, billingCycle: billing,
-          }}
-          onPay={({
-            gateway, phone,
-          }) =>
-            paymentMutation.mutateAsync({
-              data: {
-                planCode: picked.code, billingCycle: billing, gateway, phone,
-              },
-            }).then(res => res.data)}
-        />
-      )}
     </OnboardingLayout>
   );
 }
