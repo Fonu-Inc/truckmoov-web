@@ -8,6 +8,7 @@ on:
       - package.json
       - pnpm-lock.yaml
       - .github/scripts/**
+      - .github/workflows/frontend-cicd.yml
   push:
     branches:
       - main
@@ -17,6 +18,7 @@ on:
       - package.json
       - pnpm-lock.yaml
       - .github/scripts/**
+      - .github/workflows/frontend-cicd.yml
   workflow_dispatch:
 
 # A run on main may be the only one that deploys this app, so a newer push must
@@ -85,7 +87,7 @@ jobs:
           MAIN_ENV: ${{ github.event_name != 'pull_request' && secrets.MAIN_ENV || '' }}
 
       - name: Build
-        run: pnpm build
+        run: pnpm turbo build --filter main
 
       - name: Package release
         if: github.event_name != 'pull_request'
