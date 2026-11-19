@@ -5,18 +5,13 @@ import { ShieldCheck } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
 import {
   getOnboardingOrderQueryOptions,
-  useSendOnboardingBillingEmailVerification,
-  useSetOnboardingBillingEmail,
   useStartOnboardingPayment,
-  useVerifyOnboardingBillingEmail,
 } from "@truckmoov/api/auth";
 import {
   useEffect,
-  useEffectEvent,
   useState,
 } from "react";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
-import { OtpInput } from "@/features/get-started/components/OtpInput";
 import {
   LoadingBlock,
   Notice,
@@ -26,16 +21,11 @@ import {
   StepHeading,
   StepLayout,
 } from "@/features/get-started/components/StepParts";
-import { useCountdown } from "@/features/get-started/hooks/useCountdown";
 import { formatCurrency } from "@/features/get-started/utils/formatCurrency";
 import {
   CARD_CLASS,
-  FIELD_CLASS,
-  LABEL_CLASS,
-  LINK_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/features/get-started/utils/getStartedContent";
-import { cn } from "@/shared/utils";
 
 /** The provider redirects back to the page with `?payment=return`; confirmation itself arrives by webhook. */
 export const PAYMENT_RETURN_PARAM = "payment";
@@ -62,19 +52,16 @@ function paymentError(error: unknown) {
 /**
  * Payment for the M2M package (main app: PaymentStep). Runs on the draft token; no account
  * exists yet. The server prices the order from the device rows, so nothing here computes a
- * total. Paying redirects to the provider and back to this page, where the modal reopens
- * (DialogHost) and the result is confirmed by polling the order.
+ * total. In demo mode the server settles the payment immediately; with a real provider the
+ * browser redirects and the modal reopens to confirm by polling the order.
  */
 export function PaymentStep({
   applicationId,
-  businessEmail,
   onBack,
   onContinue,
   onEditFleet,
 }: {
   applicationId: string;
-  /** Pre-fills the billing email when none is saved yet. */
-  businessEmail: string;
   onBack: () => void;
   onContinue: () => void;
   /** Sends the applicant back to Fleet Requirements when the order can't be priced. */
@@ -100,42 +87,11 @@ export function PaymentStep({
   // Paid, or the stage has already moved past payment (the webhook landed).
   const paid = payment?.status === "paid" || STAGES_AFTER_PAYMENT.includes(orderData?.stage ?? "");
 
-  const setBillingEmail = useSetOnboardingBillingEmail();
-  const sendCode = useSendOnboardingBillingEmailVerification();
-  const verifyCode = useVerifyOnboardingBillingEmail();
   const startPayment = useStartOnboardingPayment();
-
-  const [
-    email,
-    setEmail,
-  ] = useState<string | null>(null);
-  const [
-    emailError,
-    setEmailError,
-  ] = useState<string | null>(null);
-  const [
-    code,
-    setCode,
-  ] = useState("");
-  const [
-    codeSent,
-    setCodeSent,
-  ] = useState(false);
-  const [
-    cooldownSeed,
-    setCooldownSeed,
-  ] = useState(0);
-  const [cooldown] = useCountdown(cooldownSeed);
   const [
     payError,
     setPayError,
   ] = useState<string | null>(null);
-
-  const savedEmail = orderData?.billingEmail ?? null;
-  // Until the applicant edits it, the field shows the saved address (or the business email).
-  const emailValue = email ?? savedEmail ?? businessEmail;
-  const verified = Boolean(orderData?.billingEmailVerified);
-  const emailDirty = emailValue.trim() !== (savedEmail ?? "");
 
   // Strip the return marker so a reload doesn't restart the confirmation wait.
   useEffect(
@@ -154,67 +110,6 @@ export function PaymentStep({
     [],
   );
 
-  async function send() {
-    setEmailError(null);
-    try {
-      const res = await sendCode.mutateAsync({ id: applicationId });
-      setCodeSent(true);
-      setCooldownSeed(res.data.resendAfterSeconds);
-    }
-    catch (error) {
-      const err = error as ServerErrorResponse;
-      if (err.retryAfterSeconds) {
-        setCodeSent(true);
-        setCooldownSeed(err.retryAfterSeconds);
-      }
-      setEmailError(err.message || "The code couldn't be sent.");
-    }
-  }
-
-  async function saveEmail() {
-    setEmailError(null);
-    try {
-      await setBillingEmail.mutateAsync({
-        id: applicationId,
-        data: { billingEmail: emailValue.trim() },
-      });
-      setEmail(null);
-      setCodeSent(false);
-      setCode("");
-      await send();
-    }
-    catch (error) {
-      setEmailError((error as ServerErrorResponse).message || "The billing email couldn't be saved.");
-    }
-  }
-
-  const verify = useEffectEvent((value: string) => {
-    if (verifyCode.isPending)
-      return;
-    verifyCode.mutate(
-      {
-        id: applicationId,
-        data: { code: value },
-      },
-      {
-        onSuccess: () => setEmailError(null),
-        onError: (error) => {
-          setEmailError(error.message || "That code didn't work.");
-          setCode("");
-        },
-      },
-    );
-  });
-
-  // Verify as soon as all six digits are in, like the other verification steps.
-  useEffect(
-    () => {
-      if (code.length === 6)
-        verify(code);
-    },
-    [code],
-  );
-
   async function pay() {
     setPayError(null);
     try {
@@ -226,9 +121,18 @@ export function PaymentStep({
         window.location.assign(res.data.authorizationUrl);
         return;
       }
-      // No hosted page to visit: wait for the webhook here instead.
+      if (res.data.paid) {
+        onContinue();
+        return;
+      }
+      // The provider may have settled without a redirect; confirm by polling.
+      const refreshed = await orderQuery.refetch();
+      const data = refreshed.data?.data;
+      if (data?.payment?.status === "paid" || STAGES_AFTER_PAYMENT.includes(data?.stage ?? "")) {
+        onContinue();
+        return;
+      }
       setConfirming(true);
-      void orderQuery.refetch();
     }
     catch (error) {
       setPayError(paymentError(error));
@@ -277,7 +181,7 @@ export function PaymentStep({
               onBack={onBack}
               continueLabel={`Pay ${formatCurrency(order.totalNgn)}`}
               continueLoading={startPayment.isPending}
-              continueDisabled={!orderData.payable || !verified || emailDirty || waitingForWebhook}
+              continueDisabled={!orderData.payable || waitingForWebhook}
               onContinue={() => void pay()}
             />
           )}
@@ -325,89 +229,6 @@ export function PaymentStep({
             </div>
           </dl>
         </section>
-
-        {!paid && (
-          <section className={CARD_CLASS}>
-            <SectionHeading
-              title="Billing Email"
-              description="Where your invoice and receipt are sent. Confirm it with a code before paying."
-              action={verified && !emailDirty ? <Pill tone="success">Verified</Pill> : undefined}
-            />
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <label className="flex-1 space-y-1.5">
-                <span className={LABEL_CLASS}>Billing email address</span>
-                <input
-                  type="email"
-                  value={emailValue}
-                  className={FIELD_CLASS}
-                  onChange={event => setEmail(event.target.value)}
-                />
-              </label>
-              {(emailDirty || !savedEmail) && (
-                <button
-                  type="button"
-                  className={cn(
-                    SECONDARY_BUTTON_CLASS,
-                    "h-12 rounded-[15px] px-5",
-                  )}
-                  disabled={!emailValue.trim() || setBillingEmail.isPending || sendCode.isPending}
-                  onClick={() => void saveEmail()}
-                >
-                  {setBillingEmail.isPending || sendCode.isPending
-                    ? "Sending…"
-                    : savedEmail ? "Save & send code" : "Send code"}
-                </button>
-              )}
-            </div>
-            {emailDirty && savedEmail && verified && (
-              <p className="mt-2 text-xs text-muted-foreground">Changing the address means confirming the new one with a code.</p>
-            )}
-
-            {savedEmail && !emailDirty && !verified && (
-              <div className="mt-5 flex flex-col items-start gap-3">
-                {codeSent
-                  ? (
-                      <>
-                        <p className="text-sm text-heading">{`Enter the 6-digit code sent to ${savedEmail}.`}</p>
-                        <OtpInput
-                          value={code}
-                          onChange={setCode}
-                          disabled={verifyCode.isPending}
-                        />
-                        {verifyCode.isPending && (
-                          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Spinner className="size-3.5 border-2" />
-                            Verifying…
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => void send()}
-                          disabled={sendCode.isPending || cooldown > 0}
-                          className={cn(
-                            LINK_CLASS,
-                            "text-sm",
-                          )}
-                        >
-                          {sendCode.isPending ? "Sending…" : cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
-                        </button>
-                      </>
-                    )
-                  : (
-                      <button
-                        type="button"
-                        className={SECONDARY_BUTTON_CLASS}
-                        disabled={sendCode.isPending}
-                        onClick={() => void send()}
-                      >
-                        {sendCode.isPending ? "Sending…" : "Send verification code"}
-                      </button>
-                    )}
-              </div>
-            )}
-            {emailError && <Notice className="mt-4">{emailError}</Notice>}
-          </section>
-        )}
 
         {waitingForWebhook && !pollTimedOut && (
           <Notice tone="info">

@@ -732,7 +732,6 @@ export function GetStartedDialog({
       return (
         <PaymentStep
           applicationId={applicationId}
-          businessEmail={application?.organization.businessEmail ?? ""}
           onBack={() => setPhase("status")}
           onContinue={() => setStep(7)}
           onEditFleet={() => {
