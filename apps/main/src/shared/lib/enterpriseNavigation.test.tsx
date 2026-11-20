@@ -91,6 +91,7 @@ it(
     ]));
     expect(getRolesForHref("/installation")).toEqual([
       "FLEET_ADMIN",
+      "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
     ]);
     expect(getEntriesForRole("OPERATIONS_MANAGER").map(e => e.label)).toEqual([
@@ -119,11 +120,16 @@ it(
       "My Drivers",
       "My Devices",
       "Live Tracking",
+      "Installation",
+      "IoT SIMS",
       "M2M IoT Bundles",
       "Communications",
+      "Payouts & Invoicing",
       "Reports",
       "Analytics",
       "Billing",
+      "Sustainability",
+      "Integrations",
       "Settings",
     ]);
   },

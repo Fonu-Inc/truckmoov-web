@@ -182,6 +182,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Installation", href: "/installation", icon: Wrench,
     hasPermission: [
       "FLEET_ADMIN",
+      "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
     ],
   },
@@ -189,6 +190,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "IoT SIMS", href: "/sims", icon: Wifi,
     hasPermission: [
       "FLEET_ADMIN",
+      "OWNER_OPERATOR",
       "FINANCE_VIEWER",
       "OPERATIONS_MANAGER",
     ],
@@ -250,6 +252,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Payouts & Invoicing", href: "/waybill-invoices", icon: Receipt,
     hasPermission: [
       "FLEET_ADMIN",
+      "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
     ],
   },
@@ -288,6 +291,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Sustainability", href: "/sustainability", icon: Leaf, hasPermission: [
       "FLEET_ADMIN",
+      "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
     ],
   },
@@ -295,6 +299,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Integrations", href: "/integrations", icon: Code2,
     hasPermission: [
       "FLEET_ADMIN",
+      "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
     ],
   },
