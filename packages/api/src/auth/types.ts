@@ -1599,10 +1599,10 @@ export type SystemChangePasswordPayload = {
 // ─── Response entity types ────────────────────────────────────────────────────
 
 /**
- * Backend user roles. Usable as values (`UserRole.FLEET_ADMIN`) and as a type.
+ * Backend user roles. Usable as values (`UserRole.OWNER_OPERATOR`) and as a type.
  *
  * ponytail: const object rather than `enum` so existing string-literal
- * comparisons (`user.role === 'FLEET_ADMIN'`, `case 'FLEET_ADMIN':`) keep
+ * comparisons (`user.role === 'OWNER_OPERATOR'`, `case 'OWNER_OPERATOR':`) keep
  * compiling — a real enum is not comparable to literals and would break ~80
  * call sites. Same convention as `ORG_ROLES`.
  */
@@ -1616,7 +1616,6 @@ export const UserRole = {
   ENTERPRISE_ADMIN: 'ENTERPRISE_ADMIN',
   AGGREGATOR_ADMIN: 'AGGREGATOR_ADMIN',
   OWNER_OPERATOR: 'OWNER_OPERATOR',
-  FLEET_ADMIN: 'FLEET_ADMIN',
   OPERATIONS_MANAGER: 'OPERATIONS_MANAGER',
   DISPATCHER: 'DISPATCHER',
   FINANCE_VIEWER: 'FINANCE_VIEWER',

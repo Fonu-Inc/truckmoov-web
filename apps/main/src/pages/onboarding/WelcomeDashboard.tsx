@@ -34,7 +34,7 @@ type QuickAction = {
   to: string;
 };
 
-const FLEET_ADMIN_ACTIONS: QuickAction[] = [
+const DEFAULT_TENANT_ACTIONS: QuickAction[] = [
   {
     id: "add-vehicle", title: "Add a vehicle", description: "Register vehicles you'll be managing.", icon: Truck, to: "/fleet",
   },
@@ -195,14 +195,13 @@ const FINANCE_VIEWER_ACTIONS: QuickAction[] = [
 
 function getActionsFor(role: AuthUser["role"] | undefined): QuickAction[] {
   switch (role) {
-    case "FLEET_ADMIN": return FLEET_ADMIN_ACTIONS;
     case "ENTERPRISE_ADMIN": return ENTERPRISE_ADMIN_ACTIONS;
     case "AGGREGATOR_ADMIN": return AGGREGATOR_ADMIN_ACTIONS;
     case "OWNER_OPERATOR": return OWNER_OPERATOR_ACTIONS;
     case "OPERATIONS_MANAGER": return OPERATIONS_MANAGER_ACTIONS;
     case "DISPATCHER": return DISPATCHER_ACTIONS;
     case "FINANCE_VIEWER": return FINANCE_VIEWER_ACTIONS;
-    default: return FLEET_ADMIN_ACTIONS;
+    default: return DEFAULT_TENANT_ACTIONS;
   }
 }
 

@@ -91,7 +91,6 @@ const TEAM_ROLES: RoleOption[] = [
  */
 const INVITE_ROLES_BY_ADMIN_ROLE: Partial<Record<UserRole, RoleOption[]>> = {
   ENTERPRISE_ADMIN: TEAM_ROLES,
-  FLEET_ADMIN: TEAM_ROLES,
   AGGREGATOR_ADMIN: [
     {
       value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Cross-fleet coordination",
@@ -117,7 +116,6 @@ const roleColors: Partial<Record<UserRole, string>> = {
   SYSTEM_ADMIN: "bg-primary/20 text-primary border-primary/30",
   PLATFORM_ADMIN: "bg-primary/20 text-primary border-primary/30",
   ENTERPRISE_ADMIN: "bg-primary/20 text-primary border-primary/30",
-  FLEET_ADMIN: "bg-primary/20 text-primary border-primary/30",
   AGGREGATOR_ADMIN: "bg-primary/20 text-primary border-primary/30",
   OWNER_OPERATOR: "bg-primary/20 text-primary border-primary/30",
   OPERATIONS_MANAGER: "bg-accent/20 text-accent border-accent/30",

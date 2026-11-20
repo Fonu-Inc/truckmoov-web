@@ -16,13 +16,11 @@ export type AnalyticsTab = {
 
 const FLEET_OPERATORS: UserRole[] = [
   "ENTERPRISE_ADMIN",
-  "FLEET_ADMIN",
   "OWNER_OPERATOR",
   "OPERATIONS_MANAGER",
 ];
 const FINANCE_READERS: UserRole[] = [
   "ENTERPRISE_ADMIN",
-  "FLEET_ADMIN",
   "OWNER_OPERATOR",
   "FINANCE_VIEWER",
 ];

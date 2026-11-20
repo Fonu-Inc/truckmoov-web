@@ -182,7 +182,6 @@ markup. Roles:
 | Role | Home | Sidebar flavor |
 |------|------|----------------|
 | `ENTERPRISE_ADMIN` | `/` | Overview, Jobs, My Vehicles, My Drivers, My Devices, Live Tracking, M2M IoT Bundles, Communications, Payouts & Invoicing, Reports, Analytics, Billing, Settings |
-| `FLEET_ADMIN` | `/overview` | Dashboard, Jobs, Fleet, Drivers |
 | `AGGREGATOR_ADMIN` | `/aggregator` | Network Overview, Jobs, Fleet, Drivers |
 | `OWNER_OPERATOR` | `/owner-operator` | My Overview, My Jobs, My Vehicles (single-user) |
 | `OPERATIONS_MANAGER` | see config | Operations subset |

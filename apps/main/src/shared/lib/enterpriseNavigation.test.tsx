@@ -86,11 +86,10 @@ it(
       "Settings",
     ]);
     expect(getRolesForHref("/analytics")).toEqual(expect.arrayContaining([
-      "FLEET_ADMIN",
+      "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
     ]));
     expect(getRolesForHref("/installation")).toEqual([
-      "FLEET_ADMIN",
       "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
     ]);

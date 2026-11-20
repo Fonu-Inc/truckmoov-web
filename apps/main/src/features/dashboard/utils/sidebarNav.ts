@@ -78,14 +78,8 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
   {
     label: "Overview", href: "/overview", icon: LayoutDashboard,
-    labelByRole: {
-      FLEET_ADMIN: "Logistic Overview",
-      OPERATIONS_MANAGER: "Fleet Operations",
-    },
-    hasPermission: [
-      "FLEET_ADMIN",
-      "OPERATIONS_MANAGER",
-    ],
+    labelByRole: { OPERATIONS_MANAGER: "Fleet Operations" },
+    hasPermission: ["OPERATIONS_MANAGER"],
   },
   {
     label: "Logistic Overview", href: "/aggregator", icon: LayoutDashboard, hasPermission: ["AGGREGATOR_ADMIN"],
@@ -101,7 +95,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     },
     hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
       "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
@@ -119,7 +112,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     },
     hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
@@ -137,7 +129,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "OWNER_OPERATOR",
-      "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "DISPATCHER",
       "OPERATIONS_MANAGER",
@@ -153,7 +144,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     },
     hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
       "FINANCE_VIEWER",
@@ -170,7 +160,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     },
     hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "DISPATCHER",
       "OWNER_OPERATOR",
@@ -181,7 +170,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Installation", href: "/installation", icon: Wrench,
     hasPermission: [
-      "FLEET_ADMIN",
       "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
     ],
@@ -189,7 +177,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "IoT SIMS", href: "/sims", icon: Wifi,
     hasPermission: [
-      "FLEET_ADMIN",
       "OWNER_OPERATOR",
       "FINANCE_VIEWER",
       "OPERATIONS_MANAGER",
@@ -199,7 +186,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "M2M IoT Bundles", href: "/data-bundles", icon: Database,
     hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
@@ -227,7 +213,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
     hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
@@ -251,7 +236,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Payouts & Invoicing", href: "/waybill-invoices", icon: Receipt,
     hasPermission: [
-      "FLEET_ADMIN",
       "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
     ],
@@ -265,7 +249,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Reports", href: "/reports", icon: BarChart3,
     hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
@@ -274,7 +257,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Analytics", href: "/analytics", icon: LineChart, hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
@@ -290,7 +272,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
   {
     label: "Sustainability", href: "/sustainability", icon: Leaf, hasPermission: [
-      "FLEET_ADMIN",
       "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
     ],
@@ -298,7 +279,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Integrations", href: "/integrations", icon: Code2,
     hasPermission: [
-      "FLEET_ADMIN",
       "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
     ],
@@ -312,7 +292,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       ENTERPRISE_ADMIN: "Settings",
       DISPATCHER: "Profile",
       OWNER_OPERATOR: "Settings",
-      FLEET_ADMIN: "Profile",
       OPERATIONS_MANAGER: "Profile",
       FINANCE_VIEWER: "Profile",
       AGGREGATOR_ADMIN: "Profile",
@@ -321,7 +300,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "ENTERPRISE_ADMIN",
       "DISPATCHER",
       "OWNER_OPERATOR",
-      "FLEET_ADMIN",
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
       "AGGREGATOR_ADMIN",
