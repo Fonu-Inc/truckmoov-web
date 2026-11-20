@@ -1873,12 +1873,42 @@ export type OnboardingSubscriptionCaps = {
 
 export type OnboardingStatusValue = 'pending' | 'in_progress' | 'completed' | 'rejected'
 
+export type OnboardingDeviceRequestSummary = {
+  id: string
+  quantity: number
+  useCase: string
+  notes: string | null
+}
+
+export type OnboardingInstallationSummary = {
+  orderNumber: string
+  status: string
+  scheduledDate: string | null
+  timeSlot: string | null
+  timeSlotLabel: string | null
+}
+
+/** The customer's own onboarding application, as shown alongside fleet requests. */
+export type OnboardingApplicationSummary = {
+  id: string
+  reference: string
+  status: OnboardingApplicationStatus
+  stage: OnboardingApplicationStage
+  submittedAt: string | null
+  createdAt: string
+  vehicleCount: number
+  requestedDevices: number
+  deviceRequests: OnboardingDeviceRequestSummary[]
+  installation: OnboardingInstallationSummary | null
+}
+
 export type OnboardingStatus = {
   tenantId: string
   isOnboarded: boolean
   onboardingStatus: OnboardingStatusValue
   planCode: string | null
   subscriptionStatus: string | null
+  application: OnboardingApplicationSummary | null
 }
 
 export type VerificationStatus = 'pending' | 'under_review' | 'verified' | 'rejected'

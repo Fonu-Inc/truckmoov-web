@@ -1,6 +1,8 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import type { OnboardingApplicationSummary } from "@truckmoov/api/auth";
 import type { DeviceSetupRequest } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
+import { getOnboardingStatusQueryOptions } from "@truckmoov/api/auth";
 import {
   getDeviceSetupRequestQueryOptions,
   useDeviceSetupRequests,
@@ -24,9 +26,9 @@ import {
 
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
-// The API's setup-request statuses mapped onto the design's labels and badge styles.
-// ponytail: the design also has Awaiting Payment / Ready for Installation — the API has
-// no payment or installation stages, so those never appear.
+// Setup-request statuses mapped onto the design's labels and badge styles. The
+// onboarding status map adds the payment and installation stages, which only
+// the onboarding application has.
 const STATUS: Record<string, {
   label: string; variant: BadgeVariant; note: string;
 }> = {
@@ -38,6 +40,12 @@ const STATUS: Record<string, {
   },
   assigned: {
     label: "Approved", variant: "secondary", note: "Approved and assigned for provisioning.",
+  },
+  awaiting_payment: {
+    label: "Awaiting Payment", variant: "outline", note: "Payment is pending. Installation is scheduled once payment is confirmed.",
+  },
+  ready_for_installation: {
+    label: "Ready for Installation", variant: "secondary", note: "Payment received. Installation is being scheduled.",
   },
   in_progress: {
     label: "Installation In Progress", variant: "secondary", note: "Devices are being provisioned and installed.",
@@ -220,20 +228,216 @@ function RequestDetailsDialog({
   );
 }
 
+const INSTALLATION_STATUS_LABELS: Record<string, string> = {
+  unassigned: "Awaiting Installer",
+  assigned: "Installer Assigned",
+  scheduled: "Scheduled",
+  in_progress: "In Progress",
+  overdue: "Overdue",
+  issue_reported: "Issue Reported",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+/** Where an onboarding device request has reached, expressed as a request status. */
+function onboardingStatusKey(application: OnboardingApplicationSummary): string {
+  if (application.status === "rejected")
+    return "rejected";
+  if (application.status !== "approved")
+    return "pending_review";
+
+  switch (application.stage) {
+    case "payment":
+      return "awaiting_payment";
+    case "installation_scheduling":
+      return "ready_for_installation";
+    case "installation":
+      return "in_progress";
+    case "connectivity_verification":
+    case "fleet_ready":
+      return "provisioned";
+    default:
+      return "approved";
+  }
+}
+
+function OnboardingRequestDetailsDialog({
+  application, onOpenChange,
+}: {
+  application: OnboardingApplicationSummary | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const info = application ? statusInfo(onboardingStatusKey(application)) : null;
+  const useCases = application?.deviceRequests
+    .map(request => request.useCase)
+    .filter(Boolean)
+    .join(" · ");
+  const notes = application?.deviceRequests
+    .map(request => request.notes)
+    .filter(Boolean)
+    .join("\n");
+
+  return (
+    <Dialog
+      open={Boolean(application)}
+      onOpenChange={onOpenChange}
+    >
+      <DialogContent className="sm:max-w-lg">
+        {application && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {application.requestedDevices}
+                {" "}
+                × devices
+                <Badge variant={info?.variant}>{info?.label}</Badge>
+              </DialogTitle>
+              <DialogDescription>
+                Reference
+                {" "}
+                {application.reference}
+                {" "}
+                · submitted
+                {" "}
+                {dateOnly(application.submittedAt ?? application.createdAt)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 rounded-xl border border-border/60 p-4">
+              <p className="text-sm font-semibold">Request details</p>
+              <Detail
+                label="Application Reference"
+                value={application.reference}
+              />
+              <Detail
+                label="Vehicles on Application"
+                value={application.vehicleCount}
+              />
+              <Detail
+                label="Number of Devices Requested"
+                value={application.requestedDevices}
+              />
+              <Detail
+                label="Use Case"
+                value={useCases}
+              />
+              <Detail
+                label="Additional Notes"
+                value={<span className="whitespace-pre-line">{notes}</span>}
+              />
+            </div>
+            {application.installation && (
+              <div className="space-y-2 rounded-xl border border-border/60 p-4">
+                <p className="text-sm font-semibold">Installation</p>
+                <Detail
+                  label="Order"
+                  value={application.installation.orderNumber}
+                />
+                <Detail
+                  label="Status"
+                  value={INSTALLATION_STATUS_LABELS[application.installation.status]
+                    ?? application.installation.status.replace(
+                      /_/g,
+                      " ",
+                    )}
+                />
+                <Detail
+                  label="Scheduled"
+                  value={application.installation.scheduledDate
+                    ? dateOnly(application.installation.scheduledDate)
+                    : "Not scheduled"}
+                />
+                <Detail
+                  label="Time Slot"
+                  value={application.installation.timeSlotLabel ?? application.installation.timeSlot}
+                />
+              </div>
+            )}
+            {info?.note && <p className="text-sm text-muted-foreground">{info.note}</p>}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type RequestRow = {
+  id: string;
+  kind: "setup" | "onboarding";
+  reference: string;
+  quantity: number;
+  submittedAt: string | null;
+  statusKey: string;
+  itemTitle: string;
+  itemSubtitle: string;
+  charges: string;
+};
+
+type OpenRequest
+  = | {
+    kind: "setup"; id: string;
+  }
+  | { kind: "onboarding" }
+  | null;
+
 export function DeviceRequestsTracker() {
   const requestsQuery = useDeviceSetupRequests();
+  const onboardingQuery = useQuery(getOnboardingStatusQueryOptions());
   const requests: DeviceSetupRequest[] = requestsQuery.data?.data ?? [];
+  const application = onboardingQuery.data?.data.application ?? null;
   const [
-    openId,
-    setOpenId,
-  ] = useState<string | null>(null);
+    openRequest,
+    setOpenRequest,
+  ] = useState<OpenRequest>(null);
 
-  const requestColumns: ColumnDef<DeviceSetupRequest>[] = [
+  const onboardingRow: RequestRow | null = application
+    && application.status !== "draft"
+    && application.stage !== "fleet_ready"
+    && application.requestedDevices > 0
+    ? {
+        id: application.id,
+        kind: "onboarding",
+        reference: application.reference,
+        quantity: application.requestedDevices,
+        submittedAt: application.submittedAt ?? application.createdAt,
+        statusKey: onboardingStatusKey(application),
+        itemTitle: `${application.requestedDevices} × devices`,
+        itemSubtitle: application.deviceRequests
+          .map(request => request.useCase)
+          .filter(Boolean)
+          .join(" · ") || "Onboarding request",
+        charges: "—",
+      }
+    : null;
+
+  const rows: RequestRow[] = [
+    ...(onboardingRow ? [onboardingRow] : []),
+    ...requests.map(request => ({
+      id: request.id,
+      kind: "setup" as const,
+      reference: reference(request.id),
+      quantity: request.quantity,
+      submittedAt: request.createdAt,
+      statusKey: request.status,
+      itemTitle: `${request.quantity} × devices`,
+      itemSubtitle: request.useCase,
+      charges: "—",
+    })),
+  ];
+
+  const requestColumns: ColumnDef<RequestRow>[] = [
     {
       id: "reference",
       header: "Reference",
       meta: { className: "font-mono text-xs" },
-      cell: ({ row }) => reference(row.original.id),
+      cell: ({ row }) => row.original.reference,
     },
     {
       id: "item",
@@ -241,12 +445,8 @@ export function DeviceRequestsTracker() {
       enableSorting: false,
       cell: ({ row }) => (
         <>
-          <p className="font-medium">
-            {row.original.quantity}
-            {" "}
-            × devices
-          </p>
-          <p className="line-clamp-1 text-xs text-muted-foreground">{row.original.useCase}</p>
+          <p className="font-medium">{row.original.itemTitle}</p>
+          <p className="line-clamp-1 text-xs text-muted-foreground">{row.original.itemSubtitle}</p>
         </>
       ),
     },
@@ -255,10 +455,12 @@ export function DeviceRequestsTracker() {
       header: "Qty",
     },
     {
-      accessorKey: "createdAt",
+      accessorKey: "submittedAt",
       header: "Submitted",
       meta: { className: "text-sm" },
-      cell: ({ row }) => dateOnly(row.original.createdAt),
+      cell: ({ row }) => row.original.submittedAt
+        ? dateOnly(row.original.submittedAt)
+        : "—",
     },
     {
       // ponytail: no quotation/charges field on setup requests yet.
@@ -266,13 +468,13 @@ export function DeviceRequestsTracker() {
       header: "Charges",
       enableSorting: false,
       meta: { className: "text-sm text-muted-foreground" },
-      cell: () => "—",
+      cell: ({ row }) => row.original.charges,
     },
     {
-      accessorKey: "status",
+      accessorKey: "statusKey",
       header: "Status",
       cell: ({ row }) => {
-        const info = statusInfo(row.original.status);
+        const info = statusInfo(row.original.statusKey);
         return <Badge variant={info.variant}>{info.label}</Badge>;
       },
     },
@@ -285,7 +487,13 @@ export function DeviceRequestsTracker() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setOpenId(row.original.id)}
+          onClick={() => setOpenRequest(
+            row.original.kind === "onboarding"
+              ? { kind: "onboarding" }
+              : {
+                  kind: "setup", id: row.original.id,
+                },
+          )}
         >
           <Eye className="mr-1 h-3.5 w-3.5" />
           View
@@ -311,8 +519,8 @@ export function DeviceRequestsTracker() {
         <div className="rounded-xl border border-border/60">
           <DataTable
             columns={requestColumns}
-            data={requests}
-            isLoading={requestsQuery.isLoading}
+            data={rows}
+            isLoading={requestsQuery.isLoading || onboardingQuery.isLoading}
             isError={requestsQuery.isError}
             errorMessage={requestsQuery.error?.message}
             onRetry={() => void requestsQuery.refetch()}
@@ -321,8 +529,12 @@ export function DeviceRequestsTracker() {
         </div>
       </CardContent>
       <RequestDetailsDialog
-        requestId={openId}
-        onOpenChange={open => !open && setOpenId(null)}
+        requestId={openRequest?.kind === "setup" ? openRequest.id : null}
+        onOpenChange={open => !open && setOpenRequest(null)}
+      />
+      <OnboardingRequestDetailsDialog
+        application={openRequest?.kind === "onboarding" ? application : null}
+        onOpenChange={open => !open && setOpenRequest(null)}
       />
     </Card>
   );
