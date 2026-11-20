@@ -169,15 +169,11 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   // ─── Install & bundles ─────────────────────────────────────────
   {
     label: "Installation", href: "/installation", icon: Wrench,
-    hasPermission: [
-      "OWNER_OPERATOR",
-      "OPERATIONS_MANAGER",
-    ],
+    hasPermission: ["OPERATIONS_MANAGER"],
   },
   {
     label: "IoT SIMS", href: "/sims", icon: Wifi,
     hasPermission: [
-      "OWNER_OPERATOR",
       "FINANCE_VIEWER",
       "OPERATIONS_MANAGER",
     ],
@@ -235,10 +231,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   // ─── Money ─────────────────────────────────────────────────────
   {
     label: "Payouts & Invoicing", href: "/waybill-invoices", icon: Receipt,
-    hasPermission: [
-      "OWNER_OPERATOR",
-      "AGGREGATOR_ADMIN",
-    ],
+    hasPermission: ["AGGREGATOR_ADMIN"],
   },
   {
     label: "Wallet & Billing", href: "/wallet", icon: CreditCard, hasPermission: ["FINANCE_VIEWER"],
@@ -271,17 +264,10 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Sustainability", href: "/sustainability", icon: Leaf, hasPermission: [
-      "OWNER_OPERATOR",
-      "AGGREGATOR_ADMIN",
-    ],
+    label: "Sustainability", href: "/sustainability", icon: Leaf, hasPermission: ["AGGREGATOR_ADMIN"],
   },
   {
-    label: "Integrations", href: "/integrations", icon: Code2,
-    hasPermission: [
-      "OWNER_OPERATOR",
-      "AGGREGATOR_ADMIN",
-    ],
+    label: "Integrations", href: "/integrations", icon: Code2, hasPermission: ["AGGREGATOR_ADMIN"],
   },
   {
     // TRU-FE-7 § D — Settings is now visible to every tenant role so anyone can
