@@ -1,174 +1,125 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemSettingsQueryOptions,
   useUpdateSystemSettings,
 } from "@truckmoov/api/auth";
-import {
-  Globe, RefreshCw, Save,
-} from "lucide-react";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Globe } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import {
-  Form, FormControl, FormField, FormItem, FormLabel,
-} from "@/components/shadcn/form";
+import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
 
-// TRU-FE-7 § A — no `enableBetaFeatures` toggle (placebo per spec; fleetflow has one).
-const platformFeaturesSchema = z.object({
-  allowNewTenantRegistration: z.boolean(),
-  maintenanceMode: z.boolean(),
-});
+type FeatureKey = "allowNewTenantRegistration" | "maintenanceMode" | "enableBetaFeatures";
 
-type PlatformFeaturesFormValues = z.infer<typeof platformFeaturesSchema>;
-
-export const PLATFORM_FEATURES_FORM_ID = "platform-features-form";
-
-const DEFAULT_PLATFORM_FEATURES: PlatformFeaturesFormValues = {
+/** Fleetflow's switch defaults (`defaultChecked` on registration and beta). */
+const DEFAULTS: Record<FeatureKey, boolean> = {
   allowNewTenantRegistration: true,
   maintenanceMode: false,
+  enableBetaFeatures: true,
 };
 
+const FEATURES: Array<{
+  key: FeatureKey; label: string; description: string;
+}> = [
+  {
+    key: "allowNewTenantRegistration", label: "Allow New Tenant Registration", description: "Enable self-service tenant onboarding",
+  },
+  {
+    key: "maintenanceMode", label: "Maintenance Mode", description: "Temporarily disable platform access",
+  },
+  {
+    key: "enableBetaFeatures", label: "Enable Beta Features", description: "Allow access to experimental features",
+  },
+];
+
 /**
- * `/settings/features` — fleetflow's Platform Features card. Unlike fleetflow
- * (display-only switches), both switches are saved to system settings
- * `features`, section-wise.
+ * `/settings/features` — fleetflow's Platform Features card. As in fleetflow
+ * there's no Save button: each switch toggles directly, and here each flip is
+ * written straight to system settings `features` (merged with the rest).
+ *
+ * `enableBetaFeatures` is an accepted API field but nothing on the platform
+ * reads it yet (see its type comment in packages/api).
  */
 export function PlatformFeaturesPanel() {
   const systemSettingsQuery = useQuery(getSystemSettingsQueryOptions());
-  const systemSettings = systemSettingsQuery.data?.data;
+  const features = systemSettingsQuery.data?.data?.features;
   const updateSettings = useUpdateSystemSettings();
+  // Values flipped on this visit — shown straight away, rolled back on error.
+  const [
+    pending,
+    setPending,
+  ] = useState<Partial<Record<FeatureKey, boolean>>>({});
 
-  const form = useForm<PlatformFeaturesFormValues>({
-    resolver: zodResolver(platformFeaturesSchema),
-    defaultValues: DEFAULT_PLATFORM_FEATURES,
-  });
+  const valueOf = (key: FeatureKey) => pending[key] ?? features?.[key] ?? DEFAULTS[key];
 
-  useEffect(
-    () => {
-      if (!systemSettings)
-        return;
-      form.reset({
-        allowNewTenantRegistration:
-        systemSettings.features?.allowNewTenantRegistration
-        ?? DEFAULT_PLATFORM_FEATURES.allowNewTenantRegistration,
-        maintenanceMode:
-        systemSettings.features?.maintenanceMode
-        ?? DEFAULT_PLATFORM_FEATURES.maintenanceMode,
-      });
-    },
-    [
-      systemSettings,
-      form,
-    ],
-  );
-
-  const handleSave = (values: PlatformFeaturesFormValues) => {
+  const toggle = (key: FeatureKey, checked: boolean) => {
+    setPending(p => ({
+      ...p, [key]: checked,
+    }));
     updateSettings.mutate(
       {
         data: {
           features: {
-            ...(systemSettings?.features ?? {}), ...values,
+            ...(features ?? {}), ...pending, [key]: checked,
           },
         },
       },
       {
-        onSuccess: () => toast.success("Platform features saved"),
-        onError: error => toast.error(error.message),
+        onError: (error) => {
+          toast.error(error.message);
+          setPending((p) => {
+            const next = { ...p };
+            delete next[key];
+            return next;
+          });
+        },
       },
     );
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Globe className="h-5 w-5 text-primary" />
-          Platform Features
-        </CardTitle>
-        <CardDescription>
-          Toggle platform-wide capabilities
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <Form {...form}>
-          <form
-            id={PLATFORM_FEATURES_FORM_ID}
-            onSubmit={form.handleSubmit(handleSave)}
-            className="space-y-4"
-          >
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            Platform Features
+          </CardTitle>
+          <CardDescription>
+            Toggle platform-wide capabilities
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
             <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="allowNewTenantRegistration"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between space-y-0">
-                    <div>
-                      <FormLabel>Allow New Tenant Registration</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Enable self-service tenant onboarding
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="maintenanceMode"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between space-y-0">
-                    <div>
-                      <FormLabel>Maintenance Mode</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Temporarily disable platform access
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                form={PLATFORM_FEATURES_FORM_ID}
-                disabled={updateSettings.isPending}
-              >
-                {updateSettings.isPending
-                  ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    )
-                  : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Features
-                      </>
+              {FEATURES.map(f => (
+                <div
+                  key={f.key}
+                  className="flex items-center justify-between"
+                >
+                  <div>
+                    <Label htmlFor={`feature-${f.key}`}>{f.label}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {f.description}
+                    </p>
+                  </div>
+                  <Switch
+                    id={`feature-${f.key}`}
+                    checked={valueOf(f.key)}
+                    onCheckedChange={c => toggle(
+                      f.key,
+                      c,
                     )}
-              </Button>
+                  />
+                </div>
+              ))}
             </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

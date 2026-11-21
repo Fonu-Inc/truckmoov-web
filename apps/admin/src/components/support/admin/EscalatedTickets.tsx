@@ -6,6 +6,7 @@ import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowUpRight,
   Building2,
+  Loader2,
   Wifi,
   Wrench,
 } from "lucide-react";
@@ -22,32 +23,37 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { ListSkeleton } from "@/components/ui/skeletons";
 import { AdminTicketSheet } from "./AdminTicketSheet";
 import { toSheetTicket } from "./toSheetTicket";
+import { useSupportTenantDirectory } from "./useSupportTenantDirectory";
 
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
 
+// `description` is the line fleetflow's CardHeader generates under each summary
+// card's title (lib/headingDescriptions) — written out here, our Card has no such hook.
 const escalationConfig: Record<EscalationType, {
   label: string;
   icon: ElementType;
   color: string;
+  description: string;
 }> = {
   fleetpro_internal: {
     label: "FleetPro Internal",
     icon: Building2,
     color: "text-primary",
+    description: "Vehicle records, fleet membership, and operational details.",
   },
   fonu_connectivity: {
     label: "Fonu Connectivity",
     icon: Wifi,
     color: "text-chart-3",
+    description: "Tracking equipment, connectivity details, and current status.",
   },
   vendor_installer: {
     label: "Vendor / Installer",
     icon: Wrench,
     color: "text-chart-5",
+    description: "Details and current information for vendor / installer.",
   },
 };
 
@@ -57,45 +63,6 @@ const priorityStyles: Record<string, string> = {
   high: "bg-chart-5/10 text-chart-5",
   critical: "bg-destructive/10 text-destructive",
 };
-
-function EscalatedTicketsSkeleton() {
-  return (
-    <div
-      className="space-y-6"
-      aria-hidden
-    >
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
-        {Array.from(
-          { length: 3 },
-          (_, index) => (
-            <Card key={index}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-5 w-5" />
-                  <Skeleton className="h-5 w-8 rounded-full" />
-                </div>
-                <Skeleton className="h-5 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-3 w-28" />
-              </CardContent>
-            </Card>
-          ),
-        )}
-      </div>
-
-      <Card>
-        <CardHeader className="space-y-2">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-4 w-64" />
-        </CardHeader>
-        <CardContent>
-          <ListSkeleton rows={3} />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 function titleCase(value: string) {
   return value
@@ -143,11 +110,15 @@ export function EscalatedTickets() {
   ]));
   const total = escalatedQuery.data?.data?.total ?? 0;
 
-  const tenantLabel = (ticket: SupportTicket) =>
-    ticket.tenantName || `Tenant #${shortId(ticket.tenantId || ticket.id)}`;
+  const { tenantName } = useSupportTenantDirectory();
+  const tenantLabel = (id: string) => tenantName(id) || `Tenant #${shortId(id)}`;
 
   if (escalatedQuery.isLoading) {
-    return <EscalatedTicketsSkeleton />;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   if (escalatedQuery.isError) {
@@ -180,7 +151,8 @@ export function EscalatedTickets() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
+      {/* Summary */}
+      <div className="grid gap-4 md:grid-cols-3">
         {Object.entries(escalationConfig).map(([
           key,
           config,
@@ -195,6 +167,7 @@ export function EscalatedTickets() {
                   <Badge variant="outline">{count}</Badge>
                 </div>
                 <CardTitle className="text-base">{config.label}</CardTitle>
+                <CardDescription className="mt-1.5">{config.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-xs text-muted-foreground">
@@ -215,6 +188,7 @@ export function EscalatedTickets() {
           label: titleCase(target),
           icon: ArrowUpRight,
           color: "text-muted-foreground",
+          description: "",
         };
         const Icon = config.icon;
 
@@ -241,22 +215,24 @@ export function EscalatedTickets() {
                     key={ticket.id}
                     type="button"
                     onClick={() => setSelectedTicket(ticket)}
-                    className="flex w-full items-start gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted/50"
+                    className="w-full text-left flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                   >
                     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted ${config.color}`}>
                       <Icon className="h-4 w-4" />
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-1.5">
-                      <p className="truncate text-sm font-medium">{ticket.subject}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="font-medium text-sm truncate">{ticket.subject}</p>
+                      </div>
 
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                         <span className="font-mono text-muted-foreground">
                           #
                           {shortId(ticket.id)}
                         </span>
-                        <span className="text-muted-foreground">-</span>
-                        <span className="text-foreground">{tenantLabel(ticket)}</span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-foreground">{tenantLabel(ticket.tenantId)}</span>
                         <Badge
                           variant="outline"
                           className={priorityStyles[ticket.priority] ?? ""}
@@ -285,11 +261,13 @@ export function EscalatedTickets() {
                       </div>
 
                       {ticket.escalationNotes && (
-                        <p className="line-clamp-1 text-xs text-muted-foreground">{ticket.escalationNotes}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {ticket.escalationNotes}
+                        </p>
                       )}
                     </div>
 
-                    <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                    <div className="flex flex-col items-end gap-1 shrink-0 text-right">
                       <Badge
                         variant="destructive"
                         className="text-[10px]"
@@ -299,7 +277,7 @@ export function EscalatedTickets() {
                       <span className="text-[11px] text-muted-foreground">
                         {ticket.escalatedAt
                           ? formatRelative(ticket.escalatedAt)
-                          : "-"}
+                          : "—"}
                       </span>
                     </div>
                   </button>

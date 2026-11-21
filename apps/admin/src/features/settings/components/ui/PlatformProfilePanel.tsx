@@ -24,6 +24,7 @@ import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { PageActions } from "@/shared/components/layout/PageTitle";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
@@ -223,7 +224,7 @@ export function PlatformProfilePanel() {
                 )}
               />
             </div>
-            <div className="flex justify-end">
+            <PageActions>
               <Button
                 type="submit"
                 form={PLATFORM_PROFILE_FORM_ID}
@@ -243,7 +244,7 @@ export function PlatformProfilePanel() {
                       </>
                     )}
               </Button>
-            </div>
+            </PageActions>
           </form>
         </Form>
       </CardContent>

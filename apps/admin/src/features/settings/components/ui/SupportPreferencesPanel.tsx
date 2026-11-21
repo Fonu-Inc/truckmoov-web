@@ -5,7 +5,7 @@ import {
   useUpdateSystemSettings,
 } from "@truckmoov/api/auth";
 import {
-  Mail, RefreshCw, Save,
+  Mail, Save,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -22,6 +22,7 @@ import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { PageActions } from "@/shared/components/layout/PageTitle";
 
 const supportPreferencesSchema = z.object({
   supportEmail: z.string().trim().email("Enter a valid email address."),
@@ -158,27 +159,16 @@ export function SupportPreferencesPanel() {
                 )}
               />
             </div>
-            <div className="flex justify-end">
+            <PageActions>
               <Button
                 type="submit"
                 form={SUPPORT_PREFERENCES_FORM_ID}
                 disabled={updateSettings.isPending}
               >
-                {updateSettings.isPending
-                  ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    )
-                  : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Support Preferences
-                      </>
-                    )}
+                <Save className="h-4 w-4 mr-2" />
+                Save Support Preferences
               </Button>
-            </div>
+            </PageActions>
           </form>
         </Form>
       </CardContent>

@@ -28,6 +28,9 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import {
   outClass, sevClass,
@@ -97,7 +100,7 @@ const exportColumns = [
 
 /**
  * One immutable cross-tenant audit log — security events, SIM activity and
- * platform operations — with saved views in `?view=`. Replaces the old
+ * platform operations — with saved views as tabs, kept in `?view=`. Replaces the old
  * Security section and Compliance & Audit page (both URLs redirect here).
  *
  * Live rows come from GET /auth/system/audit-log. When that errors or returns
@@ -295,8 +298,6 @@ export default function AuditCompliancePage() {
 
   return (
     <div className="space-y-6">
-      <p className="text-muted-foreground">One immutable cross-tenant audit log for security, SIM and platform activity</p>
-
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard
           title="Total Entries"
@@ -316,208 +317,218 @@ export default function AuditCompliancePage() {
         />
       </div>
 
-      <Card className="min-w-0">
-        <CardHeader className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle>Audit Log</CardTitle>
-              <CardDescription>Immutable cross-tenant audit trail retained for 7 years per NCC requirements</CardDescription>
-            </div>
-            <ExportButton
-              rows={rows}
-              columns={exportColumns}
-              filename="platform_audit_log"
-            />
-          </div>
-          <div
-            role="group"
-            aria-label="Saved views"
-            className="flex flex-wrap gap-2"
-          >
-            {VIEWS.map(v => (
-              <Button
-                key={v}
-                size="sm"
-                variant={view === v ? "default" : "outline"}
-                className="rounded-full"
-                aria-pressed={view === v}
-                onClick={() => setParam({
-                  view: v, event: null,
-                })}
-              >
-                {VIEW_LABELS[v]}
-              </Button>
-            ))}
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="relative min-w-0 flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                aria-label="Search audit log"
-                placeholder="Search actor, event, resource, tenant, IP or location..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <PlatformFilterPopover
-              entity="audit entries"
-              fields={fields}
-              value={draft}
-              onApply={setDraft}
-              onReset={() => setDraft(buildEmptyDraft(fields))}
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {overflows && (
-            <p
-              className={cn(
-                "text-xs text-muted-foreground",
-                atEnd && "invisible",
-              )}
-              aria-hidden={atEnd}
+      <Tabs
+        value={view}
+        onValueChange={(value) => {
+          if (VIEWS.includes(value as AuditView)) {
+            setParam({
+              view: value, event: null,
+            });
+          }
+        }}
+        className="space-y-4"
+      >
+        <TabsList
+          aria-label="Audit views"
+          className="h-auto flex-wrap"
+        >
+          {VIEWS.map(v => (
+            <TabsTrigger
+              key={v}
+              value={v}
             >
-              Scroll sideways to see all columns →
-            </p>
-          )}
-          <div className="relative">
-            <div className="max-w-full overflow-x-auto rounded-xl border">
-              <Table
-                ref={tableRef}
-                className="min-w-[1180px]"
-              >
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Actor</TableHead>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Outcome / Severity</TableHead>
-                    <TableHead>Resource</TableHead>
-                    <TableHead>Tenant</TableHead>
-                    <TableHead>IP &amp; Location</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading && entries.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={9}
-                            className="py-8 text-center text-muted-foreground"
-                          >
-                            Loading…
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : rows.length === 0
-                      ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={9}
-                              className="py-8 text-center text-muted-foreground"
-                            >
-                              No audit entries match these filters.
-                            </TableCell>
-                          </TableRow>
-                        )
-                      : rows.map(e => (
-                          <TableRow
-                            key={e.id}
-                            className="cursor-pointer align-top"
-                            onClick={() => setPicked(e)}
-                          >
-                            <TableCell className="whitespace-nowrap text-sm">{fmt(e.timestamp)}</TableCell>
-                            <TableCell>
-                              <div className="text-sm font-medium">{e.actorName}</div>
-                              {e.actorEmail && <div className="text-xs text-muted-foreground">{e.actorEmail}</div>}
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">{e.action}</div>
-                              <div className="text-xs text-muted-foreground">{CATEGORY_LABELS[e.category]}</div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    "rounded-full whitespace-nowrap",
-                                    outClass[e.outcome],
-                                  )}
-                                >
-                                  {OUTCOME_LABELS[e.outcome]}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    "rounded-full whitespace-nowrap",
-                                    sevClass[e.severity],
-                                  )}
-                                >
-                                  {SEVERITY_LABELS[e.severity]}
-                                </Badge>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm">{e.resource}</TableCell>
-                            <TableCell className="text-sm">{e.tenantName}</TableCell>
-                            <TableCell>
-                              <div className="font-mono text-xs">{e.ipAddress ?? "—"}</div>
-                              <div className="text-xs text-muted-foreground">{e.location ?? "—"}</div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="secondary"
-                                className="rounded-full"
-                              >
-                                {SOURCE_LABELS[e.source]}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  setPicked(e);
-                                }}
-                              >
-                                View
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div
-              aria-hidden
-              className={cn(
-                "pointer-events-none absolute inset-y-px right-px w-12 rounded-r-xl bg-gradient-to-l from-card to-transparent transition-opacity",
-                overflows && !atEnd ? "opacity-100" : "opacity-0",
+              {VIEW_LABELS[v]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent
+          value={view}
+          className="mt-0"
+        >
+          <Card className="min-w-0">
+            <CardHeader className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle>Audit Log</CardTitle>
+                  <CardDescription>Immutable cross-tenant audit trail retained for 7 years per NCC requirements</CardDescription>
+                </div>
+                <ExportButton
+                  rows={rows}
+                  columns={exportColumns}
+                  filename="platform_audit_log"
+                />
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    aria-label="Search audit log"
+                    placeholder="Search actor, event, resource, tenant, IP or location..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <PlatformFilterPopover
+                  entity="audit entries"
+                  fields={fields}
+                  value={draft}
+                  onApply={setDraft}
+                  onReset={() => setDraft(buildEmptyDraft(fields))}
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {overflows && (
+                <p
+                  className={cn(
+                    "text-xs text-muted-foreground",
+                    atEnd && "invisible",
+                  )}
+                  aria-hidden={atEnd}
+                >
+                  Scroll sideways to see all columns →
+                </p>
               )}
-            />
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>
-              {rows.length}
-              {" "}
-              of
-              {" "}
-              {entries.length}
-              {" "}
-              entries ·
-              {" "}
-              {VIEW_LABELS[view]}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Lock className="h-3 w-3" />
-              Entries are immutable. Retained for 7 years per NCC regulatory requirement.
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="relative">
+                <div className="max-w-full overflow-x-auto rounded-xl border">
+                  <Table
+                    ref={tableRef}
+                    className="min-w-[1180px]"
+                  >
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Timestamp</TableHead>
+                        <TableHead>Actor</TableHead>
+                        <TableHead>Event</TableHead>
+                        <TableHead>Outcome / Severity</TableHead>
+                        <TableHead>Resource</TableHead>
+                        <TableHead>Tenant</TableHead>
+                        <TableHead>IP &amp; Location</TableHead>
+                        <TableHead>Source</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading && entries.length === 0
+                        ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={9}
+                                className="py-8 text-center text-muted-foreground"
+                              >
+                                Loading…
+                              </TableCell>
+                            </TableRow>
+                          )
+                        : rows.length === 0
+                          ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={9}
+                                  className="py-8 text-center text-muted-foreground"
+                                >
+                                  No audit entries match these filters.
+                                </TableCell>
+                              </TableRow>
+                            )
+                          : rows.map(e => (
+                              <TableRow
+                                key={e.id}
+                                className="cursor-pointer align-top"
+                                onClick={() => setPicked(e)}
+                              >
+                                <TableCell className="whitespace-nowrap text-sm">{fmt(e.timestamp)}</TableCell>
+                                <TableCell>
+                                  <div className="text-sm font-medium">{e.actorName}</div>
+                                  {e.actorEmail && <div className="text-xs text-muted-foreground">{e.actorEmail}</div>}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">{e.action}</div>
+                                  <div className="text-xs text-muted-foreground">{CATEGORY_LABELS[e.category]}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1">
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        "rounded-full whitespace-nowrap",
+                                        outClass[e.outcome],
+                                      )}
+                                    >
+                                      {OUTCOME_LABELS[e.outcome]}
+                                    </Badge>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        "rounded-full whitespace-nowrap",
+                                        sevClass[e.severity],
+                                      )}
+                                    >
+                                      {SEVERITY_LABELS[e.severity]}
+                                    </Badge>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">{e.resource}</TableCell>
+                                <TableCell className="text-sm">{e.tenantName}</TableCell>
+                                <TableCell>
+                                  <div className="font-mono text-xs">{e.ipAddress ?? "—"}</div>
+                                  <div className="text-xs text-muted-foreground">{e.location ?? "—"}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="secondary"
+                                    className="rounded-full"
+                                  >
+                                    {SOURCE_LABELS[e.source]}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(ev) => {
+                                      ev.stopPropagation();
+                                      setPicked(e);
+                                    }}
+                                  >
+                                    View
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div
+                  aria-hidden
+                  className={cn(
+                    "pointer-events-none absolute inset-y-px right-px w-12 rounded-r-xl bg-gradient-to-l from-card to-transparent transition-opacity",
+                    overflows && !atEnd ? "opacity-100" : "opacity-0",
+                  )}
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>
+                  {rows.length}
+                  {" "}
+                  of
+                  {" "}
+                  {entries.length}
+                  {" "}
+                  entries ·
+                  {" "}
+                  {VIEW_LABELS[view]}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Lock className="h-3 w-3" />
+                  Entries are immutable. Retained for 7 years per NCC regulatory requirement.
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <AuditEntryDialog
         entry={selected}

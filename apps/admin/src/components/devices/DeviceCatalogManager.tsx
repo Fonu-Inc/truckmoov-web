@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { PageActions } from "@/shared/components/layout/PageTitle";
 import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 import { getCatalogColumns } from "./catalog/catalogColumns";
 import { CatalogModelDialog } from "./catalog/CatalogModelDialog";
@@ -223,12 +224,12 @@ export function DeviceCatalogManager() {
         ))}
       </div>
 
-      <div className="mb-4 flex items-center justify-end">
+      <PageActions>
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
           Add Device Model
         </Button>
-      </div>
+      </PageActions>
 
       <Card>
         <CardHeader className="pb-4">
@@ -236,7 +237,7 @@ export function DeviceCatalogManager() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                Device Catalog
+                Device Inventory
               </CardTitle>
               <CardDescription>
                 Manage supported device manufacturers and models

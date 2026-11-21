@@ -49,6 +49,7 @@
     --sidebar-ring: 45 100% 51%;
 
     /* Status Colors - Light Mode */
+    --installation-scheduled: 280 60% 45%;
     --success: 152 69% 36%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 45%;
@@ -124,6 +125,7 @@
     --sidebar-ring: 45 100% 51%;
 
     /* Status Colors - Clean and accessible */
+    --installation-scheduled: 280 65% 72%;
     --success: 152 69% 41%;
     --success-foreground: 0 0% 98%;
     --warning: 38 92% 50%;

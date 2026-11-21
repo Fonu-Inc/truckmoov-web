@@ -91,16 +91,50 @@ export function useOnboardingApplicationActions() {
     kind: ReasonKind; application: Target; paymentId?: string;
   } | null>(null);
 
+  /** Resolves true on success, so a caller's own confirm dialog knows when to close. */
   const approve = async (application: Target) => {
     try {
       await approveMutation.mutateAsync({ id: application.id });
       toast.success("Approved. The applicant now moves to payment. The setup link is emailed when they book installation.");
+      return true;
     }
     catch (error) {
       toast.error(errorMessage(
         error,
         "Approval failed",
       ));
+      return false;
+    }
+  };
+
+  /** Reject or request changes with a reason the caller already collected. Resolves true on success. */
+  const decide = async (kind: "reject" | "changes", application: Target, reason: string) => {
+    try {
+      if (kind === "reject") {
+        await rejectMutation.mutateAsync({
+          id: application.id,
+          data: { reason },
+        });
+        toast.success("Application rejected");
+      }
+      else {
+        const res = await changesMutation.mutateAsync({
+          id: application.id,
+          data: { reason },
+        });
+        if (res.data.delivered === false)
+          toast.error(res.message || "Status updated but the email could not be sent: use Resend");
+        else
+          toast.success("Changes requested — the applicant has been emailed a resume link");
+      }
+      return true;
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "Action failed",
+      ));
+      return false;
     }
   };
 
@@ -246,8 +280,13 @@ export function useOnboardingApplicationActions() {
         paymentId,
       );
     }
-    if (kind === "payment_issue_refund")
-      return issueRefund(application, reason, paymentId);
+    if (kind === "payment_issue_refund") {
+      return issueRefund(
+        application,
+        reason,
+        paymentId,
+      );
+    }
     if (kind === "payment_refund") {
       return reviewPayment(
         application,
@@ -256,31 +295,12 @@ export function useOnboardingApplicationActions() {
         paymentId,
       );
     }
-    try {
-      if (kind === "reject") {
-        await rejectMutation.mutateAsync({
-          id: application.id,
-          data: { reason },
-        });
-        toast.success("Application rejected");
-      }
-      else {
-        const res = await changesMutation.mutateAsync({
-          id: application.id,
-          data: { reason },
-        });
-        if (res.data.delivered === false)
-          toast.error(res.message || "Status updated but the email could not be sent: use Resend");
-        else
-          toast.success("Changes requested — the applicant has been emailed a resume link");
-      }
+    if (await decide(
+      kind,
+      application,
+      reason,
+    )) {
       setReasonTarget(null);
-    }
-    catch (error) {
-      toast.error(errorMessage(
-        error,
-        "Action failed",
-      ));
     }
   };
 
@@ -306,6 +326,17 @@ export function useOnboardingApplicationActions() {
     resendSetupLink,
     resendPaymentLink,
     resendChangesLink,
+    reject: (application: Target, reason: string) => decide(
+      "reject",
+      application,
+      reason,
+    ),
+    requestChanges: (application: Target, reason: string) => decide(
+      "changes",
+      application,
+      reason,
+    ),
+    decisionPending: approveMutation.isPending || rejectMutation.isPending || changesMutation.isPending,
     openReject: (application: Target) => setReasonTarget({
       kind: "reject",
       application,

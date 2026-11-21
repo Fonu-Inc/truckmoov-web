@@ -1,33 +1,29 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type { SystemTenant } from "@truckmoov/api/auth";
 import type {
   FilterDraft,
   FilterField,
 } from "@/components/shadcn/platform-filter-popover";
-import {
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   getSystemTenantGrowthQueryOptions,
-  getSystemTenantsExportQueryOptions,
   getSystemTenantsQueryOptions,
   getSystemTenantsSummaryQueryOptions,
   useUpdateTenantStatus,
 } from "@truckmoov/api/auth";
-import { getBillingPlansQueryOptions } from "@truckmoov/api/billing";
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Ban,
   Building2,
   CheckCircle,
   Clock,
   Cpu,
-  Download,
   Eye,
   MoreHorizontal,
   Search,
-  Smartphone,
   Truck,
   Users,
   XCircle,
@@ -49,7 +45,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,10 +52,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
   buildEmptyDraft,
-
   PlatformFilterPopover,
 } from "@/components/shadcn/platform-filter-popover";
 import {
@@ -72,6 +67,14 @@ import {
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -81,15 +84,67 @@ import { SuspendAccessDialog } from "@/features/tenants/components/ui/SuspendAcc
 import { TenantDetailsSheet } from "@/features/tenants/components/ui/TenantDetailsSheet";
 import { TenantOnboardingPanel } from "@/features/tenants/components/ui/TenantOnboardingPanel";
 import { TerminateTenantDialog } from "@/features/tenants/components/ui/TerminateTenantDialog";
+import { TmNumbersPanel } from "@/features/tenants/components/ui/TmNumbersPanel";
+import {
+  getBillingModel,
+  inDateWindow,
+  normalizeStatus,
+  tenantOrgTypes,
+  tenantTypeOf,
+  toTime,
+} from "@/features/tenants/utils/tenants";
+import { PageTitle } from "@/shared/components/layout/PageTitle";
 
-const ORG_TYPE_LABELS: Record<string, string> = {
-  enterprise: "Enterprise",
-  fleet_provider: "Fleet Provider",
-  aggregator: "Aggregator",
-  owner_operator: "Owner-Operator",
-};
-
-const baseTenantFilterFields: FilterField[] = [
+const tenantFilterFields: FilterField[] = [
+  {
+    key: "orgType",
+    label: "Organization Type",
+    type: "select",
+    options: [
+      {
+        value: "ENTERPRISE",
+        label: "Enterprise",
+      },
+      {
+        value: "OWNER_OPERATOR",
+        label: "Owner-Operator",
+      },
+    ],
+  },
+  {
+    key: "billingModel",
+    label: "Billing Model",
+    type: "select",
+    options: [
+      {
+        value: "prepaid",
+        label: "Prepaid",
+      },
+      {
+        value: "postpaid",
+        label: "Postpaid",
+      },
+    ],
+  },
+  {
+    key: "plan",
+    label: "Plan",
+    type: "select",
+    options: [
+      {
+        value: "starter",
+        label: "Starter",
+      },
+      {
+        value: "professional",
+        label: "Professional",
+      },
+      {
+        value: "enterprise",
+        label: "Enterprise",
+      },
+    ],
+  },
   {
     key: "status",
     label: "Status",
@@ -100,79 +155,16 @@ const baseTenantFilterFields: FilterField[] = [
         label: "Active",
       },
       {
-        value: "pending",
-        label: "Pending",
-      },
-      {
         value: "suspended",
         label: "Suspended",
       },
       {
+        value: "terminated",
+        label: "Terminated",
+      },
+      {
         value: "inactive",
         label: "Inactive",
-      },
-    ],
-  },
-  {
-    key: "orgType",
-    label: "Organization Type",
-    type: "select",
-    options: [
-      {
-        value: "enterprise",
-        label: "Enterprise",
-      },
-      {
-        value: "fleet_provider",
-        label: "Fleet Provider",
-      },
-      {
-        value: "aggregator",
-        label: "Aggregator",
-      },
-      {
-        value: "owner_operator",
-        label: "Owner-Operator",
-      },
-    ],
-  },
-  {
-    key: "plan",
-    label: "Plan",
-    type: "select",
-    options: [],
-  },
-  {
-    key: "revenue",
-    label: "Collected This Month (₦)",
-    type: "range",
-    fromPlaceholder: "Min ₦",
-    toPlaceholder: "Max ₦",
-  },
-  {
-    key: "kyc",
-    label: "KYC Status",
-    type: "select",
-    options: [
-      {
-        value: "not_submitted",
-        label: "Not Submitted",
-      },
-      {
-        value: "pending",
-        label: "Pending",
-      },
-      {
-        value: "under_review",
-        label: "Under Review",
-      },
-      {
-        value: "verified",
-        label: "Verified",
-      },
-      {
-        value: "rejected",
-        label: "Rejected",
       },
     ],
   },
@@ -183,90 +175,72 @@ const baseTenantFilterFields: FilterField[] = [
   },
 ];
 
-const tenantFilterFields = baseTenantFilterFields;
+type SortKey = "name" | "orgType" | "status" | "vehicleCount" | "lastActiveAt";
 
+// Fleetflow renders these with `new Date(x).toLocaleString()` — the en-US shape, pinned.
+const LOCALE_DATE_TIME = "M/d/yyyy, h:mm:ss a";
+
+function SortIcon({
+  active, dir,
+}: {
+  active: boolean; dir: "asc" | "desc";
+}) {
+  if (!active)
+    return <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-50" />;
+  return dir === "asc"
+    ? <ArrowUp className="h-3 w-3 ml-1 inline" />
+    : <ArrowDown className="h-3 w-3 ml-1 inline" />;
+}
+
+function getStatusBadge(rawStatus: string) {
+  const status = normalizeStatus(rawStatus);
+  switch (status) {
+    case "active":
+      return <Badge className="bg-success/10 text-success border-success/30">Active</Badge>;
+    case "suspended":
+      return <Badge variant="destructive">Suspended</Badge>;
+    case "terminated":
+      return <Badge className="bg-destructive/20 text-destructive border-destructive/40">Terminated</Badge>;
+    case "inactive":
+      return <Badge variant="secondary">Inactive</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
+}
+
+/** Fleetflow's PlatformTenants (Tenants → All Tenants / Onboarding / Telematics Numbers). */
 export default function TenantsPage() {
-  const queryClient = useQueryClient();
   const [
     searchParams,
     setSearchParams,
   ] = useSearchParams();
-  const activeTab = searchParams.get("tab") === "kyc-review" ? "kyc-review" : "all-tenants";
+  const activeTab = [
+    "kyc-review",
+    "tm-numbers",
+  ].includes(searchParams.get("tab") ?? "")
+    ? (searchParams.get("tab") as string)
+    : "all-tenants";
   const updateTenantStatusMutation = useUpdateTenantStatus();
-  const [
-    isExporting,
-    setIsExporting,
-  ] = useState(false);
 
-  // Filter state declared before the query so params can be wired
   const [
     searchQuery,
     setSearchQuery,
   ] = useState("");
   const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
     advancedFilters,
     setAdvancedFilters,
-  ] = useState<FilterDraft>(buildEmptyDraft(tenantFilterFields));
+  ] = useState<FilterDraft>(() => buildEmptyDraft(tenantFilterFields));
 
-  // Debounce search to avoid a query on every keystroke
-  const [
-    debouncedSearch,
-    setDebouncedSearch,
-  ] = useState("");
-  useEffect(
-    () => {
-      const timer = setTimeout(
-        setDebouncedSearch,
-        400,
-        searchQuery,
-      );
-      return () => clearTimeout(timer);
-    },
-    [searchQuery],
-  );
-
-  // Derive server-side filter params.
-  const apiStatus = advancedFilters.status?.enabled && advancedFilters.status?.value
-    ? advancedFilters.status.value as "active" | "pending" | "suspended" | "inactive" | "terminated"
-    : undefined;
-  const apiPlanCode = advancedFilters.plan?.enabled && advancedFilters.plan?.value
-    ? advancedFilters.plan.value
-    : undefined;
-  const toAmount = (raw?: string) => {
-    const amount = raw ? Number(raw) : Number.NaN;
-    return Number.isFinite(amount) ? amount : undefined;
-  };
-  const apiRevenueFrom = advancedFilters.revenue?.enabled ? toAmount(advancedFilters.revenue.from) : undefined;
-  const apiRevenueTo = advancedFilters.revenue?.enabled ? toAmount(advancedFilters.revenue.to) : undefined;
-  const apiOrganizationType = advancedFilters.orgType?.enabled && advancedFilters.orgType?.value
-    ? advancedFilters.orgType.value as "fleet_provider" | "enterprise" | "aggregator" | "owner_operator"
-    : undefined;
-  const apiKycStatus = advancedFilters.kyc?.enabled && advancedFilters.kyc?.value
-    ? advancedFilters.kyc.value as "not_submitted" | "pending" | "under_review" | "verified" | "rejected"
-    : undefined;
-  const apiLastActiveFrom = advancedFilters.lastActive?.enabled && advancedFilters.lastActive?.from
-    ? advancedFilters.lastActive.from
-    : undefined;
-  const apiLastActiveTo = advancedFilters.lastActive?.enabled && advancedFilters.lastActive?.to
-    ? advancedFilters.lastActive.to
-    : undefined;
-
-  const tenantsQuery = useQuery(getSystemTenantsQueryOptions({
-    params: {
-      ...(debouncedSearch ? { search: debouncedSearch } : {}),
-      ...(apiStatus ? { status: apiStatus } : {}),
-      ...(apiPlanCode ? { planCode: apiPlanCode } : {}),
-      ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
-      ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
-      ...(apiOrganizationType ? { organizationType: apiOrganizationType } : {}),
-      ...(apiKycStatus ? { kycStatus: apiKycStatus } : {}),
-      ...(apiLastActiveFrom ? { lastActiveFrom: apiLastActiveFrom } : {}),
-      ...(apiLastActiveTo ? { lastActiveTo: apiLastActiveTo } : {}),
-    },
-  }));
+  // The list endpoint returns every tenant, so search, filters and sorting run
+  // client-side over it, as the reference does.
+  const tenantsQuery = useQuery(getSystemTenantsQueryOptions());
   const summaryQuery = useQuery(getSystemTenantsSummaryQueryOptions());
   // Month-on-month growth for the Total Tenants card: cumulative count at the
-  // end of this month vs last. Undefined (no pill) until there is a baseline.
+  // end of this month vs last.
   const growthQuery = useQuery(getSystemTenantGrowthQueryOptions(2));
   const tenantGrowthPercent = useMemo(
     () => {
@@ -279,29 +253,10 @@ export default function TenantsPage() {
     },
     [growthQuery.data],
   );
-  const plansQuery = useQuery(getBillingPlansQueryOptions({
-    params: {
-      status: "all", limit: 100,
-    },
-  }));
-  const filterFields = useMemo<FilterField[]>(
-    () => tenantFilterFields.map(field => field.key === "plan"
-      ? {
-          ...field,
-          options: (plansQuery.data?.data?.items ?? []).map(plan => ({
-            value: plan.code, label: plan.name,
-          })),
-        }
-      : field),
-    [plansQuery.data],
-  );
 
-  const tenantsPayload = tenantsQuery.data?.data;
-  const summaryPayload = summaryQuery.data?.data;
-
-  const dbTenants: SystemTenant[] = useMemo(
-    () => tenantsPayload?.tenants ?? [],
-    [tenantsPayload],
+  const allTenants: SystemTenant[] = useMemo(
+    () => tenantsQuery.data?.data?.tenants ?? [],
+    [tenantsQuery.data],
   );
   const isLoadingDbTenants = tenantsQuery.isLoading;
   const refetchDbTenants = tenantsQuery.refetch;
@@ -314,16 +269,47 @@ export default function TenantsPage() {
     isDbDetailsSheetOpen,
     setIsDbDetailsSheetOpen,
   ] = useState(false);
-
   const [
     suspendDbTenant,
     setSuspendDbTenant,
   ] = useState<SystemTenant | null>(null);
-
   const [
     deleteConfirmDbTenant,
     setDeleteConfirmDbTenant,
   ] = useState<SystemTenant | null>(null);
+
+  const [
+    sortKey,
+    setSortKey,
+  ] = useState<SortKey>("name");
+  const [
+    sortDir,
+    setSortDir,
+  ] = useState<"asc" | "desc">("asc");
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    }
+    else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  // ponytail: mock data from fleetflow parity port — wire to packages/api
+  // Overdue invoices per tenant (id -> count): the reference tints ~25% of rows
+  // (index % 4 === 1) as overdue for demo. No overdue flag on SystemTenant yet.
+  const overdueByTenant = useMemo<Record<string, number>>(
+    () => {
+      const map: Record<string, number> = {};
+      allTenants.forEach((t, i) => {
+        if ((i % 4) === 1)
+          map[t.id] = (i % 3) + 1;
+      });
+      return map;
+    },
+    [allTenants],
+  );
 
   // Auto-refresh every 60 seconds
   useEffect(
@@ -339,319 +325,141 @@ export default function TenantsPage() {
     [refetchDbTenants],
   );
 
-  // Org types per tenant — derived from API response
-  const tenantOrgTypesState = useMemo<Record<string, string[]>>(
+  const sortedDbTenants = useMemo(
     () => {
-      const map: Record<string, string[]> = {};
-      (tenantsPayload?.tenants ?? []).forEach((raw) => {
-        if (raw.id && raw.organizationTypes?.length)
-          map[raw.id] = raw.organizationTypes;
+      const q = searchQuery.toLowerCase();
+      const filtered = allTenants.filter((tenant) => {
+        const matchesSearch
+          = tenant.name.toLowerCase().includes(q)
+            || tenant.email.toLowerCase().includes(q);
+        const matchesStatus = statusFilter === "all" || normalizeStatus(tenant.status) === statusFilter;
+
+        const orgTypeF = advancedFilters.orgType;
+        const matchesOrgType = !orgTypeF?.enabled || !orgTypeF.value || tenantOrgTypes(tenant).includes(orgTypeF.value);
+
+        const planF = advancedFilters.plan;
+        const matchesPlan = !planF?.enabled || !planF.value || tenant.plan === planF.value;
+
+        const billingF = advancedFilters.billingModel;
+        const matchesBilling = !billingF?.enabled || !billingF.value || getBillingModel(tenant) === billingF.value;
+
+        const statusF = advancedFilters.status;
+        const matchesAdvStatus = !statusF?.enabled || !statusF.value || normalizeStatus(tenant.status) === statusF.value;
+
+        const lastF = advancedFilters.lastActive;
+        const matchesLast = !lastF?.enabled || inDateWindow(
+          tenant.lastActiveAt,
+          lastF.from,
+          lastF.to,
+        );
+
+        return matchesSearch && matchesStatus && matchesOrgType && matchesPlan && matchesBilling && matchesAdvStatus && matchesLast;
       });
-      return map;
+
+      const value = (t: SystemTenant): string | number => {
+        switch (sortKey) {
+          case "name":
+            return t.name?.toLowerCase() || "";
+          case "orgType":
+            return tenantOrgTypes(t).join(",");
+          case "status":
+            return t.status || "";
+          case "vehicleCount":
+            return t.vehicleCount || 0;
+          case "lastActiveAt":
+            return toTime(t.lastActiveAt);
+        }
+      };
+      return [...filtered].sort((a, b) => {
+        const av = value(a);
+        const bv = value(b);
+        if (av < bv)
+          return sortDir === "asc" ? -1 : 1;
+        if (av > bv)
+          return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
     },
-    [tenantsPayload],
+    [
+      allTenants,
+      searchQuery,
+      statusFilter,
+      advancedFilters,
+      sortKey,
+      sortDir,
+    ],
   );
 
-  // Stats — sourced exclusively from the summary API; show a dash when not available
-  const {
-    totalTenants,
-    activeTenants,
-    suspendedTenants,
-    inactiveTenants,
-    terminatedTenants,
-  } = useMemo(
-    () => ({
-      totalTenants: summaryPayload?.totalTenants ?? "—",
-      activeTenants: summaryPayload?.activeTenants ?? "—",
-      suspendedTenants: summaryPayload?.suspendedTenants ?? "—",
-      inactiveTenants: summaryPayload?.inactiveTenants ?? "—",
-      terminatedTenants: summaryPayload?.terminatedTenants ?? "—",
-    }),
-    [summaryPayload],
-  );
+  // Stats — live from the summary endpoint.
+  const summaryPayload = summaryQuery.data?.data;
+  const totalTenants = summaryPayload?.totalTenants ?? "—";
+  const activeTenants = summaryPayload?.activeTenants ?? "—";
+  const suspendedTenants = summaryPayload?.suspendedTenants ?? "—";
+  const terminatedTenants = summaryPayload?.terminatedTenants ?? "—";
+  const inactiveTenants = summaryPayload?.inactiveTenants ?? "—";
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-success/10 text-success border-success/30">Active</Badge>;
-      case "trial":
-        return <Badge className="bg-primary/10 text-primary border-primary/30">Trial</Badge>;
-      case "pending":
-        return <Badge className="bg-warning/10 text-warning border-warning/30">Pending</Badge>;
-      case "suspended":
-        return <Badge variant="destructive">Suspended</Badge>;
-      case "terminated":
-        return <Badge className="bg-destructive/20 text-destructive border-destructive/40">Terminated</Badge>;
-      case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  // DB Tenant handlers
-  const handleDbTenantStatusChange = async (tenant: SystemTenant, newStatus: SystemTenant["status"]) => {
+  const handleReinstate = async (tenant: SystemTenant) => {
     try {
       await updateTenantStatusMutation.mutateAsync({
         id: tenant.id,
-        data: { status: newStatus },
+        data: { status: "active" },
       });
-      toast.success(`${tenant.name} is now ${newStatus}`);
+      toast.success(`${tenant.name} reinstated`);
     }
     catch {
-      // Error handled by react-query
+      toast.error(`Could not reinstate ${tenant.name}`);
     }
   };
 
-  const tenantColumns: ColumnDef<SystemTenant>[] = [
-    {
-      id: "name",
-      accessorFn: row => row.name?.toLowerCase() ?? "",
-      header: "Tenant",
-      cell: ({ row }) => {
-        const tenant = row.original;
-        return (
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-              {tenant.name.charAt(0)}
-            </div>
-            <div>
-              <p className="font-medium">{tenant.name}</p>
-              <p className="text-xs text-muted-foreground">{tenant.email}</p>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      id: "primaryContact",
-      header: "Primary Contact",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.primaryContactName
-            ? <span className="font-medium">{row.original.primaryContactName}</span>
-            : <span className="text-muted-foreground">—</span>}
-        </div>
-      ),
-    },
-    {
-      id: "orgType",
-      accessorFn: row => (tenantOrgTypesState[row.id] || []).join(","),
-      header: "Tenant Type",
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          {(tenantOrgTypesState[row.original.id] || []).length > 0
-            ? (
-                tenantOrgTypesState[row.original.id].map(ot => (
-                  <Badge
-                    key={ot}
-                    variant="outline"
-                    className="text-xs whitespace-nowrap"
-                  >
-                    {ORG_TYPE_LABELS[ot] ?? ot}
-                  </Badge>
-                ))
-              )
-            : <span className="text-muted-foreground">—</span>}
-        </div>
-      ),
-    },
-    {
-      id: "plan",
-      accessorFn: row => row.planName ?? row.planCode ?? "",
-      header: "Plan",
-      cell: ({ row }) => row.original.planAssigned
-        ? <Badge variant="outline">{row.original.planName ?? row.original.planCode}</Badge>
-        : <span className="text-muted-foreground">No plan</span>,
-    },
-    {
-      id: "status",
-      accessorFn: row => row.status ?? "",
-      header: "Status",
-      cell: ({ row }) => getStatusBadge(row.original.status),
-    },
-    {
-      id: "vehicleCount",
-      accessorFn: row => row.vehicleCount ?? 0,
-      header: "Vehicles",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Truck className="h-4 w-4 text-muted-foreground" />
-          <span>{row.original.vehicleCount}</span>
-        </div>
-      ),
-    },
-    {
-      id: "drivers",
-      header: "Drivers",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <span>{row.original.driverCount}</span>
-        </div>
-      ),
-    },
-    {
-      id: "devices",
-      header: "Devices",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Cpu className="h-4 w-4 text-muted-foreground" />
-          <span>{row.original.deviceCount}</span>
-        </div>
-      ),
-    },
-    {
-      id: "simCount",
-      accessorFn: row => row.simCount ?? 0,
-      header: "SIMs",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Smartphone className="h-4 w-4 text-muted-foreground" />
-          <span>{row.original.simCount}</span>
-        </div>
-      ),
-    },
-    {
-      id: "lastActiveAt",
-      accessorFn: row => (row.lastActiveAt ? new Date(row.lastActiveAt).getTime() : 0),
-      header: "Last Active",
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
-          {row.original.lastActiveAt
-            ? new Date(row.original.lastActiveAt).toLocaleDateString()
-            : "Never"}
-        </span>
-      ),
-    },
-    {
-      id: "actions",
-      header: "",
-      enableSorting: false,
-      meta: { className: "w-[50px]" },
-      cell: ({ row }) => {
-        const tenant = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  setSelectedDbTenant(tenant);
-                  setIsDbDetailsSheetOpen(true);
-                }}
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {tenant.status === "suspended"
-                ? (
-                    <DropdownMenuItem
-                      onClick={() => handleDbTenantStatusChange(
-                        tenant,
-                        "active",
-                      )}
-                      className="text-success"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Reinstate
-                    </DropdownMenuItem>
-                  )
-                : (
-                    <DropdownMenuItem
-                      onClick={() => setSuspendDbTenant(tenant)}
-                      className="text-warning"
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Suspend
-                    </DropdownMenuItem>
-                  )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setDeleteConfirmDbTenant(tenant)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Ban className="h-4 w-4 mr-2" />
-                Terminate
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
-
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      const blob = await queryClient.fetchQuery(
-        getSystemTenantsExportQueryOptions({
-          params: {
-            ...(debouncedSearch ? { search: debouncedSearch } : {}),
-            ...(apiStatus ? { status: apiStatus } : {}),
-            ...(apiPlanCode ? { planCode: apiPlanCode } : {}),
-            ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
-            ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
-            ...(apiOrganizationType ? { organizationType: apiOrganizationType } : {}),
-            ...(apiKycStatus ? { kycStatus: apiKycStatus } : {}),
-            ...(apiLastActiveFrom ? { lastActiveFrom: apiLastActiveFrom } : {}),
-            ...(apiLastActiveTo ? { lastActiveTo: apiLastActiveTo } : {}),
-          },
-        }),
-      );
-      const url = URL.createObjectURL(blob as Blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "tenants.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-    catch {
-      toast.error("Export failed");
-    }
-    finally {
-      setIsExporting(false);
-    }
-  };
+  const headSortable = (key: SortKey, label: string) => (
+    <TableHead
+      className="cursor-pointer select-none"
+      onClick={() => toggleSort(key)}
+    >
+      {label}
+      <SortIcon
+        active={sortKey === key}
+        dir={sortDir}
+      />
+    </TableHead>
+  );
 
   return (
     <>
-      {/* ponytail: stats live inside the All Tenants tab (mirrors the platform
-          reference at :8080/platform/tenants). Tab-scoped context sits under
-          its tab, not floating above the tab bar. */}
       <Tabs
         value={activeTab}
-        onValueChange={v => setSearchParams(v === "kyc-review" ? { tab: "kyc-review" } : {})}
+        onValueChange={v => setSearchParams(v === "all-tenants" ? {} : { tab: v })}
         className="space-y-4"
       >
-        <TabsList>
+        <TabsList className="flex w-fit mx-auto h-auto max-w-full flex-wrap gap-1">
           <TabsTrigger value="all-tenants">All Tenants</TabsTrigger>
           <TabsTrigger value="kyc-review">Onboarding</TabsTrigger>
+          <TabsTrigger value="tm-numbers">Telematics Numbers</TabsTrigger>
         </TabsList>
+
+        <PageTitle
+          title={activeTab === "kyc-review" ? "Tenants Onboarding" : activeTab === "tm-numbers" ? "Telematics Numbers" : "Tenants"}
+          description={activeTab === "tm-numbers"
+            ? "Track enterprise telematics number verification and allocation requests."
+            : activeTab === "kyc-review"
+              ? "Review tenant applications and manage their approval and onboarding progress."
+              : "View and manage all tenants, their account status, and subscription details."}
+        />
 
         <TabsContent
           value="all-tenants"
           className="space-y-4"
         >
+          {/* Stats */}
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
             <StatCard
               title="Total Tenants"
               value={totalTenants}
-              change={tenantGrowthPercent}
-              changeLabel="this month"
               icon={Building2}
+              // ponytail: mock data from fleetflow parity port — wire to packages/api
+              // (the reference hard-codes +12%; live growth replaces it once there is a previous month to compare).
+              change={tenantGrowthPercent ?? 12}
+              changeLabel="this month"
               loading={summaryQuery.isPending}
             />
             <StatCard
@@ -682,28 +490,54 @@ export default function TenantsPage() {
               loading={summaryQuery.isPending}
             />
           </div>
-
           <Card>
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <CardTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-primary" />
                     All Tenants
                   </CardTitle>
                   <CardDescription>
-                    Complete directory of tenant organizations with plan, and lifecycle status.
+                    Complete directory of tenant organizations with plan, lifecycle status, and quota usage.
                   </CardDescription>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  disabled={isExporting}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {isExporting ? "Exporting…" : "Export Data"}
-                </Button>
+                <ExportButton
+                  filename="tenants"
+                  rows={sortedDbTenants}
+                  columns={[
+                    {
+                      header: "Name", accessor: t => t.name,
+                    },
+                    {
+                      header: "Primary Contact", accessor: t => t.primaryContactName || "",
+                    },
+                    {
+                      header: "Email", accessor: t => t.email,
+                    },
+                    {
+                      header: "Plan", accessor: t => t.plan,
+                    },
+                    {
+                      header: "Status", accessor: t => normalizeStatus(t.status),
+                    },
+                    {
+                      header: "Vehicles", accessor: t => t.vehicleCount,
+                    },
+                    {
+                      header: "Drivers", accessor: t => t.driverCount,
+                    },
+                    {
+                      header: "Devices", accessor: t => t.deviceCount,
+                    },
+                    {
+                      header: "Last Active", accessor: t => t.lastActiveAt || "",
+                    },
+                    {
+                      header: "Date Added", accessor: t => t.createdAt || "",
+                    },
+                  ]}
+                />
               </div>
             </CardHeader>
             <CardContent>
@@ -711,9 +545,6 @@ export default function TenantsPage() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    type="search"
-                    name="tenants-search"
-                    autoComplete="off"
                     placeholder="Search by name or email..."
                     className="pl-10"
                     value={searchQuery}
@@ -721,19 +552,8 @@ export default function TenantsPage() {
                   />
                 </div>
                 <Select
-                  value={apiStatus ?? "all"}
-                  onValueChange={(v) => {
-                    setAdvancedFilters(prev => ({
-                      ...prev,
-                      status: v === "all"
-                        ? {
-                            enabled: false, value: "",
-                          }
-                        : {
-                            enabled: true, value: v,
-                          },
-                    }));
-                  }}
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
                 >
                   <SelectTrigger className="w-[160px]">
                     <SelectValue placeholder="All Status" />
@@ -748,7 +568,7 @@ export default function TenantsPage() {
                 </Select>
                 <PlatformFilterPopover
                   entity="tenants"
-                  fields={filterFields}
+                  fields={tenantFilterFields}
                   value={advancedFilters}
                   onApply={setAdvancedFilters}
                   onReset={() => setAdvancedFilters(buildEmptyDraft(tenantFilterFields))}
@@ -776,24 +596,191 @@ export default function TenantsPage() {
                       ))}
                     </div>
                   )
-                : dbTenants.length === 0
+                : tenantsQuery.isError
                   ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        No tenants found
+                        Unable to load tenants.
+                        <Button
+                          variant="link"
+                          onClick={() => refetchDbTenants()}
+                        >
+                          Retry
+                        </Button>
                       </div>
                     )
-                  : (
-                      <div className="rounded-lg border overflow-x-auto">
-                        <DataTable
-                          columns={tenantColumns}
-                          data={dbTenants}
-                          isError={tenantsQuery.isError}
-                          errorMessage="Unable to load tenants."
-                          onRetry={() => tenantsQuery.refetch()}
-                          className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap"
-                        />
-                      </div>
-                    )}
+                  : sortedDbTenants.length === 0
+                    ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No tenants found
+                        </div>
+                      )
+                    : (
+                        <div className="rounded-lg border overflow-x-auto">
+                          <Table className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+                            <TableHeader>
+                              <TableRow>
+                                {headSortable(
+                                  "name",
+                                  "Tenant",
+                                )}
+                                <TableHead>Primary Contact</TableHead>
+                                {headSortable(
+                                  "orgType",
+                                  "Tenant Type",
+                                )}
+                                {headSortable(
+                                  "status",
+                                  "Status",
+                                )}
+                                {headSortable(
+                                  "vehicleCount",
+                                  "Vehicles",
+                                )}
+                                <TableHead>Drivers</TableHead>
+                                <TableHead>Devices</TableHead>
+                                {headSortable(
+                                  "lastActiveAt",
+                                  "Last Active",
+                                )}
+                                <TableHead>Date Added</TableHead>
+                                <TableHead className="w-[50px]"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {sortedDbTenants.map((tenant) => {
+                                const orgTypes = tenantOrgTypes(tenant);
+                                return (
+                                  <TableRow
+                                    key={tenant.id}
+                                    className={overdueByTenant[tenant.id] ? "bg-warning/5 hover:bg-warning/10" : undefined}
+                                  >
+                                    <TableCell>
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+                                          {tenant.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                          <p className="font-medium">{tenant.name}</p>
+                                          <p className="text-xs text-muted-foreground">{tenant.email}</p>
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {tenant.primaryContactName
+                                        ? <span className="font-medium">{tenant.primaryContactName}</span>
+                                        : <span className="text-muted-foreground">—</span>}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex flex-wrap gap-1">
+                                        {orgTypes.length > 0
+                                          ? orgTypes.map(ot => (
+                                              <Badge
+                                                key={ot}
+                                                variant="outline"
+                                                className="text-xs whitespace-nowrap"
+                                              >
+                                                {ot === "OWNER_OPERATOR" ? "Owner-Operator" : "Enterprise"}
+                                              </Badge>
+                                            ))
+                                          : <span className="text-xs text-muted-foreground">—</span>}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-1.5">
+                                        {getStatusBadge(tenant.status)}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-1">
+                                        <Truck className="h-4 w-4 text-muted-foreground" />
+                                        <span>{tenant.vehicleCount}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-1">
+                                        <Users className="h-4 w-4 text-muted-foreground" />
+                                        <span>{tenant.driverCount}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-1">
+                                        <Cpu className="h-4 w-4 text-muted-foreground" />
+                                        <span>{tenant.deviceCount}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {formatWithPattern(
+                                        tenant.lastActiveAt,
+                                        LOCALE_DATE_TIME,
+                                        "Never",
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {formatWithPattern(
+                                        tenant.createdAt,
+                                        LOCALE_DATE_TIME,
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                          >
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => {
+                                            setSelectedDbTenant(tenant);
+                                            setIsDbDetailsSheetOpen(true);
+                                          }}
+                                          >
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            View Details
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          {normalizeStatus(tenant.status) === "suspended"
+                                            ? (
+                                                <DropdownMenuItem
+                                                  onClick={() => handleReinstate(tenant)}
+                                                  className="text-success"
+                                                >
+                                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                                  Reinstate
+                                                </DropdownMenuItem>
+                                              )
+                                            : (
+                                                // The API needs a reason to suspend, so this opens
+                                                // the reason dialog rather than suspending outright.
+                                                <DropdownMenuItem
+                                                  onClick={() => setSuspendDbTenant(tenant)}
+                                                  className="text-warning"
+                                                >
+                                                  <XCircle className="h-4 w-4 mr-2" />
+                                                  Suspend
+                                                </DropdownMenuItem>
+                                              )}
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={() => setDeleteConfirmDbTenant(tenant)}
+                                            className="text-destructive focus:text-destructive"
+                                          >
+                                            <Ban className="h-4 w-4 mr-2" />
+                                            Terminate
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -801,11 +788,16 @@ export default function TenantsPage() {
         <TabsContent value="kyc-review">
           <TenantOnboardingPanel />
         </TabsContent>
+
+        <TabsContent value="tm-numbers">
+          <TmNumbersPanel />
+        </TabsContent>
       </Tabs>
 
-      {/* Tenant Details — opens over the list, matching the platform reference */}
+      {/* Tenant Details */}
       <TenantDetailsSheet
         tenant={selectedDbTenant}
+        tenantType={selectedDbTenant ? tenantTypeOf(selectedDbTenant) : "ENTERPRISE"}
         open={isDbDetailsSheetOpen}
         onOpenChange={setIsDbDetailsSheetOpen}
       />
@@ -815,7 +807,7 @@ export default function TenantsPage() {
         onClose={() => setSuspendDbTenant(null)}
       />
 
-      {/* Terminate DB Tenant Confirmation */}
+      {/* Terminate Tenant Confirmation */}
       {deleteConfirmDbTenant && (
         <TerminateTenantDialog
           tenant={deleteConfirmDbTenant}

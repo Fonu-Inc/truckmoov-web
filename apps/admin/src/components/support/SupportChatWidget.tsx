@@ -23,33 +23,24 @@ import {
   X,
 } from "lucide-react";
 import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+  useEffect, useMemo, useRef, useState,
 } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+  Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { useProfileName } from "@/features/dashboard/hooks/useProfileName";
 import { useLiveAgentSession } from "@/hooks/useLiveAgentSession";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 type Msg = {
-  role: "user" | "assistant";
-  content: string;
+  role: "user" | "assistant"; content: string;
 };
 type View = "home" | "topic" | "messages";
 type Tab = "faqs" | "messages";
-
-const CHAT_AUTOMATION_UNAVAILABLE
-  = "Chat automation is currently unavailable. Please check the FAQs for quick help, or tap **Talk to a live agent** and our support team will follow up.";
 
 type FaqItem = {
   question: string;
@@ -65,154 +56,183 @@ type Topic = {
 
 const TOPICS: Topic[] = [
   {
-    id: "device",
-    label: "Device installation & configuration",
-    icon: Cpu,
-    blurb: "Setup, IMEI registration, and getting trackers online.",
+    id: "onboarding",
+    label: "Getting started & activation",
+    icon: ShieldCheck,
+    blurb: "Applications, activation links, and the Get Started steps.",
     faqs: [
+      {
+        question: "How does a new customer join Fleet Pro?",
+        answer:
+          "Apply on the Fleet Pro landing page: choose **Fleet Provider** (more than 10 vehicles) or **Owner-Operator** (10 or fewer), fill in business details, fleet requirements and documents, then submit. You get an Application ID straight away. MTN reviews it (usually 30–60 minutes) and emails an activation link.",
+      },
+      {
+        question: "What happens after I sign in the first time?",
+        answer:
+          "You land on **Get Started**, which has 4 steps: **Subscription → Activate System & Provisioning → Installation → Quick Access**. Your vehicles, devices and SIMs only appear in the live catalogue once installation is completed.",
+      },
+      {
+        question: "Do I need to upload KYC documents inside the platform?",
+        answer:
+          "No. Verification is completed during the application, before you get access. There is no document review step inside the platform.",
+      },
+    ],
+  },
+  {
+    id: "procurement",
+    label: "Ordering devices, SIMs & vehicles",
+    icon: Wallet,
+    blurb: "Requests, quotations, payment and delivery.",
+    faqs: [
+      {
+        question: "How do I order new hardware?",
+        answer:
+          "From **My Devices**, **My IoT SIMs** or **My Vehicles**, start a request and pick the manufacturer and model from the approved catalogue. The flow is **Request → Quotation → Payment → Installation → Completed**, and the items join your active catalogue at the end.",
+      },
+      {
+        question: "Where did my quotation go?",
+        answer:
+          "Quotations are hidden once payment has been made. After paying, you follow the request on the **Payment** and **Installation** steps until it is completed.",
+      },
+      {
+        question: "Where is my installation report?",
+        answer:
+          "Open the completed request summary on **My Vehicles**, **My Devices** or **My IoT SIMs**. It lists every vehicle, device and SIM installed, with installation photos, and a **Download Report** button.",
+      },
+    ],
+  },
+  {
+    id: "device",
+    label: "Installation & device configuration",
+    icon: Cpu,
+    blurb: "Installers, configuration, firmware and offline trackers.",
+    faqs: [
+      {
+        question: "Who installs and configures my devices?",
+        answer:
+          "An approved Fleet Pro installer does both. Installation jobs are **assigned automatically** by the platform — nobody assigns them by hand. The installer links each device to a vehicle and each SIM to a device, completes a checklist and uploads photo evidence. Customers do not configure devices.",
+      },
       {
         question: "Device not showing online",
         answer:
-          "1. Verify the SIM card is active and inserted correctly.\n2. Confirm the device has clear sky view for GPS lock.\n3. Check power wiring (red to constant 12V, black to ground).\n4. In Devices → select the IMEI → run **Test connectivity**. If still offline, escalate to a live agent.",
-
+          "1. Confirm the installation job is completed.\n2. Check the vehicle has power and the ignition has been on recently.\n3. Check the device's last heartbeat — **online** means a signal within the last 3 minutes.\n4. Confirm the linked SIM is active with data left.\n5. Allow up to 10 minutes after a fresh installation, then report an issue.",
       },
       {
-        question: "How do I configure a new tracker?",
+        question: "How do I update firmware?",
         answer:
-          "Go to **Devices → Add Device**, enter the IMEI, select the model from the catalog, and assign a SIM. The platform sends the configuration SMS automatically. Status moves to **CONFIGURED** once acknowledged.",
-
-      },
-      {
-        question: "Where do I find the device IMEI?",
-        answer:
-          "The IMEI (15 digits) is printed on the sticker attached to the tracker housing and on the original packaging. You can also retrieve it by sending the SMS command `IMEI123456` to the SIM number.",
-
+          "Open **My Devices → View Details → Firmware**. If a newer version exists you'll see an **Update Firmware** button; otherwise it confirms the device is up to date. The update runs over the air and the device reboots on the new version.",
       },
     ],
-
   },
   {
     id: "sim",
-    label: "SIM connectivity",
+    label: "IoT SIMs & connectivity",
     icon: Signal,
-    blurb: "IoT SIM activation, data sessions, and APN issues.",
+    blurb: "Activation, data bundles, and locked SIM details.",
     faqs: [
       {
-        question: "SIM stuck on 'Pending activation'",
+        question: "Why is the SIM phone number greyed out?",
         answer:
-          "Activations usually complete within 15 minutes. If it has been longer, open **SIMs → select ICCID → Resync status**. Persistent failures indicate a KYC mismatch — submit the documents in **Compliance**.",
-
+          "SIMs supplied by MTN are provisioned by the platform, so the phone number is locked. You can still edit ICCID, IMSI and carrier. If the number is genuinely wrong, report an issue and MTN will correct it.",
       },
       {
-        question: "No data session on the device",
+        question: "My SIM is not active yet",
         answer:
-          "Confirm the APN is set to `mtnplatform.iot`. Check signal strength on the device dashboard — anything below 8/30 indicates poor coverage. Power-cycle the tracker and wait 90 seconds.",
-
+          "SIMs are activated after MTN approves and fulfils the request and the SIM is fitted during installation. Allow up to 24 hours for carrier provisioning, then report an issue if it is still inactive.",
       },
       {
-        question: "How do I check my SIM data usage?",
+        question: "How do I check data usage and bundle expiry?",
         answer:
-          "Go to **SIMs → Analytics**. You'll see per-SIM data, SMS, and session counts for the last 30 days, plus alerts when usage exceeds your tier threshold.",
-
+          "Open **My IoT SIMs** — each SIM shows its bundle, usage and expiry date. You get reminders before expiry and again when it is due. Unpaid bundles can lead to suspension, which stops telemetry for that vehicle.",
       },
     ],
-
   },
   {
     id: "whatsapp",
-    label: "WhatsApp & SMS",
+    label: "WhatsApp, SMS & campaigns",
     icon: MessageSquareText,
-    blurb: "Templates, sender IDs, and driver communications.",
+    blurb: "Driver messaging, templates and delivery issues.",
     faqs: [
       {
-        question: "WhatsApp template not delivering",
+        question: "How do I send a campaign?",
         answer:
-          "Templates must be **APPROVED** by Meta before sending. Check **Settings → WhatsApp Templates** for status. Also confirm the recipient has opted in within the last 24 hours, otherwise only utility templates are allowed.",
-
+          "**Messaging Center → Campaigns → New Campaign**. Step 1: name, channels and recipients. Step 2: the message, with templates and a live preview. Step 3: review, then **Launch Campaign** (send now or schedule).",
       },
       {
-        question: "How do I request a new SMS sender ID?",
+        question: "WhatsApp message not delivering",
         answer:
-          "Open **Settings → Sender IDs → Request new**. Provide the sender name (max 11 chars, alphanumeric) and a use case. Approval typically takes 1–3 business days.",
-
+          "Free-form WhatsApp only works within **24 hours** of the driver's last reply — outside that window use an approved template. Also check the number includes the country code, the template is approved, and that the driver hasn't replied **STOP** (opted-out numbers are blocked).",
       },
       {
-        question: "Driver isn't receiving job offer messages",
+        question: "Driver isn't receiving job offers",
         answer:
-          "Verify the driver's phone number includes the country code. Check **Communications → Inbox** for the delivery status. If marked as **failed**, the number may be on a do-not-disturb list.",
-
+          "Job offers cascade **WhatsApp → SMS → voice call**. Check the driver's number and profile status, and review the delivery status per driver. Note that Fleet Pro support itself is not offered over WhatsApp.",
       },
     ],
-
   },
   {
     id: "billing",
-    label: "Billing & subscriptions",
+    label: "Billing, quotations & payments",
     icon: Wallet,
-    blurb: "Wallet top-ups, plans, invoices, and rates.",
+    blurb: "Charges, quotations, invoices and payment methods.",
     faqs: [
       {
-        question: "My wallet top-up didn't reflect",
+        question: "What am I charged for?",
         answer:
-          "MTN MoMo top-ups normally settle within 60 seconds. If it has been longer, check **Wallet → Transactions** for the reference. Keep the MoMo reference handy and escalate to a live agent if missing after 10 minutes.",
-
+          "Everything is grouped under four headings: **Hardware Devices** (trackers, IoT SIMs, accessories), **Licensing** (platform, vehicle and user licences), **Installation**, and **Subscription & Services**. Quotations and invoices use the same four groups.",
       },
       {
-        question: "How do I upgrade my subscription tier?",
+        question: "How do I pay?",
         answer:
-          "Visit **Settings → Subscription**. Pick the new tier (Basic / Standard / Advanced / Premium) and confirm. The upgrade is prorated against your current cycle.",
-
+          "Open **Billing → Quotations** or **Invoices**, review the breakdown, and pay by MTN MoMo, card or bank transfer. Once paid, installation scheduling continues automatically.",
       },
       {
-        question: "Where do I download invoices?",
+        question: "My payment didn't reflect",
         answer:
-          "**Billing → Invoices** lists all past statements. Click any row to download the PDF. Invoices are also emailed automatically to the billing contact on file.",
-
+          "MoMo normally settles within 60 seconds. Check **Billing → Payments** for the reference, wait about 5 minutes, then escalate to a live agent with the transaction reference if it is still missing.",
       },
     ],
-
   },
   {
-    id: "system",
-    label: "System status & reports",
+    id: "jobs",
+    label: "Jobs & dispatch",
     icon: Activity,
-    blurb: "Live platform health and reporting questions.",
+    blurb: "Recommending drivers, assigning vehicles, live tracking.",
     faqs: [
       {
-        question: "Is there an outage right now?",
+        question: "Why does it say Recommend instead of Assign?",
         answer:
-          "Open **Help & Support → System Status** for live indicators across telemetry ingestion, WhatsApp delivery, SMS gateway, and billing. All-green means no known incidents.",
-
+          "Fleet administrators **recommend** a driver; the **operations manager** assigns the vehicle. Owner-operators assign their own driver and vehicle. A job stays **Unassigned** until both a driver and a vehicle are in place.",
       },
       {
-        question: "How do I export a report?",
+        question: "How do I follow a job?",
         answer:
-          "Most reports (fleet, fuel, driver behavior, sustainability) include a **Receipt CSV** action in the top-right of the page. PDFs are available where applicable.",
-
+          "Open the job and use **View Details** for pickup, delivery, stops and schedule, or **Live Tracking** to follow the vehicle. Map alerts include a **Track vehicle** button that jumps straight to the vehicle.",
       },
     ],
-
   },
   {
     id: "account",
     label: "Account & access",
     icon: ShieldCheck,
-    blurb: "Sign-in, password resets, and team permissions.",
+    blurb: "Sign-in, roles, and team invitations.",
     faqs: [
       {
         question: "I can't sign in",
         answer:
-          "Double-check your email and password. Use **Forgot password** on the sign-in screen to reset. If your account is locked or you don't see the reset email, escalate to a live agent.",
-
+          "Double-check your email and password, and use **Forgot password** on the sign-in screen. If your account is locked or the reset email doesn't arrive, escalate to a live agent.",
       },
       {
         question: "How do I invite a teammate?",
         answer:
-          "Go to **Settings → Team → Invite member**, enter their email and role. They'll receive an email invitation valid for 7 days.",
-
+          "**Settings → Team Management → Invite User**, enter their email and role. Invitations are email-only and valid for 7 days.",
+      },
+      {
+        question: "What roles are available?",
+        answer:
+          "Fleet Admin (full access), Operations Manager (fleet, devices, assigns vehicles), Supervisor (tracking, drivers, recommends drivers), Dispatcher, Finance/Viewer (read-only), and Installer (separate installer portal for installation jobs).",
       },
     ],
-
   },
 ];
 
@@ -222,8 +242,7 @@ type SupportChatWidgetProps = {
 };
 
 export function SupportChatWidget({
-  open: controlledOpen,
-  onOpenChange,
+  open: controlledOpen, onOpenChange,
 }: SupportChatWidgetProps = {}) {
   const [
     internalOpen,
@@ -236,15 +255,15 @@ export function SupportChatWidget({
     else setInternalOpen(v);
   };
 
-  const user = useAuthStore(s => s.user);
+  // The session carries no name; fleetflow reads `user.name` here.
+  const profileName = useProfileName();
   const firstName = useMemo(
     () => {
-      const name = user?.name?.trim();
-      if (!name)
+      if (!profileName)
         return "there";
-      return name.split(/\s+/)[0];
+      return profileName.split(/\s+/)[0];
     },
-    [user?.name],
+    [profileName],
   );
 
   const [
@@ -264,7 +283,9 @@ export function SupportChatWidget({
     setOpenFaqIdx,
   ] = useState<number | null>(null);
 
-  const { joinQueue } = useLiveAgentSession();
+  const {
+    session: liveSession, joinQueue,
+  } = useLiveAgentSession();
   const [
     messages,
     setMessages,
@@ -346,8 +367,7 @@ export function SupportChatWidget({
       setMessages([
         {
           role: "assistant",
-          content: `Hi ${firstName}! 👋 Browse the FAQs for quick answers, or tap **Talk to a live agent** below and our support team will follow up.`,
-
+          content: `Hi ${firstName}! 👋 Contact a live agent for help with FleetPro.`,
         },
       ]);
     }
@@ -370,43 +390,24 @@ export function SupportChatWidget({
   const sendMessage = async (text: string) => {
     if (!text.trim() || isStreaming)
       return;
-
-    const userMsg: Msg = {
-      role: "user",
-      content: text.trim(),
-    };
+    setIsStreaming(true);
     setMessages(prev => [
       ...prev,
-      userMsg,
+      {
+        role: "user", content: text.trim(),
+      },
     ]);
-    setIsStreaming(true);
-
     try {
-      await new Promise(resolve => window.setTimeout(
-        resolve,
-        350,
-      ));
-      setMessages(prev => [
-        ...prev,
-        {
-          role: "assistant",
-          content: CHAT_AUTOMATION_UNAVAILABLE,
-        },
-      ]);
+      await joinQueue({
+        topic: "Support request", contextSummary: text.trim().slice(
+          0,
+          500,
+        ),
+      });
     }
     finally {
       setIsStreaming(false);
     }
-  };
-
-  const askAgentAbout = async (question: string, topicLabel: string) => {
-    setTab("messages");
-    setView("messages");
-    seedMessagesIfEmpty();
-    await joinQueue({
-      topic: `Help with: ${topicLabel}`,
-      contextSummary: question,
-    });
   };
 
   const handleFilesPicked = (files: FileList | null) => {
@@ -511,7 +512,7 @@ export function SupportChatWidget({
             className="fill-primary-foreground text-primary w-[35px] h-[35px]"
             strokeWidth={2}
           />
-          <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background shadow-sm" />
+          <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background shadow-sm" />
         </button>
       )}
 
@@ -549,18 +550,18 @@ export function SupportChatWidget({
               )}
               <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shrink-0 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]">
                 <MessageCircleQuestion
-                  className="fill-primary-foreground bg-transparent text-primary w-[25px] h-[30px] border-0"
+                  className="fill-primary-foreground bg-zinc-50/0 text-primary w-[25px] h-[30px] border-0"
                   strokeWidth={2}
                 />
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-foreground animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-foreground animate-pulse" />
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-sm leading-tight tracking-tight truncate">
                   {view === "topic" && activeTopic ? activeTopic.label : "FleetPro Support"}
                 </p>
                 <p className="text-[11px] text-background/70 flex items-center gap-1.5 mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                  Support team · here to help
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  Help topics & live support
                 </p>
               </div>
             </div>
@@ -669,16 +670,7 @@ export function SupportChatWidget({
                                 <div className="rounded-xl bg-muted/60 border border-border/40 px-3.5 py-3 text-[13px] leading-relaxed text-foreground/90">
                                   {renderContent(faq.answer)}
                                 </div>
-                                <button
-                                  onClick={() => void askAgentAbout(
-                                    faq.question,
-                                    activeTopic.label,
-                                  )}
-                                  className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80 hover:text-foreground"
-                                >
-                                  <CircleHelp className="h-3 w-3" />
-                                  Still stuck? Talk to a live agent
-                                </button>
+
                               </div>
                             )}
                           </li>
@@ -690,8 +682,13 @@ export function SupportChatWidget({
               </ScrollArea>
             )}
 
-            {/* MESSAGES view */}
-            {tab === "messages" && (
+            {/* MESSAGES view
+                ponytail: fleetflow renders <LiveAgentPanel /> here once
+                joinQueue opens a live session. Admin's useLiveAgentSession is a
+                stub whose session is always null, so that branch can never
+                render — port LiveAgentPanel when a live-agent API exists. */}
+
+            {tab === "messages" && !liveSession && (
               <>
                 <ScrollArea
                   className="flex-1 px-4 py-4"
@@ -709,7 +706,7 @@ export function SupportChatWidget({
                           , how can I help?
                         </p>
                         <p className="text-[12px] text-muted-foreground mt-1">
-                          Need help? Talk to a live agent below.
+                          Contact a live agent for help with FleetPro.
                         </p>
                       </div>
                     )}
@@ -729,13 +726,11 @@ export function SupportChatWidget({
                               : "bg-primary text-primary-foreground ring-primary/30",
                           )}
                         >
-                          {m.role === "user"
-                            ? (
-                                <UserRound className="h-3.5 w-3.5" />
-                              )
-                            : (
-                                <CircleHelp className="h-3.5 w-3.5" />
-                              )}
+                          {m.role === "user" ? (
+                            <UserRound className="h-3.5 w-3.5" />
+                          ) : (
+                            <CircleHelp className="h-3.5 w-3.5" />
+                          )}
                         </div>
                         <div
                           className={cn(
@@ -788,19 +783,17 @@ export function SupportChatWidget({
                             key={idx}
                             className="relative group flex items-center gap-2 rounded-xl border border-border/60 bg-muted/60 pl-1.5 pr-7 py-1.5 max-w-[180px]"
                           >
-                            {isImage && url
-                              ? (
-                                  <img
-                                    src={url}
-                                    alt={file.name}
-                                    className="h-8 w-8 rounded-lg object-cover"
-                                  />
-                                )
-                              : (
-                                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-foreground">
-                                    <FileText className="h-4 w-4" />
-                                  </span>
-                                )}
+                            {isImage && url ? (
+                              <img
+                                src={url}
+                                alt={file.name}
+                                className="h-8 w-8 rounded-lg object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-foreground">
+                                <FileText className="h-4 w-4" />
+                              </span>
+                            )}
                             <span className="text-[11px] font-medium truncate min-w-0">{file.name}</span>
                             <button
                               type="button"

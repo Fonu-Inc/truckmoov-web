@@ -1,8 +1,10 @@
 import type { SystemDeviceInventoryItem } from "@truckmoov/api/auth";
+import { minutesBetween } from "@truckmoov/app-core/utils/time-utils";
 
-export type DeviceBucket = "active" | "inactive" | "assigned" | "unassigned" | "configured" | "registered";
+// Assigned Devices table only uses Active, Inactive, Assigned and Unassigned (fork PlatformDeviceManagement).
+export type DeviceBucket = "active" | "inactive" | "assigned" | "unassigned";
 
-export const statusOptions = [
+export const lifecycleStatuses = [
   {
     value: "all",
     label: "All Statuses",
@@ -23,14 +25,6 @@ export const statusOptions = [
     value: "unassigned",
     label: "Unassigned",
   },
-  {
-    value: "configured",
-    label: "Configured",
-  },
-  {
-    value: "registered",
-    label: "Registered",
-  },
 ];
 
 export const statusLabels: Record<DeviceBucket, string> = {
@@ -38,84 +32,51 @@ export const statusLabels: Record<DeviceBucket, string> = {
   inactive: "Inactive",
   assigned: "Assigned",
   unassigned: "Unassigned",
-  configured: "Configured",
-  registered: "Registered",
 };
 
 export const statusClasses: Record<DeviceBucket, string> = {
-  active: "border-transparent bg-success/10 text-success hover:bg-success/10",
-  inactive: "border-transparent bg-muted text-muted-foreground hover:bg-muted",
-  assigned: "border-transparent bg-primary/10 text-primary hover:bg-primary/10",
-  unassigned: "border-transparent bg-warning/10 text-warning hover:bg-warning/10",
-  configured: "border-transparent bg-info/10 text-info hover:bg-info/10",
-  registered: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary",
+  active: "bg-success/10 text-success",
+  inactive: "bg-muted text-muted-foreground",
+  assigned: "bg-primary/10 text-primary",
+  unassigned: "bg-warning/10 text-warning",
 };
 
 const OUT_OF_SERVICE = [
-  "suspended",
-  "faulty",
-  "decommissioned",
   "inactive",
+  "offline",
+  "suspended",
 ];
 
-const ACTIVE_LIFECYCLES = [
-  "verified_online",
-  "assignable",
-];
+/** Platform-side view of a device: the live record plus any local Edit Details / Record Assignment overrides. */
+export type PlatformDevice = SystemDeviceInventoryItem & {
+  statusOverride?: DeviceBucket;
+};
 
-export function normalizeDeviceStatus(device: SystemDeviceInventoryItem): DeviceBucket {
+export function normalizeDeviceStatus(device: PlatformDevice): DeviceBucket {
+  if (device.statusOverride)
+    return device.statusOverride;
   const lifecycle = device.lifecycleStatus ?? "";
   const operational = device.operationalStatus ?? "";
-  if (OUT_OF_SERVICE.includes(lifecycle) || OUT_OF_SERVICE.includes(operational))
+  if (OUT_OF_SERVICE.includes(operational) || OUT_OF_SERVICE.includes(lifecycle))
     return "inactive";
-  if (lifecycle === "assigned" || device.vehicleId)
-    return "assigned";
-  if (ACTIVE_LIFECYCLES.includes(lifecycle) || operational === "active")
+  if (operational === "active")
     return "active";
-  if (lifecycle === "configured")
-    return "configured";
-  return "registered";
+  if (lifecycle === "assigned" || operational === "assigned" || device.vehicleId)
+    return "assigned";
+  return "unassigned";
 }
 
 export function formatLastSeen(lastSeen: string | null) {
   if (!lastSeen)
     return "Never";
-  const minutes = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 60000);
-  if (minutes < 1)
+  const diffMins = minutesBetween(lastSeen, new Date()) ?? 0;
+  if (diffMins < 1)
     return "Just now";
-  if (minutes < 60)
-    return `${minutes} min ago`;
-  if (minutes < 1440)
-    return `${Math.floor(minutes / 60)} hours ago`;
-  return `${Math.floor(minutes / 1440)} days ago`;
-}
-
-export function formatStatusLabel(status: string) {
-  return status
-    .split("_")
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-export function getStatusBadgeClass(status: string) {
-  switch (status) {
-    case "registered":
-    case "verified_online":
-      return "border-info/30 bg-info/10 text-info hover:bg-info/10";
-    case "config_pending":
-    case "suspended":
-      return "border-warning/30 bg-warning/10 text-warning hover:bg-warning/10";
-    case "configured":
-      return "border-primary/30 bg-primary/10 text-primary hover:bg-primary/10";
-    case "assignable":
-    case "assigned":
-    case "active":
-      return "border-success/30 bg-success/10 text-success hover:bg-success/10";
-    case "faulty":
-      return "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/10";
-    default:
-      return "border-border bg-muted text-muted-foreground hover:bg-muted";
-  }
+  if (diffMins < 60)
+    return `${diffMins} min ago`;
+  if (diffMins < 1440)
+    return `${Math.floor(diffMins / 60)} hours ago`;
+  return `${Math.floor(diffMins / 1440)} days ago`;
 }
 
 export const LAST_SEEN_DAYS: Record<string, number> = {
@@ -124,63 +85,9 @@ export const LAST_SEEN_DAYS: Record<string, number> = {
   "90d": 90,
 };
 
-export type DeviceFilterKey = "lastSeen" | "tenant" | "manufacturer";
-
-export type DeviceFilterDraft = Record<DeviceFilterKey, {
-  enabled: boolean;
-  value: string;
-}>;
-
-export const emptyFilters: DeviceFilterDraft = {
-  lastSeen: {
-    enabled: false,
-    value: "",
-  },
-  tenant: {
-    enabled: false,
-    value: "",
-  },
-  manufacturer: {
-    enabled: false,
-    value: "",
-  },
-};
-
-function activeValue(filter: DeviceFilterDraft[DeviceFilterKey]) {
-  return filter.enabled && filter.value ? filter.value : null;
-}
-
-function matchesLastSeen(device: SystemDeviceInventoryItem, range: string | null) {
-  const days = range ? LAST_SEEN_DAYS[range] : 0;
-  if (!days)
-    return true;
-  if (!device.lastSeen)
+export function seenWithinDays(lastSeen: string | null, days: number) {
+  if (!lastSeen)
     return false;
-  return Date.now() - new Date(device.lastSeen).getTime() <= days * 86400000;
-}
-
-function matchesStatus(device: SystemDeviceInventoryItem, status: string) {
-  if (status === "all")
-    return true;
-  if (status === "unassigned")
-    return !device.vehicleId;
-  return normalizeDeviceStatus(device) === status;
-}
-
-export function matchesFilters(
-  device: SystemDeviceInventoryItem,
-  status: string,
-  filters: DeviceFilterDraft,
-) {
-  const manufacturer = activeValue(filters.manufacturer);
-  const tenant = activeValue(filters.tenant);
-  return (
-    matchesStatus(device, status)
-    && (!manufacturer || device.manufacturer === manufacturer)
-    && (!tenant || (!!device.tenantId && device.tenantName === tenant))
-    && matchesLastSeen(
-      device,
-      activeValue(filters.lastSeen),
-    )
-  );
+  const mins = minutesBetween(lastSeen, new Date());
+  return mins !== null && mins <= days * 1440;
 }

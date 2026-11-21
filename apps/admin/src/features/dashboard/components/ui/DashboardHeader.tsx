@@ -14,26 +14,30 @@ import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
+import { useRealtimeNotifications } from "@/features/dashboard/hooks/useRealtimeNotifications";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
 import {
   SHORTCUTS,
   useGlobalShortcuts,
 } from "@/hooks/useKeyboardShortcuts";
-import { PageHeaderActionsSlot } from "@/shared/components/layout/PageHeaderActions";
 import { useIsMobile } from "@/shared/hooks/useIsMobile";
 import { NotificationCenter } from "./NotificationCenter";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 
-type DashboardHeaderProps = {
-  /** The page's name, resolved from `sidebarNav.ts` by DashboardLayout. */
-  title: string;
-  onRefresh?: () => void;
-};
+type DashboardHeaderProps = { onRefresh?: () => void };
 
-export function DashboardHeader({
-  title,
-  onRefresh,
-}: DashboardHeaderProps) {
+/**
+ * The top bar. No page title here — fleetflow moved it into the content area
+ * (`shared/components/layout/PageTitle.tsx`), rendered by DashboardLayout.
+ */
+export function DashboardHeader({ onRefresh }: DashboardHeaderProps = {}) {
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotifications,
+  } = useRealtimeNotifications();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [
     searchValue,
@@ -77,7 +81,7 @@ export function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/98 px-4 md:px-6 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-border bg-background/98 px-6 py-2 backdrop-blur-sm">
       <div className="flex items-center gap-2 min-w-0">
         <button
           onClick={isMobile ? openMobile : toggle}
@@ -98,12 +102,9 @@ export function DashboardHeader({
                 <PanelLeftClose className="h-4 w-4" />
               )}
         </button>
-        <h1 className="text-base font-semibold text-foreground ml-1 truncate">{title}</h1>
       </div>
 
       <div className="flex items-center gap-1.5">
-        {/* Filled by the current page through <PageHeaderActions>. */}
-        <PageHeaderActionsSlot />
         {/* Dynamic Search */}
         <div className="hidden md:flex items-center">
           {searchOpen
@@ -159,7 +160,13 @@ export function DashboardHeader({
           </Button>
         </ShortcutTooltip>
 
-        <NotificationCenter />
+        <NotificationCenter
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onMarkAsRead={markAsRead}
+          onMarkAllAsRead={markAllAsRead}
+          onClear={clearNotifications}
+        />
 
         <UserProfileDropdown />
       </div>

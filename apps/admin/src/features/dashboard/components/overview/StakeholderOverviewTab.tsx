@@ -1,7 +1,11 @@
+import type { SystemTenant } from "@truckmoov/api/auth";
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import { useQuery } from "@tanstack/react-query";
+import { getSystemTenantsQueryOptions } from "@truckmoov/api/auth";
 import {
   Building2,
   Cpu,
+  Loader2,
   Network,
   Sparkles,
   Truck,
@@ -24,7 +28,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
-import { Skeleton } from "@/components/shadcn/skeleton";
+import { WidgetBody } from "./WidgetBody";
 
 const ORG_TYPE_ICONS: Record<string, typeof Building2> = {
   ENTERPRISE: Building2,
@@ -47,76 +51,104 @@ const ORG_TYPE_BG: Record<string, string> = {
   OWNER_OPERATOR: "bg-accent/10 text-accent-foreground",
 };
 
+const ORG_TYPE_LABELS: Record<string, string> = {
+  ENTERPRISE: "Enterprise",
+  OWNER_OPERATOR: "Owner-Operator",
+};
+
+const VISIBLE_ORG_TYPES = [
+  "ENTERPRISE",
+  "OWNER_OPERATOR",
+];
+
+/** Fleetflow's tenant-type rule: owner-operator wins, else any fleet org type is Enterprise. */
+function tenantType(tenant: SystemTenant): string | null {
+  const types = (tenant.organizationTypes ?? (tenant.organizationType ? [tenant.organizationType] : []))
+    .map(t => t.toUpperCase());
+  if (types.includes("OWNER_OPERATOR"))
+    return "OWNER_OPERATOR";
+  if (types.some(t => [
+    "ENTERPRISE",
+    "FLEET_PROVIDER",
+    "AGGREGATOR",
+  ].includes(t))) {
+    return "ENTERPRISE";
+  }
+  return null;
+}
+
+/** Fleetflow's StakeholderOverviewTab, built from the live tenant list instead of its organisations table. */
 export function StakeholderOverviewTab() {
-  const typeSummaries: {
-    type: string;
-    label: string;
-    count: number;
-    activeCount: number;
-    vehicleCount: number;
-    driverCount: number;
-    deviceCount: number;
-  }[] = [];
-  const orgDetails: {
-    id: string;
-    name: string;
-    organizationType: string;
-    status: string;
-    vehicleCount: number;
-    driverCount: number;
-    deviceCount: number;
-  }[] = [];
-  const aggregatorNetworks: {
-    aggregatorId: string;
-    aggregatorName: string;
-    relationshipType: string;
-    childCount: number;
-  }[] = [];
-  const totalOrgs = 0;
-  const isLoading = false;
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery(getSystemTenantsQueryOptions());
   const [
     distributionRange,
     setDistributionRange,
   ] = useState<ChartDateRange>("30d");
 
+  const orgDetails = (data?.data.tenants ?? []).flatMap((tenant) => {
+    const organizationType = tenantType(tenant);
+    return organizationType
+      ? [
+          {
+            id: tenant.id,
+            name: tenant.name,
+            organizationType,
+            status: tenant.status.toUpperCase(),
+            vehicleCount: tenant.vehicleCount,
+            driverCount: tenant.driverCount,
+            deviceCount: tenant.deviceCount,
+          },
+        ]
+      : [];
+  });
+  const typeSummaries = VISIBLE_ORG_TYPES.map((type) => {
+    const ofType = orgDetails.filter(o => o.organizationType === type);
+    return {
+      type,
+      label: ORG_TYPE_LABELS[type],
+      count: ofType.length,
+      activeCount: ofType.filter(o => o.status === "ACTIVE").length,
+      vehicleCount: ofType.reduce(
+        (sum, o) => sum + o.vehicleCount,
+        0,
+      ),
+      driverCount: ofType.reduce(
+        (sum, o) => sum + o.driverCount,
+        0,
+      ),
+      deviceCount: ofType.reduce(
+        (sum, o) => sum + o.deviceCount,
+        0,
+      ),
+    };
+  });
+  const totalOrgs = typeSummaries.reduce(
+    (sum, t) => sum + t.count,
+    0,
+  );
+
   if (isLoading) {
     return (
-      <div
-        className="space-y-6"
-        aria-hidden
-      >
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
-          {Array.from(
-            { length: 4 },
-            (_, i) => (
-              <Card key={i}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-8 w-12" />
-                      <Skeleton className="h-5 w-16" />
-                    </div>
-                    <Skeleton className="h-12 w-12 rounded-lg" />
-                  </div>
-                </CardContent>
-              </Card>
-            ),
-          )}
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardContent className="p-6">
-              <Skeleton className="h-64 w-full" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <Skeleton className="h-64 w-full" />
-            </CardContent>
-          </Card>
-        </div>
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <WidgetBody
+        isLoading={false}
+        isError
+        onRetry={refetch}
+      >
+        {null}
+      </WidgetBody>
     );
   }
 
@@ -131,17 +163,17 @@ export function StakeholderOverviewTab() {
   return (
     <div className="space-y-6">
       {/* Stat cards per org type */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
+      <div className="grid gap-4 md:grid-cols-2">
+
         {typeSummaries.map((summary) => {
           const Icon = ORG_TYPE_ICONS[summary.type] || Building2;
           return (
             <Card key={summary.type}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1 min-w-0">
+                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">
-                      {summary.label}
-                      s
+                      {`${summary.label}s`}
                     </p>
                     <p className="text-3xl font-bold">{summary.count}</p>
                     <div className="flex items-center gap-2">
@@ -149,14 +181,12 @@ export function StakeholderOverviewTab() {
                         variant="outline"
                         className="text-xs bg-success/10 text-success border-success/30"
                       >
-                        {summary.activeCount}
-                        {" "}
-                        active
+                        {`${summary.activeCount} active`}
                       </Badge>
                     </div>
                   </div>
                   <div
-                    className={`h-12 w-12 shrink-0 rounded-lg flex items-center justify-center ${ORG_TYPE_BG[summary.type]}`}
+                    className={`h-12 w-12 rounded-lg flex items-center justify-center ${ORG_TYPE_BG[summary.type]}`}
                   >
                     <Icon className="h-6 w-6" />
                   </div>
@@ -175,12 +205,10 @@ export function StakeholderOverviewTab() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Network className="h-5 w-5 text-primary" />
-                  Organization Distribution
+                  Tenant Distribution
                 </CardTitle>
                 <CardDescription>
-                  {totalOrgs}
-                  {" "}
-                  total organizations across all stakeholder types
+                  {`${totalOrgs} total tenants across all stakeholder types`}
                 </CardDescription>
               </div>
               <ChartDateFilter
@@ -212,9 +240,9 @@ export function StakeholderOverviewTab() {
                           paddingAngle={3}
                           dataKey="value"
                         >
-                          {pieData.map((entry, i) => (
+                          {pieData.map(entry => (
                             <Cell
-                              key={i}
+                              key={entry.name}
                               fill={entry.color}
                             />
                           ))}
@@ -263,10 +291,10 @@ export function StakeholderOverviewTab() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Truck className="h-5 w-5 text-primary" />
-              Assets by Stakeholder Type
+              Assets by Tenants
             </CardTitle>
             <CardDescription>
-              Vehicles, drivers, and devices per organization type
+              Vehicles, drivers, and devices per tenants.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -320,60 +348,7 @@ export function StakeholderOverviewTab() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Aggregator networks */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Network className="h-5 w-5 text-warning" />
-              Aggregator Networks
-            </CardTitle>
-            <CardDescription>
-              Aggregators and their connected sub-organizations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {aggregatorNetworks.length === 0
-              ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No aggregator networks configured.
-                  </p>
-                )
-              : (
-                  <div className="space-y-3">
-                    {aggregatorNetworks.map(agg => (
-                      <div
-                        key={agg.aggregatorId}
-                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-warning/10 flex items-center justify-center">
-                            <Network className="h-4 w-4 text-warning" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{agg.aggregatorName}</p>
-                            <p className="text-xs text-muted-foreground capitalize">
-                              {agg.relationshipType.replace(
-                                /_/g,
-                                " ",
-                              ).toLowerCase()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary">
-                            {agg.childCount}
-                            {" "}
-                            member
-                            {agg.childCount !== 1 ? "s" : ""}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-          </CardContent>
-        </Card>
+      <div className="grid gap-6">
 
         {/* Top organizations */}
         <Card>
@@ -395,7 +370,7 @@ export function StakeholderOverviewTab() {
                 )
               : (
                   <div className="space-y-3">
-                    {orgDetails
+                    {[...orgDetails]
                       .sort(
                         (a, b) =>
                           b.vehicleCount
@@ -434,21 +409,9 @@ export function StakeholderOverviewTab() {
                               </div>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                              <span>
-                                {org.vehicleCount}
-                                {" "}
-                                veh
-                              </span>
-                              <span>
-                                {org.driverCount}
-                                {" "}
-                                drv
-                              </span>
-                              <span>
-                                {org.deviceCount}
-                                {" "}
-                                dev
-                              </span>
+                              <span>{`${org.vehicleCount} veh`}</span>
+                              <span>{`${org.driverCount} drv`}</span>
+                              <span>{`${org.deviceCount} dev`}</span>
                               <Badge
                                 className={
                                   org.status === "ACTIVE"

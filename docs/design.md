@@ -172,11 +172,15 @@ Scrollbars are restyled globally to a 6px muted thumb.
   top bar and nav never disagree. The `title` prop is the fallback.
 - Global search (`⌘K`-style shortcuts in `hooks/useKeyboardShortcuts.ts`) and
   the notification center live in the header.
-- **Header actions (admin).** A page can't pass props to the header, so
-  `apps/admin/src/shared/components/layout/PageHeaderActions.tsx` portals them:
-  render `<PageHeaderActions><Button …/></PageHeaderActions>` anywhere in the page
-  body and the buttons appear in the top bar, left of search, until the page
-  unmounts.
+- **Page heading (admin).** The admin top bar carries no title — fleetflow's
+  fork moved it into the content area. `apps/admin/src/shared/components/layout/PageTitle.tsx`
+  (`PageTitle`, `PageActions`) is the heading: large `h1` + description, actions
+  on the right. `DashboardLayout` renders it above the page from the sidebar
+  entry's `label` and `description`, unless the entry is `manualTitle` — tabbed
+  pages render `<PageTitle title description primaryActions />` under their tab
+  bar with a per-tab title. A page moves an existing button into the heading
+  with `<PageActions>…</PageActions>` (a portal). Off-nav routes render their
+  own `PageTitle`.
 
 ## Navigation model
 
@@ -200,7 +204,10 @@ again when you navigate away — unless you toggled it by hand, which takes over
 from then on.
 
 `apps/admin` grew its first group ("Communications" → WhatsApp Setup /
-Messaging Center) when those pages landed, and the machinery —
+Messaging Center) when those pages landed. The fleetflow fork (21 Nov 2026)
+dropped that group from the platform nav, so admin's sidebar is flat again and
+`/inbox`, `/messaging`, `/campaigns`, `/voice` and `/sms-templates` are
+reachable by URL only (`/whatsapp` redirects to `/inbox`). The machinery —
 `SidebarNavGroup` / `SidebarEntry` / `isNavGroup` in `sidebarNav.ts`, `NavGroup`
 in `DashboardSidebar.tsx` — was copied across from main then. Only the group
 branch came: main also carries `labelByRole` / `resolveLabel` for per-role

@@ -1,36 +1,58 @@
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { useQuery } from "@tanstack/react-query";
-import { getSystemRevenueByMonthQueryOptions, getSystemTenantGrowthQueryOptions } from "@truckmoov/api/auth";
+import { getSystemRevenueByMonthQueryOptions } from "@truckmoov/api/auth";
 import { TrendingUp } from "lucide-react";
 import { useState } from "react";
-import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { CHART_TOOLTIP_STYLE, formatMonthLabel, formatNgn, formatNgnCompact } from "./overviewFormat";
-import { RangeFilter } from "./RangeFilter";
-import type { RangeOption } from "./RangeFilter";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { convertCurrency } from "@/lib/currency";
+import {
+  CHART_TOOLTIP_STYLE,
+  formatMonthLabel,
+} from "./overviewFormat";
 import { WidgetBody } from "./WidgetBody";
 
-const DEFAULT_MONTHS = 6;
-const MONTH_OPTIONS: RangeOption[] = [
-  { value: 3, label: "Last 3 months" },
-  { value: 6, label: "Last 6 months" },
-  { value: 12, label: "Last 12 months" },
-];
+const REVENUE_MONTHS = 12;
 
+/** Revenue & Tenant Growth — fleetflow's 12-month revenue area chart, from live monthly collections. */
 export function RevenueTrendCard() {
-  const [months, setMonths] = useState(DEFAULT_MONTHS);
-  const revenue = useQuery(getSystemRevenueByMonthQueryOptions(months));
-  const growth = useQuery(getSystemTenantGrowthQueryOptions(months));
-  const tenantsByMonth = new Map((growth.data?.data.months ?? []).map(entry => [entry.month, entry.tenants]));
-  const series = (revenue.data?.data.months ?? []).map(entry => ({
-    label: formatMonthLabel(entry.month),
-    collectedNgn: entry.collectedNgn,
-    tenants: tenantsByMonth.get(entry.month) ?? 0,
+  // Fleetflow's range control is presentational: the chart always plots the last 12 months.
+  const [
+    revenueRange,
+    setRevenueRange,
+  ] = useState<ChartDateRange>("30d");
+  const { currency } = useCurrency();
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery(getSystemRevenueByMonthQueryOptions(REVENUE_MONTHS));
+  const revenueData = (data?.data.months ?? []).map(entry => ({
+    month: formatMonthLabel(entry.month),
+    revenueNGN: entry.collectedNgn,
+    revenueUSD: Math.round(convertCurrency(
+      entry.collectedNgn,
+      "NGN",
+      "USD",
+    )),
   }));
-  const hasData = series.some(entry => entry.collectedNgn > 0 || entry.tenants > 0);
-  const retry = () => {
-    void revenue.refetch();
-    void growth.refetch();
-  };
 
   return (
     <Card>
@@ -41,32 +63,29 @@ export function RevenueTrendCard() {
               <TrendingUp className="h-5 w-5 text-primary" />
               Revenue & Tenant Growth
             </CardTitle>
-            <CardDescription>{`Cash collected per month (NGN) and tenants over the last ${months} months, Lagos time`}</CardDescription>
+            <CardDescription>{`Monthly platform revenue and tenant acquisition (${currency})`}</CardDescription>
           </div>
-          <RangeFilter
-            value={months}
-            options={MONTH_OPTIONS}
-            onValueChange={setMonths}
+          <ChartDateFilter
+            value={revenueRange}
+            onValueChange={setRevenueRange}
           />
         </div>
       </CardHeader>
       <CardContent>
         <WidgetBody
-          isLoading={revenue.isLoading || growth.isLoading}
-          isError={revenue.isError || growth.isError}
-          onRetry={retry}
-          isEmpty={!hasData}
-          emptyMessage={`No payments or tenants in the last ${months} months.`}
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={refetch}
           skeletonClassName="h-[300px] w-full"
         >
           <ResponsiveContainer
             width="100%"
             height={300}
           >
-            <ComposedChart data={series}>
+            <AreaChart data={revenueData}>
               <defs>
                 <linearGradient
-                  id="collectedGradient"
+                  id="colorRevenue"
                   x1="0"
                   y1="0"
                   x2="0"
@@ -89,50 +108,50 @@ export function RevenueTrendCard() {
                 stroke="hsl(var(--border))"
               />
               <XAxis
-                dataKey="label"
+                dataKey="month"
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
               />
               <YAxis
-                yAxisId="ngn"
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                tickFormatter={value => formatNgnCompact(Number(value))}
-              />
-              <YAxis
-                yAxisId="tenants"
-                orientation="right"
-                allowDecimals={false}
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
+                tickFormatter={(value: number) => {
+                  if (currency === "NGN") {
+                    return `₦${(value / 1000000).toFixed(0)}M`;
+                  }
+                  return `$${(value / 1000).toFixed(0)}k`;
+                }}
               />
               <Tooltip
                 contentStyle={CHART_TOOLTIP_STYLE}
-                formatter={(value: number, name: string) => [
-                  name === "Tenants" ? value.toLocaleString() : formatNgn(value),
-                  name,
-                ]}
+                formatter={(value: number, name: string) => {
+                  if (name === "revenueNGN" && currency === "NGN") {
+                    return [
+                      `₦${value.toLocaleString()}`,
+                      "Revenue",
+                    ];
+                  }
+                  if (name === "revenueUSD" && currency === "USD") {
+                    return [
+                      `$${value.toLocaleString()}`,
+                      "Revenue",
+                    ];
+                  }
+                  return [
+                    value,
+                    name,
+                  ];
+                }}
               />
               <Area
-                yAxisId="ngn"
                 type="monotone"
-                dataKey="collectedNgn"
-                name="Collected"
+                dataKey={currency === "NGN" ? "revenueNGN" : "revenueUSD"}
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 fillOpacity={1}
-                fill="url(#collectedGradient)"
+                fill="url(#colorRevenue)"
               />
-              <Line
-                yAxisId="tenants"
-                type="monotone"
-                dataKey="tenants"
-                name="Tenants"
-                stroke="hsl(var(--success))"
-                strokeWidth={2}
-                dot={false}
-              />
-            </ComposedChart>
+            </AreaChart>
           </ResponsiveContainer>
         </WidgetBody>
       </CardContent>

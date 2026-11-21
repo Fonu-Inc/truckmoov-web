@@ -3,26 +3,21 @@ import type {
   ComponentType, ElementType,
 } from "react";
 import {
-  Bell,
   Building2,
   Cpu,
   CreditCard,
   Database,
-  Inbox,
   LayoutDashboard,
-  Mail,
-  Megaphone,
-  MessageSquareText,
-  Phone,
   Settings,
   ShieldCheck,
   Wifi,
   Wrench,
 } from "lucide-react";
-import { MessagingNavBadge } from "@/features/communications/components/MessagingNavBadge";
 
 /**
- * The nav is mostly flat, with one collapsible group ("Communications"). The
+ * The nav is flat today. Fleetflow's fork dropped the platform "Communications"
+ * group, so the messaging pages (/inbox, /messaging, /campaigns, /voice,
+ * /sms-templates) are reachable by URL only. The
  * group machinery — `SidebarNavGroup` / `isNavGroup` here, `NavGroup` in
  * `DashboardSidebar` — was copied from `apps/main` when that group landed.
  *
@@ -35,6 +30,13 @@ export type SidebarNavItem = {
   label: string;
   href: string;
   icon: ElementType;
+  /** Line under the page heading (fleetflow's DashboardLayout `subtitle`). */
+  description?: string;
+  /**
+   * The page renders `<PageTitle />` itself (below its tab bar, usually with a
+   * per-tab title) instead of DashboardLayout rendering it above the page.
+   */
+  manualTitle?: boolean;
   /** Page owns its own padding — DashboardLayout drops the `p-6` on `<main>`. */
   fullWidth?: boolean;
   /** Roles allowed to see this entry. */
@@ -89,53 +91,31 @@ export const ADMIN_ROLES: UserRole[] = [
  */
 export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   {
-    label: "Dashboard", href: "/", icon: LayoutDashboard, hasPermission: ADMIN_ROLES,
+    label: "Dashboard", href: "/", icon: LayoutDashboard, description: "System overview for Super Administrator", manualTitle: true, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Tenants", href: "/tenants", icon: Building2, hasPermission: ADMIN_ROLES,
+    label: "Tenants", href: "/tenants", icon: Building2, manualTitle: true, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Installers", href: "/installers", icon: Wrench, hasPermission: ADMIN_ROLES,
+    label: "Installation", href: "/installers", icon: Wrench, manualTitle: true, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Devices", href: "/devices", icon: Cpu, hasPermission: ADMIN_ROLES,
+    label: "Devices", href: "/devices", icon: Cpu, manualTitle: true, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "IoT SIMs", href: "/sims", icon: Wifi, hasPermission: ADMIN_ROLES,
+    label: "IoT SIMs", href: "/sims", icon: Wifi, manualTitle: true, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "M2M IoT Bundles", href: "/data-bundles", icon: Database, hasPermission: ADMIN_ROLES,
+    label: "M2M IoT Bundles", href: "/data-bundles", icon: Database, manualTitle: true, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Communications",
-    icon: Bell,
-    items: [
-      {
-        label: "Messaging Center", href: "/inbox", icon: Inbox, requiredPermission: "admin.messaging.read", badge: MessagingNavBadge,
-      },
-      {
-        label: "Email", href: "/messaging", icon: Mail, requiredPermission: "admin.messaging.read",
-      },
-      {
-        label: "Campaigns", href: "/campaigns", icon: Megaphone, requiredPermission: "admin.messaging.read",
-      },
-      {
-        label: "Voice & IVR", href: "/voice", icon: Phone, requiredPermission: "admin.messaging.read",
-      },
-      {
-        label: "SMS Templates", href: "/sms-templates", icon: MessageSquareText, requiredPermission: "admin.messaging.read",
-      },
-    ],
-    hasPermission: ADMIN_ROLES,
+    label: "Billing", href: "/subscription", icon: CreditCard, description: "Configure what you charge for, price it, and review the quotations and payments the system has recorded.", manualTitle: true, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Billing", href: "/subscription", icon: CreditCard, hasPermission: ADMIN_ROLES,
+    label: "Audit & Compliance", href: "/audit-compliance", icon: ShieldCheck, description: "One immutable cross-tenant audit log for security, SIM and platform activity", hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Audit & Compliance", href: "/audit-compliance", icon: ShieldCheck, hasPermission: ADMIN_ROLES,
-  },
-  {
-    label: "Settings", href: "/settings", icon: Settings, hasPermission: ADMIN_ROLES,
+    label: "Settings", href: "/settings", icon: Settings, manualTitle: true, hasPermission: ADMIN_ROLES,
   },
 ];
 

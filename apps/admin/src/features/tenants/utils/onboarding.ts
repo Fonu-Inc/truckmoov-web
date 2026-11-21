@@ -3,51 +3,7 @@ import type {
   OnboardingApplicationStatus,
   SystemOnboardingDocument,
   SystemOnboardingStage,
-  SystemOnboardingVerificationCheck,
-  SystemOnboardingVerificationVerdict,
 } from "@truckmoov/api/auth";
-
-export const ONBOARDING_STATUS_LABELS: Record<OnboardingApplicationStatus, string> = {
-  draft: "Draft",
-  submitted: "Submitted",
-  under_review: "Under Review",
-  changes_requested: "Changes Requested",
-  approved: "Approved",
-  rejected: "Rejected",
-};
-
-/** What each status means — shown as the status badge's tooltip. */
-export const ONBOARDING_STATUS_DESCRIPTIONS: Record<OnboardingApplicationStatus, string> = {
-  draft: "Started but not yet submitted by the applicant.",
-  submitted: "Submitted and waiting for a platform admin to review.",
-  under_review: "A platform admin is reviewing this application.",
-  changes_requested: "More information needed — sent back to the applicant to update.",
-  approved: "Approved — the tenant moves on to provisioning.",
-  rejected: "Rejected — the applicant has been told why.",
-};
-
-export const ONBOARDING_STATUS_COLORS: Record<OnboardingApplicationStatus, string> = {
-  draft: "bg-muted text-muted-foreground border-border",
-  submitted: "bg-primary/10 text-primary border-primary/30",
-  under_review: "bg-primary/10 text-primary border-primary/30",
-  changes_requested: "bg-warning/10 text-warning border-warning/30",
-  approved: "bg-success/10 text-success border-success/30",
-  rejected: "bg-destructive/10 text-destructive border-destructive/30",
-};
-
-// `stageStatus` is resolved server-side; colour by its text, neutral for anything new.
-const STAGE_STATUS_COLORS: Record<string, string> = {
-  "submitted": "bg-primary/10 text-primary border-primary/30",
-  "attention needed": "bg-warning/10 text-warning border-warning/30",
-  "awaiting payment": "bg-primary/10 text-primary border-primary/30",
-  "awaiting scheduling": "bg-primary/10 text-primary border-primary/30",
-  "in progress": "bg-primary/10 text-primary border-primary/30",
-  "fleet ready": "bg-success/10 text-success border-success/30",
-};
-
-export function stageStatusColor(stageStatus: string) {
-  return STAGE_STATUS_COLORS[stageStatus.trim().toLowerCase()] ?? "bg-muted text-muted-foreground border-border";
-}
 
 export const ONBOARDING_STAGE_LABELS: Record<SystemOnboardingStage, string> = {
   application: "Application",
@@ -59,15 +15,10 @@ export const ONBOARDING_STAGE_LABELS: Record<SystemOnboardingStage, string> = {
   fleet_ready: "Fleet Ready",
 };
 
-export const APPLICANT_TYPE_LABELS: Record<OnboardingApplicantType, string> = {
-  enterprise: "Enterprise",
-  owner_operator: "Owner Operator / Individual",
-};
-
 export const DOCUMENT_TYPE_LABELS: Record<SystemOnboardingDocument["documentType"], string> = {
   customer_request_letter: "Customer Request Letter",
   cac_document: "CAC Document",
-  tax_certificate_or_tin: "Tax Certificate / TIN",
+  tax_certificate_or_tin: "Tax Certificate or TIN",
   signature_card: "Signature Card",
   utility_bill: "Utility Bill",
   identification_card: "Identification Card",
@@ -82,41 +33,83 @@ export const DOCUMENT_STATUS_COLORS: Record<SystemOnboardingDocument["status"], 
   rejected: "bg-destructive/10 text-destructive border-destructive/30",
 };
 
-export const VERIFICATION_CHECK_LABELS: Record<SystemOnboardingVerificationCheck, string> = {
-  cac_registration: "CAC Registration",
-  tax_identification: "Tax Identification",
-  identity: "Identity",
-  vehicle_registration: "Vehicle Registration",
-};
-
-export const VERDICT_LABELS: Record<SystemOnboardingVerificationVerdict, string> = {
-  match: "Match",
-  mismatch: "Mismatch",
-  not_found: "Not Found",
-  unavailable: "Unavailable",
-};
-
-export const VERDICT_COLORS: Record<SystemOnboardingVerificationVerdict, string> = {
-  match: "bg-success/10 text-success border-success/30",
-  mismatch: "bg-destructive/10 text-destructive border-destructive/30",
-  not_found: "bg-warning/10 text-warning border-warning/30",
-  unavailable: "bg-muted text-muted-foreground border-border",
-};
-
 /** Approve / reject / request changes (and document review) are only open while in review. */
 export function canDecide(status: OnboardingApplicationStatus) {
   return status === "submitted" || status === "under_review";
 }
 
-export function formatFileSize(bytes: number) {
-  if (bytes < 1024)
-    return `${bytes} B`;
-  if (bytes < 1024 * 1024)
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
 export function errorMessage(error: unknown, fallback: string) {
   const message = (error as { message?: unknown } | null)?.message;
   return typeof message === "string" && message ? message : fallback;
+}
+
+// ─── Fleetflow decision vocabulary (applicationReviewStore) ──────────────────
+
+/** Fleetflow's four review decisions. The live status maps onto them for display. */
+export type Decision = "pending" | "approved" | "rejected" | "more_info";
+
+export const DECISIONS: Decision[] = [
+  "pending",
+  "approved",
+  "more_info",
+  "rejected",
+];
+
+export function decisionLabel(d: Decision) {
+  return d === "approved"
+    ? "Approved"
+    : d === "rejected"
+      ? "Rejected"
+      : d === "more_info"
+        ? "More information needed"
+        : "Pending review";
+}
+
+/** draft / submitted / under_review are all still waiting on a reviewer. */
+export function toDecision(status: OnboardingApplicationStatus): Decision {
+  if (status === "approved")
+    return "approved";
+  if (status === "rejected")
+    return "rejected";
+  if (status === "changes_requested")
+    return "more_info";
+  return "pending";
+}
+
+export type SectionKey = "business" | "fleet" | "documents";
+
+export const SECTION_LABEL: Record<SectionKey, string> = {
+  business: "Business details",
+  fleet: "Fleet requirements",
+  documents: "Submitted documents",
+};
+
+/** Fleetflow's raw organisation type ("Enterprise" / "Owner Operator"). */
+export function organizationTypeOf(applicantType: OnboardingApplicantType) {
+  return applicantType === "owner_operator" ? "Owner Operator" : "Enterprise";
+}
+
+/**
+ * Returning customers submit only the Customer Request Letter through the returning flow
+ * (fleetflow's isReturningApplication, applied to the documents we have).
+ */
+export function isReturningApplication(documents: { documentType: string }[] | undefined): boolean {
+  if (!documents)
+    return false;
+  return documents.length > 0 && documents.every(d => d.documentType === "customer_request_letter");
+}
+
+export function prettyDocumentType(t: string) {
+  return (DOCUMENT_TYPE_LABELS as Record<string, string>)[t]
+    || t.replace(
+      /_/g,
+      " ",
+    ).replace(
+      /\b\w/g,
+      c => c.toUpperCase(),
+    );
+}
+
+export function prettyFileSize(bytes: number | null) {
+  return bytes ? `${(bytes / 1024).toFixed(0)} KB` : "—";
 }

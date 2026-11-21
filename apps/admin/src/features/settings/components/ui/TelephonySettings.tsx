@@ -60,9 +60,6 @@ const COST_TILES = [
   {
     label: "Recordings", unit: "recordings", icon: Mic, iconClass: "text-warning",
   },
-  {
-    label: "Transcriptions", unit: "transcribed", icon: Activity, iconClass: "text-primary",
-  },
 ];
 
 // Full class strings so Tailwind keeps them.

@@ -26,6 +26,7 @@ import {
 } from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
+import { PageActions } from "@/shared/components/layout/PageTitle";
 import { useAuthStore } from "@/stores/authStore";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -285,7 +286,7 @@ export function MyProfileCard() {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <PageActions>
           <Button
             onClick={handleSaveProfile}
             disabled={savingProfile}
@@ -304,7 +305,7 @@ export function MyProfileCard() {
                   </>
                 )}
           </Button>
-        </div>
+        </PageActions>
       </CardContent>
     </Card>
   );

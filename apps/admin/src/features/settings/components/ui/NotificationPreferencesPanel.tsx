@@ -7,7 +7,7 @@ import {
   useUpdatePlatformAlertSetting,
 } from "@truckmoov/api/auth";
 import {
-  AlertTriangle, Bell, CreditCard, FileCheck2, Mail, MessageSquare, Send, ServerCrash, ShieldAlert, Wrench,
+  AlertTriangle, Bell, CreditCard, FileCheck2, Mail, MessageSquare, Send, ServerCrash, ShieldAlert,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -58,10 +58,6 @@ const CATEGORIES: Array<{
   },
   {
     type: "system_errors", icon: ServerCrash, tone: "text-muted-foreground", title: "System Errors", desc: "Critical platform errors and outages",
-  },
-  // Not in fleetflow — the API has this alert type, so it keeps its row.
-  {
-    type: "installation_issues", icon: Wrench, tone: "text-muted-foreground", title: "Installation Issues", desc: "Notify when an installer reports an issue on a job",
   },
   {
     type: "security_alerts", icon: ShieldAlert, tone: "text-warning", title: "Critical Security Events", desc: "Get notified for critical and high severity events",
@@ -316,8 +312,6 @@ export function NotificationPreferencesPanel() {
           <h4 className="font-medium">Event Categories</h4>
           {CATEGORIES.map((r) => {
             const row = byType.get(r.type);
-            if (!isLoading && !row)
-              return null;
             return (
               <div
                 key={r.type}
@@ -334,17 +328,17 @@ export function NotificationPreferencesPanel() {
                     <p className="text-xs text-muted-foreground">{r.desc}</p>
                   </div>
                 </div>
-                {!row
+                {isLoading
                   ? <Skeleton className="h-6 w-11 rounded-full" />
                   : (
                       <Switch
                         aria-label={r.title}
-                        checked={row.enabled}
+                        checked={row?.enabled ?? false}
                         onCheckedChange={c => toggleType(
                           r.type,
                           c,
                         )}
-                        disabled={controlsDisabled || pendingType === r.type}
+                        disabled={controlsDisabled || !row || pendingType === r.type}
                       />
                     )}
               </div>
