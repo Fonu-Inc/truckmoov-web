@@ -283,13 +283,6 @@ export const router = createBrowserRouter([
         Component: CompleteProfilePage,
       },
 
-      // Public account application. Renders its own split branding panel, so it
-      // sits outside AuthLayout. Also listed in PUBLIC_ROUTES.
-      {
-        path: "/apply",
-        lazy: async () => ({ Component: (await import("@/features/apply/components/pages/ApplyForAccount")).default }),
-      },
-
       // Customer-facing live tracking link — no auth, no app chrome (OPEN_ROUTE_PREFIXES).
       {
         path: "/track/:token",

@@ -53,9 +53,15 @@ export function DialogHost() {
     [pathname],
   );
 
+  // Read once at mount: the effect below strips `?apply=1` from the URL, and a re-run of it
+  // (StrictMode in dev) must still see that it was there.
+  const [applyOnLoad] = useState(() => typeof window !== "undefined"
+    && new URLSearchParams(window.location.search).get("apply") === "1");
+
   // Declared after the close-on-navigate effect so it wins on first load: a resume link
   // (`?token=…&applicationId=…`) or the payment provider's return (`?payment=return`)
-  // reopens the application wizard where the applicant left off.
+  // reopens the application wizard where the applicant left off. `?apply=1` (the main
+  // app's sign-in link) opens it for a new application.
   useEffect(
     () => {
       const params = new URLSearchParams(window.location.search);
@@ -65,9 +71,23 @@ export function DialogHost() {
           "get-started",
           "resume",
         );
+        return;
+      }
+      if (applyOnLoad) {
+        dialogStore.open(
+          "get-started",
+          "new",
+        );
+        params.delete("apply");
+        const query = params.toString();
+        window.history.replaceState(
+          null,
+          "",
+          `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+        );
       }
     },
-    [],
+    [applyOnLoad],
   );
 
   return (

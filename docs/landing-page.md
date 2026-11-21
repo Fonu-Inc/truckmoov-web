@@ -144,12 +144,14 @@ The site should not render anything it doesn't need to:
 
 ## Apply wizard (Get Started)
 
-`features/get-started/` is the "Apply for Account Creation" dialog.
+`features/get-started/` is the "Apply for Account Creation" dialog: the **only** apply flow.
+`apps/main` has no `/apply` route. Its sign-in page links to `VITE_LANDING_URL` +
+`/?apply=1`, which `DialogHost` turns into an open wizard (intent `"new"`) and strips from the
+URL.
 
-### Parity with the main app
+### Flow
 
-It runs the same flow, fields and onboarding-applications API calls as the main app's `/apply`
-(`apps/main/src/features/apply/`). The steps are:
+It runs the onboarding-applications API calls (`@truckmoov/api/auth`). The steps are:
 
 1. customer type
 2. details and M2M plan
@@ -162,15 +164,13 @@ It runs the same flow, fields and onboarding-applications API calls as the main 
 9. payment
 10. installation scheduling
 
-The orchestrator is `GetStartedDialog.tsx`, a port of `ApplyForAccount.tsx`. Each step
-component names the main component it mirrors. `schemas/applySchemas.ts`,
-`utils/applyTypes.ts` and `utils/applyHelpers.ts` are copies of the main app's files, so
-**change both apps together**. The look follows the Figma Get Started dialog:
+The orchestrator is `GetStartedDialog.tsx`. It was ported from the main app's former
+`ApplyForAccount.tsx` (in git history), which is why some step components still name a
+"main" counterpart. The look follows the Figma Get Started dialog:
 - `StepLayout` + `DialogFooter` for each step
 - `SubDialog` for nested dialogs
 - the class recipes in `utils/getStartedContent.ts`
-- native `<select>`, and `CityInput` (a datalist of `CITIES_BY_STATE`) in place of the
-  main app's Radix select and combobox
+- native `<select>` and `CityInput` (a datalist of `CITIES_BY_STATE`)
 
 ### Resume
 
@@ -213,12 +213,11 @@ Cleanup:
 
 ### Returning customers
 
-Both apps follow the design app's two entries: **Apply for Account Creation** (new) and
-**Returning Customers**, meaning an existing MTN customer. Main enters through
-`/apply?returning=1`; the landing page through `intent: "returning"`.
+The wizard follows the design app's two entries: **Apply for Account Creation** (new) and
+**Returning Customers**, meaning an existing MTN customer (`intent: "returning"`).
 
-- The flag is persisted with the draft: `returning` in main's `applyDraftStore`, and in the
-  landing draft storage. A reload or a resume link keeps it.
+- The flag is persisted with the draft (`returning` in the draft store). A reload or a
+  resume link keeps it.
 - Returning changes two things. The heading copy becomes "Returning MTN customer
   onboarding", and the only required document is the **Customer Request Letter**
   (`RETURNING_DOCUMENTS` / `documentsForApplicant` in `utils/applyTypes.ts`).
@@ -229,7 +228,7 @@ Both apps follow the design app's two entries: **Apply for Account Creation** (n
 ### Where the design and the API differ
 
 The forms follow the design app (`https://fleetflow-pro-fork.vercel.app`, `/apply`) field for
-field, in both apps.
+field.
 
 **Dropped to match the design, though the API still expects them.** Submit shows the API's
 `incomplete` message on Review until the backend catches up:
@@ -243,12 +242,12 @@ field, in both apps.
 
 **Adapted to the API:**
 
-- City and State are plain inputs. The state is normalised to the canonical name
-  (`normalizeState` in `applySchemas.ts`).
-- Installation Time is a clock input. It maps to the API's morning (before 12:00) or
-  afternoon slot, open 08:00–16:00.
-- Vehicle Type and Type of Purchase use the API's values, in the design's order and wording.
-  The design's Pickup, Other (vehicle type) and Rental have no API value.
+- Customer Details' City and State are plain inputs. The state is normalised to the
+  canonical name (`normalizeState` in `schemas/applySchemas.ts`).
+- Installation scheduling keeps the state select, the city datalist and the API's time-slot
+  select. The design uses free text and a clock time.
+- Vehicle Type and Type of Purchase use the API's values. The design's Pickup, Other
+  (vehicle type) and Rental have no API value.
 
 **Built UI-only until the endpoint exists**, each marked `TODO(api)`:
 
