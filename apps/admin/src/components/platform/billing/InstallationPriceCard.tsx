@@ -1,20 +1,25 @@
 import type { InstallationPrice } from "@truckmoov/api/billing";
-import { useInstallationPrice, useUpdateInstallationPrice } from "@truckmoov/api/billing";
+import type {
+  PriceChangeErrors,
+  PriceChangeValues,
+} from "@/components/platform/billing/PriceChangeFields";
+import {
+  useInstallationPrice, useUpdateInstallationPrice,
+} from "@truckmoov/api/billing";
 import { Wrench } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 import { toast } from "sonner";
+import {
+  formatIsoDate, formatNgn, PriceCardFrame, todayInLagos,
+} from "@/components/platform/billing/billingUi";
 import {
   FieldError,
   PriceChangeFields,
   validatePriceChange,
 } from "@/components/platform/billing/PriceChangeFields";
-import type {
-  PriceChangeErrors,
-  PriceChangeValues,
-} from "@/components/platform/billing/PriceChangeFields";
-import { formatIsoDateTime, formatNgn, todayInLagos } from "@/components/platform/billing/billingUi";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -50,23 +55,41 @@ function ReasonDialog({
   saving: boolean;
   onConfirm: (values: PriceChangeValues) => void;
 }) {
-  const [values, setValues] = useState<PriceChangeValues>({ reason: "", effectiveDate: todayInLagos() });
-  const [errors, setErrors] = useState<PriceChangeErrors>({});
+  const [
+    values,
+    setValues,
+  ] = useState<PriceChangeValues>({
+    reason: "", effectiveDate: todayInLagos(),
+  });
+  const [
+    errors,
+    setErrors,
+  ] = useState<PriceChangeErrors>({});
 
-  useEffect(() => {
-    if (!open) return;
-    setValues({ reason: "", effectiveDate: todayInLagos() });
-    setErrors({});
-  }, [open]);
+  useEffect(
+    () => {
+      if (!open)
+        return;
+      setValues({
+        reason: "", effectiveDate: todayInLagos(),
+      });
+      setErrors({});
+    },
+    [open],
+  );
 
   const confirm = () => {
     const found = validatePriceChange(values);
     setErrors(found);
-    if (Object.keys(found).length === 0) onConfirm(values);
+    if (Object.keys(found).length === 0)
+      onConfirm(values);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle>Confirm price change</DialogTitle>
@@ -74,12 +97,25 @@ function ReasonDialog({
             The change is recorded in the price history with your reason.
           </DialogDescription>
         </DialogHeader>
-        <PriceChangeFields values={values} errors={errors} onChange={setValues} />
+        <PriceChangeFields
+          values={values}
+          errors={errors}
+          onChange={setValues}
+        />
         <DialogFooter>
-          <Button variant="ghost" className="rounded-xl" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button
+            variant="ghost"
+            className="rounded-xl"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
             Cancel
           </Button>
-          <Button className="rounded-xl" onClick={confirm} disabled={saving}>
+          <Button
+            className="rounded-xl"
+            onClick={confirm}
+            disabled={saving}
+          >
             Confirm and save
           </Button>
         </DialogFooter>
@@ -107,10 +143,9 @@ function PriceInput({
       <Input
         id={id}
         type="number"
-        min={1}
-        step={1}
+        min={0}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         className="rounded-xl"
       />
       <FieldError message={error} />
@@ -118,38 +153,57 @@ function PriceInput({
   );
 }
 
-function CardFrame({ children, description }: { children: React.ReactNode; description?: string }) {
+function CardFrame({
+  children, description,
+}: {
+  children: React.ReactNode; description?: string;
+}) {
   return (
-    <Card className="surface-sleek rounded-2xl">
-      <CardHeader className="space-y-1">
-        <CardTitle className="flex items-center gap-2">
-          <Wrench className="h-4 w-4 text-primary" />
-          Installation Price
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          A one-off installation charge added to every quotation, invoice and payment alongside the selected
-          M2M license plan. {description}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
-    </Card>
+    <PriceCardFrame
+      icon={Wrench}
+      title="Installation Price"
+      subtitle="Details and current information for installation price."
+      description={`A one-off installation charge added to every quotation, invoice and payment alongside the selected M2M license plan.${description ? ` ${description}` : ""}`}
+    >
+      {children}
+    </PriceCardFrame>
   );
 }
 
 function PriceEditor({ price }: { price: InstallationPrice }) {
   const update = useUpdateInstallationPrice();
-  const [enterprise, setEnterprise] = useState(String(price.enterpriseNgn));
-  const [ownerOperator, setOwnerOperator] = useState(String(price.ownerOperatorNgn));
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [errors, setErrors] = useState<{ enterprise?: string; ownerOperator?: string }>({});
+  const [
+    enterprise,
+    setEnterprise,
+  ] = useState(String(price.enterpriseNgn));
+  const [
+    ownerOperator,
+    setOwnerOperator,
+  ] = useState(String(price.ownerOperatorNgn));
+  const [
+    confirmOpen,
+    setConfirmOpen,
+  ] = useState(false);
+  const [
+    errors,
+    setErrors,
+  ] = useState<{
+    enterprise?: string; ownerOperator?: string;
+  }>({});
 
-  useEffect(() => {
-    setEnterprise(String(price.enterpriseNgn));
-    setOwnerOperator(String(price.ownerOperatorNgn));
-  }, [price.enterpriseNgn, price.ownerOperatorNgn]);
+  useEffect(
+    () => {
+      setEnterprise(String(price.enterpriseNgn));
+      setOwnerOperator(String(price.ownerOperatorNgn));
+    },
+    [
+      price.enterpriseNgn,
+      price.ownerOperatorNgn,
+    ],
+  );
 
-  const dirty =
-    Number(enterprise) !== price.enterpriseNgn || Number(ownerOperator) !== price.ownerOperatorNgn;
+  const dirty
+    = Number(enterprise) !== price.enterpriseNgn || Number(ownerOperator) !== price.ownerOperatorNgn;
 
   const requestSave = () => {
     const found = {
@@ -157,10 +211,13 @@ function PriceEditor({ price }: { price: InstallationPrice }) {
       ...(isPositiveInt(ownerOperator) ? {} : { ownerOperator: "Enter a whole number greater than zero." }),
     };
     setErrors(found);
-    if (Object.keys(found).length === 0) setConfirmOpen(true);
+    if (Object.keys(found).length === 0)
+      setConfirmOpen(true);
   };
 
-  const save = ({ reason, effectiveDate }: PriceChangeValues) =>
+  const save = ({
+    reason, effectiveDate,
+  }: PriceChangeValues) =>
     update.mutate(
       {
         data: {
@@ -175,7 +232,7 @@ function PriceEditor({ price }: { price: InstallationPrice }) {
           toast.success("Installation price updated");
           setConfirmOpen(false);
         },
-        onError: (error) => toast.error(error.message),
+        onError: error => toast.error(error.message),
       },
     );
 
@@ -198,18 +255,31 @@ function PriceEditor({ price }: { price: InstallationPrice }) {
         />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">Last updated {formatIsoDateTime(price.lastChangedAt)}</span>
-        <Button className="rounded-xl" onClick={requestSave} disabled={!dirty}>
+        <span className="text-xs text-muted-foreground">
+          {`Last updated ${formatIsoDate(price.lastChangedAt)}`}
+        </span>
+        <Button
+          className="rounded-xl"
+          onClick={requestSave}
+          disabled={!dirty}
+        >
           Save installation price
         </Button>
       </div>
-      <ReasonDialog open={confirmOpen} onOpenChange={setConfirmOpen} saving={update.isPending} onConfirm={save} />
+      <ReasonDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        saving={update.isPending}
+        onConfirm={save}
+      />
     </CardFrame>
   );
 }
 
 export function InstallationPriceCard() {
-  const { data, isLoading, isError, error, refetch } = useInstallationPrice();
+  const {
+    data, isLoading, isError, error, refetch,
+  } = useInstallationPrice();
 
   if (isLoading) {
     return (
@@ -225,7 +295,12 @@ export function InstallationPriceCard() {
         <div className="py-4 text-center">
           <p className="text-sm font-medium">Couldn't load the installation price</p>
           <p className="text-xs text-muted-foreground">{error?.message}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => void refetch()}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void refetch()}
+          >
             Try again
           </Button>
         </div>

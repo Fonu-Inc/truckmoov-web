@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   PaymentMethod, PaymentRow, PaymentStatus,
 } from "@truckmoov/api/billing";
@@ -6,25 +5,27 @@ import { useBillingPayments } from "@truckmoov/api/billing";
 import {
   CreditCard, Eye, Search,
 } from "lucide-react";
+import { useState } from "react";
 import {
-  useMemo, useState,
-} from "react";
-import {
+  BillingCard,
+  BillingCardBody,
+  BillingCardHeader,
+  BillingPager,
+  FILTER_TRIGGER,
   formatIsoDateTime,
   formatNgn,
   ListErrorBanner,
   METHOD_LABEL,
   methodLabel,
+  NONE,
   PAYMENT_STATUS_LABEL,
   PaymentStatusBadge,
+  ProductChip,
+  TableStateRows,
 } from "@/components/platform/billing/billingUi";
 import { PaymentDetailsDialog } from "@/components/platform/billing/PaymentDetailsDialog";
 import { useBillingList } from "@/components/platform/billing/useBillingList";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
@@ -34,6 +35,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 
 const PAGE_SIZE = 10;
 
@@ -41,21 +45,34 @@ type Filters = {
   status: "all" | PaymentStatus; method: "all" | PaymentMethod;
 };
 
+// The design app's method filter, in its order ("Other" still shows in rows).
+const METHOD_FILTERS: PaymentMethod[] = [
+  "mtn_momo",
+  "bank_transfer",
+  "card",
+];
+
 const EXPORT_COLUMNS = [
   {
-    header: "Reference", accessor: "reference" as const,
+    header: "Payment Reference", accessor: "reference" as const,
   },
   {
     header: "Customer", accessor: "customerName" as const,
   },
   {
-    header: "Product", accessor: "productName" as const,
+    header: "Product", accessor: (p: PaymentRow) => p.productName || NONE,
   },
   {
-    header: "Devices", accessor: "deviceCount" as const,
+    header: "Linked Quotation", accessor: (p: PaymentRow) => p.quotationNumber ?? NONE,
   },
   {
-    header: "Amount (NGN)", accessor: "amountNgn" as const,
+    header: "Devices Requested", accessor: (p: PaymentRow) => (p.deviceCount > 0 ? p.deviceCount : NONE),
+  },
+  {
+    header: "Amount Paid (NGN)", accessor: "amountNgn" as const,
+  },
+  {
+    header: "Payment Date", accessor: (p: PaymentRow) => formatIsoDateTime(p.paidAt ?? p.createdAt),
   },
   {
     header: "Method", accessor: (p: PaymentRow) => methodLabel(p.method),
@@ -63,79 +80,7 @@ const EXPORT_COLUMNS = [
   {
     header: "Status", accessor: (p: PaymentRow) => PAYMENT_STATUS_LABEL[p.status],
   },
-  {
-    header: "Paid at", accessor: (p: PaymentRow) => formatIsoDateTime(p.paidAt),
-  },
-  {
-    header: "Quotation", accessor: (p: PaymentRow) => p.quotationNumber ?? "",
-  },
-  {
-    header: "Invoice", accessor: (p: PaymentRow) => p.invoiceNumber ?? "",
-  },
 ];
-
-// Server-paged list: sorting one page would mislead, so it's off.
-function paymentColumns(onView: (id: string) => void): ColumnDef<PaymentRow>[] {
-  return [
-    {
-      accessorKey: "reference", header: "Payment Reference", enableSorting: false, meta: { className: "font-medium" },
-    },
-    {
-      accessorKey: "customerName", header: "Customer", enableSorting: false,
-    },
-    {
-      accessorKey: "productName", header: "Product", enableSorting: false,
-    },
-    {
-      accessorKey: "deviceCount", header: "Devices", enableSorting: false, meta: { className: "tabular-nums" },
-    },
-    {
-      accessorKey: "amountNgn",
-      header: "Amount Paid",
-      enableSorting: false,
-      meta: { className: "font-medium" },
-      cell: ({ row }) => formatNgn(row.original.amountNgn),
-    },
-    {
-      id: "method", header: "Method", enableSorting: false, cell: ({ row }) => methodLabel(row.original.method),
-    },
-    {
-      id: "status",
-      header: "Status",
-      enableSorting: false,
-      cell: ({ row }) => <PaymentStatusBadge status={row.original.status} />,
-    },
-    {
-      id: "paidAt",
-      header: "Paid At",
-      enableSorting: false,
-      meta: { className: "text-sm text-muted-foreground" },
-      cell: ({ row }) => formatIsoDateTime(row.original.paidAt),
-    },
-    {
-      id: "quotation", header: "Quotation", enableSorting: false, cell: ({ row }) => row.original.quotationNumber ?? "-",
-    },
-    {
-      id: "invoice", header: "Invoice", enableSorting: false, cell: ({ row }) => row.original.invoiceNumber ?? "-",
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      enableSorting: false,
-      meta: { className: "text-right" },
-      cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onView(row.original.id)}
-        >
-          <Eye className="mr-1.5 h-3.5 w-3.5" />
-          View Detail
-        </Button>
-      ),
-    },
-  ];
-}
 
 export function PaymentsTab() {
   const list = useBillingList<Filters>({
@@ -148,10 +93,6 @@ export function PaymentsTab() {
     viewingId,
     setViewingId,
   ] = useState<string | null>(null);
-  const columns = useMemo(
-    () => paymentColumns(setViewingId),
-    [],
-  );
 
   const {
     data, isLoading, isError, error, refetch,
@@ -169,26 +110,22 @@ export function PaymentsTab() {
   const total = data?.data.total ?? 0;
 
   return (
-    <>
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-primary" />
-              Payments History
-            </CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Every payment the system recorded, and the quotation it settled.
-            </p>
-          </div>
-          <ExportButton
-            rows={rows}
-            filename="payments-history"
-            label="Export Data (loaded rows)"
-            columns={EXPORT_COLUMNS}
-          />
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="space-y-4">
+      <BillingCard>
+        <BillingCardHeader
+          icon={CreditCard}
+          title="Payments History"
+          subtitle="Account charges, billing records, and payment information."
+          description="Every payment the system recorded, and the quotation it settled."
+          action={(
+            <ExportButton
+              rows={rows}
+              filename="payments-history"
+              columns={EXPORT_COLUMNS}
+            />
+          )}
+        />
+        <BillingCardBody>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-[220px] flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -196,7 +133,7 @@ export function PaymentsTab() {
                 value={list.search}
                 onChange={e => list.setSearch(e.target.value)}
                 placeholder="Search by reference, customer or quotation..."
-                className="pl-9"
+                className="rounded-xl pl-9"
               />
             </div>
             <Select
@@ -206,7 +143,7 @@ export function PaymentsTab() {
                 v as Filters["status"],
               )}
             >
-              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className={`${FILTER_TRIGGER} w-[180px]`}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 {Object.entries(PAYMENT_STATUS_LABEL).map(([
@@ -229,18 +166,15 @@ export function PaymentsTab() {
                 v as Filters["method"],
               )}
             >
-              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className={`${FILTER_TRIGGER} w-[180px]`}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All methods</SelectItem>
-                {Object.entries(METHOD_LABEL).map(([
-                  v,
-                  l,
-                ]) => (
+                {METHOD_FILTERS.map(v => (
                   <SelectItem
                     key={v}
                     value={v}
                   >
-                    {l}
+                    {METHOD_LABEL[v]}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -255,32 +189,79 @@ export function PaymentsTab() {
             />
           )}
 
-          <div className="overflow-x-auto rounded-2xl border">
-            <DataTable
-              className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
-              columns={columns}
-              data={rows}
-              isLoading={isLoading}
-              isError={isError && rows.length === 0}
-              errorMessage={`Couldn't load payments${error?.message ? `: ${error.message}` : ""}`}
-              onRetry={() => void refetch()}
-              emptyState={(
-                <>
-                  <p className="text-sm font-medium text-foreground">No payments found</p>
-                  <p className="text-xs">Adjust your search or filters.</p>
-                </>
-              )}
-              pagination={{
-                page, pageSize: PAGE_SIZE, total, onPageChange: setPage,
-              }}
-            />
+          <div className="rounded-xl border border-border/60">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payment Reference</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Linked Quotation</TableHead>
+                  <TableHead>Devices Requested</TableHead>
+                  <TableHead>Amount Paid</TableHead>
+                  <TableHead>Payment Date</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableStateRows
+                  colSpan={10}
+                  isLoading={isLoading}
+                  isError={isError}
+                  isEmpty={rows.length === 0}
+                  errorTitle="Couldn't load payments"
+                  errorMessage={error?.message}
+                  onRetry={() => void refetch()}
+                  emptyTitle="No payments found"
+                />
+                {rows.map(row => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">{row.reference}</TableCell>
+                    <TableCell>{row.customerName}</TableCell>
+                    <TableCell>
+                      {row.productName
+                        ? <ProductChip>{row.productName}</ProductChip>
+                        : <span className="text-muted-foreground">{NONE}</span>}
+                    </TableCell>
+                    <TableCell>{row.quotationNumber ?? NONE}</TableCell>
+                    <TableCell className="font-medium">{row.deviceCount > 0 ? row.deviceCount : NONE}</TableCell>
+                    <TableCell className="font-medium">{formatNgn(row.amountNgn)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatIsoDateTime(row.paidAt ?? row.createdAt)}</TableCell>
+                    <TableCell>{methodLabel(row.method)}</TableCell>
+                    <TableCell>
+                      <PaymentStatusBadge status={row.status} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewingId(row.id)}
+                        >
+                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                          View Detail
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        </CardContent>
-      </Card>
+          <BillingPager
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
+        </BillingCardBody>
+      </BillingCard>
       <PaymentDetailsDialog
         paymentId={viewingId}
         onClose={() => setViewingId(null)}
       />
-    </>
+    </div>
   );
 }

@@ -19,7 +19,7 @@ import { PageTitle } from "@/shared/components/layout/PageTitle";
 
 const TABS = [
   {
-    value: "items", label: "License Plans", icon: Package,
+    value: "items", label: "Chargeable Items", icon: Package,
   },
   {
     value: "quotations", label: "Quotation History", icon: FileText,
@@ -32,13 +32,12 @@ const TABS = [
   },
 ];
 
-// "items" keeps this repo's "License Plans" name (the backend's plan model) in
-// place of fleetflow's "Chargeable Items" so the heading matches its tab.
+// Tab labels, headings and descriptions are copied verbatim from the design app.
 const TAB_HEADINGS: Record<string, {
   title: string; description: string;
 }> = {
   items: {
-    title: "License Plans", description: "View and manage the products, services, and other items that contribute to customer charges.",
+    title: "Chargeable Items", description: "View and manage the products, services, and other items that contribute to customer charges.",
   },
   quotations: {
     title: "Quotation History", description: "View and track quotations generated for customers, including their amounts, statuses, and associated details.",
@@ -71,12 +70,12 @@ export default function PlatformCommercialBilling() {
         className="space-y-4"
       >
         <div className="overflow-x-auto">
-          <TabsList className="flex w-max mx-auto rounded-xl">
+          <TabsList className="h-10 flex w-max mx-auto rounded-xl">
             {TABS.map(t => (
               <TabsTrigger
                 key={t.value}
                 value={t.value}
-                className="rounded-lg gap-1.5"
+                className="px-3.5 rounded-lg gap-1.5"
               >
                 <t.icon className="h-3.5 w-3.5" />
                 {t.label}
