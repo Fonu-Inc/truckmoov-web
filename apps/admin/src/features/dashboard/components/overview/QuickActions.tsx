@@ -1,8 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Building2, ChevronRight, Cpu, ShieldCheck, Smartphone,
+  Building2, ChevronRight, Cpu, HardHat, ShieldCheck, Smartphone,
 } from "lucide-react";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
+import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
@@ -24,18 +25,25 @@ const QUICK_ACTIONS: QuickAction[] = [
     to: "/tenants",
   },
   {
-    title: "IoT Devices",
+    title: "Manage Devices",
     desc: "Track inventory, lifecycle and connectivity.",
     icon: Cpu,
     cta: "Open devices",
     to: "/devices",
   },
   {
-    title: "SIM Management",
+    title: "Manage IoT SIMs",
     desc: "Approve, activate and assign SIMs.",
     icon: Smartphone,
     cta: "Open SIMs",
     to: "/sims",
+  },
+  {
+    title: "Assign Installer to Job",
+    desc: "Review installers and their installation jobs.",
+    icon: HardHat,
+    cta: "Open installations",
+    to: "/installers?tab=installations",
   },
   {
     title: "Audit & Compliance",
@@ -47,6 +55,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 ];
 
 export function QuickActions() {
+  const navigate = useNavigate();
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -56,10 +65,11 @@ export function QuickActions() {
       <CardContent>
         <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 snap-x snap-mandatory [scrollbar-width:thin]">
           {QUICK_ACTIONS.map(action => (
-            <Link
+            <Button
+              variant="ghost"
               key={action.title}
-              to={action.to}
-              className="group text-left rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-muted/30 shrink-0 w-[260px] snap-start"
+              onClick={() => navigate(action.to)}
+              className="group h-auto whitespace-normal text-left font-normal rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-muted/30 shrink-0 w-[260px] snap-start"
             >
               <div className="flex items-start gap-3">
                 <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -74,7 +84,7 @@ export function QuickActions() {
                   </span>
                 </div>
               </div>
-            </Link>
+            </Button>
           ))}
         </div>
       </CardContent>

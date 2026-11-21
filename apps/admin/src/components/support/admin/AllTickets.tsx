@@ -12,6 +12,7 @@ import {
   getSystemSupportTicketsExportQueryOptions,
   getSystemSupportTicketsQueryOptions,
   getSystemSupportTicketSummaryQueryOptions,
+  getSystemTenantsQueryOptions,
 } from "@truckmoov/api/auth";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 
@@ -208,6 +209,21 @@ function channelFromContext(value?: string) {
 }
 
 const tenantLabel = (ticket: TicketRow) => ticket.tenantName || `Tenant ${shortId(ticket.tenantId || ticket.id)}`;
+/** Fleetflow's tenant-type rule: owner-operator wins, else any fleet org type is Enterprise. */
+function tenantTypeFromOrgTypes(types?: string[]): string {
+  const upper = (types ?? []).map(t => t.toUpperCase());
+  if (upper.includes("OWNER_OPERATOR"))
+    return "Owner-Operator";
+  if (upper.some(t => [
+    "ENTERPRISE",
+    "FLEET_PROVIDER",
+    "AGGREGATOR",
+  ].includes(t))) {
+    return "Enterprise";
+  }
+  return "—";
+}
+
 const reporterLabel = (ticket: TicketRow) => ticket.reporterName || `User ${shortId(ticket.createdBy || ticket.id)}`;
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
@@ -310,6 +326,17 @@ export function AllTickets() {
     [ticketsQuery.data],
   );
 
+  // Tickets carry only tenantId; the tenant list (same unpaginated call as
+  // TenantDetailPage) supplies each tenant's organisation types.
+  const tenantsQuery = useQuery(getSystemTenantsQueryOptions());
+  const tenantOrgTypes = useMemo(
+    () => new Map((tenantsQuery.data?.data?.tenants ?? []).map(t => [
+      t.id,
+      t.organizationTypes ?? (t.organizationType ? [t.organizationType] : []),
+    ])),
+    [tenantsQuery.data],
+  );
+
   const summary = summaryQuery.data?.data;
   const counts = useMemo(
     () => ({
@@ -352,6 +379,13 @@ export function AllTickets() {
         header: "Tenant",
         cell: ({ row }) => (
           <span className="block max-w-[220px] truncate font-semibold">{tenantLabel(row.original)}</span>
+        ),
+      },
+      {
+        id: "tenantType",
+        header: "Tenant Type",
+        cell: ({ row }) => (
+          <span className="text-sm whitespace-nowrap">{tenantTypeFromOrgTypes(tenantOrgTypes.get(row.original.tenantId))}</span>
         ),
       },
       {
@@ -432,7 +466,7 @@ export function AllTickets() {
         ),
       },
     ],
-    [],
+    [tenantOrgTypes],
   );
 
   async function handleExport() {

@@ -1,10 +1,11 @@
 import {
-  NavLink, Outlet,
+  NavLink, Outlet, useLocation,
 } from "react-router";
 import {
-  canSeeTab, SETTINGS_TABS,
+  canSeeTab, SETTINGS_TABS, settingsHeading,
 } from "@/features/settings/utils/settingsNav";
 import { cn } from "@/lib/utils";
+import { PageTitle } from "@/shared/components/layout/PageTitle";
 import { useAuthStore } from "@/stores/authStore";
 
 /**
@@ -17,9 +18,14 @@ import { useAuthStore } from "@/stores/authStore";
  * back to General, which is what the uncontrolled `Tabs` used to do. The
  * classes are `TabsTrigger`'s, with `data-[state=active]` swapped for
  * `NavLink`'s `isActive`, so the bar looks exactly as it did.
+ *
+ * The active tab's heading renders under the bar (fleetflow's `TAB_HEADINGS`;
+ * `/settings` is `manualTitle` in sidebarNav). Tab pages put their Save button
+ * in `<PageActions>`, which portals it into this heading's action slot.
  */
 export function SettingsLayout() {
   const role = useAuthStore(s => s.user?.role);
+  const { pathname } = useLocation();
 
   return (
     <div className="space-y-6">
@@ -55,6 +61,7 @@ export function SettingsLayout() {
           ))}
         </nav>
       </div>
+      <PageTitle {...settingsHeading(pathname)} />
 
       <Outlet />
     </div>

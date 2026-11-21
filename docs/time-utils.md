@@ -52,7 +52,8 @@ to reach for it. This is the quick index:
 `secondsBetween`, `isPast`, `isBefore`, `isAfter`, `isWithinRange`
 
 **Arithmetic and boundaries** — `addDays`, `subDays`, `subMinutes`, `addMonths`, `subMonths`,
-`startOfDay`, `endOfDay`, `startOfWeek`, `startOfMonth`, `endOfMonth`, `atHour`
+`startOfDay`, `endOfDay`, `startOfWeek`, `startOfMonth`, `endOfMonth`, `startOfYear`,
+`endOfYear`, `atHour`
 
 **Reporting** — `getDateRange`
 

@@ -407,10 +407,10 @@ export function PlatformDeviceManagement() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Cpu className="h-5 w-5 text-primary" />
-              Device Inventory
+              Assigned Devices
             </CardTitle>
             <CardDescription>
-              Platform-wide device overview and management
+              Devices that have been assigned to tenants across the platform
             </CardDescription>
           </div>
           <Button
@@ -508,7 +508,7 @@ export function PlatformDeviceManagement() {
         <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3">
           <p className="text-xs text-muted-foreground">
             <strong>Platform Admin View:</strong>
-            {" This is an inventory view. Devices and SIM cards are assigned automatically by the system — platform admins can view details and suspend or reinstate a device. Use the Device Catalog tab to manage supported manufacturers and models."}
+            {" This is an inventory view. Devices and SIM cards are assigned automatically by the system — platform admins can view details and suspend or reinstate a device. Use the Device Inventory tab to manage supported manufacturers and models."}
           </p>
         </div>
       </CardContent>

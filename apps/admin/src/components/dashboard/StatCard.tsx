@@ -57,13 +57,13 @@ export function StatCard({
           <Icon className="h-5 w-5" />
         </div>
         <div className="space-y-1.5 min-w-0 flex-1">
-          <p className="text-sm font-medium text-muted-foreground break-words">{title}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
           {loading
             ? <Skeleton className="h-8 w-24" />
-            : <p className="text-2xl font-bold tracking-tight text-foreground break-words">{value}</p>}
+            : <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>}
           {footer && !loading && <div className="pt-1">{footer}</div>}
           {change !== undefined && !loading && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <div className="flex items-center gap-1.5 pt-1">
               <span
                 className={cn(
                   "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",

@@ -22,6 +22,7 @@ import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { PageActions } from "@/shared/components/layout/PageTitle";
 
 const supportPreferencesSchema = z.object({
   supportEmail: z.string().trim().email("Enter a valid email address."),
@@ -158,7 +159,7 @@ export function SupportPreferencesPanel() {
                 )}
               />
             </div>
-            <div className="flex justify-end">
+            <PageActions>
               <Button
                 type="submit"
                 form={SUPPORT_PREFERENCES_FORM_ID}
@@ -178,7 +179,7 @@ export function SupportPreferencesPanel() {
                       </>
                     )}
               </Button>
-            </div>
+            </PageActions>
           </form>
         </Form>
       </CardContent>

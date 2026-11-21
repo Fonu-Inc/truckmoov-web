@@ -1,61 +1,53 @@
 import type {
   SystemTenant,
-  SystemTenantAuditLogEntry,
-  SystemTenantBilling,
   SystemTenantContactDetail,
   SystemTenantDeviceRow,
   SystemTenantDocument,
   SystemTenantDriverRow,
   SystemTenantResourcesResponse,
   SystemTenantResourceTab,
-  SystemTenantSimRow,
   SystemTenantVehicleRow,
 } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
+import type { FilterValues } from "@/components/shadcn/table-toolbar";
 import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import {
   getSystemTenantAuditLogQueryOptions,
-  getSystemTenantBillingQueryOptions,
   getSystemTenantDocumentsQueryOptions,
   getSystemTenantQueryOptions,
   getSystemTenantResourcesQueryOptions,
   useUpdateTenantStatus,
 } from "@truckmoov/api/auth";
-import { getBillingPlanQueryOptions } from "@truckmoov/api/billing";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
-  formatDayMonthTime,
-  formatWithPattern,
-} from "@truckmoov/app-core/utils/time-utils";
-import {
+  ArrowRight,
   Ban,
-  Building,
   Building2,
   Calendar,
   CheckCircle,
   Clock,
   Cpu,
-  CreditCard,
+  Download,
+  Eye,
   FileText,
-  Hash,
-  Mail,
-  MapPin,
-  Package,
-  Phone,
-  Shield,
-  Smartphone,
   Truck,
-  User,
   Users,
-  XCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Card } from "@/components/shadcn/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog as Sheet,
   DialogContent as SheetContent,
@@ -63,26 +55,39 @@ import {
   DialogHeader as SheetHeader,
   DialogTitle as SheetTitle,
 } from "@/components/shadcn/dialog";
-import { Progress } from "@/components/shadcn/progress";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-
-import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { ListSkeleton } from "@/components/ui/skeletons";
 import { SuspendAccessDialog } from "@/features/tenants/components/ui/SuspendAccessDialog";
-import { TenantDataExportPanel } from "./TenantDataExportPanel";
-import { TenantQuotaEditor } from "./TenantQuotaEditor";
-import { TenantTrialCard } from "./TenantTrialCard";
+import {
+  prettyDocumentType,
+  prettyFileSize,
+} from "@/features/tenants/utils/onboarding";
+import {
+  inDateWindow,
+  minutesAgo,
+  normalizeStatus,
+  tenantTypeOf,
+} from "@/features/tenants/utils/tenants";
 import { TerminateTenantDialog } from "./TerminateTenantDialog";
 
 type TenantDetailsSheetProps = {
   tenant: SystemTenant | null;
+  tenantType?: "ENTERPRISE" | "OWNER_OPERATOR";
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /**
@@ -93,215 +98,84 @@ type TenantDetailsSheetProps = {
   asPage?: boolean;
 };
 
-const formatNgn = (amount: number) => `₦${amount.toLocaleString()}`;
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  card: "card",
-  bank_transfer: "bank transfer",
-  mtn_momo: "MTN MoMo",
-  wallet: "wallet",
-  other: "another method",
+type RecordDetail = {
+  title: string;
+  rows: Array<[string, string | number | null | undefined]>;
 };
 
-function formatDay(day: string) {
-  return formatWithPattern(
-    day,
-    "d MMM yyyy",
-  );
-}
-
-function graceSentence(enforcement: NonNullable<SystemTenantBilling["enforcement"]>) {
-  if (enforcement.suspended) {
-    return enforcement.suspensionCause === "non_payment"
-      ? "Suspended for non-payment"
-      : "Suspended by an admin";
-  }
-  if (enforcement.stage === "in_grace")
-    return `In grace period until ${formatDay(enforcement.graceEndsOn)}`;
-  if (enforcement.stage === "past_grace")
-    return `Grace period ended ${formatDay(enforcement.graceEndsOn)}`;
-  return "Nothing overdue";
-}
-
-function BillingFact({
-  label, children,
-}: {
-  label: string; children: ReactNode;
-}) {
-  return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-medium">{children}</p>
-    </div>
-  );
-}
-
-function BillingFacts({ billing }: { billing: SystemTenantBilling }) {
-  const {
-    licence, openInvoice, lastPayment, enforcement, wallet,
-  } = billing;
-  return (
-    <div className="space-y-3">
-      <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
-        <CreditCard className="h-4 w-4" />
-        Billing Summary
-      </h4>
-      <Card className="p-5 space-y-4">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-          <BillingFact label="Licence period started">
-            {licence ? formatDay(licence.periodStart) : "No licence on record"}
-          </BillingFact>
-          <BillingFact label="Licence valid until">
-            {licence ? formatDay(licence.validUntil) : "No licence on record"}
-          </BillingFact>
-          <BillingFact label="Next renewal due">
-            {openInvoice ? `${formatDay(openInvoice.dueDate)} (${openInvoice.number})` : "Nothing due"}
-          </BillingFact>
-          <BillingFact label="Last payment">
-            {lastPayment
-              ? `${formatNgn(lastPayment.amountNgn)} on ${formatDay(lastPayment.paidAt)}`
-              : "No payment yet"}
-          </BillingFact>
-          <BillingFact label="Payment method">
-            {lastPayment?.method ? (PAYMENT_METHOD_LABELS[lastPayment.method] ?? lastPayment.method) : "No payment yet"}
-          </BillingFact>
-          <BillingFact label="Amount owed">{formatNgn(billing.totalOwedNgn)}</BillingFact>
-          <BillingFact label="Grace state">
-            {enforcement ? graceSentence(enforcement) : "Nothing overdue"}
-          </BillingFact>
-          <BillingFact label="Wallet">
-            {wallet ? `${formatNgn(wallet.balanceNgn)} (${wallet.status})` : "No wallet yet"}
-          </BillingFact>
-          <BillingFact label="Collected this month">{formatNgn(billing.collectedThisMonthNgn)}</BillingFact>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-const PAYMENT_MODEL_SENTENCES = {
-  prepaid: "Usage is taken from the wallet, which the tenant tops up in advance.",
-  postpaid: "Usage is billed after it happens.",
-} as const;
-
-function billingModelText(model: SystemTenantBilling["billingModel"]) {
-  const paymentModel = model.paymentModel ? PAYMENT_MODEL_SENTENCES[model.paymentModel] : null;
-  if (model.kind === "per_device_licence") {
-    const devices = model.deviceCount === null ? "" : ` for ${model.deviceCount} device${model.deviceCount === 1 ? "" : "s"}`;
-    return {
-      label: "Per-device licence",
-      detail: `A licence${devices} that runs for a set period. A renewal invoice is raised before it ends.`,
-      paymentModel,
-    };
-  }
-  if (model.kind === "subscription") {
-    const cycle = model.billingCycle ? ` each ${model.billingCycle === "yearly" ? "year" : "month"}` : "";
-    return {
-      label: "Subscription plan", detail: `A fixed subscription fee${cycle}.`, paymentModel,
-    };
-  }
-  return {
-    label: "No billing model yet", detail: "The tenant has no licence or plan on record.", paymentModel,
-  };
-}
-
-function BillingModelCard({ model }: { model: SystemTenantBilling["billingModel"] }) {
-  const {
-    label, detail, paymentModel,
-  } = billingModelText(model);
-  return (
-    <div className="space-y-3">
-      <h4 className="font-medium text-sm text-muted-foreground">Billing Model</h4>
-      <Card className="p-4 space-y-2">
-        <Badge variant="outline">{label}</Badge>
-        <p className="text-xs text-muted-foreground">{detail}</p>
-        {paymentModel && <p className="text-xs text-muted-foreground">{paymentModel}</p>}
-      </Card>
-    </div>
-  );
-}
-
-// Usage bar for a resource tab. Mirrors renderQuota on the list page:
-// limit === null → unlimited; used > limit → destructive.
-type ResourceUsageProps = {
-  icon: typeof Building2;
-  label: string;
-  used: number;
-  limit: number | null;
-  planAssigned: boolean;
-  custom?: boolean;
+type AuditRow = {
+  id: string;
+  event_type: string;
+  description: string | null;
+  severity: "info" | "warning" | "error";
+  created_at: string;
+  user_name: string | null;
 };
-function ResourceUsage({
-  icon: Icon, label, used, limit, planAssigned, custom,
-}: ResourceUsageProps) {
-  const unlimited = limit === null || limit === undefined;
-  const over = !unlimited && used > (limit as number);
-  const pct = unlimited || (limit as number) === 0
-    ? 0
-    : Math.min(
-        100,
-        Math.round((used / (limit as number)) * 100),
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case "active":
+      return <Badge className="bg-success/10 text-success border-success/30">Active</Badge>;
+    case "pending":
+      return <Badge className="bg-warning/10 text-warning border-warning/30">Pending</Badge>;
+    case "suspended":
+      return <Badge variant="destructive">Suspended</Badge>;
+    case "inactive":
+      return <Badge variant="secondary">Inactive</Badge>;
+    case "terminated":
+      return (
+        <Badge
+          variant="destructive"
+          className="gap-1"
+        >
+          <Ban className="h-3 w-3" />
+          Terminated
+        </Badge>
       );
-  return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">{label}</span>
-        </div>
-        <span className={`text-sm font-semibold ${over ? "text-destructive" : ""}`}>
-          {used}
-          {unlimited
-            ? <span className="text-muted-foreground font-normal">{planAssigned ? " · Unlimited" : " · No plan assigned"}</span>
-            : (
-                <span className="text-muted-foreground font-normal">
-                  {" / "}
-                  {limit}
-                  {custom ? " · custom" : ""}
-                </span>
-              )}
-        </span>
-      </div>
-      {!unlimited && (
-        <Progress
-          value={pct}
-          className="h-2"
-        />
-      )}
-    </Card>
-  );
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
 }
 
-// `available: false` means the fleet service was unreachable — not empty.
-type ResourceStateProps = {
-  payload: {
-    available: boolean; items: unknown[];
-  } | undefined;
-  isLoading: boolean;
-  empty: string;
-};
-function ResourceState({
-  payload, isLoading, empty,
-}: ResourceStateProps) {
-  if (isLoading)
-    return <ListSkeleton rows={3} />;
-  if (!payload)
-    return null;
-  if (!payload.available) {
-    return (
-      <Card className="p-6 text-center text-sm text-muted-foreground">
-        Service unavailable — could not reach the fleet service.
-      </Card>
-    );
-  }
-  if (payload.items.length === 0) {
-    return (
-      <Card className="p-6 text-center text-sm text-muted-foreground">
-        {empty}
-      </Card>
-    );
-  }
-  return null;
+/**
+ * ponytail: mock data from fleetflow parity port — wire to packages/api
+ * The reference shows these sample audit events (with a "Demo data" badge) when a
+ * tenant has no audit entries yet.
+ */
+function demoAudit(tenant: SystemTenant): AuditRow[] {
+  const domain = tenant.email?.split("@")[1] ?? "tenant.com";
+  return [
+    {
+      id: "demo-a1", event_type: "TENANT_LOGIN", description: `Admin logged in for ${tenant.name}.`, severity: "info", created_at: minutesAgo(8), user_name: `olumide.adeyemi@${domain}`,
+    },
+    {
+      id: "demo-a2", event_type: "VEHICLE_CREATED", description: "New vehicle LSR-482-XK registered (MAN TGS 33.480).", severity: "info", created_at: minutesAgo(47), user_name: `fleet.manager@${domain}`,
+    },
+    {
+      id: "demo-a3", event_type: "DRIVER_INVITED", description: "Invitation sent to chinedu.okafor@gmail.com (role: driver).", severity: "info", created_at: minutesAgo(60 * 2), user_name: `hr@${domain}`,
+    },
+    {
+      id: "demo-a4", event_type: "PAYMENT_SUCCEEDED", description: "Wallet top-up of ₦250,000 via MTN MoMo (ref: MTN-9F2A1B).", severity: "info", created_at: minutesAgo(60 * 5), user_name: `billing@${domain}`,
+    },
+    {
+      id: "demo-a5", event_type: "GEOFENCE_BREACH", description: "Vehicle LSR-117-AA exited 'Apapa Port' geofence at 14:23.", severity: "warning", created_at: minutesAgo(60 * 9), user_name: "system",
+    },
+    {
+      id: "demo-a6", event_type: "KYC_DOCUMENT_UPLOADED", description: "Tax Clearance Certificate uploaded (under review).", severity: "info", created_at: minutesAgo(60 * 18), user_name: `compliance@${domain}`,
+    },
+    {
+      id: "demo-a7", event_type: "FAILED_LOGIN_ATTEMPT", description: `3 consecutive failed logins for admin@${domain}.`, severity: "warning", created_at: minutesAgo(60 * 27), user_name: "security",
+    },
+    {
+      id: "demo-a8", event_type: "SUBSCRIPTION_RENEWED", description: "Professional plan auto-renewed for next billing cycle.", severity: "info", created_at: minutesAgo(60 * 48), user_name: "system",
+    },
+    {
+      id: "demo-a9", event_type: "ROLE_CHANGED", description: "User adebayo.t@ promoted from dispatcher to manager.", severity: "info", created_at: minutesAgo(60 * 72), user_name: `olumide.adeyemi@${domain}`,
+    },
+    {
+      id: "demo-a10", event_type: "API_KEY_GENERATED", description: "New API key created (scope: read:vehicles, read:trips).", severity: "info", created_at: minutesAgo(60 * 96), user_name: `developer@${domain}`,
+    },
+  ];
 }
 
 // Page-mode chrome. Declared at module scope so the tab tree is never remounted
@@ -332,13 +206,33 @@ function PageShellDescription({
   return <p className={`text-sm text-muted-foreground ${className ?? ""}`}>{children}</p>;
 }
 
+/** `available: false` means the fleet service was unreachable — not empty. */
+function ResourceNotice({
+  payload, empty,
+}: {
+  payload: {
+    available: boolean; items: unknown[];
+  } | undefined; empty: string;
+}) {
+  if (!payload)
+    return null;
+  if (!payload.available)
+    return <p className="text-sm text-muted-foreground">Service unavailable — could not reach the fleet service.</p>;
+  if (payload.items.length === 0)
+    return <p className="text-sm text-muted-foreground">{empty}</p>;
+  return null;
+}
+
+/** Fleetflow's platform TenantDetailsSheet. */
 export function TenantDetailsSheet({
   tenant,
+  tenantType,
   open,
   onOpenChange,
   asPage = false,
 }: TenantDetailsSheetProps) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [
     terminateOpen,
     setTerminateOpen,
@@ -351,66 +245,65 @@ export function TenantDetailsSheet({
     activeTab,
     setActiveTab,
   ] = useState("overview");
+  const [
+    recordDetail,
+    setRecordDetail,
+  ] = useState<RecordDetail | null>(null);
+  const [
+    auditSearch,
+    setAuditSearch,
+  ] = useState("");
+  const [
+    auditFilters,
+    setAuditFilters,
+  ] = useState<FilterValues>({});
   const updateStatusMutation = useUpdateTenantStatus();
 
-  // Fetch fresh tenant detail when the sheet opens
-  const detailQuery = useQuery({
-    ...getSystemTenantQueryOptions(tenant?.id ?? ""),
-    enabled: (open || asPage) && !!tenant?.id,
-  });
+  const visible = open || asPage;
+  const tenantId = tenant?.id ?? "";
 
+  // Contact detail captured at onboarding fills fields the list row lacks.
+  const detailQuery = useQuery({
+    ...getSystemTenantQueryOptions(tenantId),
+    enabled: visible && !!tenantId,
+  });
   const detail: SystemTenantContactDetail | undefined = detailQuery.data?.data;
   const company = detail?.onboarding?.company;
-  const billingCycle = detail?.onboarding?.subscription?.billingCycle;
-  const planQuery = useQuery(getBillingPlanQueryOptions(tenant?.planCode ?? ""));
-  const plan = planQuery.data?.data?.plan;
-  const planName = plan?.name ?? tenant?.planCode ?? "No plan assigned";
 
-  const tenantId = tenant?.id ?? "";
-  const billingQuery = useQuery({
-    ...getSystemTenantBillingQueryOptions(tenantId),
-    enabled: (open || asPage) && !!tenantId && activeTab === "billing",
-  });
-  const billing = billingQuery.data?.data;
-  const planCode = tenant?.planCode ?? undefined;
-
-  // Resource tabs — one endpoint, four shapes. Only the visible tab fetches.
+  // Resource tabs — one endpoint, one shape per tab. Only the visible tab fetches.
   function useResourceTab<TItem>(tab: SystemTenantResourceTab) {
     const query = useQuery({
       ...getSystemTenantResourcesQueryOptions({
-        id: tenantId, tab, planCode,
+        id: tenantId, tab, planCode: tenant?.planCode ?? undefined,
       }),
-      enabled: (open || asPage) && !!tenantId && activeTab === tab,
+      enabled: visible && !!tenantId && activeTab === tab,
     });
     return {
       payload: query.data?.data as SystemTenantResourcesResponse<TItem>["data"] | undefined,
       isLoading: query.isLoading,
-      isError: query.isError,
     };
   }
-
   const vehiclesTab = useResourceTab<SystemTenantVehicleRow>("vehicles");
   const driversTab = useResourceTab<SystemTenantDriverRow>("drivers");
   const devicesTab = useResourceTab<SystemTenantDeviceRow>("devices");
-  const simsTab = useResourceTab<SystemTenantSimRow>("sims");
 
-  // Documents
   const documentsQuery = useQuery({
     ...getSystemTenantDocumentsQueryOptions(tenantId),
-    enabled: (open || asPage) && !!tenantId && activeTab === "kyc",
+    enabled: visible && !!tenantId && activeTab === "kyc",
   });
-  const documents = documentsQuery.data?.data?.items ?? [];
+  const documents: SystemTenantDocument[] = documentsQuery.data?.data?.items ?? [];
 
-  // Audit log — fixed 10 entries server-side, no pagination.
+  // Audit log — the 10 most recent entries, server-side.
   const auditQuery = useQuery({
     ...getSystemTenantAuditLogQueryOptions(tenantId),
-    enabled: (open || asPage) && !!tenantId && activeTab === "audit",
+    enabled: visible && !!tenantId && activeTab === "audit",
   });
-  const auditEntries: SystemTenantAuditLogEntry[] = auditQuery.data?.data?.items ?? [];
   const loadingAudit = auditQuery.isLoading;
 
   if (!tenant)
     return null;
+
+  const type = tenantType ?? tenantTypeOf(tenant);
 
   // Page mode swaps the dialog chrome for plain elements so the header, tabs and
   // every tab body below are rendered from one source in both forms.
@@ -420,76 +313,24 @@ export function TenantDetailsSheet({
   const ShellTitle = asPage ? PageShellTitle : SheetTitle;
   const ShellDescription = asPage ? PageShellDescription : SheetDescription;
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-success/10 text-success border-success/30">Active</Badge>;
-      case "pending":
-        return <Badge className="bg-warning/10 text-warning border-warning/30">Pending</Badge>;
-      case "suspended":
-        return <Badge variant="destructive">Suspended</Badge>;
-      case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
-      case "terminated":
-        return (
-          <Badge
-            variant="destructive"
-            className="gap-1"
-          >
-            <Ban className="h-3 w-3" />
-            Terminated
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  const vehicles = (vehiclesTab.payload?.available ? vehiclesTab.payload.items : []) as SystemTenantVehicleRow[];
+  const drivers = (driversTab.payload?.available ? driversTab.payload.items : []) as SystemTenantDriverRow[];
+  const devices = (devicesTab.payload?.available ? devicesTab.payload.items : []) as SystemTenantDeviceRow[];
 
-  const getVerificationBadge = (status: string | null | undefined) => {
-    switch (status) {
-      case "verified":
-        return (
-          <Badge className="bg-success/10 text-success border-success/30">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Verified
-          </Badge>
-        );
-      case "under_review":
-        return (
-          <Badge className="bg-warning/10 text-warning border-warning/30">
-            <Clock className="h-3 w-3 mr-1" />
-            Under Review
-          </Badge>
-        );
-      case "rejected":
-        return (
-          <Badge variant="destructive">
-            <XCircle className="h-3 w-3 mr-1" />
-            Rejected
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary">
-            <Clock className="h-3 w-3 mr-1" />
-            Pending
-          </Badge>
-        );
-    }
-  };
+  // ponytail: the tenant audit entries carry no severity — every live row reads "info".
+  const liveAudit: AuditRow[] = (auditQuery.data?.data?.items ?? []).map(log => ({
+    id: log.id,
+    event_type: log.action,
+    description: log.summary,
+    severity: "info",
+    created_at: log.occurredAt,
+    user_name: log.actorName || log.actorEmail,
+  }));
+  const usingDemoAudit = liveAudit.length === 0 && !loadingAudit;
+  const events = usingDemoAudit ? demoAudit(tenant) : liveAudit;
 
-  const fullAddress = tenant.businessInfo
-    ? [
-        tenant.businessInfo.addressLine1,
-        tenant.businessInfo.addressLine2,
-        tenant.businessInfo.city,
-        tenant.businessInfo.state,
-        tenant.businessInfo.postalCode,
-        tenant.businessInfo.country,
-      ]
-        .filter(Boolean)
-        .join(", ")
-    : tenant.address;
+  // ponytail: tenant documents have no download link in packages/api yet.
+  const documentUnavailable = () => toast.info("This document can't be opened from here yet.");
 
   return (
     <Shell
@@ -500,22 +341,28 @@ export function TenantDetailsSheet({
         <ShellHeader>
           <ShellTitle className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-lg">
-              {getInitials(tenant.name)}
+              {tenant.name.charAt(0)}
             </div>
             <div className="flex-1">
               <span>{tenant.name}</span>
             </div>
             <div className="flex items-center gap-2">
-              {tenant.status === "suspended"
+              {tenant.status === "suspended" || tenant.status === "inactive"
                 ? (
                     <Button
                       variant="outline"
                       size="sm"
                       disabled={updateStatusMutation.isPending}
-                      onClick={() => updateStatusMutation.mutate({
-                        id: tenant.id,
-                        data: { status: "active" },
-                      })}
+                      onClick={() => updateStatusMutation.mutate(
+                        {
+                          id: tenant.id,
+                          data: { status: "active" },
+                        },
+                        {
+                          onSuccess: () => toast.success("Tenant activated"),
+                          onError: () => toast.error("Failed to activate tenant"),
+                        },
+                      )}
                       className="gap-2 border-success/40 text-success hover:bg-success/10"
                     >
                       <CheckCircle className="h-4 w-4" />
@@ -524,10 +371,10 @@ export function TenantDetailsSheet({
                   )
                 : tenant.status === "active"
                   ? (
+                      // The API needs a reason to suspend, so this opens the reason dialog.
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={updateStatusMutation.isPending}
                         onClick={() => setSuspendOpen(true)}
                         className="gap-2 border-warning/40 text-warning hover:bg-warning/10"
                       >
@@ -551,12 +398,10 @@ export function TenantDetailsSheet({
           </ShellTitle>
           <ShellDescription className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Member since
-            {" "}
-            {formatWithPattern(
+            {`Member since ${formatWithPattern(
               tenant.createdAt,
               "MMMM yyyy",
-            )}
+            )}`}
           </ShellDescription>
         </ShellHeader>
 
@@ -565,7 +410,7 @@ export function TenantDetailsSheet({
           onValueChange={setActiveTab}
           className="mt-6"
         >
-          <TabsList className="grid grid-cols-9 w-full">
+          <TabsList className="grid grid-cols-7 w-full">
             <TabsTrigger
               value="overview"
               className="flex items-center gap-2"
@@ -595,31 +440,11 @@ export function TenantDetailsSheet({
               Devices
             </TabsTrigger>
             <TabsTrigger
-              value="sims"
-              className="flex items-center gap-2"
-            >
-              SIMs
-            </TabsTrigger>
-            <TabsTrigger
               value="kyc"
               className="flex items-center gap-2"
             >
-              <Shield className="w-4 h-4" />
-              KYC & Docs
-            </TabsTrigger>
-            <TabsTrigger
-              value="billing"
-              className="flex items-center gap-2"
-            >
-              <CreditCard className="w-4 h-4" />
-              Billing
-            </TabsTrigger>
-            <TabsTrigger
-              value="export"
-              className="flex items-center gap-2"
-            >
-              <Package className="w-4 h-4" />
-              Data Export
+              <FileText className="w-4 h-4" />
+              Documents
             </TabsTrigger>
             <TabsTrigger
               value="audit"
@@ -636,178 +461,57 @@ export function TenantDetailsSheet({
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
               <div className="space-y-6 pr-4">
-                {/* Subscription Plan & Tenant Status */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Subscription Plan</p>
-                    {planQuery.isLoading
-                      ? <Skeleton className="h-5 w-20" />
-                      : <Badge variant="outline">{planName}</Badge>}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Tenant Status</p>
-                    {getStatusBadge(tenant.status)}
-                  </div>
-                </div>
-                <Separator />
-                {/* Business Information */}
-                {tenant.businessInfo && (
-                  <>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-sm text-muted-foreground">Business Information</h4>
-                        {getVerificationBadge(tenant.businessInfo.verificationStatus)}
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Company:</span>
-                            <span className="font-medium">{tenant.businessInfo.companyName}</span>
-                          </div>
-                          {tenant.businessInfo.registrationNumber && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Hash className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Reg No:</span>
-                              <span className="font-medium">{tenant.businessInfo.registrationNumber}</span>
-                            </div>
-                          )}
-                          {tenant.businessInfo.taxId && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Tax ID:</span>
-                              <span className="font-medium">{tenant.businessInfo.taxId}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          {tenant.businessInfo.businessType && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Type:</span>
-                              <span className="font-medium">{tenant.businessInfo.businessType}</span>
-                            </div>
-                          )}
-                          {tenant.businessInfo.industry && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Truck className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Industry:</span>
-                              <span className="font-medium">{tenant.businessInfo.industry}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Separator />
-                  </>
-                )}
-
-                {/* Contact Information */}
                 <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-muted-foreground">Contact Information</h4>
-                  <div className="space-y-2">
-                    {company?.contactName && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        {company.contactName}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      {company?.email ?? tenant.email}
-                    </div>
-                    {(company?.phoneNumber ?? tenant.phone) && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        {company?.phoneNumber ?? tenant.phone}
-                      </div>
-                    )}
-                    {fullAddress && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        {fullAddress}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-muted-foreground">Plan Usage</h4>
-                  <ResourceUsage
-                    icon={Truck}
-                    label="Vehicles"
-                    used={tenant.vehicleCount}
-                    limit={tenant.quotas.vehicles}
-                    planAssigned={tenant.planAssigned}
-                    custom={tenant.quotaOverrides.vehicles !== null}
-                  />
-                  <ResourceUsage
-                    icon={Users}
-                    label="Drivers"
-                    used={tenant.driverCount}
-                    limit={tenant.quotas.drivers}
-                    planAssigned={tenant.planAssigned}
-                    custom={tenant.quotaOverrides.drivers !== null}
-                  />
-                  <ResourceUsage
-                    icon={Cpu}
-                    label="Devices"
-                    used={tenant.deviceCount}
-                    limit={tenant.quotas.devices}
-                    planAssigned={tenant.planAssigned}
-                    custom={tenant.quotaOverrides.devices !== null}
-                  />
-                  <ResourceUsage
-                    icon={Smartphone}
-                    label="SIMs"
-                    used={tenant.simCount}
-                    limit={tenant.quotas.sims}
-                    planAssigned={tenant.planAssigned}
-                    custom={tenant.quotaOverrides.sims !== null}
-                  />
-                  <TenantQuotaEditor
-                    key={JSON.stringify(tenant.quotaOverrides)}
-                    tenant={tenant}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <h4 className="font-medium text-sm text-muted-foreground">Enabled Features</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Capabilities switched on for this tenant.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(tenant.features).map(([
-                      feature,
-                      enabled,
+                  <h4 className="font-medium text-sm text-muted-foreground">Basic Details</h4>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    {([
+                      [
+                        "Company name",
+                        tenant.businessInfo?.companyName || company?.companyName || tenant.name,
+                      ],
+                      [
+                        "Company email address",
+                        tenant.email || company?.email || "—",
+                      ],
+                      [
+                        "Company phone number",
+                        tenant.phone || company?.phoneNumber || "—",
+                      ],
+                      [
+                        "Contact person's full name",
+                        tenant.primaryContactName || company?.contactName || "—",
+                      ],
+                      [
+                        "Company address",
+                        tenant.address || tenant.businessInfo?.addressLine1 || company?.businessAddress || "—",
+                      ],
+                      [
+                        "Tenant type",
+                        type === "OWNER_OPERATOR" ? "Owner-Operator" : "Enterprise",
+                      ],
+                    ] as Array<[string, string]>).map(([
+                      label,
+                      value,
                     ]) => (
                       <div
-                        key={feature}
-                        className={`flex items-center gap-2 text-sm p-2 rounded-lg ${enabled ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                        }`}
+                        key={label}
+                        className="space-y-0.5"
                       >
-                        {enabled
-                          ? (
-                              <CheckCircle className="h-4 w-4" />
-                            )
-                          : (
-                              <XCircle className="h-4 w-4" />
-                            )}
-                        <span className="capitalize">
-                          {feature.replace(
-                            /_/g,
-                            " ",
-                          )}
-                        </span>
+                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                        <dd className="text-sm font-medium break-words">{value}</dd>
                       </div>
                     ))}
-                  </div>
+                    <div className="space-y-0.5">
+                      <dt className="text-xs text-muted-foreground">M2M license plan</dt>
+                      <dd className="text-sm font-medium">
+                        {tenant.planName || tenant.planCode || "No plan assigned"}
+                      </dd>
+                    </div>
+                    <div className="space-y-0.5">
+                      <dt className="text-xs text-muted-foreground">Tenant status</dt>
+                      <dd>{getStatusBadge(normalizeStatus(tenant.status))}</dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
             </ScrollArea>
@@ -819,136 +523,90 @@ export function TenantDetailsSheet({
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
               <div className="space-y-4 pr-4">
-                {vehiclesTab.payload && (
-                  <ResourceUsage
-                    icon={Truck}
-                    label="Vehicle Usage"
-                    used={vehiclesTab.payload.used}
-                    limit={vehiclesTab.payload.limit}
-                    planAssigned={tenant.planAssigned}
-                  />
-                )}
                 <h4 className="font-medium text-sm text-muted-foreground">
-                  Vehicles (
-                  {vehiclesTab.payload?.total ?? 0}
-                  )
+                  {`Vehicles (${vehiclesTab.payload?.total ?? vehicles.length})`}
                 </h4>
-                <ResourceState
-                  payload={vehiclesTab.payload}
-                  isLoading={vehiclesTab.isLoading}
-                  empty="No vehicles registered for this tenant."
-                />
-                {vehiclesTab.payload?.available && vehiclesTab.payload.items.length > 0 && (
-                  <div className="space-y-2">
-                    {(vehiclesTab.payload.items as SystemTenantVehicleRow[]).map(v => (
-                      <Card
-                        key={v.vehicleId}
-                        className="p-3 flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Truck className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">{v.registrationNumber || "—"}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {[
-                                v.make,
-                                v.model,
-                              ].filter(Boolean).join(" ") || "Unknown vehicle"}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className="capitalize text-xs"
-                        >
-                          {v.status || "unknown"}
-                        </Badge>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-                {vehiclesTab.payload && vehiclesTab.payload.total > vehiclesTab.payload.items.length && (
-                  <p className="text-xs text-muted-foreground">
-                    Showing
-                    {" "}
-                    {vehiclesTab.payload.items.length}
-                    {" "}
-                    of
-                    {" "}
-                    {vehiclesTab.payload.total}
-                    . Open the tenant's own pages for the full roster.
-                  </p>
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent
-            value="drivers"
-            className="mt-4"
-          >
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              <div className="space-y-4 pr-4">
-                {driversTab.payload && (
-                  <ResourceUsage
-                    icon={Users}
-                    label="Driver Usage"
-                    used={driversTab.payload.used}
-                    limit={driversTab.payload.limit}
-                    planAssigned={tenant.planAssigned}
-                  />
-                )}
-                <h4 className="font-medium text-sm text-muted-foreground">
-                  Drivers (
-                  {driversTab.payload?.total ?? 0}
-                  )
-                </h4>
-                <ResourceState
-                  payload={driversTab.payload}
-                  isLoading={driversTab.isLoading}
-                  empty="No drivers registered for this tenant."
-                />
-                {driversTab.payload?.available && driversTab.payload.items.length > 0 && (
-                  <div className="space-y-2">
-                    {(driversTab.payload.items as SystemTenantDriverRow[]).map(d => (
-                      <Card
-                        key={d.driverId}
-                        className="p-3 flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">{d.name || "—"}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {[
-                                d.phone,
-                                d.licenseNumber,
-                              ].filter(Boolean).join(" · ") || "—"}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className="capitalize text-xs"
-                        >
-                          {d.status || "unknown"}
-                        </Badge>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-                {driversTab.payload && driversTab.payload.total > driversTab.payload.items.length && (
-                  <p className="text-xs text-muted-foreground">
-                    Showing
-                    {" "}
-                    {driversTab.payload.items.length}
-                    {" "}
-                    of
-                    {" "}
-                    {driversTab.payload.total}
-                    .
-                  </p>
-                )}
+                {vehiclesTab.isLoading
+                  ? <p className="text-sm text-muted-foreground">Loading vehicles...</p>
+                  : (
+                      <div className="space-y-2">
+                        <ResourceNotice
+                          payload={vehiclesTab.payload}
+                          empty="No vehicles registered for this tenant."
+                        />
+                        {vehicles.map(v => (
+                          <Card
+                            key={v.vehicleId}
+                            className="p-3 flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Truck className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">{v.registrationNumber || "—"}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {[
+                                    v.make,
+                                    v.model,
+                                  ].filter(Boolean).join(" ") || "Unknown vehicle"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className="capitalize text-xs"
+                              >
+                                {v.status || "unknown"}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setRecordDetail({
+                                  title: `Vehicle ${v.registrationNumber || ""}`.trim(),
+                                  // ponytail: VIN, year, vehicle type and load capacity aren't on the tenant resource row yet.
+                                  rows: [
+                                    [
+                                      "Registration",
+                                      v.registrationNumber,
+                                    ],
+                                    [
+                                      "VIN",
+                                      null,
+                                    ],
+                                    [
+                                      "Make",
+                                      v.make,
+                                    ],
+                                    [
+                                      "Model",
+                                      v.model,
+                                    ],
+                                    [
+                                      "Year",
+                                      null,
+                                    ],
+                                    [
+                                      "Vehicle type",
+                                      null,
+                                    ],
+                                    [
+                                      "Load capacity",
+                                      null,
+                                    ],
+                                    [
+                                      "Status",
+                                      v.status,
+                                    ],
+                                  ],
+                                })}
+                              >
+                                View vehicle details
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -959,141 +617,87 @@ export function TenantDetailsSheet({
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
               <div className="space-y-4 pr-4">
-                {devicesTab.payload && (
-                  <ResourceUsage
-                    icon={Cpu}
-                    label="Device Usage"
-                    used={devicesTab.payload.used}
-                    limit={devicesTab.payload.limit}
-                    planAssigned={tenant.planAssigned}
-                  />
-                )}
-                <h4 className="font-medium text-sm text-muted-foreground">
-                  Devices (
-                  {devicesTab.payload?.total ?? 0}
-                  )
-                </h4>
-                <ResourceState
-                  payload={devicesTab.payload}
-                  isLoading={devicesTab.isLoading}
-                  empty="No devices registered for this tenant."
-                />
-                {devicesTab.payload?.available && devicesTab.payload.items.length > 0 && (
-                  <div className="space-y-2">
-                    {(devicesTab.payload.items as SystemTenantDeviceRow[]).map(d => (
-                      <Card
-                        key={d.deviceId}
-                        className="p-3 flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Cpu className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">
-                              {[
-                                d.manufacturer,
-                                d.model,
-                              ].filter(Boolean).join(" ") || "—"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              IMEI:
-                              {" "}
-                              {d.imei || "—"}
-                              {d.assignedVehicleId ? " · Assigned" : " · Unassigned"}
-                            </p>
-                          </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    {`Devices (${devicesTab.payload?.total ?? devices.length})`}
+                  </h4>
+                  {devicesTab.isLoading
+                    ? <p className="text-sm text-muted-foreground">Loading devices...</p>
+                    : (
+                        <div className="space-y-2">
+                          <ResourceNotice
+                            payload={devicesTab.payload}
+                            empty="No devices registered for this tenant."
+                          />
+                          {devices.map(d => (
+                            <Card
+                              key={d.deviceId}
+                              className="p-3 flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-3">
+                                <Cpu className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    {`${d.manufacturer || "—"} ${d.model || ""}`}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {`IMEI: ${d.imei || "—"}${d.assignedVehicleId ? " · Assigned" : " · Unassigned"}`}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge
+                                  variant="outline"
+                                  className="capitalize text-xs"
+                                >
+                                  {d.status || "unknown"}
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setRecordDetail({
+                                    title: `Device ${d.imei || ""}`.trim(),
+                                    // ponytail: firmware and protocol aren't on the tenant resource row yet.
+                                    rows: [
+                                      [
+                                        "IMEI",
+                                        d.imei,
+                                      ],
+                                      [
+                                        "Manufacturer",
+                                        d.manufacturer,
+                                      ],
+                                      [
+                                        "Model",
+                                        d.model,
+                                      ],
+                                      [
+                                        "Firmware",
+                                        null,
+                                      ],
+                                      [
+                                        "Protocol",
+                                        null,
+                                      ],
+                                      [
+                                        "Status",
+                                        d.status,
+                                      ],
+                                      [
+                                        "Assigned vehicle",
+                                        d.assignedVehicleId ? "Assigned" : "Unassigned",
+                                      ],
+                                    ],
+                                  })}
+                                >
+                                  View device details
+                                </Button>
+                              </div>
+                            </Card>
+                          ))}
                         </div>
-                        <Badge
-                          variant="outline"
-                          className="capitalize text-xs"
-                        >
-                          {d.status || "unknown"}
-                        </Badge>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-                {devicesTab.payload && devicesTab.payload.total > devicesTab.payload.items.length && (
-                  <p className="text-xs text-muted-foreground">
-                    Showing
-                    {" "}
-                    {devicesTab.payload.items.length}
-                    {" "}
-                    of
-                    {" "}
-                    {devicesTab.payload.total}
-                    .
-                  </p>
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent
-            value="sims"
-            className="mt-4"
-          >
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              <div className="space-y-4 pr-4">
-                {simsTab.payload && (
-                  <ResourceUsage
-                    icon={Smartphone}
-                    label="SIM Usage"
-                    used={simsTab.payload.used}
-                    limit={simsTab.payload.limit}
-                    planAssigned={tenant.planAssigned}
-                  />
-                )}
-                <h4 className="font-medium text-sm text-muted-foreground">
-                  SIM Cards (
-                  {simsTab.payload?.total ?? 0}
-                  )
-                </h4>
-                <ResourceState
-                  payload={simsTab.payload}
-                  isLoading={simsTab.isLoading}
-                  empty="No SIMs assigned to this tenant."
-                />
-                {simsTab.payload?.available && simsTab.payload.items.length > 0 && (
-                  <div className="space-y-2">
-                    {(simsTab.payload.items as SystemTenantSimRow[]).map(s => (
-                      <Card
-                        key={s.simId}
-                        className="p-3 flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Smartphone className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">{s.msisdn || s.iccid || "—"}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {s.carrier ? `${s.carrier} · ` : ""}
-                              ICCID:
-                              {" "}
-                              {s.iccid || "—"}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className="capitalize text-xs"
-                        >
-                          {s.status || "unknown"}
-                        </Badge>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-                {simsTab.payload && simsTab.payload.total > simsTab.payload.items.length && (
-                  <p className="text-xs text-muted-foreground">
-                    Showing
-                    {" "}
-                    {simsTab.payload.items.length}
-                    {" "}
-                    of
-                    {" "}
-                    {simsTab.payload.total}
-                    .
-                  </p>
-                )}
+                      )}
+                </div>
               </div>
             </ScrollArea>
           </TabsContent>
@@ -1103,135 +707,163 @@ export function TenantDetailsSheet({
             className="mt-4"
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
-              <div className="space-y-3 pr-4">
-                <h4 className="font-medium text-sm text-muted-foreground">
-                  Documents (
-                  {documents.length}
+              {documentsQuery.isLoading
+                ? (
+                    <div className="space-y-3 pr-4">
+                      {[
+                        1,
+                        2,
+                        3,
+                      ].map(i => (
+                        <Skeleton
+                          key={i}
+                          className="h-16 w-full"
+                        />
+                      ))}
+                    </div>
                   )
+                : (
+                    <div className="space-y-6 pr-4">
+                      <Card>
+                        <CardHeader>
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" />
+                            <div>
+                              <CardTitle>Submitted documents</CardTitle>
+                              <CardDescription>
+                                {`${documents.length} document${documents.length === 1 ? "" : "s"} on file.`}
+                              </CardDescription>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {documents.length === 0
+                            ? (
+                                <p className="py-6 text-center text-sm text-muted-foreground">
+                                  No documents submitted.
+                                </p>
+                              )
+                            : (
+                                documents.map(d => (
+                                  <div
+                                    key={d.documentId}
+                                    className="flex items-center justify-between gap-3 rounded-xl border border-border/60 p-3"
+                                  >
+                                    <div className="flex min-w-0 items-center gap-3">
+                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                        <FileText className="h-5 w-5 text-primary" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium">
+                                          {prettyDocumentType(d.documentType)}
+                                        </p>
+                                        <p className="truncate text-xs text-muted-foreground">
+                                          {`${d.documentName} · ${prettyFileSize(d.fileSize)} · ${formatWithPattern(
+                                            d.uploadedAt,
+                                            "MMM d, yyyy",
+                                          )}`}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={documentUnavailable}
+                                      >
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        View
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={documentUnavailable}
+                                      >
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Download
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent
+            value="drivers"
+            className="mt-4"
+          >
+            <ScrollArea className="h-[calc(100vh-280px)]">
+              <div className="space-y-4 pr-4">
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  {`Drivers (${driversTab.payload?.total ?? drivers.length})`}
                 </h4>
-                {documentsQuery.isLoading
-                  ? <ListSkeleton rows={3} />
-                  : documents.length === 0
-                    ? (
-                        <Card className="p-6 text-center text-sm text-muted-foreground">
-                          No documents submitted at onboarding.
-                        </Card>
-                      )
-                    : (
-                        <div className="space-y-2">
-                          {(documents as SystemTenantDocument[]).map(doc => (
-                            <Card
-                              key={doc.documentId}
-                              className="p-3 flex items-center justify-between gap-3"
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium truncate">
-                                    {doc.documentName || doc.documentType}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {doc.documentType}
-                                    {" · "}
-                                    {doc.mimeType}
-                                    {" · "}
-                                    {(doc.fileSize / 1024).toFixed(1)}
-                                    {" KB · "}
-                                    {formatDayMonthTime(doc.uploadedAt)}
-                                  </p>
-                                </div>
+                {driversTab.isLoading
+                  ? <p className="text-sm text-muted-foreground">Loading drivers...</p>
+                  : (
+                      <div className="space-y-2">
+                        <ResourceNotice
+                          payload={driversTab.payload}
+                          empty="No drivers registered for this tenant."
+                        />
+                        {drivers.map(dr => (
+                          <Card
+                            key={dr.driverId}
+                            className="p-3 flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">{dr.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {`${dr.phone || "—"} · Licence ${dr.licenseNumber || "—"}`}
+                                </p>
                               </div>
+                            </div>
+                            <div className="flex items-center gap-2">
                               <Badge
                                 variant="outline"
-                                className="capitalize text-xs shrink-0"
+                                className="capitalize text-xs"
                               >
-                                {doc.status}
+                                {dr.status}
                               </Badge>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent
-            value="billing"
-            className="mt-4"
-          >
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              <div className="space-y-6 pr-4">
-                <Card className="p-5 space-y-5">
-                  <div className="space-y-1">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Plan</p>
-                    <p className="text-xl font-semibold">{planName}</p>
-                    {plan && (
-                      <p className="text-sm text-muted-foreground">
-                        {formatNgn(plan.perDeviceYear1Ngn)}
-                        {" per device, first year · "}
-                        {formatNgn(plan.perDeviceRenewalNgn)}
-                        {" per device on renewal"}
-                      </p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setRecordDetail({
+                                  title: dr.name,
+                                  rows: [
+                                    [
+                                      "Full name",
+                                      dr.name,
+                                    ],
+                                    [
+                                      "Phone",
+                                      dr.phone,
+                                    ],
+                                    [
+                                      "Licence number",
+                                      dr.licenseNumber,
+                                    ],
+                                    [
+                                      "Status",
+                                      dr.status,
+                                    ],
+                                  ],
+                                })}
+                              >
+                                View driver details
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
                     )}
-                  </div>
-                  <Separator />
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Billing Cycle</p>
-                      <p className="font-medium capitalize">{billingCycle ?? "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Plan Validity</p>
-                      <p className="font-medium">{plan ? `${plan.validityDays} days` : "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Account Status</p>
-                      <p className="font-medium capitalize">{tenant.status}</p>
-                    </div>
-                  </div>
-                </Card>
-
-                {billing?.trial && (
-                  <TenantTrialCard
-                    tenantId={tenant.id}
-                    trial={billing.trial}
-                  />
-                )}
-
-                {billingQuery.isLoading
-                  ? <ListSkeleton rows={3} />
-                  : billingQuery.isError
-                    ? (
-                        <Card className="p-4 text-sm text-muted-foreground">
-                          Billing details could not be loaded.
-                        </Card>
-                      )
-                    : billing && (
-                      <>
-                        <BillingFacts billing={billing} />
-                        <BillingModelCard model={billing.billingModel} />
-                      </>
-                    )}
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-muted-foreground">Billing Contact</h4>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    {company?.billingEmail ?? tenant.billingEmail ?? tenant.email}
-                  </div>
-                </div>
               </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent
-            value="export"
-            className="mt-4"
-          >
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              <TenantDataExportPanel tenantId={tenant.id} />
             </ScrollArea>
           </TabsContent>
 
@@ -1240,59 +872,48 @@ export function TenantDetailsSheet({
             className="mt-4"
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
-              <div className="space-y-3 pr-4">
-                <h4 className="font-medium text-sm text-muted-foreground">
-                  Recent Activity (
-                  {auditEntries.length}
-                  )
-                </h4>
-                {loadingAudit
-                  ? <ListSkeleton rows={4} />
-                  : auditEntries.length === 0
-                    ? (
-                        <Card className="p-6 text-center text-sm text-muted-foreground">
-                          No recent activity.
-                        </Card>
-                      )
-                    : (
-                        <div className="space-y-2">
-                          {auditEntries.map(log => (
-                            <Card
-                              key={log.id}
-                              className="p-3"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-start gap-3 min-w-0">
-                                  <FileText className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium truncate">{log.action}</p>
-                                    {log.summary && (
-                                      <p className="text-xs text-muted-foreground truncate">
-                                        {log.summary}
-                                      </p>
-                                    )}
-                                    {(log.actorName || log.actorEmail) && (
-                                      <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">
-                                        by
-                                        {" "}
-                                        {log.actorName || log.actorEmail}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {formatDayMonthTime(log.occurredAt)}
-                                </span>
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-              </div>
+              <AuditLogTab
+                events={events}
+                loading={loadingAudit}
+                usingDemo={usingDemoAudit}
+                search={auditSearch}
+                onSearchChange={setAuditSearch}
+                filters={auditFilters}
+                onFiltersApply={setAuditFilters}
+                onViewFull={() => navigate(`/audit-compliance?tenant=${tenant.id}`)}
+              />
             </ScrollArea>
           </TabsContent>
         </Tabs>
       </ShellContent>
+      <Sheet
+        open={!!recordDetail}
+        onOpenChange={o => !o && setRecordDetail(null)}
+      >
+        <SheetContent className="max-w-lg">
+          <SheetHeader>
+            <SheetTitle>{recordDetail?.title || "Details"}</SheetTitle>
+            <SheetDescription>Record details for this tenant.</SheetDescription>
+          </SheetHeader>
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
+            {(recordDetail?.rows || []).map(([
+              label,
+              value,
+            ]) => (
+              <div
+                key={label}
+                className="space-y-0.5"
+              >
+                <dt className="text-xs text-muted-foreground">{label}</dt>
+                <dd className="text-sm font-medium break-words">
+                  {value === null || value === undefined || value === "" ? "—" : String(value)}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </SheetContent>
+      </Sheet>
+
       <SuspendAccessDialog
         tenant={suspendOpen ? tenant : null}
         onClose={() => setSuspendOpen(false)}
@@ -1307,5 +928,183 @@ export function TenantDetailsSheet({
         }}
       />
     </Shell>
+  );
+}
+
+const SEVERITY_OPTIONS = [
+  {
+    value: "info",
+    label: "Info",
+  },
+  {
+    value: "warning",
+    label: "Warning",
+  },
+  {
+    value: "error",
+    label: "Error",
+  },
+];
+
+function AuditLogTab({
+  events,
+  loading,
+  usingDemo,
+  search,
+  onSearchChange,
+  filters,
+  onFiltersApply,
+  onViewFull,
+}: {
+  events: AuditRow[];
+  loading: boolean;
+  usingDemo: boolean;
+  search: string;
+  onSearchChange: (v: string) => void;
+  filters: FilterValues;
+  onFiltersApply: (v: FilterValues) => void;
+  onViewFull: () => void;
+}) {
+  const eventTypeOptions = Array.from(new Set(events.map(log => log.event_type || "Event")))
+    .sort()
+    .map(type => ({
+      value: type,
+      label: type,
+    }));
+  const filteredEvents = events.filter((log) => {
+    if (search) {
+      const haystack = `${log.event_type || ""} ${log.description || ""} ${log.user_name || ""}`.toLowerCase();
+      if (!haystack.includes(search.toLowerCase()))
+        return false;
+    }
+    if (filters.severity?.enabled && (filters.severity.value || "all") !== (log.severity || "info"))
+      return false;
+    if (filters.eventType?.enabled && (filters.eventType.value || "all") !== (log.event_type || "Event"))
+      return false;
+    if (filters.date?.enabled && !inDateWindow(
+      log.created_at,
+      filters.date.dateFrom,
+      filters.date.dateTo,
+    )) {
+      return false;
+    }
+    return true;
+  });
+
+  return (
+    <div className="space-y-3 pr-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-medium text-sm text-muted-foreground">
+          {`Recent Activity (${events.length})`}
+        </h4>
+        <div className="flex items-center gap-2">
+          {usingDemo && (
+            <Badge
+              variant="outline"
+              className="text-xs"
+            >
+              Demo data
+            </Badge>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={onViewFull}
+          >
+            View full audit log
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+      {loading
+        ? <p className="text-sm text-muted-foreground">Loading audit log...</p>
+        : (
+            <>
+              <TableToolbar
+                search={search}
+                onSearchChange={onSearchChange}
+                searchPlaceholder="Search audit log..."
+                filterEntity="audit events"
+                filterFields={[
+                  {
+                    key: "eventType",
+                    label: "Event Type",
+                    type: "select",
+                    options: eventTypeOptions,
+                  },
+                  {
+                    key: "severity",
+                    label: "Severity",
+                    type: "select",
+                    options: SEVERITY_OPTIONS,
+                  },
+                  {
+                    key: "date",
+                    label: "Date",
+                    type: "daterange",
+                  },
+                ]}
+                filterValues={filters}
+                onFiltersApply={onFiltersApply}
+              />
+              {filteredEvents.length === 0
+                ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      No audit events match your search or filters.
+                    </div>
+                  )
+                : (
+                    <div className="rounded-lg border overflow-x-auto">
+                      <Table className="[&_th]:px-4 [&_td]:px-4">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Event Type</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Severity</TableHead>
+                            <TableHead>User</TableHead>
+                            <TableHead>Date & Time</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredEvents.map(log => (
+                            <TableRow key={log.id}>
+                              <TableCell className="text-sm font-medium whitespace-nowrap">
+                                {log.event_type || "Event"}
+                              </TableCell>
+                              <TableCell className="text-sm max-w-[420px]">
+                                <span
+                                  className="block truncate"
+                                  title={log.description ?? undefined}
+                                >
+                                  {log.description || "—"}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs capitalize ${log.severity === "warning" ? "text-warning" : log.severity === "error" ? "text-destructive" : "text-muted-foreground"}`}
+                                >
+                                  {log.severity || "info"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                {log.user_name || "—"}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                {formatWithPattern(
+                                  log.created_at,
+                                  "MMM d, yyyy · HH:mm",
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+            </>
+          )}
+    </div>
   );
 }

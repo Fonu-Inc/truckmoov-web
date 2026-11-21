@@ -1,31 +1,31 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemOnboardingApplicationDetail,
   SystemOnboardingDocument,
   SystemOnboardingPaymentReview,
 } from "@truckmoov/api/auth";
-import type { ReactNode } from "react";
+import type {
+  Decision, SectionKey,
+} from "@/features/tenants/utils/onboarding";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemOnboardingApplicationQueryOptions,
-  getSystemOnboardingApplicationTimelineQueryOptions,
   useApproveSystemOnboardingApplicationDocument,
   useRejectSystemOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
 import {
   formatDateTime,
-  formatDayMonthTime,
+  formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
   ArrowLeft,
-  CheckCircle2,
-  Download,
-  FileText,
-  Mail,
+  Check,
+  Eye,
+  MessageSquareWarning,
+  MoreHorizontal,
   PackageCheck,
   Send,
-  XCircle,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -42,55 +42,178 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Label } from "@/components/shadcn/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { Textarea } from "@/components/shadcn/textarea";
+import { FleetRequirementsReview } from "@/features/tenants/components/ui/FleetRequirementsReview";
 import { OnboardingReasonDialog } from "@/features/tenants/components/ui/OnboardingReasonDialog";
-import { OnboardingStageStepper } from "@/features/tenants/components/ui/OnboardingStageStepper";
+import { TenantHardwareAllocation } from "@/features/tenants/components/ui/TenantHardwareAllocation";
 import { useOnboardingApplicationActions } from "@/features/tenants/hooks/useOnboardingApplicationActions";
 import {
-  APPLICANT_TYPE_LABELS,
   canDecide,
+  decisionLabel,
   DOCUMENT_STATUS_COLORS,
-  DOCUMENT_TYPE_LABELS,
   errorMessage,
-  formatFileSize,
-  ONBOARDING_STATUS_COLORS,
-  ONBOARDING_STATUS_LABELS,
-  stageStatusColor,
-  VERDICT_COLORS,
-  VERDICT_LABELS,
-  VERIFICATION_CHECK_LABELS,
+  isReturningApplication,
+  organizationTypeOf,
+  prettyDocumentType,
+  SECTION_LABEL,
+  toDecision,
 } from "@/features/tenants/utils/onboarding";
 import { formatCurrency } from "@/lib/currency";
+import { PageTitle } from "@/shared/components/layout/PageTitle";
 
 /**
- * Onboarding application detail behind `/tenants/onboarding/:id` (TRU-FE-16).
- * No `sidebarNav` entry, so the back link is the page heading (docs/design.md, "One route, one name").
+ * ponytail: mock data from fleetflow parity port — wire to packages/api
+ * Fleetflow's application kind (Customer / Payer). Applications carry no kind; the
+ * reference defaults to "Customer".
+ */
+const APPLICATION_KIND = "Customer";
+
+type DialogKind = Exclude<Decision, "pending">;
+
+/** Fleetflow's applicationFormSections, filled from the live application. */
+function applicationFormSections(app: SystemOnboardingApplicationDetail) {
+  const address = app.address || "—";
+  // ponytail: the application has one address line — no separate city / state for
+  // "Business location" / "State" yet.
+  const location = "—";
+  if (app.applicantType === "owner_operator") {
+    return [
+      {
+        title: "Owner-Operator details",
+        rows: [
+          [
+            "Full name",
+            app.contactFullName,
+          ],
+          [
+            "Business name",
+            app.organizationName,
+          ],
+          [
+            "Email address",
+            app.businessEmail,
+          ],
+          [
+            "Phone number",
+            app.organizationPhone,
+          ],
+          [
+            "Business address",
+            address,
+          ],
+          [
+            "State",
+            location,
+          ],
+        ] as Array<[string, string]>,
+      },
+    ];
+  }
+  return [
+    {
+      title: "Enterprise details",
+      rows: [
+        [
+          "Company name",
+          app.organizationName,
+        ],
+        [
+          "Company email",
+          app.businessEmail,
+        ],
+        [
+          "Contact person's name",
+          app.contactFullName,
+        ],
+        [
+          "Contact person's role",
+          app.contactRole || "—",
+        ],
+        [
+          "Business phone number",
+          app.organizationPhone,
+        ],
+        [
+          "Business address",
+          address,
+        ],
+        [
+          "Business location",
+          location,
+        ],
+      ] as Array<[string, string]>,
+    },
+  ];
+}
+
+/**
+ * Onboarding application review behind `/tenants/onboarding/:id` — fleetflow's ApplicationReview.
+ * No `sidebarNav` entry, so it renders its own `<PageTitle>`. Approve / Request More Information /
+ * Reject use the live onboarding endpoints; provisioning and resend actions sit in the heading's
+ * overflow menu, and live document review stays on the Submitted Documents rows.
  */
 export default function OnboardingApplicationPage() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const detailQuery = useQuery(getSystemOnboardingApplicationQueryOptions(id));
-  const timelineQuery = useQuery(getSystemOnboardingApplicationTimelineQueryOptions(id));
   const actions = useOnboardingApplicationActions();
   const app = detailQuery.data?.data;
+  const [
+    dialog,
+    setDialog,
+  ] = useState<DialogKind | null>(null);
+  const [
+    section,
+    setSection,
+  ] = useState<SectionKey>("business");
+  const [
+    message,
+    setMessage,
+  ] = useState("");
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+  const [
+    openingId,
+    setOpeningId,
+  ] = useState<string | null>(null);
 
-  const backToQueue = (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="-ml-2 gap-2"
-      onClick={() => navigate("/tenants?tab=kyc-review")}
-    >
-      <ArrowLeft className="h-4 w-4" />
-      Back to onboarding
-    </Button>
-  );
+  const back = () => navigate("/tenants?tab=kyc-review");
 
   if (detailQuery.isLoading) {
     return (
-      <div className="space-y-6">
-        {backToQueue}
+      <div className="space-y-5">
+        <Button
+          variant="ghost"
+          onClick={back}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to applications
+        </Button>
         <Skeleton className="h-10 w-80" />
         <Skeleton className="h-64 w-full" />
       </div>
@@ -99,244 +222,495 @@ export default function OnboardingApplicationPage() {
 
   if (!app) {
     return (
-      <div className="space-y-6">
-        {backToQueue}
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            {detailQuery.isError ? errorMessage(
-              detailQuery.error,
-              "Unable to load this application.",
-            ) : "Application not found."}
-            {detailQuery.isError && (
-              <Button
-                variant="link"
-                onClick={() => detailQuery.refetch()}
-              >
-                Retry
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <Button
+          variant="ghost"
+          onClick={back}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to applications
+        </Button>
+        <p className="mt-4 text-sm text-muted-foreground">
+          {detailQuery.isError
+            ? errorMessage(
+                detailQuery.error,
+                "Unable to load this application.",
+              )
+            : "Application not found."}
+          {detailQuery.isError && (
+            <Button
+              variant="link"
+              onClick={() => detailQuery.refetch()}
+            >
+              Retry
+            </Button>
+          )}
+        </p>
+      </>
     );
   }
 
+  const decision = toDecision(app.status);
+  // The live API only takes a decision while the application is in review.
   const decidable = canDecide(app.status);
+  const returning = isReturningApplication(app.documents);
+
+  const submit = async () => {
+    if (!dialog)
+      return;
+    setSaving(true);
+    try {
+      const ok = dialog === "approved"
+        ? await actions.approve(app)
+        : dialog === "rejected"
+          ? await actions.reject(
+              app,
+              message.trim(),
+            )
+          // ponytail: no "area" field on the request-changes endpoint — the area leads the reason.
+          : await actions.requestChanges(
+              app,
+              `${SECTION_LABEL[section]}: ${message.trim()}`,
+            );
+      if (ok) {
+        setDialog(null);
+        setMessage("");
+      }
+    }
+    finally {
+      setSaving(false);
+    }
+  };
+
+  // Links expire after five minutes: fetch a fresh one on every click.
+  const viewDocument = async (doc: SystemOnboardingDocument) => {
+    setOpeningId(doc.id);
+    try {
+      const fresh = await detailQuery.refetch();
+      const url = fresh.data?.data?.documents.find(d => d.id === doc.id)?.downloadUrl;
+      if (url) {
+        window.open(
+          url,
+          "_blank",
+          "noopener",
+        );
+      }
+      else {
+        toast.error("No file is available for this document");
+      }
+    }
+    finally {
+      setOpeningId(null);
+    }
+  };
+
+  const showProvision = app.stage === "provisioning";
+  const showResendChanges = app.status === "changes_requested";
+  const showResendPayment = app.status === "approved" && app.stage === "payment";
+  const showResendSetup = app.status === "approved";
+  const hasMore = showProvision || showResendChanges || showResendPayment || showResendSetup;
+
+  // Rejected documents are the reviewer's notes on the Submitted documents area.
+  const reviewNotes = [
+    ...(decision === "pending" && app.decisionReason ? [app.decisionReason] : []),
+    ...app.documents
+      .filter(d => d.status === "rejected" && d.rejectionReason)
+      .map(d => `${SECTION_LABEL.documents}: ${prettyDocumentType(d.documentType)} — ${d.rejectionReason}`),
+  ];
 
   return (
-    <div className="space-y-6">
-      {backToQueue}
-
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold">{app.organizationName}</h1>
-            <Badge
-              variant="outline"
-              className={ONBOARDING_STATUS_COLORS[app.status]}
-            >
-              {ONBOARDING_STATUS_LABELS[app.status]}
-            </Badge>
-            <Badge
-              variant="outline"
-              className={stageStatusColor(app.stageStatus)}
-            >
-              {app.stageStatus}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {app.reference}
-            {" · "}
-            {APPLICANT_TYPE_LABELS[app.applicantType]}
-            {" · Applied "}
-            {formatDayMonthTime(app.createdAt)}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {decidable && (
-            <>
+    <>
+      <div className="space-y-5">
+        <PageTitle
+          title={app.organizationName}
+          description={`${organizationTypeOf(app.applicantType)} · ${APPLICATION_KIND}`}
+          primaryActions={(
+            <div className="flex flex-wrap justify-end gap-2">
               <Button
-                variant="success"
-                loading={actions.approvePending}
-                disabled={actions.isPending}
-                onClick={() => actions.approve(app)}
+                variant="ghost"
+                size="sm"
+                onClick={back}
               >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                Approve
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to applications
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => actions.openRequestChanges(app)}
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                Request Changes
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => actions.openReject(app)}
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Reject
-              </Button>
-            </>
-          )}
-          {app.stage === "provisioning" && (
-            <Button
-              loading={actions.provisionedPending}
-              disabled={actions.isPending}
-              onClick={() => actions.markProvisioned(app)}
-            >
-              <PackageCheck className="mr-2 h-4 w-4" />
-              Mark provisioned
-            </Button>
-          )}
-          {app.status === "changes_requested" && (
-            <Button
-              variant="outline"
-              loading={actions.resendChangesPending}
-              disabled={actions.isPending}
-              onClick={() => actions.resendChangesLink(app)}
-            >
-              <Send className="mr-2 h-4 w-4" />
-              Resend changes-requested link
-            </Button>
-          )}
-          {app.status === "approved" && app.stage === "payment" && (
-            <Button
-              variant="outline"
-              loading={actions.resendPaymentPending}
-              disabled={actions.isPending}
-              onClick={() => actions.resendPaymentLink(app)}
-            >
-              <Send className="mr-2 h-4 w-4" />
-              Resend payment link
-            </Button>
-          )}
-          {app.status === "approved" && (
-            <Button
-              variant="outline"
-              loading={actions.resendPending}
-              disabled={actions.isPending}
-              onClick={() => actions.resendSetupLink(app)}
-            >
-              <Send className="mr-2 h-4 w-4" />
-              Resend setup link
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {app.decisionReason && (
-        <div className="flex gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-          <div>
-            <p className="font-medium">Why this needs a person</p>
-            <p className="text-muted-foreground">{app.decisionReason}</p>
-          </div>
-        </div>
-      )}
-      {app.stage === "provisioning" && (
-        <p className="text-sm text-muted-foreground">
-          Waiting for device stock. Payment opens by itself once enough devices are available, or you can open it now — if stock is still short, you will be asked for a reason.
-        </p>
-      )}
-      {app.paymentReviews.map(review => (
-        <PaymentReviewNotice
-          key={review.paymentId}
-          review={review}
-          onResolved={() => actions.openPaymentResolved(
-            app,
-            review.paymentId,
-          )}
-          onRefund={() => actions.openPaymentRefund(
-            app,
-            review.paymentId,
-          )}
-          onIssueRefund={() => actions.openIssueRefund(
-            app,
-            review.paymentId,
+              {hasMore && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="More application actions"
+                      disabled={actions.isPending}
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {showProvision && (
+                      <DropdownMenuItem onClick={() => actions.markProvisioned(app)}>
+                        <PackageCheck className="mr-2 h-4 w-4" />
+                        Mark provisioned
+                      </DropdownMenuItem>
+                    )}
+                    {showResendChanges && (
+                      <DropdownMenuItem onClick={() => actions.resendChangesLink(app)}>
+                        <Send className="mr-2 h-4 w-4" />
+                        Resend changes-requested link
+                      </DropdownMenuItem>
+                    )}
+                    {showResendPayment && (
+                      <DropdownMenuItem onClick={() => actions.resendPaymentLink(app)}>
+                        <Send className="mr-2 h-4 w-4" />
+                        Resend payment link
+                      </DropdownMenuItem>
+                    )}
+                    {showResendSetup && (
+                      <DropdownMenuItem onClick={() => actions.resendSetupLink(app)}>
+                        <Send className="mr-2 h-4 w-4" />
+                        Resend setup link
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {decidable && (
+                <>
+                  <Button onClick={() => {
+                    setMessage("");
+                    setDialog("approved");
+                  }}
+                  >
+                    <Check className="mr-2 h-4 w-4" />
+                    Approve Application
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setMessage("");
+                      setDialog("more_info");
+                    }}
+                  >
+                    <MessageSquareWarning className="mr-2 h-4 w-4" />
+                    Request More Information
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setMessage("");
+                      setDialog("rejected");
+                    }}
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Reject Application
+                  </Button>
+                </>
+              )}
+            </div>
           )}
         />
-      ))}
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <VerificationsCard verifications={app.verifications} />
-          <DocumentsCard
-            app={app}
-            onRefresh={() => detailQuery.refetch()}
+        <div className="flex flex-wrap items-center gap-3">
+          {returning && (
+            <Badge
+              variant="secondary"
+              className="rounded-full"
+            >
+              Returning customer
+            </Badge>
+          )}
+          <Badge variant={decision === "rejected" ? "destructive" : "outline"}>{decisionLabel(decision)}</Badge>
+          <p className="text-xs text-muted-foreground">
+            {`Submitted ${formatWithPattern(
+              app.submittedAt ?? app.createdAt,
+              "dd MMM yyyy, HH:mm",
+            )}`}
+          </p>
+        </div>
+        {app.stage === "provisioning" && (
+          <p className="text-sm text-muted-foreground">
+            Waiting for device stock. Payment opens by itself once enough devices are available, or you can open it now from the actions menu — if stock is still short, you will be asked for a reason.
+          </p>
+        )}
+        {app.paymentReviews.map(review => (
+          <PaymentReviewNotice
+            key={review.paymentId}
+            review={review}
+            onResolved={() => actions.openPaymentResolved(
+              app,
+              review.paymentId,
+            )}
+            onRefund={() => actions.openPaymentRefund(
+              app,
+              review.paymentId,
+            )}
+            onIssueRefund={() => actions.openIssueRefund(
+              app,
+              review.paymentId,
+            )}
           />
-          <FleetCard app={app} />
-        </div>
-        <div className="space-y-6">
-          <Section title="Onboarding Progress">
-            <OnboardingStageStepper progress={app.progress} />
-          </Section>
-          <Section title="Applicant">
-            <dl className="space-y-3 text-sm">
-              <DetailItem
-                label="Contact"
-                value={app.contactRole ? `${app.contactFullName} (${app.contactRole})` : app.contactFullName}
-              />
-              <DetailItem
-                label="Business email"
-                value={<Verified ok={app.emailVerified}>{app.businessEmail}</Verified>}
-              />
-              <DetailItem
-                label="Phone"
-                value={<Verified ok={app.phoneVerified}>{app.organizationPhone}</Verified>}
-              />
-              <DetailItem
-                label="Address"
-                value={app.address}
-              />
-              <DetailItem
-                label="Submitted"
-                value={formatDateTime(app.submittedAt)}
-              />
-              <DetailItem
-                label="Reviewed"
-                value={app.reviewedAt ? formatDateTime(app.reviewedAt) : "Not yet"}
-              />
-              <DetailItem
-                label="Setup link"
-                value={app.setupLink.status
-                  ? `${app.setupLink.status === "sent" ? "Sent" : "Failed"} ${formatDateTime(app.setupLink.sentAt)} · ${app.setupLink.attempts} attempt(s)${app.setupLink.error ? ` · ${app.setupLink.error}` : ""}`
-                  : "Not sent yet"}
-              />
-            </dl>
-          </Section>
-          <Section title="Activity Timeline">
-            {timelineQuery.isLoading
-              ? <Skeleton className="h-24 w-full" />
-              : (timelineQuery.data?.data.entries.length ?? 0) === 0
-                  ? <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
-                  : (
-                      <ol className="space-y-3">
-                        {timelineQuery.data?.data.entries.map(entry => (
-                          <li
-                            key={`${entry.at}-${entry.action}`}
-                            className="flex gap-3 text-sm"
-                          >
-                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                            <div>
-                              <p className="font-medium">{entry.summary}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {entry.actor}
-                                {" · "}
-                                {formatDateTime(entry.at)}
-                              </p>
-                            </div>
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-          </Section>
-        </div>
+        ))}
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Business Details</h2>
+          <div className="grid gap-5 md:grid-cols-2">
+            {applicationFormSections(app).map(group => (
+              <div
+                key={group.title}
+                className="border-b border-border pb-4"
+              >
+                <h3 className="mb-3 font-medium">{group.title}</h3>
+                <dl className="space-y-3">
+                  {group.rows.map(([
+                    label,
+                    value,
+                  ]) => (
+                    <div
+                      key={label}
+                      className="grid grid-cols-2 gap-3 text-sm"
+                    >
+                      <dt className="text-muted-foreground">{label}</dt>
+                      <dd className="break-words font-medium">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Fleet Requirements</h2>
+          <FleetRequirementsReview
+            vehicles={app.vehicles}
+            deviceRequests={app.deviceRequests}
+          />
+        </section>
+        <SubmittedDocumentsCard
+          app={app}
+          openingId={openingId}
+          onView={viewDocument}
+        />
+        {app.decisionReason && decision !== "pending" && (
+          <section className="border-l-2 border-border pl-4">
+            <h2 className="font-medium">{decision === "rejected" ? "Rejection Reason" : "Information Requested"}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{app.decisionReason}</p>
+          </section>
+        )}
+        {reviewNotes.length > 0 && (
+          <section>
+            <h2 className="mb-2 font-medium">Review Notes</h2>
+            {reviewNotes.map(note => (
+              <p
+                key={note}
+                className="mb-2 text-sm text-muted-foreground"
+              >
+                {note}
+              </p>
+            ))}
+          </section>
+        )}
+        {decision === "approved" && <TenantHardwareAllocation application={app} />}
+        {app.reviewedAt && (
+          <p className="text-xs text-muted-foreground">
+            {`Decision recorded ${formatWithPattern(
+              app.reviewedAt,
+              "dd MMM yyyy, HH:mm",
+            )}`}
+          </p>
+        )}
       </div>
-
+      <Dialog
+        open={!!dialog}
+        onOpenChange={open => !open && setDialog(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialog === "approved" ? "Approve Application" : dialog === "rejected" ? "Reject Application" : "Request More Information"}</DialogTitle>
+            <DialogDescription>{dialog === "approved" ? `Approve ${app.organizationName}? Devices and SIMs must be allocated separately after approval.` : "Record the reason for this decision."}</DialogDescription>
+          </DialogHeader>
+          {dialog === "more_info" && (
+            <div className="space-y-2">
+              <Label>Area</Label>
+              <Select
+                value={section}
+                onValueChange={value => setSection(value as SectionKey)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(SECTION_LABEL).map(([
+                    key,
+                    label,
+                  ]) => (
+                    <SelectItem
+                      key={key}
+                      value={key}
+                    >
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {dialog !== "approved" && (
+            <div className="space-y-2">
+              <Label>Reason</Label>
+              <Textarea
+                rows={4}
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDialog(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={saving || (dialog !== "approved" && !message.trim())}
+              onClick={submit}
+            >
+              {saving ? "Saving…" : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {actions.reasonDialog}
-    </div>
+    </>
+  );
+}
+
+/**
+ * Fleetflow's Submitted Documents card. The Approve / Reject buttons are truckmoov's live
+ * document review (approval is refused while any document is rejected or missing), shown
+ * only while the application is in review.
+ */
+function SubmittedDocumentsCard({
+  app,
+  openingId,
+  onView,
+}: {
+  app: SystemOnboardingApplicationDetail;
+  openingId: string | null;
+  onView: (doc: SystemOnboardingDocument) => void;
+}) {
+  const approveDoc = useApproveSystemOnboardingApplicationDocument();
+  const rejectDoc = useRejectSystemOnboardingApplicationDocument();
+  const [
+    rejecting,
+    setRejecting,
+  ] = useState<SystemOnboardingDocument | null>(null);
+  const reviewable = canDecide(app.status);
+
+  const approve = async (doc: SystemOnboardingDocument) => {
+    try {
+      await approveDoc.mutateAsync({
+        id: app.id,
+        documentId: doc.id,
+      });
+      toast.success(`${prettyDocumentType(doc.documentType)} approved`);
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "Could not approve the document",
+      ));
+    }
+  };
+
+  const reject = async (reason: string) => {
+    if (!rejecting)
+      return;
+    try {
+      await rejectDoc.mutateAsync({
+        id: app.id,
+        documentId: rejecting.id,
+        data: { reason },
+      });
+      toast.success("Document rejected — use Request More Information to send the application back");
+      setRejecting(null);
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "Could not reject the document",
+      ));
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Submitted Documents</CardTitle>
+        {/* Fleetflow's card header fills this in from its heading-description table. */}
+        <CardDescription className="mt-1.5">Submitted documents, validity dates, and related records.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {app.documents.length === 0
+          ? <p className="text-sm text-muted-foreground">No documents submitted.</p>
+          : app.documents.map(doc => (
+              <div
+                key={doc.id}
+                className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-3 last:border-0"
+              >
+                <div>
+                  <p className="text-sm font-medium">{prettyDocumentType(doc.documentType)}</p>
+                  <p className="text-xs text-muted-foreground">{doc.documentName}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {doc.status !== "pending" && (
+                    <Badge
+                      variant="outline"
+                      className={DOCUMENT_STATUS_COLORS[doc.status]}
+                    >
+                      {doc.status === "approved" ? "Approved" : "Rejected"}
+                    </Badge>
+                  )}
+                  {reviewable && doc.status !== "approved" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={approveDoc.isPending}
+                      onClick={() => approve(doc)}
+                    >
+                      Approve
+                    </Button>
+                  )}
+                  {reviewable && doc.status !== "rejected" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => setRejecting(doc)}
+                    >
+                      Reject
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={openingId === doc.id}
+                    onClick={() => onView(doc)}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Documents
+                  </Button>
+                </div>
+              </div>
+            ))}
+      </CardContent>
+      <OnboardingReasonDialog
+        open={!!rejecting}
+        title="Reject document"
+        description={`${rejecting ? prettyDocumentType(rejecting.documentType) : ""} — the applicant sees this reason when more information is requested.`}
+        submitLabel="Reject document"
+        destructive
+        loading={rejectDoc.isPending}
+        onOpenChange={open => !open && setRejecting(null)}
+        onSubmit={reject}
+      />
+    </Card>
   );
 }
 
@@ -424,353 +798,5 @@ function PaymentReviewNotice({
         )}
       </div>
     </div>
-  );
-}
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string; description?: string; children: ReactNode;
-}) {
-  return (
-    <Card className="bg-card/50 border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-function DetailItem({
-  label,
-  value,
-}: {
-  label: string; value: ReactNode;
-}) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-medium break-words">{value}</dd>
-    </div>
-  );
-}
-
-function Verified({
-  ok,
-  children,
-}: {
-  ok: boolean; children: ReactNode;
-}) {
-  return (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      {children}
-      <Badge
-        variant="outline"
-        className={ok ? DOCUMENT_STATUS_COLORS.approved : DOCUMENT_STATUS_COLORS.pending}
-      >
-        {ok ? "Verified" : "Unverified"}
-      </Badge>
-    </span>
-  );
-}
-
-/** Why a person is looking: which registry check could not settle the application, per provider. */
-type VerificationField = SystemOnboardingApplicationDetail["verifications"][number]["fields"][number];
-
-const VERIFICATION_FIELD_COLUMNS: ColumnDef<VerificationField>[] = [
-  {
-    accessorKey: "name",
-    header: "Field",
-    enableSorting: false,
-  },
-  {
-    id: "expected",
-    header: "Submitted",
-    enableSorting: false,
-    meta: { className: "font-mono" },
-    cell: ({ row }) => row.original.expected ?? "-",
-  },
-  {
-    id: "actual",
-    header: "Registry",
-    enableSorting: false,
-    meta: { className: "font-mono" },
-    cell: ({ row }) => row.original.actual ?? "-",
-  },
-  {
-    id: "matched",
-    header: "Result",
-    enableSorting: false,
-    cell: ({ row }) => (
-      <span className={row.original.matched ? "text-success" : "text-destructive"}>
-        {row.original.matched ? "Matched" : "Differs"}
-      </span>
-    ),
-  },
-];
-
-type ApplicationVehicle = SystemOnboardingApplicationDetail["vehicles"][number];
-
-const VEHICLE_COLUMNS: ColumnDef<ApplicationVehicle>[] = [
-  {
-    accessorKey: "registrationNumber",
-    header: "Registration",
-    meta: { className: "font-medium" },
-  },
-  {
-    accessorKey: "vehicleType",
-    header: "Type",
-    meta: { className: "capitalize" },
-  },
-  {
-    accessorKey: "make",
-    header: "Make",
-  },
-  {
-    accessorKey: "model",
-    header: "Model",
-  },
-];
-
-function VerificationsCard({ verifications }: { verifications: SystemOnboardingApplicationDetail["verifications"] }) {
-  return (
-    <Section
-      title="Registry Verifications"
-      description="Automated checks against the registries. Anything other than a match is why this application needs review."
-    >
-      {verifications.length === 0
-        ? <p className="text-sm text-muted-foreground">No registry checks have run for this application.</p>
-        : (
-            <div className="space-y-4">
-              {verifications.map(v => (
-                <div
-                  key={`${v.check}-${v.checkedAt}`}
-                  className="rounded-lg border border-border/50 p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium">{VERIFICATION_CHECK_LABELS[v.check] ?? v.check}</p>
-                    <Badge
-                      variant="outline"
-                      className={VERDICT_COLORS[v.verdict]}
-                    >
-                      {VERDICT_LABELS[v.verdict] ?? v.verdict}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{v.summary}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {v.provider}
-                    {" · "}
-                    {formatDateTime(v.checkedAt)}
-                  </p>
-                  {v.fields.length > 0 && (
-                    <div className="mt-3 overflow-x-auto">
-                      <DataTable
-                        columns={VERIFICATION_FIELD_COLUMNS}
-                        data={v.fields}
-                        className="text-xs"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-    </Section>
-  );
-}
-
-function DocumentsCard({
-  app,
-  onRefresh,
-}: {
-  app: SystemOnboardingApplicationDetail; onRefresh: () => Promise<{ data?: { data?: SystemOnboardingApplicationDetail } }>;
-}) {
-  const approveDoc = useApproveSystemOnboardingApplicationDocument();
-  const rejectDoc = useRejectSystemOnboardingApplicationDocument();
-  const [
-    rejecting,
-    setRejecting,
-  ] = useState<SystemOnboardingDocument | null>(null);
-  const [
-    downloadingId,
-    setDownloadingId,
-  ] = useState<string | null>(null);
-  const reviewable = canDecide(app.status);
-
-  // Links expire after five minutes: fetch a fresh one on every click.
-  const download = async (doc: SystemOnboardingDocument) => {
-    setDownloadingId(doc.id);
-    try {
-      const fresh = await onRefresh();
-      const url = fresh.data?.data?.documents.find(d => d.id === doc.id)?.downloadUrl;
-      if (url) {
-        window.open(
-          url,
-          "_blank",
-          "noopener",
-        );
-      }
-      else {
-        toast.error("No download link is available for this document");
-      }
-    }
-    finally {
-      setDownloadingId(null);
-    }
-  };
-
-  const approve = async (doc: SystemOnboardingDocument) => {
-    try {
-      await approveDoc.mutateAsync({
-        id: app.id,
-        documentId: doc.id,
-      });
-      toast.success(`${DOCUMENT_TYPE_LABELS[doc.documentType] ?? doc.documentName} approved`);
-    }
-    catch (error) {
-      toast.error(errorMessage(
-        error,
-        "Could not approve the document",
-      ));
-    }
-  };
-
-  const reject = async (reason: string) => {
-    if (!rejecting)
-      return;
-    try {
-      await rejectDoc.mutateAsync({
-        id: app.id,
-        documentId: rejecting.id,
-        data: { reason },
-      });
-      toast.success("Document rejected — use Request Changes to send the application back");
-      setRejecting(null);
-    }
-    catch (error) {
-      toast.error(errorMessage(
-        error,
-        "Could not reject the document",
-      ));
-    }
-  };
-
-  return (
-    <Section
-      title={`Documents (${app.documents.length})`}
-      description={reviewable ? "Approve or reject each document. Approval is refused while any document is rejected or missing." : undefined}
-    >
-      {app.documents.length === 0
-        ? <p className="text-sm text-muted-foreground">No documents uploaded.</p>
-        : (
-            <ul className="divide-y divide-border/50">
-              {app.documents.map(doc => (
-                <li
-                  key={doc.id}
-                  className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex min-w-0 gap-3">
-                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{DOCUMENT_TYPE_LABELS[doc.documentType] ?? doc.documentType}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {doc.documentName}
-                        {" · "}
-                        {formatFileSize(doc.fileSize)}
-                        {" · "}
-                        {formatDayMonthTime(doc.uploadedAt)}
-                      </p>
-                      {doc.rejectionReason && (
-                        <p className="mt-1 text-xs text-destructive">{doc.rejectionReason}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className={DOCUMENT_STATUS_COLORS[doc.status]}
-                    >
-                      {doc.status === "pending" ? "Pending" : doc.status === "approved" ? "Approved" : "Rejected"}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Download document"
-                      loading={downloadingId === doc.id}
-                      onClick={() => download(doc)}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    {reviewable && doc.status !== "approved" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={approveDoc.isPending}
-                        onClick={() => approve(doc)}
-                      >
-                        Approve
-                      </Button>
-                    )}
-                    {reviewable && doc.status !== "rejected" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => setRejecting(doc)}
-                      >
-                        Reject
-                      </Button>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-      <OnboardingReasonDialog
-        open={!!rejecting}
-        title="Reject document"
-        description={`${rejecting ? DOCUMENT_TYPE_LABELS[rejecting.documentType] ?? rejecting.documentName : ""} — the applicant sees this reason when changes are requested.`}
-        submitLabel="Reject document"
-        destructive
-        loading={rejectDoc.isPending}
-        onOpenChange={open => !open && setRejecting(null)}
-        onSubmit={reject}
-      />
-    </Section>
-  );
-}
-
-function FleetCard({ app }: { app: SystemOnboardingApplicationDetail }) {
-  return (
-    <Section
-      title="Fleet"
-      description={`${app.vehicleCount} vehicle(s) · ${app.deviceCount} device(s) requested`}
-    >
-      <div className="overflow-x-auto">
-        <DataTable
-          columns={VEHICLE_COLUMNS}
-          data={app.vehicles}
-          emptyState="No vehicles on this application."
-        />
-      </div>
-      {app.deviceRequests.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Device requests</p>
-          {app.deviceRequests.map(r => (
-            <div
-              key={r.id}
-              className="flex justify-between gap-4 rounded-md border border-border/50 px-3 py-2 text-sm"
-            >
-              <span>{r.useCase}</span>
-              <span className="shrink-0 font-medium">{`× ${r.quantity}`}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </Section>
   );
 }

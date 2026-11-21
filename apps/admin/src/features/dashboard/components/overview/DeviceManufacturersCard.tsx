@@ -1,19 +1,55 @@
+import type { SystemSnapshotPeriod } from "@truckmoov/api/auth";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { useQuery } from "@tanstack/react-query";
 import { getSystemDeviceManufacturersQueryOptions } from "@truckmoov/api/auth";
+import {
+  Eye,
+  Server,
+} from "lucide-react";
 import { useState } from "react";
-import { Eye, Server } from "lucide-react";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Button } from "@/components/shadcn/button";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { CHART_TOOLTIP_STYLE, SNAPSHOT_RANGE_OPTIONS, toSnapshotPeriod } from "./overviewFormat";
-import { RangeFilter } from "./RangeFilter";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+import { CHART_TOOLTIP_STYLE } from "./overviewFormat";
 import { WidgetBody } from "./WidgetBody";
 
+// The manufacturers endpoint only takes 7d / 30d / 90d windows, so "Today" / "Yesterday" are not offered.
+const RANGE_OPTIONS: ChartDateRange[] = [
+  "7d",
+  "30d",
+  "90d",
+];
+
+/** Device Distribution by Manufacturer — fleetflow's vendor bar chart, from live device counts. */
 export function DeviceManufacturersCard() {
-  const [days, setDays] = useState(0);
-  const { data, isLoading, isError, refetch } = useQuery(getSystemDeviceManufacturersQueryOptions(toSnapshotPeriod(days)));
-  const manufacturers = data?.data.manufacturers ?? [];
+  const navigate = useNavigate();
+  const [
+    deviceChartRange,
+    setDeviceChartRange,
+  ] = useState<ChartDateRange>("30d");
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery(getSystemDeviceManufacturersQueryOptions(deviceChartRange as SystemSnapshotPeriod));
+  const deviceStats = data?.data.manufacturers ?? [];
 
   return (
     <Card>
@@ -24,23 +60,21 @@ export function DeviceManufacturersCard() {
               <Server className="h-5 w-5 text-primary" />
               Device Distribution by Manufacturer
             </CardTitle>
-            <CardDescription>IoT devices grouped by hardware vendor</CardDescription>
+            <CardDescription>Breakdown of provisioned IoT devices grouped by hardware vendor</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <RangeFilter
-              value={days}
-              options={SNAPSHOT_RANGE_OPTIONS}
-              onValueChange={setDays}
+            <ChartDateFilter
+              value={deviceChartRange}
+              onValueChange={setDeviceChartRange}
+              options={RANGE_OPTIONS}
             />
             <Button
               variant="outline"
               size="sm"
-              asChild
+              onClick={() => navigate("/devices")}
             >
-              <Link to="/devices">
-                <Eye className="h-4 w-4 mr-2" />
-                Manage
-              </Link>
+              <Eye className="h-4 w-4 mr-2" />
+              Manage
             </Button>
           </div>
         </div>
@@ -50,7 +84,7 @@ export function DeviceManufacturersCard() {
           isLoading={isLoading}
           isError={isError}
           onRetry={refetch}
-          isEmpty={manufacturers.length === 0}
+          isEmpty={deviceStats.length === 0}
           emptyMessage="No devices in this period."
           skeletonClassName="h-[300px] w-full"
         >
@@ -59,7 +93,7 @@ export function DeviceManufacturersCard() {
             height={300}
           >
             <BarChart
-              data={manufacturers}
+              data={deviceStats}
               layout="vertical"
             >
               <CartesianGrid
@@ -68,7 +102,6 @@ export function DeviceManufacturersCard() {
               />
               <XAxis
                 type="number"
-                allowDecimals={false}
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
               />
@@ -77,14 +110,18 @@ export function DeviceManufacturersCard() {
                 type="category"
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                width={90}
+                width={80}
               />
               <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
               <Bar
                 dataKey="count"
-                name="Devices"
                 fill="hsl(var(--primary))"
-                radius={[0, 4, 4, 0]}
+                radius={[
+                  0,
+                  4,
+                  4,
+                  0,
+                ]}
               />
             </BarChart>
           </ResponsiveContainer>

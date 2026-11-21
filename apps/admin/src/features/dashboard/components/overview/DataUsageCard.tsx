@@ -1,33 +1,47 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSystemSimDataUsageQueryOptions } from "@truckmoov/api/auth";
 import { Database } from "lucide-react";
-import { useState } from "react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { CHART_TOOLTIP_STYLE, DATA_USAGE_REFRESH_MS, formatDayLabel } from "./overviewFormat";
-import { RangeFilter } from "./RangeFilter";
-import type { RangeOption } from "./RangeFilter";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import {
+  CHART_TOOLTIP_STYLE,
+  DATA_USAGE_REFRESH_MS,
+  formatWeekdayLabel,
+} from "./overviewFormat";
 import { WidgetBody } from "./WidgetBody";
 
 const MB_PER_GB = 1024;
 const WEEK_DAYS = 7;
-const DAY_OPTIONS: RangeOption[] = [
-  { value: 7, label: "Last 7 days" },
-  { value: 14, label: "Last 14 days" },
-  { value: 30, label: "Last 30 days" },
-];
 
+/** Weekly Data Usage (GB) — fleetflow's 7-day SIM data area chart, from live daily usage. */
 export function DataUsageCard() {
-  const [days, setDays] = useState(WEEK_DAYS);
-  const { data, isLoading, isError, refetch } = useQuery({
-    ...getSystemSimDataUsageQueryOptions(days),
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    ...getSystemSimDataUsageQueryOptions(WEEK_DAYS),
     refetchInterval: DATA_USAGE_REFRESH_MS,
   });
-  const series = (data?.data.days ?? []).map(entry => ({
-    label: formatDayLabel(entry.day, days <= WEEK_DAYS),
-    usageGb: Math.round((entry.usageMb / MB_PER_GB) * 1000) / 1000,
+  const dataUsageTrend = (data?.data.days ?? []).map(entry => ({
+    day: formatWeekdayLabel(entry.day),
+    usage: Math.round((entry.usageMb / MB_PER_GB) * 1000) / 1000,
   }));
-  const hasUsage = series.some(entry => entry.usageGb > 0);
 
   return (
     <Card>
@@ -36,18 +50,14 @@ export function DataUsageCard() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5 text-primary" />
-              {days === WEEK_DAYS ? "Weekly Data Usage (GB)" : `Data Usage, last ${days} days (GB)`}
+              Weekly Data Usage (GB)
             </CardTitle>
             <CardDescription>Total data consumed across all SIM cards</CardDescription>
           </div>
-          <RangeFilter
-            value={days}
-            options={DAY_OPTIONS}
-            onValueChange={setDays}
-          />
+
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent>
         <WidgetBody
           isLoading={isLoading}
           isError={isError}
@@ -58,10 +68,10 @@ export function DataUsageCard() {
             width="100%"
             height={200}
           >
-            <AreaChart data={series}>
+            <AreaChart data={dataUsageTrend}>
               <defs>
                 <linearGradient
-                  id="usageGradient"
+                  id="colorData"
                   x1="0"
                   y1="0"
                   x2="0"
@@ -84,34 +94,32 @@ export function DataUsageCard() {
                 stroke="hsl(var(--border))"
               />
               <XAxis
-                dataKey="label"
+                dataKey="day"
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
               />
               <YAxis
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                allowDecimals
-                domain={[0, (max: number) => Math.max(max, 1)]}
               />
               <Tooltip
                 contentStyle={CHART_TOOLTIP_STYLE}
-                formatter={(value: number) => [`${value} GB`, "Data Usage"]}
+                formatter={(value: number) => [
+                  `${value} GB`,
+                  "Data Usage",
+                ]}
               />
               <Area
                 type="monotone"
-                dataKey="usageGb"
+                dataKey="usage"
                 stroke="hsl(var(--success))"
                 strokeWidth={2}
                 fillOpacity={1}
-                fill="url(#usageGradient)"
+                fill="url(#colorData)"
               />
             </AreaChart>
           </ResponsiveContainer>
         </WidgetBody>
-        {!isLoading && !isError && !hasUsage && (
-          <p className="text-xs text-muted-foreground">Usage is recorded from SIM data; carrier feed pending</p>
-        )}
       </CardContent>
     </Card>
   );

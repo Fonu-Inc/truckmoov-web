@@ -67,6 +67,9 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import {
+  PageActions, PageTitle,
+} from "@/shared/components/layout/PageTitle";
 
 type BundleCatalogItem = {
   id: string;
@@ -135,6 +138,17 @@ const emptyForm: BundleFormState = {
 };
 
 export default function PlatformDataBundles() {
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("catalog");
+  const heading = activeTab === "adoption"
+    ? {
+        title: "Tenant Adoption", description: "Monitor how tenants adopt and utilise available M2M data bundles across the platform.",
+      }
+    : {
+        title: "M2M Data Bundles", description: "Manage available M2M data bundles, configure bundle offerings, and monitor their availability across the platform.",
+      };
   const { format: fmtCurrency } = useCurrency();
   const catalogQuery = useQuery(getDataBundleRatesQueryOptions({
     params: {
@@ -432,51 +446,53 @@ export default function PlatformDataBundles() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      {/* KPI strip */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
-        <StatCard
-          title="Total Active Bundles"
-          value={catalogQuery.isError ? "—" : totalActive}
-          icon={Layers}
-          loading={catalogQuery.isPending}
-        />
-        <StatCard
-          title="Carriers"
-          value={catalogQuery.isError ? "—" : carrierCount}
-          icon={Tag}
-          loading={catalogQuery.isPending}
-        />
-        <StatCard
-          title="SIMs Across Tenants"
-          value="—"
-          icon={Building2}
-          footer={<span className="text-xs text-muted-foreground">No data source yet</span>}
-        />
-        <StatCard
-          title="Monthly Bundle Spend"
-          value="—"
-          icon={TrendingUp}
-          footer={<span className="text-xs text-muted-foreground">No data source yet</span>}
-        />
-      </div>
-
+    <div className="space-y-6">
       {/* Top-level: Data Bundles vs Tenant Adoption */}
       <Tabs
-        defaultValue="catalog"
+        value={activeTab}
+        onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList>
+        <TabsList className="flex w-fit mx-auto h-auto max-w-full flex-wrap gap-1">
           <TabsTrigger value="catalog">Data Bundles</TabsTrigger>
           <TabsTrigger value="adoption">Tenant Adoption</TabsTrigger>
         </TabsList>
+        <PageTitle {...heading} />
+
+        {/* KPI strip */}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
+          <StatCard
+            title="Total Active Bundles"
+            value={catalogQuery.isError ? "—" : totalActive}
+            icon={Layers}
+            loading={catalogQuery.isPending}
+          />
+          <StatCard
+            title="Carriers"
+            value={catalogQuery.isError ? "—" : carrierCount}
+            icon={Tag}
+            loading={catalogQuery.isPending}
+          />
+          <StatCard
+            title="SIMs Across Tenants"
+            value="—"
+            icon={Building2}
+            footer={<span className="text-xs text-muted-foreground">No data source yet</span>}
+          />
+          <StatCard
+            title="Monthly Bundle Spend"
+            value="—"
+            icon={TrendingUp}
+            footer={<span className="text-xs text-muted-foreground">No data source yet</span>}
+          />
+        </div>
 
         {/* DATA BUNDLES */}
         <TabsContent
           value="catalog"
           className="space-y-4"
         >
-          <div className="flex justify-end">
+          <PageActions>
             <Button
               variant="gradient"
               size="sm"
@@ -491,7 +507,7 @@ export default function PlatformDataBundles() {
               <Plus className="h-4 w-4 mr-2" />
               Add Bundle
             </Button>
-          </div>
+          </PageActions>
 
           <Card className="bg-card/50 border-border/50">
             <CardHeader>
@@ -746,13 +762,6 @@ export default function PlatformDataBundles() {
 
 /* ─────────────── Tenant Adoption (per-SIM) ─────────────── */
 
-const ALL_CARRIERS = [
-  "MTN",
-  "Airtel",
-  "Glo",
-  "Fonu",
-] as const;
-
 type SimRow = TenantSim & { tenant: string };
 
 function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
@@ -762,25 +771,13 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
     setSearch,
   ] = useState("");
   const [
-    draftCarrier,
-    setDraftCarrier,
-  ] = useState<string>("all");
-  const [
     draftBundleType,
     setDraftBundleType,
   ] = useState<"all" | "subscription" | "top-up">("all");
   const [
-    carrierEnabled,
-    setCarrierEnabled,
-  ] = useState(false);
-  const [
     typeEnabled,
     setTypeEnabled,
   ] = useState(false);
-  const [
-    appliedCarrier,
-    setAppliedCarrier,
-  ] = useState<string>("all");
   const [
     appliedType,
     setAppliedType,
@@ -791,8 +788,6 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
   ] = useState(false);
 
   const matchSim = (sim: TenantSim) => {
-    if (carrierEnabled && appliedCarrier !== "all" && sim.carrier !== appliedCarrier)
-      return false;
     if (typeEnabled && appliedType !== "all" && !sim.bundles.some(b => b.type === appliedType))
       return false;
     return true;
@@ -813,7 +808,6 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
               || sim.msisdn.toLowerCase().includes(q)
               || sim.iccid.toLowerCase().includes(q)
               || (sim.vehicle ?? "").toLowerCase().includes(q)
-              || sim.carrier.toLowerCase().includes(q)
               || sim.bundles.some(b => b.name.toLowerCase().includes(q))
             );
           });
@@ -827,9 +821,7 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
     [
       data,
       search,
-      carrierEnabled,
       typeEnabled,
-      appliedCarrier,
       appliedType,
     ],
   );
@@ -866,18 +858,6 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
       accessorKey: "iccid",
       header: "ICCID",
       meta: { className: "font-mono text-xs text-muted-foreground" },
-    },
-    {
-      accessorKey: "carrier",
-      header: "Carrier",
-      cell: ({ row }) => (
-        <Badge
-          variant="outline"
-          className="text-xs"
-        >
-          {row.original.carrier === "Fonu" ? "FONU" : row.original.carrier}
-        </Badge>
-      ),
     },
     {
       id: "vehicle",
@@ -929,7 +909,6 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
         "Tenant",
         "Mobile Number",
         "ICCID",
-        "Carrier",
         "Vehicle",
         "Bundle",
         "Type",
@@ -944,7 +923,6 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
             t.tenant,
             sim.msisdn,
             sim.iccid,
-            sim.carrier,
             sim.vehicle ?? "",
             b.name,
             b.type,
@@ -965,16 +943,12 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
   };
 
   const applyFilters = () => {
-    setAppliedCarrier(draftCarrier);
     setAppliedType(draftBundleType);
     setPopOpen(false);
   };
   const clearFilters = () => {
-    setDraftCarrier("all");
     setDraftBundleType("all");
-    setCarrierEnabled(false);
     setTypeEnabled(false);
-    setAppliedCarrier("all");
     setAppliedType("all");
     setPopOpen(false);
   };
@@ -1031,41 +1005,6 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
               >
                 <div className="space-y-4">
                   <div className="font-medium text-sm">Show Tenants</div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={carrierEnabled}
-                        onCheckedChange={v => setCarrierEnabled(Boolean(v))}
-                        id="f-carrier"
-                      />
-                      <Label
-                        htmlFor="f-carrier"
-                        className="text-sm"
-                      >
-                        Carrier
-                      </Label>
-                    </div>
-                    <div className={`pl-6 ${carrierEnabled ? "" : "opacity-50 pointer-events-none"}`}>
-                      <Select
-                        value={draftCarrier}
-                        onValueChange={setDraftCarrier}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {ALL_CARRIERS.map(c => (
-                            <SelectItem
-                              key={c}
-                              value={c}
-                            >
-                              {c === "Fonu" ? "FONU" : c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">

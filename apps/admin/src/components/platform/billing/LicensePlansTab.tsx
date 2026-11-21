@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
+import { PageActions } from "@/shared/components/layout/PageTitle";
 import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 
 const PAGE_SIZE = 10;
@@ -237,7 +238,7 @@ export function LicensePlansTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <PageActions>
         <Button
           className="rounded-xl"
           onClick={() => setAdding(true)}
@@ -245,7 +246,7 @@ export function LicensePlansTab() {
           <Plus className="mr-1.5 h-4 w-4" />
           Add M2M License Plan
         </Button>
-      </div>
+      </PageActions>
 
       <Card className="surface-sleek rounded-2xl">
         <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">

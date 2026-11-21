@@ -1,4 +1,5 @@
 import type { SystemSimsQuery } from "@truckmoov/api/auth";
+import type { SimRow } from "./simInventoryShared";
 import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSystemSimsExportQueryOptions } from "@truckmoov/api/auth";
@@ -24,26 +25,26 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { DataTable } from "@/components/shadcn/data-table";
-import { SimAssignDialog } from "./SimAssignDialog";
-import { SimBulkBar } from "./SimBulkBar";
+import { PageActions } from "@/shared/components/layout/PageTitle";
 import { SimAddDialog } from "./dialogs/SimAddDialog";
 import { SimBulkImportDialog } from "./dialogs/SimBulkImportDialog";
 import { SimDeleteDialog } from "./dialogs/SimDeleteDialog";
+import { SimAssignDialog } from "./SimAssignDialog";
+import { SimBulkBar } from "./SimBulkBar";
 import { SimDetailsSheet } from "./SimDetailsSheet";
 import { SimEditDialog } from "./SimEditDialog";
+import { getSimColumns } from "./simInventoryColumns";
 import {
   EMPTY_SIM_FILTERS,
   SimInventoryFilters,
 } from "./SimInventoryFilters";
-import { SimInventoryStats } from "./SimInventoryStats";
-import { getSimColumns } from "./simInventoryColumns";
-import type { SimRow } from "./simInventoryShared";
 import {
   canActivate,
   canReinstate,
   canSuspend,
   getCarrierOptions,
 } from "./simInventoryShared";
+import { SimInventoryStats } from "./SimInventoryStats";
 import { useSimInventoryData } from "./useSimInventoryData";
 import { useSimSuspension } from "./useSimSuspension";
 
@@ -65,20 +66,62 @@ function buildQuery(search: string, status: string, filters: FilterDraft): Syste
 
 export function SimInventoryTab() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [filters, setFilters] = useState<FilterDraft>(EMPTY_SIM_FILTERS);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [detailsSim, setDetailsSim] = useState<SimRow | null>(null);
-  const [editSim, setEditSim] = useState<SimRow | null>(null);
-  const [assignSim, setAssignSim] = useState<SimRow | null>(null);
-  const [deleteSim, setDeleteSim] = useState<SimRow | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    debouncedSearch,
+    setDebouncedSearch,
+  ] = useState("");
+  const [
+    status,
+    setStatus,
+  ] = useState("all");
+  const [
+    filters,
+    setFilters,
+  ] = useState<FilterDraft>(EMPTY_SIM_FILTERS);
+  const [
+    selectedIds,
+    setSelectedIds,
+  ] = useState<Set<string>>(new Set());
+  const [
+    detailsSim,
+    setDetailsSim,
+  ] = useState<SimRow | null>(null);
+  const [
+    editSim,
+    setEditSim,
+  ] = useState<SimRow | null>(null);
+  const [
+    assignSim,
+    setAssignSim,
+  ] = useState<SimRow | null>(null);
+  const [
+    deleteSim,
+    setDeleteSim,
+  ] = useState<SimRow | null>(null);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
+  const [
+    createOpen,
+    setCreateOpen,
+  ] = useState(false);
+  const [
+    importOpen,
+    setImportOpen,
+  ] = useState(false);
+  const [
+    page,
+    setPage,
+  ] = useState(1);
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(DEFAULT_PAGE_SIZE);
 
   useEffect(
     () => {
@@ -92,7 +135,11 @@ export function SimInventoryTab() {
   );
 
   const filterQuery = useMemo(
-    () => buildQuery(debouncedSearch, status, filters),
+    () => buildQuery(
+      debouncedSearch,
+      status,
+      filters,
+    ),
     [
       debouncedSearch,
       status,
@@ -179,7 +226,13 @@ export function SimInventoryTab() {
         ...getSystemSimsExportQueryOptions(filterQuery),
         staleTime: 0,
       });
-      downloadBlob(blob as Blob, `sim-inventory-${new Date().toISOString().slice(0, 10)}.csv`);
+      downloadBlob(
+        blob as Blob,
+        `sim-inventory-${new Date().toISOString().slice(
+          0,
+          10,
+        )}.csv`,
+      );
     }
     catch {
       toast.error("Export failed");
@@ -205,7 +258,7 @@ export function SimInventoryTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-end gap-2">
+      <PageActions>
         <Button
           variant="outline"
           onClick={() => setImportOpen(true)}
@@ -217,7 +270,7 @@ export function SimInventoryTab() {
           <Plus className="h-4 w-4 mr-2" />
           Register New SIM
         </Button>
-      </div>
+      </PageActions>
 
       <SimInventoryStats
         summary={summaryQuery.data?.data}

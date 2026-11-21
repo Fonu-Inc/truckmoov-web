@@ -22,6 +22,7 @@ import {
   differenceInSeconds,
   endOfDay as dfEndOfDay,
   endOfMonth as dfEndOfMonth,
+  endOfYear as dfEndOfYear,
   format,
   formatDistanceToNow,
   formatDistanceToNowStrict,
@@ -31,6 +32,7 @@ import {
   startOfDay as dfStartOfDay,
   startOfMonth as dfStartOfMonth,
   startOfWeek as dfStartOfWeek,
+  startOfYear as dfStartOfYear,
   subDays as dfSubDays,
   subMinutes as dfSubMinutes,
   subMonths as dfSubMonths,
@@ -369,6 +371,18 @@ export function startOfMonth(value: DateInput): Date | null {
 export function endOfMonth(value: DateInput): Date | null {
   const date = toDate(value)
   return date ? dfEndOfMonth(date) : null
+}
+
+/** First moment of `value`'s calendar year. For "this year" report periods. */
+export function startOfYear(value: DateInput): Date | null {
+  const date = toDate(value)
+  return date ? dfStartOfYear(date) : null
+}
+
+/** Last moment of `value`'s calendar year. */
+export function endOfYear(value: DateInput): Date | null {
+  const date = toDate(value)
+  return date ? dfEndOfYear(date) : null
 }
 
 /** Monday at midnight, for weekly operational summaries. */

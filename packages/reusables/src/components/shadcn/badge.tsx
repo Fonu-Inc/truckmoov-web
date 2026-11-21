@@ -16,6 +16,12 @@ const badgeVariants = cva(
         warning: "border-transparent bg-warning text-warning-foreground shadow-sm",
         info: "border-transparent bg-info text-info-foreground shadow-sm",
         muted: "border-transparent bg-muted text-muted-foreground",
+        installationScheduled: "border-installation-scheduled/20 bg-installation-scheduled/10 text-installation-scheduled",
+        installationAwaiting: "border-muted-foreground/20 bg-muted-foreground/10 text-muted-foreground",
+        installationCompleted: "border-success/20 bg-success/10 text-success",
+        installationCancelled: "border-destructive/20 bg-destructive/10 text-destructive",
+        installationProgress: "border-info/20 bg-info/10 text-info",
+        installationAttention: "border-warning/20 bg-warning/10 text-warning",
       },
     },
     defaultVariants: {
