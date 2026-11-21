@@ -1,14 +1,12 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type { AdminInvite } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemAdminInvitesQueryOptions,
   useDeleteSystemAdminInvite,
-  useResendSystemAdminInvite,
 } from "@truckmoov/api/auth";
-import { formatDate } from "@truckmoov/app-core/utils/time-utils";
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Clock, Mail, MoreHorizontal,
+  Clock, Mail, XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,129 +24,100 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
 
+/**
+ * Settings → Team & Access → Pending Invitations, fleetflow's card from
+ * `PlatformTeamManagement`: Email · Expires · Cancel. Live from
+ * `GET /auth/system/admin-invites`; Cancel calls the delete endpoint. Shown
+ * only while there are pending invitations, as in fleetflow.
+ */
 export function PlatformAdminInvitesPanel() {
   const invitesQuery = useQuery(getSystemAdminInvitesQueryOptions());
-  const invites: AdminInvite[] = invitesQuery.data?.data?.invites ?? [];
-
+  const pendingInvitations: AdminInvite[] = invitesQuery.data?.data?.invites ?? [];
   const deleteInvite = useDeleteSystemAdminInvite();
-  const resendInvite = useResendSystemAdminInvite();
 
   const [
     invitationToCancel,
     setInvitationToCancel,
   ] = useState<AdminInvite | null>(null);
 
-  const handleCancelInvitation = (invite: AdminInvite) => {
+  const handleCancelInvitation = (invitation: AdminInvite) => {
     deleteInvite.mutate(
-      { id: invite.id },
+      { id: invitation.id },
       {
         onSuccess: () => {
           toast.success("Invitation cancelled");
           setInvitationToCancel(null);
         },
-        onError: e => toast.error(e.message),
+        onError: () => toast.error("Failed to cancel invitation"),
       },
     );
   };
-
-  const handleResendInvite = (invite: AdminInvite) => {
-    resendInvite.mutate(
-      { id: invite.id },
-      {
-        onSuccess: () => toast.success("Invitation resent"),
-        onError: e => toast.error(e.message),
-      },
-    );
-  };
-
-  const inviteColumns: ColumnDef<AdminInvite>[] = [
-    {
-      accessorKey: "email",
-      header: "Email",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Mail className="h-4 w-4 text-muted-foreground" />
-          <span>{row.original.email}</span>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "expiresAt",
-      header: "Expires",
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
-          {row.original.expiresAt ? formatDate(row.original.expiresAt) : "—"}
-        </span>
-      ),
-    },
-    {
-      id: "actions",
-      header: () => <div className="text-right">Actions</div>,
-      meta: { className: "text-right" },
-      cell: ({ row }) => {
-        const invite = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleResendInvite(invite)}>
-                Resend Invite
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => setInvitationToCancel(invite)}
-              >
-                Cancel Invite
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
-
-  // Fleetflow shows this card only while there are pending invitations.
-  if (!invitesQuery.isLoading && !invitesQuery.isError && invites.length === 0)
-    return null;
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Clock className="h-4 w-4 text-warning" />
-            Pending Invitations
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            columns={inviteColumns}
-            data={invites}
-            isLoading={invitesQuery.isLoading}
-            isError={invitesQuery.isError}
-            errorMessage="Failed to load invitations."
-            onRetry={() => invitesQuery.refetch()}
-          />
-        </CardContent>
-      </Card>
+      {pendingInvitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4 text-warning" />
+              Pending Invitations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingInvitations.map(invitation => (
+                  <TableRow key={invitation.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span>{invitation.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {formatWithPattern(
+                          invitation.expiresAt,
+                          "MMM dd, yyyy",
+                        )}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setInvitationToCancel(invitation)}
+                      >
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Cancel
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
+      {/* Cancel Invitation Confirmation */}
       <AlertDialog
         open={!!invitationToCancel}
         onOpenChange={() => setInvitationToCancel(null)}

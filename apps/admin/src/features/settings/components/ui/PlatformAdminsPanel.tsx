@@ -1,20 +1,17 @@
-import type { ColumnDef } from "@tanstack/react-table";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemAdminsQueryOptions,
   useCreateSystemAdminInvite,
   useDeleteSystemAdmin,
-  useUpdateSystemAdminStatus,
 } from "@truckmoov/api/auth";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
-  KeyRound, MoreHorizontal, Plus, Search, Shield, SlidersHorizontal, Users,
+  KeyRound, Plus, Search, Shield, SlidersHorizontal, Trash2, Users,
 } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import {
+  useEffect, useState,
+} from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +31,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -43,22 +39,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/shadcn/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
   Popover,
   PopoverContent,
@@ -71,6 +53,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
+import { RoleBadge } from "@/features/settings/components/ui/RoleBadge";
 import { UserPermissionsDialog } from "@/features/settings/components/ui/UserPermissionsDialog";
 import { usePlatformRolesStore } from "@/features/settings/stores/platformRolesStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -81,6 +73,8 @@ type AdminUser = {
   role: string;
   accountStatus: "enabled" | "disabled" | string;
   status: "active" | "inactive" | string;
+  /** Not in the typed response; read when the server sends it. */
+  createdAt?: string;
   profile?: {
     fullName?: string;
     phoneNumber?: string;
@@ -89,55 +83,78 @@ type AdminUser = {
   };
 };
 
-const inviteSchema = z.object({ email: z.string().trim().email("Enter a valid email address.") });
-type InviteFormValues = z.infer<typeof inviteSchema>;
+/** Fleetflow's invite default; its role catalogue (the store) has no such entry, so the label falls back. */
+const DEFAULT_ROLE = "platform_admin";
+const EMAIL_RE = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
 
 function getAdminDisplayName(admin: AdminUser): string {
   return admin.profile?.fullName || admin.email;
 }
 
 /**
- * The API has one platform-admin role, so "Platform Admin" heads the picker and
- * is every admin's fallback. The other roles come from the local roles store
- * (fleetflow parity port) and are recorded per email in `userRoles`.
- * ponytail: local only — the invite request still sends just the email.
+ * Settings → Team & Access → Platform Team, fleetflow's `PlatformTeamManagement`
+ * team card: search + filter (role, date added), User · Role · Added · Actions
+ * (Permissions, trash), Invite Team Member dialog, Remove confirmation.
+ *
+ * Live: the team list (`GET /auth/system/admins`), invite (email only — the API
+ * takes no name or role) and delete.
+ *
+ * ponytail: the invite's Full Name and Role and each member's role are local
+ * (`usePlatformRolesStore().userRoles`, keyed by email) — the API has a single
+ * admin role. The Added column reads `createdAt` when the server sends it and
+ * shows "—" otherwise; nothing is invented for real admins.
  */
-const PLATFORM_ADMIN_ROLE = {
-  value: "platform_admin",
-  label: "Platform Admin",
-  description: "Platform admins have full access to all platform features and tenant management.",
-};
-
 export function PlatformAdminsPanel() {
   const { user } = useAuthStore();
   const roles = usePlatformRolesStore(s => s.roles);
   const userGrants = usePlatformRolesStore(s => s.userGrants);
   const userRoles = usePlatformRolesStore(s => s.userRoles);
   const setUserRole = usePlatformRolesStore(s => s.setUserRole);
-  const platformRoles = [
-    PLATFORM_ADMIN_ROLE,
-    ...roles.map(r => ({
-      value: r.key, label: r.label, description: r.description,
-    })),
-  ];
-  const roleKeyFor = (admin: AdminUser) => userRoles[admin.email.toLowerCase()] ?? PLATFORM_ADMIN_ROLE.value;
-  const roleLabel = (admin: AdminUser) =>
-    admin.role === "SUPER_ADMIN"
-      ? "Super Admin"
-      : platformRoles.find(r => r.value === roleKeyFor(admin))?.label ?? PLATFORM_ADMIN_ROLE.label;
+  const platformRoles = roles.map(r => ({
+    value: r.key, label: r.label, description: r.description,
+  }));
+  const roleKeyFor = (admin: AdminUser) => userRoles[admin.email.toLowerCase()] ?? DEFAULT_ROLE;
+  const roleLabel = (role: string) =>
+    platformRoles.find(r => r.value === role)?.label ?? "Platform Admin";
+  const adminRoleLabel = (admin: AdminUser) =>
+    admin.role === "SUPER_ADMIN" ? "Super Admin" : roleLabel(roleKeyFor(admin));
 
   const adminsQuery = useQuery(getSystemAdminsQueryOptions());
   const rawAdmins = adminsQuery.data?.data as { users?: AdminUser[] } | undefined;
-  const admins: AdminUser[] = rawAdmins?.users ?? [];
+  const platformUsers: AdminUser[] = rawAdmins?.users ?? [];
+  const isLoading = adminsQuery.isLoading;
+
+  useEffect(
+    () => {
+      if (adminsQuery.isError)
+        toast.error("Failed to fetch platform team");
+    },
+    [adminsQuery.isError],
+  );
 
   const createInvite = useCreateSystemAdminInvite();
   const deleteAdmin = useDeleteSystemAdmin();
-  const updateStatus = useUpdateSystemAdminStatus();
 
+  const [
+    permissionsUser,
+    setPermissionsUser,
+  ] = useState<AdminUser | null>(null);
   const [
     isInviteDialogOpen,
     setIsInviteDialogOpen,
   ] = useState(false);
+  const [
+    inviteEmail,
+    setInviteEmail,
+  ] = useState("");
+  const [
+    inviteName,
+    setInviteName,
+  ] = useState("");
+  const [
+    inviteRole,
+    setInviteRole,
+  ] = useState<string>(DEFAULT_ROLE);
   const [
     userToRemove,
     setUserToRemove,
@@ -151,196 +168,84 @@ export function PlatformAdminsPanel() {
     setTeamRoleFilter,
   ] = useState<string[]>([]);
   const [
-    inviteRole,
-    setInviteRole,
-  ] = useState<string>(PLATFORM_ADMIN_ROLE.value);
+    teamDateFrom,
+    setTeamDateFrom,
+  ] = useState<string>("");
   const [
-    permissionsUser,
-    setPermissionsUser,
-  ] = useState<AdminUser | null>(null);
+    teamDateTo,
+    setTeamDateTo,
+  ] = useState<string>("");
 
-  const inviteForm = useForm<InviteFormValues>({
-    resolver: zodResolver(inviteSchema),
-    defaultValues: { email: "" },
-  });
-
-  const filteredAdmins = admins.filter((admin) => {
+  const filteredPlatformUsers = platformUsers.filter((u) => {
     const q = teamSearch.trim().toLowerCase();
-    const name = getAdminDisplayName(admin).toLowerCase();
-    if (q && !(name.includes(q) || admin.email.toLowerCase().includes(q)))
+    const name = getAdminDisplayName(u).toLowerCase();
+    if (q && !(name.includes(q) || u.email.toLowerCase().includes(q)))
       return false;
-    if (teamRoleFilter.length > 0 && !teamRoleFilter.includes(roleKeyFor(admin)))
+    if (teamRoleFilter.length > 0 && !teamRoleFilter.includes(roleKeyFor(u)))
       return false;
+    if (teamDateFrom || teamDateTo) {
+      if (!u.createdAt)
+        return false;
+      const created = new Date(u.createdAt).getTime();
+      if (teamDateFrom && created < new Date(teamDateFrom).getTime())
+        return false;
+      if (teamDateTo && created > new Date(teamDateTo).getTime() + 86400000)
+        return false;
+    }
     return true;
   });
 
-  const handleInvitePlatformAdmin = (values: InviteFormValues) => {
+  const handleInvitePlatformAdmin = () => {
+    if (!inviteName.trim() || !inviteEmail) {
+      toast.error("Please enter the full name and email address");
+      return;
+    }
+    if (!EMAIL_RE.test(inviteEmail.trim())) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+    const email = inviteEmail.trim();
     createInvite.mutate(
-      { data: { email: values.email } },
+      { data: { email } },
       {
         onSuccess: () => {
           setUserRole(
-            values.email,
+            email,
             inviteRole,
           );
-          toast.success(`Invitation sent to ${values.email} as ${platformRoles.find(r => r.value === inviteRole)?.label ?? PLATFORM_ADMIN_ROLE.label}`);
-          inviteForm.reset();
-          setInviteRole(PLATFORM_ADMIN_ROLE.value);
+          toast.success(`Invitation sent to ${email} as ${roleLabel(inviteRole)}`);
+          setInviteEmail("");
+          setInviteName("");
+          setInviteRole(DEFAULT_ROLE);
           setIsInviteDialogOpen(false);
         },
-        onError: e => toast.error(e.message),
+        onError: () => toast.error("Failed to send invitation"),
       },
     );
   };
 
-  const handleToggleStatus = (admin: AdminUser) => {
-    const nextStatus = admin.accountStatus === "enabled" ? "disabled" : "enabled";
-    updateStatus.mutate(
-      {
-        id: admin.userId,
-        data: { accountStatus: nextStatus },
-      },
-      {
-        onSuccess: () => toast.success("Admin status updated"),
-        onError: e => toast.error(e.message),
-      },
-    );
-  };
-
-  const handleRemoveUser = (admin: AdminUser) => {
+  const handleRemoveUser = (platformUser: AdminUser) => {
+    if (platformUser.userId === user?.id) {
+      toast.error("You cannot remove yourself");
+      return;
+    }
     deleteAdmin.mutate(
-      { id: admin.userId },
+      { id: platformUser.userId },
       {
-        onSuccess: (res) => {
-          toast.success(res.message || "Admin deleted");
+        onSuccess: () => {
+          toast.success("User removed from platform team");
           setUserToRemove(null);
         },
-        onError: e => toast.error(e.message),
+        onError: () => toast.error("Failed to remove user"),
       },
     );
   };
-
-  const isLoading = adminsQuery.isLoading;
-
-  const columns: ColumnDef<AdminUser>[] = [
-    {
-      accessorKey: "email",
-      header: "User",
-      cell: ({ row }) => {
-        const displayName = getAdminDisplayName(row.original);
-        return (
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
-              {getInitials(displayName)}
-            </div>
-            <div>
-              <p className="font-medium">{displayName}</p>
-              <p className="text-sm text-muted-foreground">{row.original.email}</p>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "role",
-      header: "Role",
-      cell: ({ row }) => {
-        const extra = userGrants[row.original.userId]?.length ?? 0;
-        return (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge
-              variant="outline"
-              className="border-primary/30 text-primary"
-            >
-              <Shield className="h-3 w-3 mr-1" />
-              {roleLabel(row.original)}
-            </Badge>
-            {extra > 0 && (
-              <Badge
-                variant="secondary"
-                className="rounded-full text-[10px] font-normal"
-              >
-                +
-                {extra}
-                {" "}
-                extra
-              </Badge>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "accountStatus",
-      header: "Status",
-      cell: ({ row }) => (
-        <Badge variant={row.original.accountStatus === "enabled" ? "default" : "secondary"}>
-          {row.original.accountStatus === "enabled" ? "Enabled" : "Disabled"}
-        </Badge>
-      ),
-    },
-    {
-      id: "actions",
-      header: () => <div className="text-right">Actions</div>,
-      meta: { className: "text-right" },
-      cell: ({ row }) => {
-        const admin = row.original;
-        const isSelf = admin.userId === user?.id;
-        const permissionsButton = (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setPermissionsUser(admin)}
-          >
-            <KeyRound className="h-4 w-4" />
-            Permissions
-          </Button>
-        );
-        if (isSelf || admin.role === "SUPER_ADMIN") {
-          return (
-            <div className="flex items-center justify-end gap-1">
-              {permissionsButton}
-              <span className="text-xs text-muted-foreground">{isSelf ? "You" : "Protected"}</span>
-            </div>
-          );
-        }
-        return (
-          <div className="flex items-center justify-end gap-1">
-            {permissionsButton}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleToggleStatus(admin)}>
-                  {admin.accountStatus === "enabled" ? "Disable Admin" : "Enable Admin"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => setUserToRemove(admin)}
-                >
-                  Delete Admin
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        );
-      },
-    },
-  ];
 
   return (
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
@@ -350,51 +255,46 @@ export function PlatformAdminsPanel() {
                 Manage internal platform administrators and support staff
               </CardDescription>
             </div>
-            <Dialog
-              open={isInviteDialogOpen}
-              onOpenChange={(open) => {
-                setIsInviteDialogOpen(open);
-                if (!open)
-                  inviteForm.reset();
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button variant="gradient">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Invite Admin
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Invite Team Member</DialogTitle>
-                  <DialogDescription>
-                    Send an invitation to a member of the platform team and choose what they can administer.
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...inviteForm}>
-                  <form
-                    onSubmit={inviteForm.handleSubmit(handleInvitePlatformAdmin)}
-                    className="space-y-4 py-4"
-                  >
-                    <FormField
-                      control={inviteForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email Address</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="email"
-                              placeholder="name@truckmoov.com"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            <div className="flex flex-wrap items-center gap-2">
+              <Dialog
+                open={isInviteDialogOpen}
+                onOpenChange={setIsInviteDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="gradient">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Invite Admin
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Invite Team Member</DialogTitle>
+                    <DialogDescription>
+                      Send an invitation to a member of the platform team and choose what they can administer.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <FormLabel>Role</FormLabel>
+                      <Label htmlFor="invite-name">Full Name</Label>
+                      <Input
+                        id="invite-name"
+                        placeholder="e.g. Adaeze Okafor"
+                        value={inviteName}
+                        onChange={e => setInviteName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-email">Email Address</Label>
+                      <Input
+                        id="invite-email"
+                        type="email"
+                        placeholder="name@truckmoov.com"
+                        value={inviteEmail}
+                        onChange={e => setInviteEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Role</Label>
                       <Select
                         value={inviteRole}
                         onValueChange={setInviteRole}
@@ -417,31 +317,31 @@ export function PlatformAdminsPanel() {
                         {platformRoles.find(r => r.value === inviteRole)?.description}
                       </p>
                     </div>
-                    <div className="flex justify-end gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsInviteDialogOpen(false)}
-                        disabled={createInvite.isPending}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        variant="gradient"
-                        disabled={createInvite.isPending}
-                      >
-                        {createInvite.isPending ? "Sending..." : "Send Invitation"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsInviteDialogOpen(false)}
+                      disabled={createInvite.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="gradient"
+                      onClick={handleInvitePlatformAdmin}
+                      disabled={createInvite.isPending}
+                    >
+                      {createInvite.isPending ? "Sending..." : "Send Invitation"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          {!isLoading && admins.length > 0 && (
+          {!isLoading && platformUsers.length > 0 && (
             <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -461,12 +361,12 @@ export function PlatformAdminsPanel() {
                   >
                     <SlidersHorizontal className="h-4 w-4" />
                     Filter
-                    {teamRoleFilter.length > 0 && (
+                    {(teamRoleFilter.length > 0 || teamDateFrom || teamDateTo) && (
                       <Badge
                         variant="secondary"
                         className="ml-1 h-5 px-1.5 text-xs"
                       >
-                        {teamRoleFilter.length}
+                        {teamRoleFilter.length + (teamDateFrom ? 1 : 0) + (teamDateTo ? 1 : 0)}
                       </Badge>
                     )}
                   </Button>
@@ -499,11 +399,30 @@ export function PlatformAdminsPanel() {
                       ))}
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Date added</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="date"
+                        value={teamDateFrom}
+                        onChange={e => setTeamDateFrom(e.target.value)}
+                      />
+                      <Input
+                        type="date"
+                        value={teamDateTo}
+                        onChange={e => setTeamDateTo(e.target.value)}
+                      />
+                    </div>
+                  </div>
                   <div className="flex justify-between pt-2 border-t">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setTeamRoleFilter([])}
+                      onClick={() => {
+                        setTeamRoleFilter([]);
+                        setTeamDateFrom("");
+                        setTeamDateTo("");
+                      }}
                     >
                       Show All
                     </Button>
@@ -512,24 +431,126 @@ export function PlatformAdminsPanel() {
               </Popover>
             </div>
           )}
-
-          <DataTable
-            columns={columns}
-            data={filteredAdmins}
-            isLoading={isLoading}
-            isError={adminsQuery.isError}
-            errorMessage="Failed to load platform admins."
-            onRetry={() => adminsQuery.refetch()}
-            hasActiveFilters={!!teamSearch.trim() || teamRoleFilter.length > 0}
-            emptyState={(
-              <div className="text-muted-foreground">
-                <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No platform administrators found</p>
-                <p className="text-sm">Invite your first admin to get started</p>
-              </div>
-            )}
-            filteredEmptyState="No platform admins match your filters."
-          />
+          {isLoading
+            ? (
+                <div className="space-y-3">
+                  {[
+                    1,
+                    2,
+                    3,
+                  ].map(i => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-4"
+                    >
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-3 w-1/4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            : platformUsers.length === 0
+              ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No platform administrators found</p>
+                    <p className="text-sm">Invite your first admin to get started</p>
+                  </div>
+                )
+              : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Added</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPlatformUsers.map((platformUser) => {
+                        const displayName = getAdminDisplayName(platformUser);
+                        const extra = userGrants[platformUser.userId]?.length ?? 0;
+                        return (
+                          <TableRow key={platformUser.userId}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
+                                  {displayName
+                                    .split(" ")
+                                    .map(n => n[0])
+                                    .join("")
+                                    .toUpperCase()}
+                                </div>
+                                <div>
+                                  <p className="font-medium">{displayName}</p>
+                                  <p className="text-sm text-muted-foreground">{platformUser.email}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <RoleBadge
+                                  roleKey={roleKeyFor(platformUser)}
+                                  label={adminRoleLabel(platformUser)}
+                                />
+                                {extra > 0 && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="rounded-full text-[10px] font-normal"
+                                  >
+                                    +
+                                    {extra}
+                                    {" "}
+                                    extra
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground">
+                                {formatWithPattern(
+                                  platformUser.createdAt,
+                                  "MMM dd, yyyy",
+                                )}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="gap-1.5"
+                                  onClick={() => setPermissionsUser(platformUser)}
+                                >
+                                  <KeyRound className="h-4 w-4" />
+                                  Permissions
+                                </Button>
+                                {platformUser.userId !== user?.id
+                                  ? (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive"
+                                        onClick={() => setUserToRemove(platformUser)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )
+                                  : (
+                                      <span className="text-xs text-muted-foreground">You</span>
+                                    )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
         </CardContent>
       </Card>
 
@@ -543,13 +564,14 @@ export function PlatformAdminsPanel() {
         />
       )}
 
+      {/* Remove User Confirmation */}
       <AlertDialog
         open={!!userToRemove}
         onOpenChange={() => setUserToRemove(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Platform Admin?</AlertDialogTitle>
+            <AlertDialogTitle>Remove Platform Admin?</AlertDialogTitle>
             <AlertDialogDescription>
               This will remove
               {" "}
@@ -563,9 +585,8 @@ export function PlatformAdminsPanel() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => userToRemove && handleRemoveUser(userToRemove)}
-              disabled={deleteAdmin.isPending}
             >
-              {deleteAdmin.isPending ? "Deleting..." : "Delete"}
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

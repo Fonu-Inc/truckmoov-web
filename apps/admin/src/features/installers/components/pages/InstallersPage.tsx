@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemInstaller, SystemInstallerStatus,
 } from "@truckmoov/api/auth";
@@ -9,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getSystemInstallersQueryOptions,
   useReactivateSystemInstaller,
-  useResendSystemInstallerInvite,
   useSuspendSystemInstaller,
 } from "@truckmoov/api/auth";
 import {
@@ -18,7 +16,6 @@ import {
   Clock,
   Eye,
   HardHat,
-  Mail,
   MoreHorizontal,
   PauseCircle,
   Pencil,
@@ -41,7 +38,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,11 +59,18 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
+import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { AddInstallerDialog } from "@/features/installers/components/ui/AddInstallerDialog";
-import { InstallerProfileDialog } from "@/features/installers/components/ui/InstallerProfileDialog";
+import { InstallerProfileSheet } from "@/features/installers/components/ui/InstallerProfileSheet";
 import { InstallerStatusBadge } from "@/features/installers/components/ui/InstallerStatusBadge";
 import { PlatformInstallationsTab } from "@/features/installers/components/ui/PlatformInstallationsTab";
 import {
@@ -151,7 +154,6 @@ export default function InstallersPage() {
   } = useConfirmAction();
   const suspend = useSuspendSystemInstaller();
   const reactivate = useReactivateSystemInstaller();
-  const resendInvite = useResendSystemInstallerInvite();
 
   const [
     search,
@@ -256,183 +258,16 @@ export default function InstallersPage() {
     },
   );
 
-  // Server-paged list: sorting one page would mislead, so every column opts out.
-  const columns: ColumnDef<SystemInstaller>[] = [
-    {
-      id: "name", header: "Installer Name", enableSorting: false, meta: { className: "font-medium" }, cell: ({ row }) => installerName(row.original),
-    },
-    {
-      accessorKey: "code", header: "Installer ID", enableSorting: false, meta: { className: "text-muted-foreground" },
-    },
-    {
-      accessorKey: "phoneNumber", header: "Phone Number", enableSorting: false,
-    },
-    {
-      accessorKey: "email", header: "Email", enableSorting: false, meta: { className: "text-muted-foreground" },
-    },
-    {
-      id: "serviceArea",
-      header: "Service Area",
-      enableSorting: false,
-      cell: ({ row }) => {
-        const areas = row.original.serviceAreas.map(fromApiState).join(", ");
-        return (
-          <TooltipWrapper content={areas}>
-            <span className="block max-w-[180px] truncate">{areas}</span>
-          </TooltipWrapper>
-        );
-      },
-    },
-    {
-      id: "capabilities",
-      header: "Capabilities",
-      enableSorting: false,
-      cell: ({ row: { original: i } }) => (
-        <TooltipWrapper content={i.capabilities.map(capabilityLabel).join(", ")}>
-          <div className="flex items-center gap-1">
-            {i.capabilities[0] && (
-              <Badge
-                variant="secondary"
-                className="max-w-[200px] rounded-full"
-              >
-                <span className="truncate">{capabilityLabel(i.capabilities[0])}</span>
-              </Badge>
-            )}
-            {i.capabilities.length > 1 && (
-              <Badge
-                variant="secondary"
-                className="shrink-0 rounded-full"
-              >
-                +
-                {i.capabilities.length - 1}
-              </Badge>
-            )}
-          </div>
-        </TooltipWrapper>
-      ),
-    },
-    {
-      id: "availability",
-      header: "Availability",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <Badge
-          variant="outline"
-          className={isAssigned(row.original) ? "rounded-full border-warning/20 bg-warning/10 text-warning" : "rounded-full border-success/20 bg-success/10 text-success"}
-        >
-          {availability(row.original)}
-        </Badge>
-      ),
-    },
-    {
-      id: "status", header: "Status", enableSorting: false, cell: ({ row }) => <InstallerStatusBadge status={row.original.status} />,
-    },
-    {
-      id: "workload",
-      header: "Current Workload",
-      enableSorting: false,
-      meta: { className: "tabular-nums" },
-      cell: ({ row }) => `${row.original.activeJobs} active ${row.original.activeJobs === 1 ? "job" : "jobs"}`,
-    },
-    {
-      accessorKey: "jobsCompleted", header: "Jobs Completed", enableSorting: false, meta: { className: "tabular-nums" },
-    },
-    {
-      id: "createdAt", header: "Date Added", enableSorting: false, cell: ({ row }) => fmt(row.original.createdAt),
-    },
-    {
-      id: "lastActivityAt", header: "Last Activity", enableSorting: false, cell: ({ row }) => fmt(row.original.lastActivityAt),
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      enableSorting: false,
-      meta: { className: "text-right" },
-      cell: ({ row: { original: i } }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSelectedId(i.id)}>
-              <Eye className="mr-2 h-4 w-4" />
-              {" "}
-              View Installer Details
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setEditInstaller(i);
-                setAddOpen(true);
-              }}
-            >
-              <Pencil className="mr-2 h-4 w-4" />
-              {" "}
-              Edit Installer Details
-            </DropdownMenuItem>
-            {i.status === "invited" && (
-              <DropdownMenuItem onClick={() => act(
-                resendInvite,
-                i,
-                "was sent a new invite",
-              )}
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                {" "}
-                Resend Invite
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            {i.status === "suspended"
-              ? (
-                  <DropdownMenuItem
-                    onClick={() =>
-                      confirm({
-                        title: "Reactivate this installer?",
-                        description: `${installerName(i)} will be able to sign in and receive new installation jobs again.`,
-                        confirmLabel: "Reactivate Installer",
-                        destructive: false,
-                        onConfirm: () => act(
-                          reactivate,
-                          i,
-                          "reactivated",
-                        ),
-                      })}
-                  >
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    {" "}
-                    Reactivate Installer
-                  </DropdownMenuItem>
-                )
-              : (
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() =>
-                      confirm({
-                        title: "Suspend this installer?",
-                        description: `${installerName(i)} will no longer be able to sign in or be assigned new installation jobs.`,
-                        confirmLabel: "Suspend Installer",
-                        onConfirm: () => act(
-                          suspend,
-                          i,
-                          "suspended",
-                        ),
-                      })}
-                  >
-                    <Ban className="mr-2 h-4 w-4" />
-                    {" "}
-                    Suspend Installer
-                  </DropdownMenuItem>
-                )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
-  ];
+  const pages = Math.max(
+    1,
+    Math.ceil((filtering ? installers.length : total) / PAGE_SIZE),
+  );
+  const current = filtering
+    ? installers.slice(
+        (page - 1) * PAGE_SIZE,
+        page * PAGE_SIZE,
+      )
+    : installers;
 
   return (
     <>
@@ -546,27 +381,183 @@ export default function InstallersPage() {
                 </div>
 
                 <div className="overflow-x-auto rounded-2xl border">
-                  <DataTable
-                    className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
-                    columns={columns}
-                    data={installers}
-                    headerNote="Details and current information for installer pool."
-                    isLoading={isLoading}
-                    isError={isError}
-                    errorMessage={error ? `Couldn't load installers: ${error.message}` : "Couldn't load installers"}
-                    onRetry={() => void refetch()}
-                    emptyState={(
-                      <>
-                        <p className="text-sm font-medium text-foreground">No installers found</p>
-                        <p className="text-xs">Adjust your search or add an installer to the pool.</p>
-                      </>
-                    )}
-                    pagination={filtering
-                      ? undefined
-                      : {
-                          page, pageSize: PAGE_SIZE, total, onPageChange: setPage,
-                        }}
-                  />
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Installer Name</TableHead>
+                        <TableHead>Phone Number</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Service Area</TableHead>
+                        <TableHead>Capabilities</TableHead>
+                        <TableHead>Availability</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Current Workload</TableHead>
+                        <TableHead>Jobs Completed</TableHead>
+                        <TableHead>Date Added</TableHead>
+                        <TableHead>Last Activity</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={12} className="px-4 py-2 text-xs font-normal text-muted-foreground">
+                          Details and current information for installer pool.
+                        </TableCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {current.map(i => (
+                        <TableRow key={i.id}>
+                          <TableCell className="font-medium">{installerName(i)}</TableCell>
+                          <TableCell>{i.phoneNumber}</TableCell>
+                          <TableCell className="text-muted-foreground">{i.email}</TableCell>
+                          <TableCell>{i.serviceAreas.map(fromApiState).join(", ")}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {i.capabilities.slice(0, 2).map(c => (
+                                <Badge key={c} variant="secondary" className="rounded-full">
+                                  {capabilityLabel(c)}
+                                </Badge>
+                              ))}
+                              {i.capabilities.length > 2 && (
+                                <Badge variant="secondary" className="rounded-full">
+                                  +
+                                  {i.capabilities.length - 2}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={isAssigned(i) ? "rounded-full border-warning/20 bg-warning/10 text-warning" : "rounded-full border-success/20 bg-success/10 text-success"}
+                            >
+                              {availability(i)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <InstallerStatusBadge status={i.status} />
+                          </TableCell>
+                          <TableCell className="tabular-nums">
+                            {i.activeJobs}
+                            {" active "}
+                            {i.activeJobs === 1 ? "job" : "jobs"}
+                          </TableCell>
+                          <TableCell className="tabular-nums">{i.jobsCompleted}</TableCell>
+                          <TableCell>{fmt(i.createdAt)}</TableCell>
+                          <TableCell>{fmt(i.lastActivityAt)}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setSelectedId(i.id)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  {" "}
+                                  View Installer Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setEditInstaller(i);
+                                    setAddOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  {" "}
+                                  Edit Installer Details
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {i.status === "suspended"
+                                  ? (
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          confirm({
+                                            title: "Reactivate this installer?",
+                                            description: `${installerName(i)} will be able to sign in and receive new installation jobs again.`,
+                                            confirmLabel: "Reactivate Installer",
+                                            destructive: false,
+                                            onConfirm: () => act(reactivate, i, "reactivated"),
+                                          })}
+                                      >
+                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                        {" "}
+                                        Reactivate Installer
+                                      </DropdownMenuItem>
+                                    )
+                                  : (
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onClick={() =>
+                                          confirm({
+                                            title: "Suspend this installer?",
+                                            description: `${installerName(i)} will no longer be able to sign in or be assigned new installation jobs.`,
+                                            confirmLabel: "Suspend Installer",
+                                            onConfirm: () => act(suspend, i, "suspended"),
+                                          })}
+                                      >
+                                        <Ban className="mr-2 h-4 w-4" />
+                                        {" "}
+                                        Suspend Installer
+                                      </DropdownMenuItem>
+                                    )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {current.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={10} className="py-12 text-center">
+                            {isLoading
+                              ? <p className="text-sm text-muted-foreground">Loading installers…</p>
+                              : isError
+                                ? (
+                                    <div role="alert" className="flex flex-col items-center gap-2 text-sm text-destructive">
+                                      {error ? `Couldn't load installers: ${error.message}` : "Couldn't load installers"}
+                                      <Button variant="outline" size="sm" onClick={() => void refetch()}>Try again</Button>
+                                    </div>
+                                  )
+                                : (
+                                    <>
+                                      <p className="text-sm font-medium">No installers found</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Adjust your search or add an installer to the pool.
+                                      </p>
+                                    </>
+                                  )}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>
+                    {`Showing ${current.length} of ${filtering ? installers.length : total} installers`}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 1}
+                      onClick={() => setPage(p => p - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span>
+                      {`Page ${page} of ${pages}`}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= pages}
+                      onClick={() => setPage(p => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -589,7 +580,7 @@ export default function InstallersPage() {
         }}
         installer={editInstaller}
       />
-      <InstallerProfileDialog
+      <InstallerProfileSheet
         installer={selected}
         open={selectedId !== null}
         onOpenChange={v => !v && setSelectedId(null)}

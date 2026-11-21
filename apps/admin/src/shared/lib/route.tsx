@@ -251,8 +251,9 @@ export const router = createBrowserRouter([
                 lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SupportPreferencesPanel")).SupportPreferencesPanel }),
               },
               {
-                // The old Security tab (TRU-FE-23 two-factor) now sits on My Profile.
-                path: "security", loader: () => redirect("/settings"),
+                // The old Security tab (TRU-FE-23 two-factor) is now the Two-Factor
+                // switch on Team & Access's Account & Security card, as in fleetflow.
+                path: "security", loader: () => redirect("/settings/team"),
               },
             ],
           },

@@ -1,6 +1,7 @@
 import type { SystemInstaller } from "@truckmoov/api/auth";
 import type { InstallationRecord } from "@/features/installers/utils/platformInstallations";
 import { formatDateOnlyInTimezone } from "@truckmoov/app-core/utils/time-utils";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -16,13 +17,20 @@ import { InstallationStatusBadge } from "./InstallationStatusBadge";
  * customer booking and procurement request it can also show are fleetflow demo
  * stores with no API here, so their checklist / units / evidence sections fall
  * back to the copy fleetflow shows for a live record.
+ *
+ * `onAssign` opens fleetflow's "Installation Assignment" dialog. Fleetflow
+ * defines that dialog but wires no button to it; the trigger sits on the
+ * Assigned Installer heading because opening it closes this dialog, as in
+ * fleetflow's `openAssignment`.
  */
 export function PlatformInstallationDetails({
-  record, onClose, installers,
+  record, onClose, profileOnly = false, installers, onAssign,
 }: {
   record: InstallationRecord | null;
   onClose: () => void;
+  profileOnly?: boolean;
   installers: SystemInstaller[];
+  onAssign?: () => void;
 }) {
   const { timezone } = usePreferences();
   if (!record)
@@ -36,7 +44,7 @@ export function PlatformInstallationDetails({
     >
       <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Installation Details</DialogTitle>
+          <DialogTitle>{profileOnly ? "Installation Profile" : "Installation Details"}</DialogTitle>
           <DialogDescription>
             {record.reference}
             {" · "}
@@ -86,8 +94,21 @@ export function PlatformInstallationDetails({
             />
           </dl>
         </section>
+        {!profileOnly && (
+          <>
         <section className="space-y-3 border-b pb-4">
-          <h3 className="text-base font-semibold">Assigned Installer</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-base font-semibold">Assigned Installer</h3>
+            {onAssign && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onAssign}
+              >
+                {record.installerId || record.installerName ? "Reassign Installer" : "Assign Installer"}
+              </Button>
+            )}
+          </div>
           <dl className="grid gap-3 sm:grid-cols-2">
             <Field
               label="Installer"
@@ -125,6 +146,8 @@ export function PlatformInstallationDetails({
           <h3 className="text-base font-semibold">Completion Evidence</h3>
           <p className="text-sm text-muted-foreground">No uploaded completion evidence is recorded.</p>
         </section>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -1,15 +1,19 @@
-import type { SystemInstallationJob } from "@truckmoov/api/auth";
+import type { SystemInstallationJob, SystemInstaller } from "@truckmoov/api/auth";
 import type { InstallationRecord } from "./platformInstallations";
 import {
   describe, expect, it,
 } from "vitest";
 import {
+  canChangeInstallationAssignment,
+  eligibleInstallers,
   filterInstallationRecords,
   filterInstallationsByFields,
   fromSystemInstallationJob,
   installationTotals,
   installerHasActiveAssignment,
+  installerScheduleConflict,
   jobInstallationStatus,
+  rankInstallationInstallers,
 } from "./platformInstallations";
 
 // Ported from fleetflow's src/test/platformInstallations.test.ts — the cases that
@@ -245,5 +249,81 @@ describe(
         )).toHaveLength(3);
       },
     );
+  },
+);
+
+const account: SystemInstaller = {
+  id: "inst-1",
+  code: "INS-1001",
+  firstName: "Tunde",
+  lastName: "Akinwale",
+  fullName: "Tunde Akinwale",
+  email: "tunde@example.test",
+  phoneNumber: "+2348000000001",
+  state: "Lagos",
+  city: "Ikeja",
+  serviceAreas: ["Lagos"],
+  capabilities: ["tracker_installation_wiring"],
+  availability: "available",
+  status: "active",
+  activeJobs: 0,
+  maxActiveJobs: 3,
+  jobsCompleted: 0,
+  createdAt: "2026-01-01T00:00:00Z",
+  lastActivityAt: null,
+};
+
+describe(
+  "installation assignment",
+  () => {
+    it(
+      "treats FCT and Abuja (FCT) as the same recorded service area without enabling suspended installers",
+      () => {
+        const [record] = records([{ location: { city: "Garki", state: "FCT" } }]);
+        expect(eligibleInstallers(
+          record,
+          [
+            { ...account, state: "Abuja (FCT)", serviceAreas: [] },
+            { ...account, id: "suspended", state: "FCT", status: "suspended" },
+          ],
+        ).map(i => i.id)).toEqual([account.id]);
+      },
+    );
+    it(
+      "orders installers from the same city before same-state and unknown locations",
+      () => {
+        const [record] = records([{ location: { city: "Ikeja", state: "Lagos" } }]);
+        const ranked = rankInstallationInstallers(
+          record,
+          [
+            { ...account, id: "unknown", city: "", state: "" },
+            { ...account, id: "state", city: "Surulere", state: "Lagos" },
+            { ...account, id: "city", city: "Ikeja", state: "Lagos" },
+          ],
+        );
+        expect(ranked.map(row => row.installer.id)).toEqual(["city", "state", "unknown"]);
+        expect(ranked.map(row => row.match)).toEqual(["Same city", "Same state", "Location not recorded"]);
+      },
+    );
+    it(
+      "does not infer distance from missing installation locations",
+      () => {
+        const [record] = records([{ location: { city: "", state: "" } }]);
+        expect(rankInstallationInstallers(record, [account])[0].match).toBe("Location not recorded");
+      },
+    );
+    it(
+      "identifies other installer bookings on the selected date without counting completed work",
+      () => {
+        const rows = records([
+          { installer: installer("inst-1"), status: "scheduled" },
+          { installer: installer("inst-1"), status: "scheduled" },
+        ]);
+        expect(installerScheduleConflict(rows[0], "inst-1", rows)).toBe(true);
+        expect(installerScheduleConflict(rows[0], "inst-1", [rows[0], { ...rows[1], status: "completed" }])).toBe(false);
+      },
+    );
+    it("locks completed assignments", () => expect(canChangeInstallationAssignment("completed")).toBe(false));
+    it("locks in-progress assignments", () => expect(canChangeInstallationAssignment("in_progress")).toBe(false));
   },
 );

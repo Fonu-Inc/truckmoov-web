@@ -75,7 +75,7 @@ export function DashboardLayout() {
       <ErrorBoundary><DashboardSidebar /></ErrorBoundary>
       <div
         className={cn(
-          "flex min-h-screen flex-col bg-card",
+          "flex min-h-screen min-w-0 flex-col bg-card",
           // ponytail: mobile drops the fixed sidebar entirely (rendered as a
           // Sheet instead), so the content column takes the full width. `md:`
           // is the same 768px cutoff useIsMobile flips on.
@@ -87,8 +87,8 @@ export function DashboardLayout() {
         </ErrorBoundary>
         <TrialBanner />
         <main className={cn(
-          "flex-1 p-4 md:p-6",
-          entry?.fullWidth && "p-0 md:p-0",
+          "min-w-0 flex-1 p-3 sm:p-6",
+          entry?.fullWidth && "p-0 sm:p-0",
         )}
         >
           <ErrorBoundary>

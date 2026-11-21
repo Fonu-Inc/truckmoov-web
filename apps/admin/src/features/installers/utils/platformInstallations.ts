@@ -1,4 +1,4 @@
-import type { SystemInstallationJob } from "@truckmoov/api/auth";
+import type { SystemInstallationJob, SystemInstaller } from "@truckmoov/api/auth";
 
 /**
  * Platform installation records — fleetflow's `lib/platformInstallations`, live
@@ -196,4 +196,66 @@ export function installerHasActiveAssignment(installerId: string, records: Insta
 
 export function objectValue(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+export function canChangeInstallationAssignment(status: InstallationStatus) {
+  return [
+    "pending",
+    "awaiting_assignment",
+    "scheduled",
+  ].includes(status);
+}
+
+function recordLocation(record: InstallationRecord) {
+  const live = objectValue(record.liveDetails?.customer);
+  return {
+    state: typeof live.state === "string" ? live.state : "",
+    city: typeof live.city === "string" ? live.city : "",
+  };
+}
+
+/** City/state matches are not measured distances; unknown locations remain unranked. */
+function normalizeInstallationLocation(value: string) {
+  return value.trim().toLowerCase().replace(
+    /\s+state$/,
+    "",
+  ).replace(
+    /^(abuja \(fct\)|fct - abuja)$/,
+    "fct",
+  );
+}
+
+/**
+ * Fleetflow's `eligibleInstallers`. The API records no supported device or
+ * vehicle types per installer, so only status and service area gate eligibility.
+ */
+export function eligibleInstallers(record: InstallationRecord, installers: SystemInstaller[]) {
+  const { state } = recordLocation(record);
+  const normalize = normalizeInstallationLocation;
+  return installers.filter(i => i.status === "active" && (!state || normalize(i.state) === normalize(state) || i.serviceAreas.some(area => normalize(area) === normalize(state))));
+}
+
+export function installerScheduleConflict(record: InstallationRecord, installerId: string, records: InstallationRecord[]) {
+  return records.some(other => other.key !== record.key && other.installerId === installerId
+    && [
+      "awaiting_assignment",
+      "scheduled",
+      "in_progress",
+    ].includes(other.status)
+    && !!record.scheduledDate && other.scheduledDate === record.scheduledDate);
+}
+
+export function rankInstallationInstallers(record: InstallationRecord, installers: SystemInstaller[]) {
+  const {
+    state, city,
+  } = recordLocation(record);
+  const normalize = normalizeInstallationLocation;
+  return installers.map((installer) => {
+    const sameState = !!state && !!installer.state && normalize(state) === normalize(installer.state);
+    const sameCity = sameState && !!city && !!installer.city && normalize(city) === normalize(installer.city);
+    const match = sameCity ? "Same city" : sameState ? "Same state" : (!city && !state) || (!installer.city && !installer.state) ? "Location not recorded" : "Other service area";
+    return {
+      installer, match, rank: sameCity ? 0 : sameState ? 1 : match === "Location not recorded" ? 3 : 2,
+    };
+  }).sort((a, b) => a.rank - b.rank || `${a.installer.firstName} ${a.installer.lastName}`.localeCompare(`${b.installer.firstName} ${b.installer.lastName}`));
 }

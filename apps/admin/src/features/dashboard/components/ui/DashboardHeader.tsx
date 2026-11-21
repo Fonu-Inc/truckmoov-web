@@ -14,6 +14,7 @@ import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
+import { useRealtimeNotifications } from "@/features/dashboard/hooks/useRealtimeNotifications";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
 import {
   SHORTCUTS,
@@ -30,6 +31,13 @@ type DashboardHeaderProps = { onRefresh?: () => void };
  * (`shared/components/layout/PageTitle.tsx`), rendered by DashboardLayout.
  */
 export function DashboardHeader({ onRefresh }: DashboardHeaderProps = {}) {
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotifications,
+  } = useRealtimeNotifications();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [
     searchValue,
@@ -73,7 +81,7 @@ export function DashboardHeader({ onRefresh }: DashboardHeaderProps = {}) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 py-2 border-b border-border bg-background/98 px-4 md:px-6 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-border bg-background/98 px-6 py-2 backdrop-blur-sm">
       <div className="flex items-center gap-2 min-w-0">
         <button
           onClick={isMobile ? openMobile : toggle}
@@ -152,7 +160,13 @@ export function DashboardHeader({ onRefresh }: DashboardHeaderProps = {}) {
           </Button>
         </ShortcutTooltip>
 
-        <NotificationCenter />
+        <NotificationCenter
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onMarkAsRead={markAsRead}
+          onMarkAllAsRead={markAllAsRead}
+          onClear={clearNotifications}
+        />
 
         <UserProfileDropdown />
       </div>

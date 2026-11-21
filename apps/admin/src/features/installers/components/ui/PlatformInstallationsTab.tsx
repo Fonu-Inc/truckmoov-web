@@ -11,12 +11,16 @@ import {
 import {
   useMemo, useState,
 } from "react";
+import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { ExportButton } from "@/components/shadcn/export-button";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
@@ -28,12 +32,15 @@ import { usePreferences } from "@/contexts/PreferencesContext";
 import { usePlatformInstallations } from "@/features/installers/hooks/usePlatformInstallations";
 import { installerName } from "@/features/installers/installerOptions";
 import {
+  canChangeInstallationAssignment,
+  eligibleInstallers,
   filterInstallationRecords,
   filterInstallationsByFields,
   INSTALLATION_STATUS_LABEL,
   installationTotals,
 } from "@/features/installers/utils/platformInstallations";
 import { InstallationStatusBadge } from "./InstallationStatusBadge";
+import { InstallerAssignmentList } from "./InstallerAssignmentList";
 import { PlatformInstallationDetails } from "./PlatformInstallationDetails";
 
 const PAGE_SIZE = 8;
@@ -44,13 +51,35 @@ const HISTORY_STATUSES: InstallationRecord["status"][] = [
 
 /**
  * Fleetflow's `PlatformInstallationsTab`, live-wired to the installation orders
- * API. Fleetflow's manual "Installation Assignment" dialog is left out: nothing
- * in fleetflow opens it, and there is no assign endpoint here.
+ * API. Fleetflow's "Installation Assignment" dialog opens from the details
+ * dialog's Assigned Installer section; with no assign endpoint yet, a confirmed
+ * assignment is kept in this tab's local state only.
  */
 export function PlatformInstallationsTab() {
   const {
-    records, loading, error, liveInstallers: installers, refresh,
+    records: liveRecords, loading, error, liveInstallers: installers, refresh,
   } = usePlatformInstallations();
+  // ponytail: mock data from fleetflow parity port — wire to packages/api
+  // Session-only installer assignments (record key → installer id) until an assign endpoint exists.
+  const [
+    localAssignments,
+    setLocalAssignments,
+  ] = useState<Record<string, string>>({});
+  const records = useMemo(
+    () => liveRecords.map(r => localAssignments[r.key]
+      ? {
+          ...r,
+          installerId: localAssignments[r.key],
+          installerName: undefined,
+          status: r.status === "pending" ? "awaiting_assignment" as const : r.status,
+        }
+      : r),
+    [
+      liveRecords,
+      localAssignments,
+    ],
+  );
+  const allRecords = records;
   const { timezone } = usePreferences();
   const [
     view,
@@ -118,6 +147,26 @@ export function PlatformInstallationsTab() {
     detailKey,
     setDetailKey,
   ] = useState<string | null>(null);
+  const [
+    profileOnly,
+    setProfileOnly,
+  ] = useState(false);
+  const [
+    assignmentKey,
+    setAssignmentKey,
+  ] = useState<string | null>(null);
+  const [
+    installerId,
+    setInstallerId,
+  ] = useState("");
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+  const [
+    assignmentError,
+    setAssignmentError,
+  ] = useState("");
   const enriched = useMemo(
     () => records.map((r) => {
       const installer = installers.find(i => i.id === r.installerId);
@@ -186,6 +235,42 @@ export function PlatformInstallationsTab() {
     currentPage * PAGE_SIZE,
   );
   const detail = enriched.find(r => r.key === detailKey) || null;
+  const assignment = enriched.find(r => r.key === assignmentKey) || null;
+  const candidates = assignment ? eligibleInstallers(
+    assignment,
+    installers,
+  ) : [];
+  const candidate = candidates.find(i => i.id === installerId);
+  const openAssignment = (r: InstallationRecord) => {
+    setDetailKey(null);
+    setAssignmentKey(r.key);
+    setInstallerId(r.installerId || "");
+    setAssignmentError("");
+  };
+  const save = () => {
+    if (!assignment)
+      return;
+    setSaving(true);
+    setAssignmentError("");
+    try {
+      if (!canChangeInstallationAssignment(assignment.status))
+        throw new Error("Assignment is locked after installation work begins.");
+      if (!candidate)
+        throw new Error("Choose an active installer with matching location and capabilities.");
+      setLocalAssignments(current => ({
+        ...current,
+        [assignment.key]: candidate.id,
+      }));
+      toast.success("Installation assignment saved");
+      setAssignmentKey(null);
+    }
+    catch (e) {
+      setAssignmentError(e instanceof Error ? e.message : "Assignment could not be saved.");
+    }
+    finally {
+      setSaving(false);
+    }
+  };
   /** Shows the recorded time when the value carries one; date-only values stay date-only. */
   const dateTime = (value: string) => !value ? "—" : value.includes("T") ? formatDateInTimezone(
     value,
@@ -392,7 +477,10 @@ export function PlatformInstallationsTab() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setDetailKey(r.key)}
+                                onClick={() => {
+                                  setDetailKey(r.key);
+                                  setProfileOnly(false);
+                                }}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
@@ -455,8 +543,59 @@ export function PlatformInstallationsTab() {
       <PlatformInstallationDetails
         record={detail}
         onClose={() => setDetailKey(null)}
+        profileOnly={profileOnly}
         installers={installers}
+        onAssign={detail && canChangeInstallationAssignment(detail.status) ? () => openAssignment(detail) : undefined}
       />
+      <Dialog
+        open={!!assignment}
+        onOpenChange={open => !open && setAssignmentKey(null)}
+      >
+        <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Installation Assignment</DialogTitle>
+            <DialogDescription>
+              {assignment?.reference}
+              {" · "}
+              {assignment?.customer}
+            </DialogDescription>
+          </DialogHeader>
+          {assignment && (
+            <InstallerAssignmentList
+              key={assignment.key}
+              record={assignment}
+              installers={installers}
+              eligibleIds={candidates.map(i => i.id)}
+              records={allRecords}
+              selectedId={installerId}
+              onSelect={setInstallerId}
+              disabled={saving}
+            />
+          )}
+          {assignmentError && (
+            <p
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {assignmentError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAssignmentKey(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={save}
+              disabled={!candidate || saving}
+            >
+              {saving ? "Saving…" : "Confirm Assignment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

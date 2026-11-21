@@ -47,7 +47,7 @@ export const STATUS_LABEL: Record<SystemInstaller["status"], string> = {
 
 export const JOB_STATUS_LABEL: Record<InstallerJobStatus, string> = {
   unassigned: "Awaiting assignment",
-  assigned: "Offered",
+  assigned: "Offer pending",
   scheduled: "Scheduled",
   in_progress: "In progress",
   overdue: "Overdue",

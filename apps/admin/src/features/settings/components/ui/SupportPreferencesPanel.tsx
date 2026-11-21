@@ -5,7 +5,7 @@ import {
   useUpdateSystemSettings,
 } from "@truckmoov/api/auth";
 import {
-  Mail, RefreshCw, Save,
+  Mail, Save,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -165,19 +165,8 @@ export function SupportPreferencesPanel() {
                 form={SUPPORT_PREFERENCES_FORM_ID}
                 disabled={updateSettings.isPending}
               >
-                {updateSettings.isPending
-                  ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    )
-                  : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Support Preferences
-                      </>
-                    )}
+                <Save className="h-4 w-4 mr-2" />
+                Save Support Preferences
               </Button>
             </PageActions>
           </form>

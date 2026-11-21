@@ -25,8 +25,8 @@ export function InstallerStatusBadge({ status }: { status: SystemInstallerStatus
 
 const jobTone: Record<InstallerJobStatus, string> = {
   unassigned: "bg-muted text-muted-foreground",
-  assigned: "bg-info/10 text-info",
-  scheduled: "bg-chart-4/10 text-chart-4",
+  assigned: "bg-primary/10 text-primary",
+  scheduled: "bg-secondary text-secondary-foreground",
   in_progress: "bg-warning/10 text-warning",
   overdue: "bg-destructive/10 text-destructive",
   issue_reported: "bg-destructive/10 text-destructive",

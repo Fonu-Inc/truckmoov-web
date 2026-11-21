@@ -1,10 +1,11 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemSupportTicketCategory, SystemSupportTicketsQuery,
 } from "@truckmoov/api/auth";
-import type { ReactNode } from "react";
-import type { SupportTicket } from "./AdminTicketSheet";
+import type {
+  SupportTicket, TicketStatus,
+} from "./AdminTicketSheet";
 import {
+  keepPreviousData,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -12,10 +13,7 @@ import {
   getSystemSupportTicketsExportQueryOptions,
   getSystemSupportTicketsQueryOptions,
   getSystemSupportTicketSummaryQueryOptions,
-  getSystemTenantsQueryOptions,
 } from "@truckmoov/api/auth";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
-
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -43,7 +41,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import {
   Popover,
@@ -57,174 +54,119 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
 import { AdminTicketSheet } from "./AdminTicketSheet";
 import { toSheetTicket } from "./toSheetTicket";
+import { useSupportTenantDirectory } from "./useSupportTenantDirectory";
 
-type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type TicketPriority = "low" | "medium" | "high" | "critical";
-type TicketCategory = SystemSupportTicketCategory;
-type TicketRow = SupportTicket & {
-  tenantName?: string;
-  reporterName?: string;
-};
 
-const statusConfig: Record<TicketStatus, {
-  label: string;
-  className: string;
-}> = {
+const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   open: {
-    label: "Open",
-    className: "border-transparent bg-primary text-primary-foreground",
+    label: "Open", variant: "default",
   },
   in_progress: {
-    label: "In Progress",
-    className: "border-transparent bg-secondary text-secondary-foreground",
+    label: "In Progress", variant: "secondary",
   },
   waiting_on_tenant: {
-    label: "Awaiting Response",
-    className: "border-border bg-transparent text-foreground",
+    label: "Awaiting Response", variant: "outline",
   },
   escalated: {
-    label: "Escalated",
-    className: "border-transparent bg-destructive text-destructive-foreground",
+    label: "Escalated", variant: "destructive",
   },
   resolved: {
-    label: "Resolved",
-    className: "border-transparent bg-secondary text-secondary-foreground",
+    label: "Resolved", variant: "secondary",
   },
   closed: {
-    label: "Closed",
-    className: "border-border bg-transparent text-muted-foreground",
+    label: "Closed", variant: "outline",
   },
 };
 
-const priorityConfig: Record<TicketPriority, {
-  label: string;
-  className: string;
-}> = {
+const priorityConfig: Record<TicketPriority, { label: string; className: string }> = {
   low: {
-    label: "Low",
-    className: "border-border bg-secondary/50 text-muted-foreground",
+    label: "Low", className: "bg-muted text-muted-foreground",
   },
   medium: {
-    label: "Medium",
-    className: "border-transparent bg-primary/10 text-primary",
+    label: "Medium", className: "bg-primary/10 text-primary",
   },
   high: {
-    label: "High",
-    className: "border-transparent bg-destructive/10 text-destructive",
+    label: "High", className: "bg-chart-5/10 text-chart-5",
   },
   critical: {
-    label: "Critical",
-    className: "border-destructive/20 bg-destructive/10 text-destructive",
+    label: "Critical", className: "bg-destructive/10 text-destructive",
   },
 };
 
-const categoryOptions: {
-  value: TicketCategory;
-  label: string;
-}[] = [
+// Not in fleetflow (its Filter button opens nothing) — the popover's category
+// field drives the live `category` query param.
+const categoryOptions: { value: SystemSupportTicketCategory; label: string }[] = [
   {
-    value: "device_tracking",
-    label: "Device Tracking",
+    value: "device_tracking", label: "Device Tracking",
   },
   {
-    value: "billing",
-    label: "Billing",
+    value: "billing", label: "Billing",
   },
   {
-    value: "sim_connectivity",
-    label: "Sim Connectivity",
+    value: "sim_connectivity", label: "Sim Connectivity",
   },
   {
-    value: "messaging",
-    label: "Messaging",
+    value: "messaging", label: "Messaging",
   },
   {
-    value: "compliance",
-    label: "Compliance",
+    value: "compliance", label: "Compliance",
   },
   {
-    value: "onboarding",
-    label: "Onboarding",
+    value: "onboarding", label: "Onboarding",
   },
   {
-    value: "billing_subscription",
-    label: "Billing & Subscription",
+    value: "billing_subscription", label: "Billing & Subscription",
   },
   {
-    value: "account_access",
-    label: "Account / Access",
+    value: "account_access", label: "Account / Access",
   },
   {
-    value: "enterprise_enquiry",
-    label: "Enterprise Enquiry",
+    value: "enterprise_enquiry", label: "Enterprise Enquiry",
   },
   {
-    value: "other",
-    label: "Other",
+    value: "other", label: "Other",
   },
 ];
 
-function titleCase(value: string) {
-  return value
-    .replace(
-      /_/g,
-      " ",
-    )
-    .replace(
-      /\s+/g,
-      " ",
-    )
-    .trim()
-    .replace(
-      /\b\w/g,
-      letter => letter.toUpperCase(),
-    );
+function channelFromContext(c?: string): string {
+  switch (c) {
+    case "device": return "Device";
+    case "sim": return "SIM";
+    case "vehicle": return "Vehicle";
+    case "whatsapp": return "WhatsApp";
+    case "billing": return "Billing";
+    default: return "Web";
+  }
 }
 
-function shortId(id: string) {
-  return id.slice(
-    0,
-    8,
+const formatCategory = (c: string) =>
+  c.replace(
+    /_/g,
+    " ",
+  ).replace(
+    /\b\w/g,
+    l => l.toUpperCase(),
   );
-}
 
-function channelFromContext(value?: string) {
-  switch (value) {
-    case "device":
-      return "Device";
-    case "sim":
-      return "SIM";
-    case "vehicle":
-      return "Vehicle";
-    case "whatsapp":
-      return "WhatsApp";
-    case "billing":
-      return "Billing";
-    default:
-      return "Web";
-  }
-}
+const shortId = (id?: string) => (id
+  ? id.slice(
+      0,
+      8,
+    )
+  : "—");
 
-const tenantLabel = (ticket: TicketRow) => ticket.tenantName || `Tenant ${shortId(ticket.tenantId || ticket.id)}`;
-/** Fleetflow's tenant-type rule: owner-operator wins, else any fleet org type is Enterprise. */
-function tenantTypeFromOrgTypes(types?: string[]): string {
-  const upper = (types ?? []).map(t => t.toUpperCase());
-  if (upper.includes("OWNER_OPERATOR"))
-    return "Owner-Operator";
-  if (upper.some(t => [
-    "ENTERPRISE",
-    "FLEET_PROVIDER",
-    "AGGREGATOR",
-  ].includes(t))) {
-    return "Enterprise";
-  }
-  return "—";
-}
-
-const reporterLabel = (ticket: TicketRow) => ticket.reporterName || `User ${shortId(ticket.createdBy || ticket.id)}`;
+const reporterName = (ticket: SupportTicket) => shortId(ticket.createdBy);
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [
@@ -270,7 +212,7 @@ export function AllTickets() {
   const [
     statusFilter,
     setStatusFilter,
-  ] = useState("all");
+  ] = useState<string>("all");
   const [
     pendingStatusFilter,
     setPendingStatusFilter,
@@ -294,7 +236,7 @@ export function AllTickets() {
   const [
     selectedTicket,
     setSelectedTicket,
-  ] = useState<TicketRow | null>(null);
+  ] = useState<SupportTicket | null>(null);
   const debouncedSearch = useDebouncedValue(
     search.trim(),
     350,
@@ -319,155 +261,21 @@ export function AllTickets() {
   );
 
   const summaryQuery = useQuery(getSystemSupportTicketSummaryQueryOptions());
-  const ticketsQuery = useQuery(getSystemSupportTicketsQueryOptions(queryPayload));
+  const ticketsQuery = useQuery({
+    ...getSystemSupportTicketsQueryOptions(queryPayload),
+    placeholderData: keepPreviousData,
+  });
+  const {
+    tenantName, tenantType,
+  } = useSupportTenantDirectory();
 
-  const tickets = useMemo(
+  const filteredTickets = useMemo(
     () => (ticketsQuery.data?.data?.tickets ?? []).map(toSheetTicket),
     [ticketsQuery.data],
   );
 
-  // Tickets carry only tenantId; the tenant list (same unpaginated call as
-  // TenantDetailPage) supplies each tenant's organisation types.
-  const tenantsQuery = useQuery(getSystemTenantsQueryOptions());
-  const tenantOrgTypes = useMemo(
-    () => new Map((tenantsQuery.data?.data?.tenants ?? []).map(t => [
-      t.id,
-      t.organizationTypes ?? (t.organizationType ? [t.organizationType] : []),
-    ])),
-    [tenantsQuery.data],
-  );
-
-  const summary = summaryQuery.data?.data;
-  const counts = useMemo(
-    () => ({
-      total:
-        (summary?.open ?? 0)
-        + (summary?.inProgress ?? 0)
-        + (summary?.waitingOnTenant ?? 0)
-        + (summary?.escalated ?? 0)
-        + (summary?.resolved ?? 0)
-        + (summary?.closed ?? 0),
-      open: summary?.open ?? 0,
-      inProgress: summary?.inProgress ?? 0,
-      escalated: summary?.escalated ?? 0,
-      closed: (summary?.resolved ?? 0) + (summary?.closed ?? 0),
-    }),
-    [summary],
-  );
-
-  const ticketColumns: ColumnDef<TicketRow>[] = useMemo(
-    () => [
-      {
-        id: "id",
-        header: "Ticket ID",
-        cell: ({ row }) => (
-          <span className="font-mono text-xs font-semibold">
-            #
-            {shortId(row.original.id)}
-          </span>
-        ),
-      },
-      {
-        id: "title",
-        header: "Title",
-        cell: ({ row }) => (
-          <span className="block max-w-[260px] truncate font-semibold">{row.original.subject}</span>
-        ),
-      },
-      {
-        id: "tenant",
-        header: "Tenant",
-        cell: ({ row }) => (
-          <span className="block max-w-[220px] truncate font-semibold">{tenantLabel(row.original)}</span>
-        ),
-      },
-      {
-        id: "tenantType",
-        header: "Tenant Type",
-        cell: ({ row }) => (
-          <span className="text-sm whitespace-nowrap">{tenantTypeFromOrgTypes(tenantOrgTypes.get(row.original.tenantId))}</span>
-        ),
-      },
-      {
-        id: "reporter",
-        header: "Reporter",
-        cell: ({ row }) => {
-          const reporter = reporterLabel(row.original);
-          return (
-            <div className="flex min-w-0 items-center gap-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                {getInitials(reporter)}
-              </div>
-              <span className="truncate font-semibold">{reporter}</span>
-            </div>
-          );
-        },
-      },
-      {
-        id: "channel",
-        header: "Channel",
-        cell: ({ row }) => <span className="font-semibold">{row.original.channel ? titleCase(row.original.channel) : channelFromContext(row.original.contextType)}</span>,
-      },
-      {
-        id: "category",
-        header: "Category",
-        cell: ({ row }) => <span className="font-semibold">{titleCase(row.original.category)}</span>,
-      },
-      {
-        id: "status",
-        header: "Status",
-        cell: ({ row }) => {
-          const s = statusConfig[row.original.status as TicketStatus] ?? statusConfig.open;
-          return (
-            <Badge
-              variant="outline"
-              className={s.className}
-            >
-              {s.label}
-            </Badge>
-          );
-        },
-      },
-      {
-        id: "priority",
-        header: "Priority",
-        cell: ({ row }) => {
-          const p = priorityConfig[row.original.priority as TicketPriority] ?? priorityConfig.medium;
-          return (
-            <Badge
-              variant="outline"
-              className={p.className}
-            >
-              {p.label}
-            </Badge>
-          );
-        },
-      },
-      {
-        id: "action",
-        header: "Action",
-        enableSorting: false,
-        meta: { className: "text-right" },
-        cell: ({ row }) => (
-          <div className="text-right">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 font-semibold"
-              onClick={(event) => {
-                event.stopPropagation();
-                setSelectedTicket(row.original);
-              }}
-            >
-              <Eye className="mr-3 h-4 w-4" />
-              Manage
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [tenantOrgTypes],
-  );
+  const tenantLabel = (ticket: SupportTicket) =>
+    tenantName(ticket.tenantId) || `Tenant ${shortId(ticket.tenantId)}`;
 
   async function handleExport() {
     setIsExporting(true);
@@ -487,44 +295,66 @@ export function AllTickets() {
     }
   }
 
+  if (ticketsQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Counts come from the summary endpoint, so they cover every ticket rather than
+  // the filtered page. "Open" is fleetflow's "anything not resolved/closed".
+  const summary = summaryQuery.data?.data;
+  const openCount = (summary?.open ?? 0) + (summary?.inProgress ?? 0) + (summary?.waitingOnTenant ?? 0) + (summary?.escalated ?? 0);
+  const closedCount = (summary?.resolved ?? 0) + (summary?.closed ?? 0);
+
+  const kpis = [
+    {
+      label: "Total Tickets", value: openCount + closedCount, icon: TicketIcon, accent: "text-foreground",
+    },
+    {
+      label: "Open", value: openCount, icon: CircleDot, accent: "text-chart-5",
+    },
+    {
+      label: "In Progress", value: summary?.inProgress ?? 0, icon: Loader2, accent: "text-primary",
+    },
+    {
+      label: "Escalated", value: summary?.escalated ?? 0, icon: ArrowUpRight, accent: "text-destructive",
+    },
+    {
+      label: "Closed", value: closedCount, icon: CheckCircle2, accent: "text-muted-foreground",
+    },
+  ];
+
+  const hasFilters = !!search || statusFilter !== "all" || categoryFilter !== "all";
+
   return (
     <>
       <div className="space-y-4">
-        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
-          <StatCard
-            label="Total Tickets"
-            value={counts.total}
-            loading={ticketsQuery.isLoading}
-            icon={<TicketIcon className="h-4 w-4 text-foreground" />}
-          />
-          <StatCard
-            label="Open"
-            value={counts.open}
-            loading={ticketsQuery.isLoading}
-            icon={<CircleDot className="h-4 w-4 text-chart-5" />}
-          />
-          <StatCard
-            label="In Progress"
-            value={counts.inProgress}
-            loading={ticketsQuery.isLoading}
-            icon={<Loader2 className="h-4 w-4 text-primary" />}
-          />
-          <StatCard
-            label="Escalated"
-            value={counts.escalated}
-            loading={ticketsQuery.isLoading}
-            icon={<ArrowUpRight className="h-4 w-4 text-destructive" />}
-          />
-          <StatCard
-            label="Closed"
-            value={counts.closed}
-            loading={ticketsQuery.isLoading}
-            icon={<CheckCircle2 className="h-4 w-4 text-muted-foreground" />}
-          />
+        {/* KPIs */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {kpis.map((kpi) => {
+            const Icon = kpi.icon;
+            return (
+              <Card key={kpi.label}>
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted">
+                    <Icon className={`h-4 w-4 ${kpi.accent}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
+                    <p className="text-xl font-semibold leading-tight">{kpi.value}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
+        {/* All Tickets Table */}
         <Card>
-          <CardHeader className="space-y-6">
+          <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <CardTitle>All Tickets</CardTitle>
@@ -532,235 +362,270 @@ export function AllTickets() {
                   Tickets logged by tenants across the platform. Click any row to review, edit, or escalate.
                 </CardDescription>
               </div>
+              {/* Fleetflow's ExportButton, wired to the server CSV export so it covers every matching row. */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExport}
-                disabled={ticketsQuery.isLoading || isExporting}
+                disabled={isExporting}
                 className="bg-transparent border-input"
               >
-                {isExporting
-                  ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <Download className="mr-2 h-4 w-4" />
-                    )}
+                <Download className="h-4 w-4 mr-2" />
                 Export Data
               </Button>
             </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            {/* Toolbar */}
+            <div className="flex flex-col gap-2 pt-4 md:flex-row md:items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search by ID, title, tenant, or reporter..."
                   value={search}
-                  onChange={event => setSearch(event.target.value)}
-                  className="h-10 border-border bg-transparent pl-10 font-semibold placeholder:font-normal hover:bg-secondary"
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-9 h-9 border-border bg-transparent font-semibold placeholder:font-normal hover:bg-secondary"
                 />
               </div>
-              {/* ponytail: inline All Statuses select mirrors the platform
-                  reference. Kept alongside the Filter popover — popover still
-                  owns category + any future fields, this is the one-click
-                  status swap. */}
-              <Select
-                value={statusFilter}
-                onValueChange={(value) => {
-                  setStatusFilter(value);
-                  setPendingStatusFilter(value);
-                }}
-              >
-                <SelectTrigger className="h-10 w-[160px] border-border bg-transparent font-semibold">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="waiting_on_tenant">Awaiting Response</SelectItem>
-                  <SelectItem value="escalated">Escalated</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-              <Popover
-                open={filterOpen}
-                onOpenChange={setFilterOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-10 font-semibold"
-                  >
-                    <SlidersHorizontal className="mr-2 h-4 w-4" />
-                    Filter
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  className="w-80 space-y-4"
+              <div className="flex flex-wrap items-center gap-2">
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => {
+                    setStatusFilter(value);
+                    setPendingStatusFilter(value);
+                  }}
                 >
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold">Only show tickets by...</p>
-                    <p className="text-xs text-muted-foreground">
-                      {statusFilter === "all"
-                        ? categoryFilter === "all"
-                          ? "No filters applied"
-                          : `Category: ${categoryOptions.find(option => option.value === categoryFilter)?.label ?? titleCase(categoryFilter)}`
-                        : `Status: ${statusConfig[statusFilter as TicketStatus]?.label ?? titleCase(statusFilter)}`}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-4 w-4 rounded border border-primary"
-                        aria-hidden="true"
-                      />
-                      <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    </div>
-                    <Select
-                      value={pendingStatusFilter}
-                      onValueChange={setPendingStatusFilter}
-                    >
-                      <SelectTrigger className="h-10 border-border bg-background">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="waiting_on_tenant">Awaiting Response</SelectItem>
-                        <SelectItem value="escalated">Escalated</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-4 w-4 rounded border border-primary"
-                        aria-hidden="true"
-                      />
-                      <p className="text-sm font-medium text-muted-foreground">Category</p>
-                    </div>
-                    <Select
-                      value={pendingCategoryFilter}
-                      onValueChange={setPendingCategoryFilter}
-                    >
-                      <SelectTrigger className="h-10 border-border bg-background">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categoryOptions.map(option => (
-                          <SelectItem
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <Button
-                      className="font-semibold"
-                      onClick={() => {
-                        setStatusFilter(pendingStatusFilter);
-                        setCategoryFilter(pendingCategoryFilter);
-                        setFilterOpen(false);
-                      }}
-                    >
-                      Apply
-                    </Button>
+                  <SelectTrigger className="h-9 w-[160px] border-border bg-transparent font-semibold hover:bg-secondary">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="waiting_on_tenant">Awaiting Response</SelectItem>
+                    <SelectItem value="escalated">Escalated</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Popover
+                  open={filterOpen}
+                  onOpenChange={setFilterOpen}
+                >
+                  <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="font-semibold"
-                      onClick={() => {
-                        setPendingStatusFilter("all");
-                        setStatusFilter("all");
-                        setPendingCategoryFilter("all");
-                        setCategoryFilter("all");
-                        setFilterOpen(false);
-                      }}
+                      size="sm"
+                      className="h-9 font-semibold"
                     >
-                      Show All
+                      <SlidersHorizontal className="h-4 w-4 mr-2" />
+                      Filter
                     </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    className="w-80 space-y-4"
+                  >
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">Only show tickets by...</p>
+                      <p className="text-xs text-muted-foreground">
+                        {statusFilter === "all" && categoryFilter === "all" ? "No filters applied" : "Filters applied"}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Status</p>
+                      <Select
+                        value={pendingStatusFilter}
+                        onValueChange={setPendingStatusFilter}
+                      >
+                        <SelectTrigger className="h-9 border-border bg-background">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          {Object.entries(statusConfig).map(([
+                            value,
+                            config,
+                          ]) => (
+                            <SelectItem
+                              key={value}
+                              value={value}
+                            >
+                              {config.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Category</p>
+                      <Select
+                        value={pendingCategoryFilter}
+                        onValueChange={setPendingCategoryFilter}
+                      >
+                        <SelectTrigger className="h-9 border-border bg-background">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categoryOptions.map(option => (
+                            <SelectItem
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <Button
+                        className="font-semibold"
+                        onClick={() => {
+                          setStatusFilter(pendingStatusFilter);
+                          setCategoryFilter(pendingCategoryFilter);
+                          setFilterOpen(false);
+                        }}
+                      >
+                        Apply
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="font-semibold"
+                        onClick={() => {
+                          setPendingStatusFilter("all");
+                          setStatusFilter("all");
+                          setPendingCategoryFilter("all");
+                          setCategoryFilter("all");
+                          setFilterOpen(false);
+                        }}
+                      >
+                        Show All
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <DataTable
-              columns={ticketColumns}
-              data={tickets}
-              isLoading={ticketsQuery.isLoading || ticketsQuery.isFetching}
-              isError={ticketsQuery.isError}
-              errorMessage="Unable to load support tickets right now"
-              hasActiveFilters={!!search || statusFilter !== "all" || categoryFilter !== "all"}
-              emptyState={(
-                <>
-                  <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <h3 className="mb-2 text-lg font-medium">No tickets found</h3>
-                  <p className="text-sm text-muted-foreground">
-                    No support tickets have been logged yet
-                  </p>
-                </>
-              )}
-              filteredEmptyState={(
-                <>
-                  <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <h3 className="mb-2 text-lg font-medium">No tickets found</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Try adjusting your search or filters
-                  </p>
-                </>
-              )}
-              rowClassName={() => "h-[73px]"}
-              onRowClick={ticket => setSelectedTicket(ticket)}
-            />
+            {ticketsQuery.isError
+              ? (
+                  <div className="py-12 text-center">
+                    <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Unable to load support tickets</h3>
+                    <Button
+                      variant="link"
+                      onClick={() => ticketsQuery.refetch()}
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                )
+              : filteredTickets.length === 0
+                ? (
+                    <div className="py-12 text-center">
+                      <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No tickets found</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {hasFilters ? "Try adjusting your search or filters" : "No support tickets have been logged yet"}
+                      </p>
+                    </div>
+                  )
+                : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Tenant</TableHead>
+                            <TableHead>Tenant Type</TableHead>
+                            <TableHead>Reporter</TableHead>
+                            <TableHead>Channel</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Priority</TableHead>
+                            <TableHead className="text-right">Action</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredTickets.map((ticket) => {
+                            const status = statusConfig[ticket.status] ?? statusConfig.open;
+                            const priority = priorityConfig[ticket.priority as TicketPriority] ?? priorityConfig.medium;
+                            const reporter = reporterName(ticket);
+                            const initials = reporter
+                              .split(" ")
+                              .map(p => p[0])
+                              .filter(Boolean)
+                              .slice(
+                                0,
+                                2,
+                              )
+                              .join("")
+                              .toUpperCase();
+                            return (
+                              <TableRow
+                                key={ticket.id}
+                                className="cursor-pointer"
+                                onClick={() => setSelectedTicket(ticket)}
+                              >
+                                <TableCell className="font-medium max-w-[220px] truncate">{ticket.subject}</TableCell>
+                                <TableCell className="text-sm max-w-[180px] truncate">{tenantLabel(ticket)}</TableCell>
+                                <TableCell className="text-sm whitespace-nowrap">{tenantType(ticket.tenantId)}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                                      {initials || "?"}
+                                    </div>
+                                    <span className="text-sm truncate">{reporter}</span>
+                                  </div>
+                                </TableCell>
+                                {/* The API records the intake channel; fall back to fleetflow's context mapping. */}
+                                <TableCell className="text-sm">{ticket.channel ? formatCategory(ticket.channel) : channelFromContext(ticket.contextType)}</TableCell>
+                                <TableCell className="text-sm">{formatCategory(ticket.category)}</TableCell>
+                                <TableCell>
+                                  <Badge variant={status.variant}>{status.label}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className={priority.className}
+                                  >
+                                    {priority.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedTicket(ticket);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4 mr-1.5" />
+                                    Manage
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Admin sheet — full edit + escalate powers */}
       <AdminTicketSheet
         ticket={selectedTicket}
         onClose={() => setSelectedTicket(null)}
       />
     </>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  loading = false,
-}: {
-  label: string;
-  value: number;
-  icon: ReactNode;
-  loading?: boolean;
-}) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-3 p-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">{icon}</div>
-        <div className="min-w-0">
-          <p className="break-words text-xs text-muted-foreground">{label}</p>
-          {loading
-            ? <Skeleton className="mt-1 h-6 w-10" />
-            : <p className="text-xl font-semibold leading-tight">{value}</p>}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

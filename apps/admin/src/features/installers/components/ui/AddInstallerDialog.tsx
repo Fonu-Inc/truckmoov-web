@@ -154,9 +154,9 @@ export function AddInstallerDialog({
     }
     if (s === 1) {
       if (!form.state.trim())
-        e.state = "Select a state.";
+        e.state = "Enter a state or region.";
       if (!form.city.trim())
-        e.city = "Select a city.";
+        e.city = "Enter a city or location.";
       if (form.serviceAreas.length === 0)
         e.serviceAreas = "Select at least one service area.";
       if (form.capabilities.length === 0)
@@ -218,7 +218,7 @@ export function AddInstallerDialog({
         onSuccess: () => {
           toast.success(
             "Installer added successfully.",
-            { description: "An invitation link to the installer portal has been emailed to the installer." },
+            { description: "An invitation link to the platform has been emailed to the installer." },
           );
           close();
         },
@@ -489,9 +489,15 @@ export function AddInstallerDialog({
                 <Button
                   type="button"
                   onClick={submit}
-                  loading={saving}
+                  disabled={saving}
                 >
-                  {isEdit ? "Save Changes" : "Create Installer"}
+                  {saving
+                    ? isEdit
+                      ? "Saving changes…"
+                      : "Creating installer…"
+                    : isEdit
+                      ? "Save Changes"
+                      : "Create Installer"}
                 </Button>
               )}
         </DialogFooter>

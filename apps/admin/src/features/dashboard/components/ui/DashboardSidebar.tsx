@@ -88,7 +88,7 @@ function NavRowBase({
       )}
     >
       <Icon className={ICON} />
-      {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+      {!collapsed && <span className="flex-1">{item.label}</span>}
       {Badge && <Badge collapsed={collapsed} />}
     </NavLink>
   );
@@ -173,7 +173,7 @@ function NavGroupBase({
           )}
         >
           <Icon className={ICON} />
-          <span className="flex-1 truncate">{group.label}</span>
+          <span className="flex-1 text-left">{group.label}</span>
           <ChevronDown className={cn(
             "h-4 w-4 shrink-0 transition-transform duration-200",
             open && "rotate-180",
@@ -245,24 +245,24 @@ function SidebarBody({
 
       {!collapsed && role && (
         <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-2.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-2 ring-primary">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-transparent ring-2 ring-primary">
             <Building2 className="h-5 w-5 text-primary" />
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="flex-1 min-w-0">
             {/* ponytail: static app-identity strings, not signed-in user info
                 (mirrors the platform reference at :8080). The block is a rail,
                 not a profile card — the header owns the identity avatar. */}
-            <p className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">
               Platform Administration
             </p>
-            <p className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-wide text-primary">
+            <p className="truncate text-[10px] font-medium text-primary uppercase tracking-wide">
               Platform Admin
             </p>
           </div>
         </div>
       )}
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+      <nav className="flex flex-1 flex-col space-y-0.5 overflow-y-auto p-3">
         {navItems.map(entry => (isNavGroup(entry)
           ? (
               <NavGroup

@@ -19,7 +19,7 @@ export type SettingsTab = {
  *
  * Telephony (`/settings/telephony/*`) is deliberately off the bar — its routes
  * and components stay, reachable by URL, as in fleetflow. `/settings/security`
- * redirects to My Profile, where two-factor now lives.
+ * redirects to Team & Access, whose Account & Security card holds two-factor.
  *
  * ponytail: `hasPermissions` is empty on every tab today. The list is the seam;
  * fill a row in the day a tab needs locking down, and nothing else changes.

@@ -1,34 +1,47 @@
 import type { SystemDefaultTimeRange } from "@truckmoov/api/auth";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemSettingsQueryOptions,
   useUpdateSystemSettings,
 } from "@truckmoov/api/auth";
-import {
-  Globe, RefreshCw, Save,
-} from "lucide-react";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Globe } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
-} from "@/components/shadcn/form";
+import { Label } from "@/components/shadcn/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 
-// TRU-FE-7 § A — the six documented keys (fleetflow's own range keys differ; the API's win).
-const DEFAULT_TIME_RANGES: Array<{
-  value: SystemDefaultTimeRange; label: string;
+/**
+ * Fleetflow's `TIMEZONES` (`lib/timezone.ts`), each mapped to the IANA zone the
+ * API stores in `defaults.timezone`.
+ */
+const TIMEZONES: Array<{
+  value: string; name: string; offset: string;
+}> = [
+  {
+    value: "Africa/Lagos", name: "West Africa Time", offset: "GMT+1",
+  },
+  {
+    value: "UTC", name: "Coordinated Universal Time", offset: "GMT+0",
+  },
+];
+
+/**
+ * Fleetflow's `DATE_RANGE_OPTIONS`, mapped to the API's `defaultTimeRange`
+ * keys. "Yesterday" has no API key, so it's kept per browser (ponytail below).
+ */
+const DATE_RANGE_OPTIONS: Array<{
+  value: SystemDefaultTimeRange | "yesterday"; label: string;
 }> = [
   {
     value: "today", label: "Today",
+  },
+  {
+    value: "yesterday", label: "Yesterday",
   },
   {
     value: "last_7_days", label: "Last 7 Days",
@@ -39,256 +52,220 @@ const DEFAULT_TIME_RANGES: Array<{
   {
     value: "last_90_days", label: "Last 90 Days",
   },
-  {
-    value: "this_month", label: "This Month",
-  },
-  {
-    value: "this_year", label: "This Year",
-  },
 ];
 
-/** IANA zones offered as the platform default — Africa first, then major hubs. */
-const TIMEZONES: Array<{
-  value: string; label: string;
-}> = [
-  {
-    value: "Africa/Lagos", label: "Lagos (WAT, UTC+1)",
-  },
-  {
-    value: "Africa/Accra", label: "Accra (GMT, UTC+0)",
-  },
-  {
-    value: "Africa/Abidjan", label: "Abidjan (GMT, UTC+0)",
-  },
-  {
-    value: "Africa/Dakar", label: "Dakar (GMT, UTC+0)",
-  },
-  {
-    value: "Africa/Douala", label: "Douala (WAT, UTC+1)",
-  },
-  {
-    value: "Africa/Kinshasa", label: "Kinshasa (WAT, UTC+1)",
-  },
-  {
-    value: "Africa/Cairo", label: "Cairo (EET, UTC+2)",
-  },
-  {
-    value: "Africa/Johannesburg", label: "Johannesburg (SAST, UTC+2)",
-  },
-  {
-    value: "Africa/Nairobi", label: "Nairobi (EAT, UTC+3)",
-  },
-  {
-    value: "Africa/Addis_Ababa", label: "Addis Ababa (EAT, UTC+3)",
-  },
-  {
-    value: "UTC", label: "UTC (UTC+0)",
-  },
-  {
-    value: "Europe/London", label: "London (GMT/BST)",
-  },
-  {
-    value: "Europe/Paris", label: "Paris (CET/CEST)",
-  },
-  {
-    value: "Asia/Dubai", label: "Dubai (GST, UTC+4)",
-  },
-  {
-    value: "Asia/Kolkata", label: "Kolkata (IST, UTC+5:30)",
-  },
-  {
-    value: "Asia/Singapore", label: "Singapore (SGT, UTC+8)",
-  },
-  {
-    value: "America/New_York", label: "New York (ET)",
-  },
-  {
-    value: "America/Chicago", label: "Chicago (CT)",
-  },
-  {
-    value: "America/Los_Angeles", label: "Los Angeles (PT)",
-  },
-];
-
-const displayDefaultsSchema = z.object({
-  timezone: z.string().min(1),
-  defaultTimeRange: z.enum([
-    "today",
-    "last_7_days",
-    "last_30_days",
-    "last_90_days",
-    "this_month",
-    "this_year",
-  ]),
-});
-
-type DisplayDefaultsFormValues = z.infer<typeof displayDefaultsSchema>;
-
-export const DISPLAY_DEFAULTS_FORM_ID = "display-defaults-form";
-
-const DEFAULT_DISPLAY: DisplayDefaultsFormValues = {
-  timezone: "Africa/Lagos",
-  defaultTimeRange: "last_7_days",
+/** API keys fleetflow has no option for — shown as an extra item only when saved. */
+const EXTRA_RANGE_LABELS: Partial<Record<SystemDefaultTimeRange, string>> = {
+  this_month: "This Month",
+  this_year: "This Year",
 };
 
+// ponytail: mock data from fleetflow parity port — wire to packages/api
+// (no API field for date/time format or a "yesterday" default range; per browser).
+// App-prefixed: both dev servers share localhost storage (see sidebarStore).
+const LOCAL_KEY = "admin-platform-display-defaults";
+type LocalDisplay = {
+  dateFormat: string; timeFormat: string; yesterday?: boolean;
+};
+const DEFAULT_LOCAL: LocalDisplay = {
+  dateFormat: "dd/MM/yyyy", timeFormat: "24h",
+};
+
+function readLocal(): LocalDisplay {
+  try {
+    return {
+      ...DEFAULT_LOCAL, ...JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}"),
+    };
+  }
+  catch {
+    return DEFAULT_LOCAL;
+  }
+}
+
 /**
- * `/settings/display` — fleetflow's Display Defaults card, saved to system
- * settings `defaults`. Fleetflow's Date/Time Format selects are left out: no
- * API field, and not in the change document.
+ * `/settings/display` — fleetflow's Display Defaults card: Default Timezone,
+ * Default Reporting Range, Date Format, Time Format. Like fleetflow, every
+ * select applies on change (no Save button).
+ *
+ * Timezone and reporting range are system settings `defaults` (live). Date and
+ * Time Format — and the "Yesterday" range, which the API has no key for — are
+ * per browser (ponytail).
  */
 export function DisplayDefaultsPanel() {
   const systemSettingsQuery = useQuery(getSystemSettingsQueryOptions());
-  const systemSettings = systemSettingsQuery.data?.data;
+  const defaults = systemSettingsQuery.data?.data?.defaults;
   const updateSettings = useUpdateSystemSettings();
+  const [
+    local,
+    setLocal,
+  ] = useState<LocalDisplay>(readLocal);
+  // Values picked on this visit — shown straight away, rolled back on error.
+  const [
+    pending,
+    setPending,
+  ] = useState<{
+    timezone?: string; defaultTimeRange?: SystemDefaultTimeRange;
+  }>({});
 
-  const form = useForm<DisplayDefaultsFormValues>({
-    resolver: zodResolver(displayDefaultsSchema),
-    defaultValues: DEFAULT_DISPLAY,
-  });
+  const timezone = pending.timezone ?? defaults?.timezone ?? "Africa/Lagos";
+  const savedRange = pending.defaultTimeRange ?? defaults?.defaultTimeRange ?? "last_7_days";
+  const range = local.yesterday ? "yesterday" : savedRange;
 
-  useEffect(
-    () => {
-      if (!systemSettings)
-        return;
-      const range = systemSettings.defaults?.defaultTimeRange;
-      form.reset({
-        timezone: systemSettings.defaults?.timezone ?? DEFAULT_DISPLAY.timezone,
-        defaultTimeRange: range && DEFAULT_TIME_RANGES.some(r => r.value === range)
-          ? range
-          : DEFAULT_DISPLAY.defaultTimeRange,
-      });
-    },
-    [
-      systemSettings,
-      form,
-    ],
-  );
-
-  const timezone = form.watch("timezone");
-  // Keep a saved zone selectable even if it isn't in the curated list.
   const timezoneOptions = TIMEZONES.some(tz => tz.value === timezone)
     ? TIMEZONES
     : [
         {
-          value: timezone, label: timezone,
+          value: timezone, name: timezone, offset: "",
         },
         ...TIMEZONES,
       ];
+  const rangeOptions = DATE_RANGE_OPTIONS.some(r => r.value === range)
+    ? DATE_RANGE_OPTIONS
+    : [
+        ...DATE_RANGE_OPTIONS,
+        {
+          value: savedRange, label: EXTRA_RANGE_LABELS[savedRange] ?? savedRange,
+        },
+      ];
 
-  const handleSave = (values: DisplayDefaultsFormValues) => {
+  const saveLocal = (value: Partial<LocalDisplay>, message?: string) => {
+    const next = {
+      ...local, ...value,
+    };
+    setLocal(next);
+    try {
+      localStorage.setItem(
+        LOCAL_KEY,
+        JSON.stringify(next),
+      );
+    }
+    catch {
+      // Storage blocked — the choice still holds for this visit.
+    }
+    if (message)
+      toast.success(message);
+  };
+
+  const saveDefaults = (value: {
+    timezone?: string; defaultTimeRange?: SystemDefaultTimeRange;
+  }) => {
+    setPending(p => ({
+      ...p, ...value,
+    }));
     updateSettings.mutate(
       {
         data: {
           defaults: {
-            ...(systemSettings?.defaults ?? {}), ...values,
+            ...(defaults ?? {}), ...pending, ...value,
           },
         },
       },
       {
-        onSuccess: () => toast.success("Display defaults saved"),
-        onError: error => toast.error(error.message),
+        onError: (error) => {
+          toast.error(error.message);
+          setPending({});
+        },
       },
     );
   };
 
+  const handleRange = (v: string) => {
+    if (v === "yesterday") {
+      saveLocal({ yesterday: true });
+      return;
+    }
+    if (local.yesterday)
+      saveLocal({ yesterday: false });
+    saveDefaults({ defaultTimeRange: v as SystemDefaultTimeRange });
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Globe className="h-5 w-5 text-primary" />
-          Display Defaults
-        </CardTitle>
-        <CardDescription>Default timezone and reporting range for charts, tables and reports.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Form {...form}>
-          <form
-            id={DISPLAY_DEFAULTS_FORM_ID}
-            onSubmit={form.handleSubmit(handleSave)}
-            className="space-y-4"
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="timezone"
-                render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel>Default Timezone</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {timezoneOptions.map(tz => (
-                          <SelectItem
-                            key={tz.value}
-                            value={tz.value}
-                          >
-                            {tz.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="defaultTimeRange"
-                render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel>Default Reporting Range</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {DEFAULT_TIME_RANGES.map(r => (
-                          <SelectItem
-                            key={r.value}
-                            value={r.value}
-                          >
-                            {r.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                form={DISPLAY_DEFAULTS_FORM_ID}
-                disabled={updateSettings.isPending}
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            Display Defaults
+          </CardTitle>
+          <CardDescription>Default timezone, date/time format and reporting range for charts, tables and reports.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Default Timezone</Label>
+              <Select
+                value={timezone}
+                onValueChange={v => saveDefaults({ timezone: v })}
               >
-                {updateSettings.isPending
-                  ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    )
-                  : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Defaults
-                      </>
-                    )}
-              </Button>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {timezoneOptions.map(tz => (
+                    <SelectItem
+                      key={tz.value}
+                      value={tz.value}
+                    >
+                      {tz.offset ? `${tz.name} (${tz.offset})` : tz.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+            <div className="space-y-2">
+              <Label>Default Reporting Range</Label>
+              <Select
+                value={range}
+                onValueChange={handleRange}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {rangeOptions.map(r => (
+                    <SelectItem
+                      key={r.value}
+                      value={r.value}
+                    >
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Date Format</Label>
+              <Select
+                value={local.dateFormat}
+                onValueChange={v => saveLocal(
+                  { dateFormat: v },
+                  "Date format updated",
+                )}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dd/MM/yyyy">DD/MM/YYYY</SelectItem>
+                  <SelectItem value="MM/dd/yyyy">MM/DD/YYYY</SelectItem>
+                  <SelectItem value="yyyy-MM-dd">YYYY-MM-DD</SelectItem>
+                  <SelectItem value="d MMM yyyy">20 Nov 2026</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Time Format</Label>
+              <Select
+                value={local.timeFormat}
+                onValueChange={v => saveLocal(
+                  { timeFormat: v },
+                  "Time format updated",
+                )}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="24h">24-hour (14:30)</SelectItem>
+                  <SelectItem value="12h">12-hour (2:30 PM)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

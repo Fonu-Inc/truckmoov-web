@@ -1,7 +1,6 @@
 import type { SystemSupportTicket } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import { getSystemSupportDashboardQueryOptions } from "@truckmoov/api/auth";
-import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertCircle,
   ArrowUpRight,
@@ -9,6 +8,7 @@ import {
   Clock,
   Flame,
   Inbox,
+  Loader2,
   TicketCheck,
   Timer,
   TrendingUp,
@@ -25,8 +25,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Progress } from "@/components/shadcn/progress";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { ListSkeleton } from "@/components/ui/skeletons";
+import { useSupportTenantDirectory } from "./useSupportTenantDirectory";
 
 const CATEGORY_LABELS: Record<string, string> = {
   device_tracking: "Device & Tracking",
@@ -53,52 +52,6 @@ function formatResolutionHours(hrs: number | null): string {
   return `${(hrs / 24).toFixed(1)}d`;
 }
 
-function SupportDashboardSkeleton() {
-  return (
-    <div
-      className="space-y-6"
-      aria-hidden
-    >
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from(
-          { length: 8 },
-          (_, index) => (
-            <Card key={index}>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-2/3" />
-                    <Skeleton className="h-7 w-1/3" />
-                    <Skeleton className="h-3 w-3/4" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ),
-        )}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {Array.from(
-          { length: 2 },
-          (_, index) => (
-            <Card key={index}>
-              <CardHeader className="space-y-2">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-4 w-56" />
-              </CardHeader>
-              <CardContent>
-                <ListSkeleton rows={3} />
-              </CardContent>
-            </Card>
-          ),
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function SupportDashboard() {
   const dashboardQuery = useQuery(getSystemSupportDashboardQueryOptions());
   const isLoading = dashboardQuery.isLoading;
@@ -108,7 +61,8 @@ export function SupportDashboard() {
   const needsAttention: SystemSupportTicket[] = dashboard?.needsAttention ?? [];
   const recentlyResolved: SystemSupportTicket[] = dashboard?.recentlyResolved ?? [];
 
-  const tenantName = (id: string) => `${id.slice(
+  const { tenantName: lookupTenantName } = useSupportTenantDirectory();
+  const tenantName = (id: string) => lookupTenantName(id) || `${id.slice(
     0,
     8,
   )}…`;
@@ -125,7 +79,11 @@ export function SupportDashboard() {
   const topTenants = dashboard?.topTenants ?? [];
 
   if (isLoading) {
-    return <SupportDashboardSkeleton />;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   if (dashboardQuery.isError) {
@@ -144,7 +102,7 @@ export function SupportDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* ponytail: 4-col at lg, 2 rows of 4 (mirrors fleetflow-pro reference). */}
+      {/* KPI cards — operational triage view */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">
@@ -308,8 +266,6 @@ export function SupportDashboard() {
                             {tenantName(ticket.tenantId)}
                             {" • "}
                             {CATEGORY_LABELS[ticket.category] || ticket.category}
-                            {" • opened "}
-                            {formatRelative(ticket.createdAt)}
                           </p>
                         </div>
                         <Badge
@@ -381,7 +337,7 @@ export function SupportDashboard() {
             <CardDescription>Support load distribution</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
               {topTenants.slice(
                 0,
                 8,
@@ -393,12 +349,7 @@ export function SupportDashboard() {
                   key={tenantId}
                   className="flex items-center justify-between p-3 rounded-lg border bg-card"
                 >
-                  <span
-                    className="text-sm truncate pr-2"
-                    title={tenantId}
-                  >
-                    {tenantName(tenantId)}
-                  </span>
+                  <span className="text-sm truncate pr-2">{tenantName(tenantId)}</span>
                   <Badge
                     variant="outline"
                     className="shrink-0"
@@ -450,15 +401,13 @@ export function SupportDashboard() {
                             {tenantName(ticket.tenantId)}
                             {" • "}
                             {CATEGORY_LABELS[ticket.category] || ticket.category}
-                            {" • "}
-                            {formatRelative(ticket.closedAt ?? ticket.resolvedAt)}
                           </p>
                         </div>
                         <Badge
                           variant="secondary"
                           className="shrink-0"
                         >
-                          {ticket.status === "closed" ? "Closed" : "Resolved"}
+                          Resolved
                         </Badge>
                       </div>
                     ))}
