@@ -41,7 +41,7 @@ export function SettingsLayout() {
               to={tab.to}
               // `end` on the index tab only ("/settings"), otherwise it'd stay
               // lit on every child route. Non-index tabs prefix-match so parent
-              // tabs (e.g. Telephony) stay active on their sub-routes.
+              // tabs stay active on any sub-routes they grow.
               end={tab.to === "/settings"}
               className={({ isActive }) => cn(
                 "inline-flex items-center justify-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-offset-background transition-all duration-150",

@@ -416,6 +416,7 @@ export default function InstallersPage() {
                 className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
                 columns={columns}
                 data={installers}
+                headerNote="Details and current information for installer pool."
                 isLoading={isLoading}
                 isError={isError}
                 errorMessage={error ? `Couldn't load installers: ${error.message}` : "Couldn't load installers"}

@@ -124,6 +124,10 @@ export function PlatformAdminInvitesPanel() {
     },
   ];
 
+  // Fleetflow shows this card only while there are pending invitations.
+  if (!invitesQuery.isLoading && !invitesQuery.isError && invites.length === 0)
+    return null;
+
   return (
     <>
       <Card>
@@ -141,13 +145,6 @@ export function PlatformAdminInvitesPanel() {
             isError={invitesQuery.isError}
             errorMessage="Failed to load invitations."
             onRetry={() => invitesQuery.refetch()}
-            emptyState={(
-              <div className="text-muted-foreground">
-                <Mail className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No pending invitations</p>
-                <p className="text-sm">Invites you send from the Admins tab will appear here.</p>
-              </div>
-            )}
           />
         </CardContent>
       </Card>

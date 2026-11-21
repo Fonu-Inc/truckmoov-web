@@ -11,7 +11,12 @@ export type SettingsTab = {
 /**
  * The platform settings tab bar, in order. One entry per child route of
  * `/settings` — add a route here and in `shared/lib/route.tsx`, same as the
- * sidebar. Text only: this bar has never had icons.
+ * sidebar. Text only: this bar has never had icons. Labels and order are
+ * fleetflow's `PlatformSettings` tabs.
+ *
+ * Telephony (`/settings/telephony/*`) is deliberately off the bar — its routes
+ * and components stay, reachable by URL, as in fleetflow. `/settings/security`
+ * redirects to My Profile, where two-factor now lives.
  *
  * ponytail: `hasPermissions` is empty on every tab today. The list is the seam;
  * fill a row in the day a tab needs locking down, and nothing else changes.
@@ -20,19 +25,25 @@ export type SettingsTab = {
  */
 export const SETTINGS_TABS: SettingsTab[] = [
   {
-    to: "/settings", label: "General", hasPermissions: [],
+    to: "/settings", label: "My Profile", hasPermissions: [],
   },
   {
-    to: "/settings/team", label: "Team", hasPermissions: [],
+    to: "/settings/platform-profile", label: "Platform Profile", hasPermissions: [],
   },
   {
-    to: "/settings/telephony", label: "Telephony", hasPermissions: [],
+    to: "/settings/features", label: "Platform Features", hasPermissions: [],
+  },
+  {
+    to: "/settings/display", label: "Display Defaults", hasPermissions: [],
+  },
+  {
+    to: "/settings/team", label: "Team & Access", hasPermissions: [],
   },
   {
     to: "/settings/notifications", label: "Notifications", hasPermissions: [],
   },
   {
-    to: "/settings/security", label: "Security", hasPermissions: [],
+    to: "/settings/support", label: "Support Preferences", hasPermissions: [],
   },
 ];
 

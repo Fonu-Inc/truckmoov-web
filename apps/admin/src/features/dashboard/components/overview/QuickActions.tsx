@@ -1,7 +1,11 @@
 import type { LucideIcon } from "lucide-react";
-import { Building2, ChevronRight, Cpu, ShieldCheck, Smartphone } from "lucide-react";
+import {
+  Building2, ChevronRight, Cpu, ShieldCheck, Smartphone,
+} from "lucide-react";
 import { Link } from "react-router";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 
 type QuickAction = {
   title: string;
@@ -34,11 +38,11 @@ const QUICK_ACTIONS: QuickAction[] = [
     to: "/sims",
   },
   {
-    title: "Security",
-    desc: "Review alerts, audit trail and access events.",
+    title: "Audit & Compliance",
+    desc: "Review security events, SIM activity and the audit trail.",
     icon: ShieldCheck,
-    cta: "Open security",
-    to: "/security",
+    cta: "Open audit log",
+    to: "/audit-compliance",
   },
 ];
 

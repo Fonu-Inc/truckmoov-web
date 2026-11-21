@@ -9,7 +9,9 @@ import {
   getSystemOnboardingApplicationsQueryOptions,
   getSystemOnboardingApplicationsSummaryQueryOptions,
 } from "@truckmoov/api/auth";
-import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  formatDate, formatTime,
+} from "@truckmoov/app-core/utils/time-utils";
 import { useBatchedQuery } from "@truckmoov/reusables/hooks/useBatchedQuery";
 import {
   CheckCircle2,
@@ -62,6 +64,7 @@ import {
   APPLICANT_TYPE_LABELS,
   canDecide,
   ONBOARDING_STATUS_COLORS,
+  ONBOARDING_STATUS_DESCRIPTIONS,
   ONBOARDING_STATUS_LABELS,
   stageStatusColor,
 } from "@/features/tenants/utils/onboarding";
@@ -143,14 +146,22 @@ export function TenantOnboardingPanel() {
 
   const actions = useOnboardingApplicationActions();
 
+  // Fixed layout so long names and badges wrap inside their column instead of
+  // pushing the row wider; the table scrolls sideways below its min width.
+  // Header labels break onto two lines the way the fleetflow table does.
+  const wrap = "whitespace-normal";
   const columns: ColumnDef<SystemOnboardingApplicationRow>[] = [
     {
       id: "organization",
-      header: "Organisation",
+      header: "Tenant Name",
+      meta: { className: `${wrap} w-[15%]` },
       cell: ({ row }) => (
-        <div>
-          <p className="font-medium">{row.original.organizationName}</p>
-          <p className="text-xs text-muted-foreground">
+        <div className="min-w-0">
+          <p className="font-medium break-words">{row.original.organizationName}</p>
+          <p
+            className="truncate text-xs text-muted-foreground"
+            title={`${row.original.reference} · ${row.original.businessEmail}`}
+          >
             {row.original.reference}
             {" · "}
             {row.original.businessEmail}
@@ -160,15 +171,18 @@ export function TenantOnboardingPanel() {
     },
     {
       accessorKey: "contactFullName",
-      header: "Contact",
+      header: "Contact Person",
+      meta: { className: `${wrap} w-[11%]` },
+      cell: ({ row }) => <span className="text-sm break-words">{row.original.contactFullName || "—"}</span>,
     },
     {
       id: "applicantType",
-      header: "Type",
+      header: "Tenant Type",
+      meta: { className: `${wrap} w-[11%]` },
       cell: ({ row }) => (
         <Badge
           variant="outline"
-          className="rounded-full whitespace-nowrap"
+          className="h-auto max-w-full whitespace-normal break-words rounded-full text-left leading-tight"
         >
           {APPLICANT_TYPE_LABELS[row.original.applicantType]}
         </Badge>
@@ -176,53 +190,92 @@ export function TenantOnboardingPanel() {
     },
     {
       accessorKey: "vehicleCount",
-      header: "Vehicles",
+      header: () => (
+        <>
+          Number of
+          <br />
+          Vehicles
+        </>
+      ),
+      meta: { className: `${wrap} w-[8%]` },
     },
     {
       accessorKey: "deviceCount",
-      header: "Devices",
+      header: () => (
+        <>
+          Devices
+          <br />
+          Requested
+        </>
+      ),
+      meta: { className: `${wrap} w-[8%]` },
     },
     {
       id: "stageStatus",
       header: "Stage",
+      meta: { className: `${wrap} w-[12%]` },
       cell: ({ row }) => (
         <Badge
           variant="outline"
-          className={`whitespace-nowrap ${stageStatusColor(row.original.stageStatus)}`}
+          title={row.original.stageStatus}
+          className={`h-auto w-fit max-w-[150px] whitespace-normal rounded-full px-2.5 py-0.5 text-left leading-tight ${stageStatusColor(row.original.stageStatus)}`}
         >
-          {row.original.stageStatus}
+          <span className="line-clamp-2">{row.original.stageStatus}</span>
         </Badge>
       ),
     },
     {
       id: "status",
       header: "Status",
+      meta: { className: `${wrap} w-[12%]` },
       cell: ({ row }) => (
         <Badge
           variant="outline"
-          className={`whitespace-nowrap ${ONBOARDING_STATUS_COLORS[row.original.status]}`}
+          title={ONBOARDING_STATUS_DESCRIPTIONS[row.original.status]}
+          className={`h-auto w-fit max-w-[150px] whitespace-normal rounded-full px-2.5 py-0.5 text-left leading-tight ${ONBOARDING_STATUS_COLORS[row.original.status]}`}
         >
-          {ONBOARDING_STATUS_LABELS[row.original.status]}
+          <span className="line-clamp-2">{ONBOARDING_STATUS_LABELS[row.original.status]}</span>
         </Badge>
       ),
     },
     {
       id: "submittedAt",
-      header: "Submitted",
-      cell: ({ row }) => (
-        <span className="whitespace-nowrap text-sm text-muted-foreground">
-          {formatDayMonthTime(row.original.submittedAt ?? row.original.createdAt)}
-        </span>
+      header: () => (
+        <>
+          Date
+          <br />
+          Submitted
+        </>
       ),
+      meta: { className: `${wrap} w-[9%]` },
+      cell: ({ row }) => {
+        const submitted = row.original.submittedAt ?? row.original.createdAt;
+        return (
+          <div className="text-sm text-muted-foreground">
+            <span className="block whitespace-nowrap">{formatDate(submitted)}</span>
+            <span className="block text-xs">{formatTime(submitted)}</span>
+          </div>
+        );
+      },
     },
     {
       id: "actions",
-      header: "",
+      header: () => <span className="block text-right">Actions</span>,
+      meta: { className: "w-[14%] text-right" },
       cell: ({ row }) => {
         const app = row.original;
         const decidable = canDecide(app.status);
         return (
-          <div className="w-[60px]">
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap"
+              onClick={() => navigate(`/tenants/onboarding/${app.id}`)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View Application
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -328,13 +381,13 @@ export function TenantOnboardingPanel() {
         />
       </div>
 
-      <Card className="bg-card/50 border-border/50">
+      <Card className="bg-card/50 border-border/50 min-w-0 max-w-full">
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <CardTitle>Tenant Onboarding</CardTitle>
+              <CardTitle>Applications by Tenants</CardTitle>
               <CardDescription>
-                Review applications, then follow each customer from provisioning through to a ready fleet.
+                Review submitted applications and approve tenants before allocating devices and SIMs.
               </CardDescription>
             </div>
             {/* ponytail: no export endpoint — exports the rows on the current page. */}
@@ -376,7 +429,7 @@ export function TenantOnboardingPanel() {
             />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -428,18 +481,22 @@ export function TenantOnboardingPanel() {
             </Select>
           </div>
 
-          <DataTable
-            columns={columns}
-            data={items}
-            isLoading={isLoading}
-            isError={isError}
-            errorMessage="Unable to load onboarding applications."
-            onRetry={refetch}
-            hasActiveFilters={hasActiveFilters}
-            emptyState="No onboarding applications yet."
-            filteredEmptyState="No applications match your filters."
-            pagination={pagination}
-          />
+          <p className="mb-2 text-xs text-muted-foreground xl:hidden">Scroll sideways to see all columns →</p>
+          <div className="w-full max-w-full overflow-hidden rounded-xl border border-border/60">
+            <DataTable
+              className="w-full min-w-[1440px] table-fixed [&_td]:box-border [&_th]:box-border [&_td]:align-top [&_td]:py-3 [&_th]:align-bottom [&_th]:py-3 [&_th]:leading-tight"
+              columns={columns}
+              data={items}
+              isLoading={isLoading}
+              isError={isError}
+              errorMessage="Unable to load onboarding applications."
+              onRetry={refetch}
+              hasActiveFilters={hasActiveFilters}
+              emptyState="No onboarding applications yet."
+              filteredEmptyState="No applications match your filters."
+              pagination={pagination}
+            />
+          </div>
         </CardContent>
       </Card>
 

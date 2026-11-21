@@ -16,6 +16,16 @@ export const ONBOARDING_STATUS_LABELS: Record<OnboardingApplicationStatus, strin
   rejected: "Rejected",
 };
 
+/** What each status means — shown as the status badge's tooltip. */
+export const ONBOARDING_STATUS_DESCRIPTIONS: Record<OnboardingApplicationStatus, string> = {
+  draft: "Started but not yet submitted by the applicant.",
+  submitted: "Submitted and waiting for a platform admin to review.",
+  under_review: "A platform admin is reviewing this application.",
+  changes_requested: "More information needed — sent back to the applicant to update.",
+  approved: "Approved — the tenant moves on to provisioning.",
+  rejected: "Rejected — the applicant has been told why.",
+};
+
 export const ONBOARDING_STATUS_COLORS: Record<OnboardingApplicationStatus, string> = {
   draft: "bg-muted text-muted-foreground border-border",
   submitted: "bg-primary/10 text-primary border-primary/30",
@@ -51,7 +61,7 @@ export const ONBOARDING_STAGE_LABELS: Record<SystemOnboardingStage, string> = {
 
 export const APPLICANT_TYPE_LABELS: Record<OnboardingApplicantType, string> = {
   enterprise: "Enterprise",
-  owner_operator: "Owner Operator",
+  owner_operator: "Owner Operator / Individual",
 };
 
 export const DOCUMENT_TYPE_LABELS: Record<SystemOnboardingDocument["documentType"], string> = {

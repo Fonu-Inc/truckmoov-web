@@ -1,6 +1,7 @@
 import type {
   SidebarEntry, SidebarNavGroup, SidebarNavItem,
 } from "@/features/dashboard/utils/sidebarNav";
+import { useQuery } from "@tanstack/react-query";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
   Building2,
@@ -9,7 +10,6 @@ import {
   LogOut,
   Truck,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import {
   memo, useEffect, useMemo, useState,
 } from "react";
@@ -76,7 +76,7 @@ function NavRowBase({
   const Badge = item.badge;
 
   // ponytail: only "/" needs `end`; every other entry should light up on its
-  // sub-routes too (`/security/login-history` → highlights "Security").
+  // sub-routes too (`/settings/team` → highlights "Settings").
   const row = (
     <NavLink
       to={item.href}
@@ -341,8 +341,14 @@ function DashboardSidebarBase() {
   const permissions = useQuery(capabilitiesOptions()).data?.permissions;
   const roleEntries = role ? getEntriesForRole(role) : NO_ENTRIES;
   const navItems = useMemo(
-    () => filterByPermission(roleEntries, permissions ?? NO_PERMISSIONS),
-    [roleEntries, permissions],
+    () => filterByPermission(
+      roleEntries,
+      permissions ?? NO_PERMISSIONS,
+    ),
+    [
+      roleEntries,
+      permissions,
+    ],
   );
 
   // Auto-close the drawer on navigation. Only wired when mobile — desktop

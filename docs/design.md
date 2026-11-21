@@ -172,6 +172,11 @@ Scrollbars are restyled globally to a 6px muted thumb.
   top bar and nav never disagree. The `title` prop is the fallback.
 - Global search (`⌘K`-style shortcuts in `hooks/useKeyboardShortcuts.ts`) and
   the notification center live in the header.
+- **Header actions (admin).** A page can't pass props to the header, so
+  `apps/admin/src/shared/components/layout/PageHeaderActions.tsx` portals them:
+  render `<PageHeaderActions><Button …/></PageHeaderActions>` anywhere in the page
+  body and the buttons appear in the top bar, left of search, until the page
+  unmounts.
 
 ## Navigation model
 
@@ -371,6 +376,15 @@ Three consequences worth copying:
   mini layout with Plan (`index`) and Invoices (`/settings/subscription/invoices`)
   sub-tabs. Copy the pattern when the parent tab needs its own bar.
 
+`apps/admin`'s bar is fleetflow's seven `PlatformSettings` tabs, in its order
+and with its labels, kept as routes: My Profile (`/settings`), Platform Profile
+(`/settings/platform-profile`), Platform Features (`/settings/features`),
+Display Defaults (`/settings/display`), Team & Access (`/settings/team`),
+Notifications (`/settings/notifications`), Support Preferences
+(`/settings/support`). A route can stay off the bar on purpose: Telephony
+(`/settings/telephony/*`) is reachable by URL only, and the old
+`/settings/security` redirects to My Profile, which now holds two-factor.
+
 `?tab=` survives on `/fleet` and `/integrations`. Those are the next ones to
 convert; nothing new should use a query param for a tab. `/messages` is already
 converted — its `/ivr-dashboard` alias now redirects to the real child path.
@@ -489,10 +503,13 @@ The hook fetches in server batches of 500 by default and slices client-side into
 Reset the page when filters change; the hook can't watch external state.
 
 Do **not** hand-write `useState({ page, pageSize })` + `useQuery({ offset, limit })`
-in a new page. Two existing security pages (LoginHistory, SecurityEvents)
-predate the hook and should migrate the next time they're touched. (There is no
-Blocked IPs tab any more: IP blocks are automatic server-side, expire on their
-own, and engineering clears them when needed.)
+in a new page. (`apps/admin` no longer has a Security section — its
+LoginHistory / SecurityEvents pages are gone. Sign-ins, security events and SIM
+activity are saved views of the one Audit & Compliance log at
+`/audit-compliance`, a fleetflow parity port with a hand-rolled table; the old
+`/security/*` and `/compliance-audit` URLs redirect there. There is no Blocked
+IPs tab either: IP blocks are automatic server-side, expire on their own, and
+engineering clears them when needed.)
 
 Non-table data (cards, lists, dialogs) gets the same three states from
 `QueryState` (`apps/installer/src/components/QueryState.tsx`): skeleton while

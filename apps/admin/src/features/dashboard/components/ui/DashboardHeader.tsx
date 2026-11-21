@@ -19,6 +19,7 @@ import {
   SHORTCUTS,
   useGlobalShortcuts,
 } from "@/hooks/useKeyboardShortcuts";
+import { PageHeaderActionsSlot } from "@/shared/components/layout/PageHeaderActions";
 import { useIsMobile } from "@/shared/hooks/useIsMobile";
 import { NotificationCenter } from "./NotificationCenter";
 import { UserProfileDropdown } from "./UserProfileDropdown";
@@ -101,6 +102,8 @@ export function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-1.5">
+        {/* Filled by the current page through <PageHeaderActions>. */}
+        <PageHeaderActionsSlot />
         {/* Dynamic Search */}
         <div className="hidden md:flex items-center">
           {searchOpen

@@ -3,14 +3,15 @@ import type React from "react";
 import { RequireRole } from "@truckmoov/reusables/components/auth/RequireRole";
 import NotAuthorized from "@truckmoov/reusables/components/pages/NotAuthorized";
 import NotFound from "@truckmoov/reusables/components/pages/NotFound";
-import { createBrowserRouter } from "react-router";
+import {
+  createBrowserRouter, redirect,
+} from "react-router";
 import App from "@/App";
 import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
 import AuthPage from "@/features/auth/components/pages/AuthPage";
 import InvitePage from "@/features/auth/components/pages/InvitePage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { ADMIN_ROLES } from "@/features/dashboard/utils/sidebarNav";
-import { SecurityLayout } from "@/features/security/components/layout/SecurityLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -46,10 +47,25 @@ const GuardedSettingsLayout = withGuard(
   ADMIN_ROLES,
   SettingsLayout,
 );
-const GuardedSecurityLayout = withGuard(
-  ADMIN_ROLES,
-  SecurityLayout,
-);
+/**
+ * The old Security section (and its sub-pages) and Compliance & Audit both open
+ * the unified Audit & Compliance page, as fleetflow's LegacyAuditRedirect does:
+ * `?tab=events` → `view=security`, `?tab=sim-audit` → `view=sim`, and every
+ * other param (`tenant`, `event`) is kept.
+ */
+function legacyAuditRedirect({ request }: { request: Request }) {
+  const params = new URL(request.url).searchParams;
+  const tab = params.get("tab");
+  if (tab === "events" || tab === "sim-audit") {
+    params.delete("tab");
+    params.set(
+      "view",
+      tab === "events" ? "security" : "sim",
+    );
+  }
+  const qs = params.toString();
+  return redirect(`/audit-compliance${qs ? `?${qs}` : ""}`);
+}
 
 /**
  * App is a pathless layout route: it owns the provider tower, the AuthGuard
@@ -144,10 +160,10 @@ export const router = createBrowserRouter([
             path: "/messaging",
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformMessagingCenter")).default }),
           },
-          // Communications group.
+          // Communications group. WhatsApp Setup is off the admin nav; its old
+          // URL lands on the inbox instead of a 404.
           {
-            path: "/whatsapp",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformWhatsAppSetup")).default }),
+            path: "/whatsapp", loader: () => redirect("/inbox"),
           },
           {
             path: "/inbox",
@@ -170,23 +186,15 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformCommercialBilling")).default }),
           },
           {
-            path: "/security",
-            Component: GuardedSecurityLayout,
-            children: [
-              {
-                index: true, lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityOverviewPage")).default }),
-              },
-              {
-                path: "payments-access", lazy: async () => ({ Component: (await import("@/features/security/components/pages/PaymentsAccessPage")).default }),
-              },
-              {
-                path: "devices-sims", lazy: async () => ({ Component: (await import("@/features/security/components/pages/DevicesSimsPage")).default }),
-              },
-            ],
+            path: "/audit-compliance",
+            lazy: async () => ({ Component: (await import("@/features/audit/components/pages/AuditCompliancePage")).default }),
+          },
+          // Old Security section and Compliance & Audit URLs land on the unified page.
+          {
+            path: "/security/*", loader: legacyAuditRedirect,
           },
           {
-            path: "/compliance-audit",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformComplianceAudit")).default }),
+            path: "/compliance-audit", loader: legacyAuditRedirect,
           },
           // Settings is a pathful layout route: SettingsLayout owns the tab bar
           // and the Outlet, one child route per tab. The tab list it renders is
@@ -200,13 +208,26 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/GeneralSettingsPage")).default }),
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/MyProfileSettingsPage")).default }),
+              },
+              {
+                path: "platform-profile",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformProfilePanel")).PlatformProfilePanel }),
+              },
+              {
+                path: "features",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformFeaturesPanel")).PlatformFeaturesPanel }),
+              },
+              {
+                path: "display",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/DisplayDefaultsPanel")).DisplayDefaultsPanel }),
               },
               {
                 path: "team",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TeamSettingsPage")).default }),
               },
               {
+                // Off the tab bar (as in fleetflow) — still reachable by URL.
                 path: "telephony",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TelephonySettingsPage")).default }),
                 children: [
@@ -223,12 +244,15 @@ export const router = createBrowserRouter([
               },
               {
                 path: "notifications",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/NotificationsSettingsPage")).default }),
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/NotificationPreferencesPanel")).NotificationPreferencesPanel }),
               },
               {
-                // TRU-FE-23 — the signed-in admin's own two-factor, shared with the other portals.
-                path: "security",
-                lazy: async () => ({ Component: (await import("@truckmoov/reusables/components/auth/TwoFactorSetupCard")).TwoFactorSetupCard }),
+                path: "support",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SupportPreferencesPanel")).SupportPreferencesPanel }),
+              },
+              {
+                // The old Security tab (TRU-FE-23 two-factor) now sits on My Profile.
+                path: "security", loader: () => redirect("/settings"),
               },
             ],
           },

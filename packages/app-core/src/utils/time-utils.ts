@@ -32,6 +32,7 @@ import {
   startOfMonth as dfStartOfMonth,
   startOfWeek as dfStartOfWeek,
   subDays as dfSubDays,
+  subMinutes as dfSubMinutes,
   subMonths as dfSubMonths,
 } from 'date-fns'
 
@@ -326,6 +327,12 @@ export function addDays(value: DateInput, days: number): Date | null {
 export function subDays(value: DateInput, days: number): Date | null {
   const date = toDate(value)
   return date ? dfSubDays(date, days) : null
+}
+
+/** `value` moved back by `minutes`, e.g. a "22 minutes ago" demo timestamp. `null` if `value` is unusable. */
+export function subMinutes(value: DateInput, minutes: number): Date | null {
+  const date = toDate(value)
+  return date ? dfSubMinutes(date, minutes) : null
 }
 
 /** `value` moved forward by `months`. `null` if `value` is unusable. */

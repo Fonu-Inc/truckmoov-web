@@ -75,7 +75,7 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { ListSkeleton } from "@/components/ui/skeletons";
-import { SuspendAccessDialog } from "@/features/security/components/payments-access/SuspendAccessDialog";
+import { SuspendAccessDialog } from "@/features/tenants/components/ui/SuspendAccessDialog";
 import { TenantDataExportPanel } from "./TenantDataExportPanel";
 import { TenantQuotaEditor } from "./TenantQuotaEditor";
 import { TenantTrialCard } from "./TenantTrialCard";
@@ -103,7 +103,12 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   other: "another method",
 };
 
-const formatDay = (day: string) => formatWithPattern(day, "d MMM yyyy");
+function formatDay(day: string) {
+  return formatWithPattern(
+    day,
+    "d MMM yyyy",
+  );
+}
 
 function graceSentence(enforcement: NonNullable<SystemTenantBilling["enforcement"]>) {
   if (enforcement.suspended) {
@@ -111,12 +116,18 @@ function graceSentence(enforcement: NonNullable<SystemTenantBilling["enforcement
       ? "Suspended for non-payment"
       : "Suspended by an admin";
   }
-  if (enforcement.stage === "in_grace") return `In grace period until ${formatDay(enforcement.graceEndsOn)}`;
-  if (enforcement.stage === "past_grace") return `Grace period ended ${formatDay(enforcement.graceEndsOn)}`;
+  if (enforcement.stage === "in_grace")
+    return `In grace period until ${formatDay(enforcement.graceEndsOn)}`;
+  if (enforcement.stage === "past_grace")
+    return `Grace period ended ${formatDay(enforcement.graceEndsOn)}`;
   return "Nothing overdue";
 }
 
-function BillingFact({ label, children }: { label: string; children: ReactNode }) {
+function BillingFact({
+  label, children,
+}: {
+  label: string; children: ReactNode;
+}) {
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
@@ -126,7 +137,9 @@ function BillingFact({ label, children }: { label: string; children: ReactNode }
 }
 
 function BillingFacts({ billing }: { billing: SystemTenantBilling }) {
-  const { licence, openInvoice, lastPayment, enforcement, wallet } = billing;
+  const {
+    licence, openInvoice, lastPayment, enforcement, wallet,
+  } = billing;
   return (
     <div className="space-y-3">
       <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
@@ -183,13 +196,19 @@ function billingModelText(model: SystemTenantBilling["billingModel"]) {
   }
   if (model.kind === "subscription") {
     const cycle = model.billingCycle ? ` each ${model.billingCycle === "yearly" ? "year" : "month"}` : "";
-    return { label: "Subscription plan", detail: `A fixed subscription fee${cycle}.`, paymentModel };
+    return {
+      label: "Subscription plan", detail: `A fixed subscription fee${cycle}.`, paymentModel,
+    };
   }
-  return { label: "No billing model yet", detail: "The tenant has no licence or plan on record.", paymentModel };
+  return {
+    label: "No billing model yet", detail: "The tenant has no licence or plan on record.", paymentModel,
+  };
 }
 
 function BillingModelCard({ model }: { model: SystemTenantBilling["billingModel"] }) {
-  const { label, detail, paymentModel } = billingModelText(model);
+  const {
+    label, detail, paymentModel,
+  } = billingModelText(model);
   return (
     <div className="space-y-3">
       <h4 className="font-medium text-sm text-muted-foreground">Billing Model</h4>
@@ -1188,11 +1207,11 @@ export function TenantDetailsSheet({
                         </Card>
                       )
                     : billing && (
-                        <>
-                          <BillingFacts billing={billing} />
-                          <BillingModelCard model={billing.billingModel} />
-                        </>
-                      )}
+                      <>
+                        <BillingFacts billing={billing} />
+                        <BillingModelCard model={billing.billingModel} />
+                      </>
+                    )}
 
                 <Separator />
 

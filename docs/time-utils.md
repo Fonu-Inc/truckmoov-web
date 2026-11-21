@@ -51,7 +51,7 @@ to reach for it. This is the quick index:
 **Comparison and deadlines** — `daysUntil`, `daysBetween`, `minutesBetween`,
 `secondsBetween`, `isPast`, `isBefore`, `isAfter`, `isWithinRange`
 
-**Arithmetic and boundaries** — `addDays`, `subDays`, `addMonths`, `subMonths`,
+**Arithmetic and boundaries** — `addDays`, `subDays`, `subMinutes`, `addMonths`, `subMonths`,
 `startOfDay`, `endOfDay`, `startOfWeek`, `startOfMonth`, `endOfMonth`, `atHour`
 
 **Reporting** — `getDateRange`

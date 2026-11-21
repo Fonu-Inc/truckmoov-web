@@ -1,5 +1,7 @@
 import type { UserRole } from "@truckmoov/api/auth";
-import type { ComponentType, ElementType } from "react";
+import type {
+  ComponentType, ElementType,
+} from "react";
 import {
   Bell,
   Building2,
@@ -7,15 +9,13 @@ import {
   CreditCard,
   Database,
   Inbox,
-  Mail,
   LayoutDashboard,
+  Mail,
   Megaphone,
   MessageSquareText,
   Phone,
-  Send,
   Settings,
   ShieldCheck,
-  ShieldHalf,
   Wifi,
   Wrench,
 } from "lucide-react";
@@ -125,9 +125,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       {
         label: "SMS Templates", href: "/sms-templates", icon: MessageSquareText, requiredPermission: "admin.messaging.read",
       },
-      {
-        label: "WhatsApp Setup", href: "/whatsapp", icon: Send, requiredPermission: "admin.messaging.read",
-      },
     ],
     hasPermission: ADMIN_ROLES,
   },
@@ -135,10 +132,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Billing", href: "/subscription", icon: CreditCard, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Security", href: "/security", icon: ShieldHalf, hasPermission: ADMIN_ROLES,
-  },
-  {
-    label: "Compliance & Audit", href: "/compliance-audit", icon: ShieldCheck, hasPermission: ADMIN_ROLES,
+    label: "Audit & Compliance", href: "/audit-compliance", icon: ShieldCheck, hasPermission: ADMIN_ROLES,
   },
   {
     label: "Settings", href: "/settings", icon: Settings, hasPermission: ADMIN_ROLES,
@@ -156,10 +150,14 @@ export function filterByPermission(entries: SidebarEntry[], permissions: string[
       continue;
     }
     const items = entry.items.filter(allowed);
-    if (items.length === entry.items.length)
+    if (items.length === entry.items.length) {
       visible.push(entry);
-    else if (items.length)
-      visible.push({ ...entry, items });
+    }
+    else if (items.length) {
+      visible.push({
+        ...entry, items,
+      });
+    }
   }
   return visible;
 }

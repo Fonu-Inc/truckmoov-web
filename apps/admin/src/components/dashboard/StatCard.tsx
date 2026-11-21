@@ -43,12 +43,12 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "relative rounded-lg border bg-card p-4 transition-all duration-200 shadow-enterprise hover:shadow-enterprise-md",
+        "relative overflow-hidden rounded-lg border bg-card p-5 transition-all duration-200 shadow-enterprise hover:shadow-enterprise-md",
         variantStyles[variant],
         className,
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-4">
         <div className={cn(
           "rounded-lg p-2.5 shrink-0",
           iconBgStyles[variant],
@@ -60,7 +60,7 @@ export function StatCard({
           <p className="text-sm font-medium text-muted-foreground break-words">{title}</p>
           {loading
             ? <Skeleton className="h-8 w-24" />
-            : <p className="text-xl font-bold tracking-tight text-foreground break-words">{value}</p>}
+            : <p className="text-2xl font-bold tracking-tight text-foreground break-words">{value}</p>}
           {footer && !loading && <div className="pt-1">{footer}</div>}
           {change !== undefined && !loading && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">

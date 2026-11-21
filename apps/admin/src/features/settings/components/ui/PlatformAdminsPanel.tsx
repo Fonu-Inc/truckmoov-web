@@ -9,7 +9,7 @@ import {
 } from "@truckmoov/api/auth";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
-  MoreHorizontal, Plus, Search, Shield, SlidersHorizontal, Users,
+  KeyRound, MoreHorizontal, Plus, Search, Shield, SlidersHorizontal, Users,
 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -71,6 +71,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { UserPermissionsDialog } from "@/features/settings/components/ui/UserPermissionsDialog";
+import { usePlatformRolesStore } from "@/features/settings/stores/platformRolesStore";
 import { useAuthStore } from "@/stores/authStore";
 
 type AdminUser = {
@@ -94,8 +96,35 @@ function getAdminDisplayName(admin: AdminUser): string {
   return admin.profile?.fullName || admin.email;
 }
 
+/**
+ * The API has one platform-admin role, so "Platform Admin" heads the picker and
+ * is every admin's fallback. The other roles come from the local roles store
+ * (fleetflow parity port) and are recorded per email in `userRoles`.
+ * ponytail: local only — the invite request still sends just the email.
+ */
+const PLATFORM_ADMIN_ROLE = {
+  value: "platform_admin",
+  label: "Platform Admin",
+  description: "Platform admins have full access to all platform features and tenant management.",
+};
+
 export function PlatformAdminsPanel() {
   const { user } = useAuthStore();
+  const roles = usePlatformRolesStore(s => s.roles);
+  const userGrants = usePlatformRolesStore(s => s.userGrants);
+  const userRoles = usePlatformRolesStore(s => s.userRoles);
+  const setUserRole = usePlatformRolesStore(s => s.setUserRole);
+  const platformRoles = [
+    PLATFORM_ADMIN_ROLE,
+    ...roles.map(r => ({
+      value: r.key, label: r.label, description: r.description,
+    })),
+  ];
+  const roleKeyFor = (admin: AdminUser) => userRoles[admin.email.toLowerCase()] ?? PLATFORM_ADMIN_ROLE.value;
+  const roleLabel = (admin: AdminUser) =>
+    admin.role === "SUPER_ADMIN"
+      ? "Super Admin"
+      : platformRoles.find(r => r.value === roleKeyFor(admin))?.label ?? PLATFORM_ADMIN_ROLE.label;
 
   const adminsQuery = useQuery(getSystemAdminsQueryOptions());
   const rawAdmins = adminsQuery.data?.data as { users?: AdminUser[] } | undefined;
@@ -121,6 +150,14 @@ export function PlatformAdminsPanel() {
     teamRoleFilter,
     setTeamRoleFilter,
   ] = useState<string[]>([]);
+  const [
+    inviteRole,
+    setInviteRole,
+  ] = useState<string>(PLATFORM_ADMIN_ROLE.value);
+  const [
+    permissionsUser,
+    setPermissionsUser,
+  ] = useState<AdminUser | null>(null);
 
   const inviteForm = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
@@ -132,7 +169,7 @@ export function PlatformAdminsPanel() {
     const name = getAdminDisplayName(admin).toLowerCase();
     if (q && !(name.includes(q) || admin.email.toLowerCase().includes(q)))
       return false;
-    if (teamRoleFilter.length > 0 && !teamRoleFilter.includes(admin.role))
+    if (teamRoleFilter.length > 0 && !teamRoleFilter.includes(roleKeyFor(admin)))
       return false;
     return true;
   });
@@ -142,8 +179,13 @@ export function PlatformAdminsPanel() {
       { data: { email: values.email } },
       {
         onSuccess: () => {
-          toast.success("Invitation sent");
+          setUserRole(
+            values.email,
+            inviteRole,
+          );
+          toast.success(`Invitation sent to ${values.email} as ${platformRoles.find(r => r.value === inviteRole)?.label ?? PLATFORM_ADMIN_ROLE.label}`);
           inviteForm.reset();
+          setInviteRole(PLATFORM_ADMIN_ROLE.value);
           setIsInviteDialogOpen(false);
         },
         onError: e => toast.error(e.message),
@@ -202,15 +244,31 @@ export function PlatformAdminsPanel() {
     {
       accessorKey: "role",
       header: "Role",
-      cell: ({ row }) => (
-        <Badge
-          variant="outline"
-          className="border-primary/30 text-primary"
-        >
-          <Shield className="h-3 w-3 mr-1" />
-          {row.original.role === "SUPER_ADMIN" ? "Super Admin" : "Platform Admin"}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const extra = userGrants[row.original.userId]?.length ?? 0;
+        return (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge
+              variant="outline"
+              className="border-primary/30 text-primary"
+            >
+              <Shield className="h-3 w-3 mr-1" />
+              {roleLabel(row.original)}
+            </Badge>
+            {extra > 0 && (
+              <Badge
+                variant="secondary"
+                className="rounded-full text-[10px] font-normal"
+              >
+                +
+                {extra}
+                {" "}
+                extra
+              </Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "accountStatus",
@@ -228,33 +286,51 @@ export function PlatformAdminsPanel() {
       cell: ({ row }) => {
         const admin = row.original;
         const isSelf = admin.userId === user?.id;
-        if (isSelf)
-          return <span className="text-xs text-muted-foreground">You</span>;
-        if (admin.role === "SUPER_ADMIN")
-          return <span className="text-xs text-muted-foreground">Protected</span>;
+        const permissionsButton = (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setPermissionsUser(admin)}
+          >
+            <KeyRound className="h-4 w-4" />
+            Permissions
+          </Button>
+        );
+        if (isSelf || admin.role === "SUPER_ADMIN") {
+          return (
+            <div className="flex items-center justify-end gap-1">
+              {permissionsButton}
+              <span className="text-xs text-muted-foreground">{isSelf ? "You" : "Protected"}</span>
+            </div>
+          );
+        }
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleToggleStatus(admin)}>
-                {admin.accountStatus === "enabled" ? "Disable Admin" : "Enable Admin"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => setUserToRemove(admin)}
-              >
-                Delete Admin
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center justify-end gap-1">
+            {permissionsButton}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleToggleStatus(admin)}>
+                  {admin.accountStatus === "enabled" ? "Disable Admin" : "Enable Admin"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => setUserToRemove(admin)}
+                >
+                  Delete Admin
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         );
       },
     },
@@ -290,9 +366,9 @@ export function PlatformAdminsPanel() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Invite Platform Administrator</DialogTitle>
+                  <DialogTitle>Invite Team Member</DialogTitle>
                   <DialogDescription>
-                    Send an invitation to add a new platform admin. They will have full access to manage all tenants and platform settings.
+                    Send an invitation to a member of the platform team and choose what they can administer.
                   </DialogDescription>
                 </DialogHeader>
                 <Form {...inviteForm}>
@@ -309,7 +385,7 @@ export function PlatformAdminsPanel() {
                           <FormControl>
                             <Input
                               type="email"
-                              placeholder="admin@company.com"
+                              placeholder="name@truckmoov.com"
                               {...field}
                             />
                           </FormControl>
@@ -320,18 +396,25 @@ export function PlatformAdminsPanel() {
                     <div className="space-y-2">
                       <FormLabel>Role</FormLabel>
                       <Select
-                        value="platform_admin"
-                        disabled
+                        value={inviteRole}
+                        onValueChange={setInviteRole}
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="platform_admin">Platform Admin</SelectItem>
+                          {platformRoles.map(r => (
+                            <SelectItem
+                              key={r.value}
+                              value={r.value}
+                            >
+                              {r.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        Platform admins have full access to all platform features and tenant management.
+                        {platformRoles.find(r => r.value === inviteRole)?.description}
                       </p>
                     </div>
                     <div className="flex justify-end gap-3">
@@ -396,22 +479,22 @@ export function PlatformAdminsPanel() {
                     <p className="text-xs font-medium mb-2">Only show team members by...</p>
                     <p className="text-xs text-muted-foreground mb-1">Role</p>
                     <div className="space-y-1">
-                      {["platform_admin"].map(r => (
+                      {platformRoles.map(r => (
                         <label
-                          key={r}
+                          key={r.value}
                           className="flex items-center gap-2 text-sm cursor-pointer"
                         >
                           <input
                             type="checkbox"
-                            checked={teamRoleFilter.includes(r)}
+                            checked={teamRoleFilter.includes(r.value)}
                             onChange={e =>
                               setTeamRoleFilter(prev =>
                                 e.target.checked ? [
                                   ...prev,
-                                  r,
-                                ] : prev.filter(x => x !== r))}
+                                  r.value,
+                                ] : prev.filter(x => x !== r.value))}
                           />
-                          Platform Admin
+                          {r.label}
                         </label>
                       ))}
                     </div>
@@ -449,6 +532,16 @@ export function PlatformAdminsPanel() {
           />
         </CardContent>
       </Card>
+
+      {permissionsUser && (
+        <UserPermissionsDialog
+          open={!!permissionsUser}
+          onOpenChange={o => !o && setPermissionsUser(null)}
+          userId={permissionsUser.userId}
+          userName={getAdminDisplayName(permissionsUser)}
+          roleKey={roleKeyFor(permissionsUser)}
+        />
+      )}
 
       <AlertDialog
         open={!!userToRemove}

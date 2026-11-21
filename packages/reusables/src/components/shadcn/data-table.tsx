@@ -56,6 +56,8 @@ export interface DataTableProps<TData> {
   onRowClick?: (row: TData) => void;
   rowClassName?: (row: TData) => string;
   className?: string;
+  /** A muted full-width line rendered under the column headings, such as a table description. */
+  headerNote?: ReactNode;
   /**
    * Server-driven pagination: pass the current page + total from the endpoint.
    * Omit it and the table pages the rows it was given client-side (10 per page).
@@ -78,6 +80,7 @@ export function DataTable<TData>({
   onRowClick,
   rowClassName,
   className,
+  headerNote,
   pagination,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -162,6 +165,13 @@ export function DataTable<TData>({
               })}
             </TableRow>
           ))}
+          {headerNote && (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={colCount} className="px-4 py-2 text-xs font-normal text-muted-foreground">
+                {headerNote}
+              </TableCell>
+            </TableRow>
+          )}
         </TableHeader>
         <TableBody>
           {isLoading ? (

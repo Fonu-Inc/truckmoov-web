@@ -9,11 +9,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  getSystemTenantGrowthQueryOptions,
   getSystemTenantsExportQueryOptions,
   getSystemTenantsQueryOptions,
   getSystemTenantsSummaryQueryOptions,
   useUpdateTenantStatus,
 } from "@truckmoov/api/auth";
+import { getBillingPlansQueryOptions } from "@truckmoov/api/billing";
 import {
   AlertTriangle,
   Ban,
@@ -37,7 +39,6 @@ import {
 } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { getBillingPlansQueryOptions } from "@truckmoov/api/billing";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -76,7 +77,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { SuspendAccessDialog } from "@/features/security/components/payments-access/SuspendAccessDialog";
+import { SuspendAccessDialog } from "@/features/tenants/components/ui/SuspendAccessDialog";
 import { TenantDetailsSheet } from "@/features/tenants/components/ui/TenantDetailsSheet";
 import { TenantOnboardingPanel } from "@/features/tenants/components/ui/TenantOnboardingPanel";
 import { TerminateTenantDialog } from "@/features/tenants/components/ui/TerminateTenantDialog";
@@ -264,12 +265,32 @@ export default function TenantsPage() {
     },
   }));
   const summaryQuery = useQuery(getSystemTenantsSummaryQueryOptions());
-  const plansQuery = useQuery(getBillingPlansQueryOptions({ params: { status: "all", limit: 100 } }));
+  // Month-on-month growth for the Total Tenants card: cumulative count at the
+  // end of this month vs last. Undefined (no pill) until there is a baseline.
+  const growthQuery = useQuery(getSystemTenantGrowthQueryOptions(2));
+  const tenantGrowthPercent = useMemo(
+    () => {
+      const months = growthQuery.data?.data.months ?? [];
+      if (months.length < 2)
+        return undefined;
+      const previous = months[months.length - 2].tenants;
+      const current = months[months.length - 1].tenants;
+      return previous > 0 ? Math.round(((current - previous) / previous) * 100) : undefined;
+    },
+    [growthQuery.data],
+  );
+  const plansQuery = useQuery(getBillingPlansQueryOptions({
+    params: {
+      status: "all", limit: 100,
+    },
+  }));
   const filterFields = useMemo<FilterField[]>(
     () => tenantFilterFields.map(field => field.key === "plan"
       ? {
           ...field,
-          options: (plansQuery.data?.data?.items ?? []).map(plan => ({ value: plan.code, label: plan.name })),
+          options: (plansQuery.data?.data?.items ?? []).map(plan => ({
+            value: plan.code, label: plan.name,
+          })),
         }
       : field),
     [plansQuery.data],
@@ -581,8 +602,8 @@ export default function TenantsPage() {
             ...(debouncedSearch ? { search: debouncedSearch } : {}),
             ...(apiStatus ? { status: apiStatus } : {}),
             ...(apiPlanCode ? { planCode: apiPlanCode } : {}),
-      ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
-      ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
+            ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
+            ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
             ...(apiOrganizationType ? { organizationType: apiOrganizationType } : {}),
             ...(apiKycStatus ? { kycStatus: apiKycStatus } : {}),
             ...(apiLastActiveFrom ? { lastActiveFrom: apiLastActiveFrom } : {}),
@@ -628,6 +649,8 @@ export default function TenantsPage() {
             <StatCard
               title="Total Tenants"
               value={totalTenants}
+              change={tenantGrowthPercent}
+              changeLabel="this month"
               icon={Building2}
               loading={summaryQuery.isPending}
             />
