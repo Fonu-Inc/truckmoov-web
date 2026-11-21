@@ -30,6 +30,7 @@ import {
 import {
   FIELD_CLASS,
   LABEL_CLASS,
+  LINK_CLASS,
   PRIMARY_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/features/get-started/utils/getStartedContent";
@@ -165,13 +166,18 @@ export function VehicleModal({
     }
   }
 
-  const textField = (name: TextName, label: string, placeholder?: string) => (
+  const requiredMark = <span className="-ml-1.5 text-destructive">*</span>;
+
+  const textField = (name: TextName, label: string, placeholder?: string, required = false) => (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
         <FormItem className="gap-1.5">
-          <FormLabel className={LABEL_CLASS}>{label}</FormLabel>
+          <FormLabel className={LABEL_CLASS}>
+            {label}
+            {required && requiredMark}
+          </FormLabel>
           <FormControl>
             <Input
               placeholder={placeholder}
@@ -185,13 +191,16 @@ export function VehicleModal({
     />
   );
 
-  const selectField = (name: SelectName, label: string, placeholder: string, options: Record<string, string>) => (
+  const selectField = (name: SelectName, label: string, placeholder: string, options: Record<string, string>, required = false) => (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
         <FormItem className="gap-1.5">
-          <FormLabel className={LABEL_CLASS}>{label}</FormLabel>
+          <FormLabel className={LABEL_CLASS}>
+            {label}
+            {required && requiredMark}
+          </FormLabel>
           <FormControl>
             <select
               {...field}
@@ -229,7 +238,7 @@ export function VehicleModal({
       title={initial ? "Edit Vehicle" : "Add Vehicle"}
       description={initial
         ? "Update the vehicle's details. Choose a file only to replace its licence."
-        : "Registration number, vehicle type, make and model are required, along with the vehicle licence."}
+        : "Enter the details of the vehicle you want to onboard."}
       className="sm:max-w-[640px]"
       footer={(
         <>
@@ -268,23 +277,27 @@ export function VehicleModal({
           {textField(
             "registrationNumber",
             "Registration Number",
-            "LAG-123-XY",
+            "LAG-123-ABC",
+            true,
           )}
           {selectField(
             "vehicleType",
             "Vehicle Type",
-            "Select a type",
+            "Select type",
             VEHICLE_TYPE_LABELS,
+            true,
           )}
           {textField(
             "make",
             "Vehicle Make",
             "Toyota",
+            true,
           )}
           {textField(
             "model",
             "Vehicle Model",
             "Hilux",
+            true,
           )}
           {textField(
             "year",
@@ -294,14 +307,17 @@ export function VehicleModal({
           {textField(
             "engineNumber",
             "Engine Number",
+            "ENG-000123",
           )}
           {textField(
             "chassisNumber",
             "Chassis Number",
+            "JTEBU5JR9...",
           )}
           {textField(
             "color",
             "Vehicle Color",
+            "White",
           )}
           {textField(
             "engineCapacity",
@@ -310,18 +326,20 @@ export function VehicleModal({
           )}
           {textField(
             "odometer",
-            "Odometer Reading (km)",
-            "84500",
+            "Odometer Reading",
+            "84,500 km",
           )}
           {selectField(
             "purchaseType",
             "Type of Purchase",
-            "Select a purchase type",
+            "Select purchase type",
             PURCHASE_TYPE_LABELS,
           )}
           {purchaseType === "other" && textField(
             "otherPurchaseType",
             "Specify Purchase Type",
+            "e.g. Company pool vehicle",
+            true,
           )}
 
           <div className="space-y-1.5 sm:col-span-2">
@@ -331,7 +349,7 @@ export function VehicleModal({
             )}
             >
               Vehicle License Document
-              {!initial && <span className="text-destructive"> *</span>}
+              {!initial && requiredMark}
             </span>
             <input
               ref={licenceInputRef}
@@ -343,39 +361,53 @@ export function VehicleModal({
                 event.target.value = "";
               }}
             />
-            <button
-              type="button"
-              onClick={() => licenceInputRef.current?.click()}
-              onDragOver={event => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                pickLicence(event.dataTransfer.files?.[0]);
-              }}
-              className={cn(
-                "flex w-full cursor-pointer flex-col items-center gap-1 rounded-[15px] border border-dashed border-border-field px-4 py-6 text-center transition-colors hover:border-border-deep hover:bg-surface",
-                licenceError && "border-destructive",
-              )}
-            >
-              {licence
-                ? (
-                    <>
-                      <FileText className="size-6 text-brand-deep" />
-                      <span className="max-w-full truncate text-sm font-medium text-heading">{licence.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {`${(licence.size / 1024 / 1024).toFixed(2)} MB · click to replace`}
+            {licence
+              ? (
+                  <div className="space-y-2">
+                    <div className="flex min-w-0 items-center gap-3 rounded-[15px] border-[0.5px] border-border p-4">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-brand-tint">
+                        <FileText className="size-5 text-brand-deep" />
                       </span>
-                    </>
-                  )
-                : (
-                    <>
-                      <CloudArrowUp className="size-6 text-muted-foreground" />
-                      <span className="text-sm font-medium text-heading">Upload vehicle license</span>
-                      <span className="text-xs text-muted-foreground">
-                        {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG, max 10MB"}
-                      </span>
-                    </>
-                  )}
-            </button>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-heading">{licence.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {`Vehicle License Document · ${(licence.size / 1024 / 1024).toFixed(2)} MB`}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className={cn(
+                        LINK_CLASS,
+                        "text-xs",
+                      )}
+                      onClick={() => setLicence(null)}
+                    >
+                      Remove document
+                    </button>
+                  </div>
+                )
+              : (
+                  <button
+                    type="button"
+                    onClick={() => licenceInputRef.current?.click()}
+                    onDragOver={event => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      pickLicence(event.dataTransfer.files?.[0]);
+                    }}
+                    className={cn(
+                      "flex w-full cursor-pointer flex-col items-center gap-1 rounded-[15px] border border-dashed border-border-field px-4 py-6 text-center transition-colors hover:border-border-deep hover:bg-surface",
+                      licenceError && "border-destructive",
+                    )}
+                  >
+                    <CloudArrowUp className="size-6 text-muted-foreground" />
+                    <span className="text-sm font-medium text-heading">Upload vehicle license</span>
+                    <span className="text-xs text-muted-foreground">
+                      {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG, max 10MB"}
+                    </span>
+                  </button>
+                )}
             {licenceError && <p className="text-xs text-destructive">{licenceError}</p>}
           </div>
         </form>

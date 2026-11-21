@@ -63,7 +63,7 @@ export function DialogHost() {
       if (resumeLink || params.has("payment")) {
         dialogStore.open(
           "get-started",
-          "returning",
+          "resume",
         );
       }
     },

@@ -12,12 +12,18 @@
  */
 
 import type { InstallationValues } from "@/features/apply/utils/applySchemas";
-import type { LicenceAndIndemnity } from "@/features/apply/utils/applyTypes";
+import type {
+  DeviceFulfilment,
+  LicenceAndIndemnity,
+} from "@/features/apply/utils/applyTypes";
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { EMPTY_LICENCE_AND_INDEMNITY } from "@/features/apply/utils/applyTypes";
+import {
+  EMPTY_DEVICE_FULFILMENT,
+  EMPTY_LICENCE_AND_INDEMNITY,
+} from "@/features/apply/utils/applyTypes";
 
 export type PendingSignature = {
   method: "drawn" | "uploaded";
@@ -29,12 +35,18 @@ export type PendingSignature = {
 };
 
 type ApplyDraftState = {
+  /** Entered through "Returning Customers" (`?returning=1`): an existing MTN customer. */
+  returning: boolean;
   licence: LicenceAndIndemnity;
+  /** TODO(api): Device Fulfilment choice — kept here until the onboarding API takes it. */
+  fulfilment: DeviceFulfilment;
   pendingSignature: PendingSignature | null;
   installation: InstallationValues | null;
   /** deviceIndex (1-based) -> vehicle id */
   deviceAssignments: Record<number, string>;
 
+  setReturning: (returning: boolean) => void;
+  setFulfilment: (fulfilment: DeviceFulfilment) => void;
   setLicence: (update: Partial<LicenceAndIndemnity>) => void;
   setPendingSignature: (signature: PendingSignature | null) => void;
   setInstallation: (values: InstallationValues | null) => void;
@@ -45,7 +57,9 @@ type ApplyDraftState = {
 export const APPLY_DRAFT_STORAGE_KEY = "truckmoov_apply_draft";
 
 const INITIAL = {
+  returning: false,
   licence: EMPTY_LICENCE_AND_INDEMNITY,
+  fulfilment: EMPTY_DEVICE_FULFILMENT,
   pendingSignature: null,
   installation: null,
   deviceAssignments: {},
@@ -62,6 +76,10 @@ export const useApplyDraftStore = create<ApplyDraftState>()(persist(
       },
     })),
 
+    setReturning: returning => set({ returning }),
+
+    setFulfilment: fulfilment => set({ fulfilment }),
+
     setPendingSignature: signature => set({ pendingSignature: signature }),
 
     setInstallation: values => set({ installation: values }),
@@ -74,7 +92,9 @@ export const useApplyDraftStore = create<ApplyDraftState>()(persist(
     name: APPLY_DRAFT_STORAGE_KEY,
     // The signature data URL can be large; keep it out of persisted storage.
     partialize: state => ({
+      returning: state.returning,
       licence: state.licence,
+      fulfilment: state.fulfilment,
       installation: state.installation,
       deviceAssignments: state.deviceAssignments,
     }),

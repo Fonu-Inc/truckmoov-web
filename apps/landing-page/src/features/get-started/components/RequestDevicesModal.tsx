@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 import { useForm } from "react-hook-form";
-import { InfoRow } from "@/features/get-started/components/StepParts";
 import { SubDialog } from "@/features/get-started/components/SubDialog";
 import { deviceRequestSchema } from "@/features/get-started/schemas/applySchemas";
 import {
@@ -39,15 +38,19 @@ const FORM_ID = "apply-request-devices-form";
 
 /**
  * Devices are fitted one per vehicle, so a request can never take the total past the
- * vehicles added (main app: RequestDevicesModal). The server enforces it too.
+ * vehicles added (main app: RequestDevicesModal). The server enforces it too. With
+ * `initial` it edits an existing request ("Edit Device Request").
  */
 export function RequestDevicesModal({
   open,
+  initial,
   maxQuantity,
   onOpenChange,
   onSubmit,
 }: {
   open: boolean;
+  /** Set to edit an existing request. */
+  initial?: DeviceRequestValues | null;
   maxQuantity: number;
   onOpenChange: (open: boolean) => void;
   /** Rejects with the server error on failure. */
@@ -73,10 +76,11 @@ export function RequestDevicesModal({
   useEffect(
     () => {
       if (open)
-        form.reset(EMPTY_DEVICE_REQUEST);
+        form.reset(initial ?? EMPTY_DEVICE_REQUEST);
     },
     [
       open,
+      initial,
       form,
     ],
   );
@@ -104,8 +108,10 @@ export function RequestDevicesModal({
     <SubDialog
       open={open}
       onOpenChange={next => !saving && onOpenChange(next)}
-      title="Request Devices"
-      description="Request tracking devices to be supplied by Fleet Pro."
+      title={initial ? "Edit Device Request" : "Request Devices"}
+      description={initial
+        ? "Update the details of this device request."
+        : "Request tracking devices to be supplied by Fleet Pro."}
       footer={(
         <>
           <button
@@ -125,22 +131,15 @@ export function RequestDevicesModal({
             className={PRIMARY_BUTTON_CLASS}
             disabled={saving}
           >
-            {saving ? "Submitting…" : "Submit Device Request"}
+            {saving ? "Submitting…" : initial ? "Save Changes" : "Submit Device Request"}
           </button>
         </>
       )}
     >
-      <InfoRow className="rounded-[15px] bg-surface p-3 text-xs">
-        One device is fitted per vehicle, so you can request up to
-        {" "}
-        <span className="font-semibold">{maxQuantity}</span>
-        {" "}
-        more. Fleet Pro supplies the hardware.
-      </InfoRow>
       <Form {...form}>
         <form
           id={FORM_ID}
-          className="mt-5 space-y-[19px]"
+          className="space-y-[19px]"
           onSubmit={form.handleSubmit(handleSubmit)}
         >
           <FormField
@@ -148,7 +147,10 @@ export function RequestDevicesModal({
             name="quantity"
             render={({ field }) => (
               <FormItem className="gap-1.5">
-                <FormLabel className={LABEL_CLASS}>Number of Devices</FormLabel>
+                <FormLabel className={LABEL_CLASS}>
+                  Number of Devices
+                  <span className="-ml-1.5 text-destructive">*</span>
+                </FormLabel>
                 <FormControl>
                   <input
                     type="number"
@@ -168,11 +170,14 @@ export function RequestDevicesModal({
             name="useCase"
             render={({ field }) => (
               <FormItem className="gap-1.5">
-                <FormLabel className={LABEL_CLASS}>Use Case</FormLabel>
+                <FormLabel className={LABEL_CLASS}>
+                  Use Case
+                  <span className="-ml-1.5 text-destructive">*</span>
+                </FormLabel>
                 <FormControl>
                   <textarea
                     rows={3}
-                    placeholder="What will these devices be used for?"
+                    placeholder="Explain how these devices will be used across your fleet."
                     className={TEXTAREA_CLASS}
                     {...field}
                   />
@@ -186,10 +191,11 @@ export function RequestDevicesModal({
             name="notes"
             render={({ field }) => (
               <FormItem className="gap-1.5">
-                <FormLabel className={LABEL_CLASS}>Notes (optional)</FormLabel>
+                <FormLabel className={LABEL_CLASS}>Notes (Optional)</FormLabel>
                 <FormControl>
                   <textarea
                     rows={2}
+                    placeholder="Optional"
                     className={TEXTAREA_CLASS}
                     {...field}
                   />

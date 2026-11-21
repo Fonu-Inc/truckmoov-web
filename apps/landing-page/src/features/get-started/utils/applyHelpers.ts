@@ -1,4 +1,5 @@
 import type { OnboardingApplication } from "@truckmoov/api/auth";
+import { documentsForApplicant } from "@/features/get-started/utils/applyTypes";
 
 // Copy of the helpers at the bottom of apps/main/src/features/apply/hooks/useApplySession.ts.
 
@@ -13,10 +14,18 @@ export function requestedDeviceTotal(application?: OnboardingApplication) {
   );
 }
 
-/** Every non-vehicle document still missing, plus one row per vehicle short of a licence. */
-export function documentsComplete(application?: OnboardingApplication) {
+/**
+ * Whether every document the design asks for is uploaded (`documentsForApplicant`): a
+ * returning customer owes only the Customer Request Letter.
+ *
+ * ponytail: checked against the client list, not the server's `missingDocuments`, which
+ * still includes Proof of Ownership, vehicle licences and the indemnity form.
+ */
+export function documentsComplete(application?: OnboardingApplication, returning = false) {
   if (!application)
     return false;
-  const missing = application.missingDocuments.filter(type => type !== "signed_indemnity_form" && type !== "vehicle_license");
-  return missing.length === 0 && application.vehiclesMissingDocuments.length === 0;
+  return documentsForApplicant(
+    application.applicantType,
+    returning,
+  ).every(required => application.documents.some(document => document.documentType === required.type));
 }

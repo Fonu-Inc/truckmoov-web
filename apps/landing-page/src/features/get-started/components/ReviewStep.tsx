@@ -18,12 +18,10 @@ import {
   StepHeading,
   StepLayout,
 } from "@/features/get-started/components/StepParts";
-import {
-  isIndemnitySigned,
-  requestedDeviceTotal,
-} from "@/features/get-started/utils/applyHelpers";
+import { applicationToDetails } from "@/features/get-started/schemas/applySchemas";
+import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
+import { requestedDeviceTotal } from "@/features/get-started/utils/applyHelpers";
 import { CARD_CLASS } from "@/features/get-started/utils/getStartedContent";
-import { cn } from "@/shared/utils";
 
 /** Everything saved on the application, read back from the server before submitting (main app: ReviewStep). */
 export function ReviewStep({
@@ -53,27 +51,16 @@ export function ReviewStep({
   const plansQuery = useQuery(getOnboardingM2mPlansQueryOptions());
   const plan = plansQuery.data?.data.plans.find(entry => entry.code === application.m2mPlanCode);
   const { organization } = application;
-  const {
-    emailVerified,
-    phoneVerified,
-  } = application.verification;
+  const details = applicationToDetails(application);
+  const fulfilment = useApplyDraftStore(state => state.fulfilment);
+  const delivery = customerType === "enterprise" && fulfilment.method === "delivery";
   const isEnterprise = customerType === "enterprise";
   const deviceTotal = requestedDeviceTotal(application);
-  const documentRows = requiredDocuments.flatMap(document => (
-    document.type === "vehicle_license"
-      ? application.vehicles.map(vehicle => ({
-          key: `vehicle_license:${vehicle.id}`,
-          label: `${document.label} (${vehicle.registrationNumber})`,
-          fileName: application.documents.find(item => item.documentType === "vehicle_license" && item.vehicleId === vehicle.id)?.documentName,
-        }))
-      : [
-          {
-            key: document.type,
-            label: document.label,
-            fileName: application.documents.find(item => item.documentType === document.type)?.documentName,
-          },
-        ]
-  ));
+  const documentRows = requiredDocuments.map(document => ({
+    key: document.type,
+    label: document.label,
+    fileName: application.documents.find(item => item.documentType === document.type)?.documentName,
+  }));
 
   return (
     <StepLayout
@@ -105,54 +92,53 @@ export function ReviewStep({
               label="Organization Name"
               value={organization.organizationName}
             />
-            <Field
-              label={isEnterprise ? "Contact Person" : "Full Name"}
-              value={application.contact.fullName}
-            />
+            {!isEnterprise && (
+              <>
+                <Field
+                  label="First Name"
+                  value={details.firstName}
+                />
+                <Field
+                  label="Last Name"
+                  value={details.lastName}
+                />
+              </>
+            )}
             <Field
               label="Business Email"
               value={organization.businessEmail}
-              verified={emailVerified}
             />
             <Field
               label="Phone Number"
               value={organization.organizationPhone}
-              verified={phoneVerified}
             />
-            {isEnterprise
-              ? (
-                  <>
-                    <Field
-                      label="RC Number"
-                      value={application.registry.rcNumber ?? ""}
-                    />
-                    <Field
-                      label="TIN"
-                      value={application.registry.taxIdentificationNumber ?? ""}
-                    />
-                  </>
-                )
-              : (
-                  <Field
-                    label="ID Number"
-                    value={application.registry.identificationNumber ?? ""}
-                  />
-                )}
+            {isEnterprise && (
+              <>
+                <Field
+                  label="Contact Person"
+                  value={application.contact.fullName}
+                />
+                <Field
+                  label="Contact Person Phone"
+                  value={organization.organizationPhone}
+                />
+              </>
+            )}
             <Field
               label="License Plan"
               value={plan?.name ?? application.m2mPlanCode ?? ""}
             />
             <Field
-              label="Indemnity Form"
-              value={isIndemnitySigned(application) ? "Signed" : "Not signed"}
+              label="Street Address"
+              value={organization.streetAddress}
             />
             <Field
-              label="Address"
-              value={[
-                organization.streetAddress,
-                organization.city,
-                organization.state,
-              ].filter(Boolean).join(", ")}
+              label="City"
+              value={organization.city}
+            />
+            <Field
+              label="State"
+              value={organization.state}
             />
           </dl>
         </Section>
@@ -171,6 +157,26 @@ export function ReviewStep({
               count={deviceTotal}
             />
           </div>
+          {application.deviceRequests.length > 0 && (
+            <dl className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2">
+              <Field
+                label="Device fulfilment method"
+                value={delivery ? "Delivery" : "Pickup"}
+              />
+              <Field
+                label={delivery ? "Delivery address" : "Pickup location"}
+                value={delivery
+                  ? [
+                      fulfilment.deliveryStreet,
+                      fulfilment.deliveryCity,
+                      fulfilment.deliveryState,
+                    ].filter(part => part.trim()).join(", ")
+                  : fulfilment.store
+                    ? `${fulfilment.store}, ${fulfilment.area}, ${fulfilment.state}`
+                    : ""}
+              />
+            </dl>
+          )}
           {application.vehicles.length > 0 && (
             <ul className="mt-4 space-y-2">
               {application.vehicles.map(vehicle => (
@@ -178,8 +184,8 @@ export function ReviewStep({
                   key={vehicle.id}
                   className="flex items-center justify-between gap-3 rounded-[12px] border-[0.5px] border-border px-3 py-2"
                 >
-                  <span className="min-w-0 truncate text-sm text-heading">{vehicle.registrationNumber}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="min-w-0 truncate text-sm font-medium text-heading">{vehicle.registrationNumber || "Unregistered"}</span>
+                  <span className="min-w-0 truncate text-xs text-muted-foreground">
                     {[
                       vehicle.make,
                       vehicle.model,
@@ -197,7 +203,7 @@ export function ReviewStep({
                   key={request.id}
                   className="flex items-center justify-between gap-3 rounded-[12px] border-[0.5px] border-border px-3 py-2"
                 >
-                  <span className="min-w-0 truncate text-sm text-heading">{request.useCase}</span>
+                  <span className="min-w-0 truncate text-sm font-medium text-heading">{request.useCase || "Device request"}</span>
                   <Pill>{`${request.quantity} device${request.quantity === 1 ? "" : "s"}`}</Pill>
                 </li>
               ))}
@@ -270,22 +276,14 @@ function Section({
 function Field({
   label,
   value,
-  verified,
 }: {
   label: string;
   value: string;
-  verified?: boolean;
 }) {
   return (
     <div className="min-w-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className={cn(
-        "mt-0.5 flex items-center gap-2 text-sm font-medium text-heading",
-      )}
-      >
-        <span className="truncate">{value || "—"}</span>
-        {verified && <Pill tone="success">Verified</Pill>}
-      </dd>
+      <dd className="mt-0.5 truncate text-sm font-medium text-heading">{value.trim() ? value : "—"}</dd>
     </div>
   );
 }
@@ -299,7 +297,7 @@ function CountRow({
 }) {
   return (
     <div className="flex items-center justify-between rounded-[12px] bg-surface px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm text-heading">{label}</span>
       <span className="text-sm font-semibold text-heading">{count}</span>
     </div>
   );

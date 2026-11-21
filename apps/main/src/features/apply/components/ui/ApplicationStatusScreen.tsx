@@ -6,7 +6,6 @@ import {
   Circle,
   Clock,
   Loader2,
-  RefreshCw,
   XCircle,
 } from "lucide-react";
 
@@ -47,7 +46,7 @@ const DOCUMENT_LABELS: Record<string, string> = {
 /**
  * Post-submission view (TRU-FE-13), from `GET …/:id/status`. Most applications land in
  * `under_review` — the registry checks couldn't settle them automatically. Refreshes when
- * the tab regains focus; no polling.
+ * the tab regains focus, and every 30 seconds while it waits on the review team.
  */
 export function ApplicationStatusScreen({
   applicationId,
@@ -59,6 +58,8 @@ export function ApplicationStatusScreen({
   const statusQuery = useQuery({
     ...getOnboardingApplicationStatusQueryOptions(applicationId),
     refetchOnWindowFocus: true,
+    // The design's "Review in progress…" button has no refresh — check in the background.
+    refetchInterval: query => (waitingStatuses(query.state.data?.data) ? 30_000 : false),
   });
   const status = statusQuery.data?.data;
   const applicationStatus = status?.applicationStatus;
@@ -87,7 +88,7 @@ export function ApplicationStatusScreen({
         {!approved && !rejected && <Clock className="h-8 w-8 text-primary" />}
       </div>
 
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+      <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
         {booked
           ? "Your installation is booked"
           : approved
@@ -113,8 +114,17 @@ export function ApplicationStatusScreen({
                 ? `${status?.decisionReason ?? "We couldn't approve this application."} You can start a new application with the same email address.`
                 : changesRequested
                   ? (status?.decisionReason ?? "You may review the requirements and submit again.")
-                  : "Thank you for your submission. We're reviewing the details you sent, and we'll email you once your application has been approved."}
+                  : "Thank you for your submission. We are currently reviewing the details you sent. Once your application is approved, you will be able to proceed to payment."}
       </p>
+
+      {!approved && !rejected && !changesRequested && (
+        <p className="mx-auto mt-3 flex max-w-xl items-start gap-2 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          This review takes a little while — you don't need to stay on this page. We'll email you as
+          soon as your application has been approved, and you can come back then to make your
+          payment.
+        </p>
+      )}
 
       {statusQuery.isError && (
         <p className="mt-3 text-sm text-destructive">
@@ -166,15 +176,13 @@ export function ApplicationStatusScreen({
             Go to sign in
           </Button>
         )}
-        {(!canPay && !rejected && !booked) && (
+        {(!canPay && !rejected && !booked && !changesRequested) && (
           <Button
-            variant="outline"
             size="lg"
-            loading={statusQuery.isFetching}
-            onClick={() => statusQuery.refetch()}
+            className="min-w-56"
+            disabled
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh status
+            Review in progress…
           </Button>
         )}
         {rejected && (
@@ -206,4 +214,15 @@ export function ApplicationStatusScreen({
       </div>
     </div>
   );
+}
+
+/** Still waiting on the review team or on device allocation — worth checking again. */
+function waitingStatuses(status?: {
+  applicationStatus?: string; stage?: string;
+}) {
+  if (!status)
+    return false;
+  if (status.applicationStatus === "approved")
+    return status.stage === "provisioning";
+  return status.applicationStatus !== "rejected" && status.applicationStatus !== "changes_requested";
 }

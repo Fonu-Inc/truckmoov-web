@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   ArrowsClockwise,
   CloudArrowUp,
@@ -44,6 +45,7 @@ export function UploadField({
   error,
   busy,
   pdfOnly,
+  children,
   onSelect,
   onRemove,
   onRetry,
@@ -55,6 +57,8 @@ export function UploadField({
   error?: string | null;
   busy: boolean;
   pdfOnly?: boolean;
+  /** Extra input under the title, e.g. the identification card type select. */
+  children?: ReactNode;
   onSelect: (file: File) => void;
   onRemove?: () => void;
   onRetry?: () => void;
@@ -91,6 +95,7 @@ export function UploadField({
         </div>
         {status && <Pill tone={STATUS[status].tone}>{STATUS[status].label}</Pill>}
       </div>
+      {children}
       <input
         ref={inputRef}
         type="file"

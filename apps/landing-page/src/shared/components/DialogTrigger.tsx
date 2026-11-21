@@ -10,7 +10,7 @@ import { dialogStore } from "@/shared/stores/dialogStore";
 type DialogTriggerProps = Omit<ComponentProps<"button">, "type"> & {
   /** Which site dialog this button opens. */
   dialog: DialogId;
-  /** Get Started only: "returning" resumes the application saved in this browser. */
+  /** Get Started only: "returning" opens the existing MTN customer flow. */
   intent?: DialogIntent;
 };
 

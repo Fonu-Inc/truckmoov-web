@@ -1,6 +1,6 @@
 /**
  * Files the applicant picked that the server hasn't confirmed yet, kept in IndexedDB so
- * "Apply as Returning Customer" can bring them back after the tab is closed:
+ * reopening the saved application brings them back after the tab is closed:
  * - `signature`: the indemnity signature drawn before the application exists. It is
  *   uploaded right after the details are first saved.
  * - `doc:<slot>`: a document upload that failed or was cut off.

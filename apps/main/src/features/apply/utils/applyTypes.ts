@@ -45,17 +45,14 @@ export type RequiredDocument = {
   type: OnboardingUploadableDocumentType;
   label: string;
   requirement?: string;
-  /** Only the Customer Request Letter must be a PDF; the rest take PDF, JPG or PNG. */
-  pdfOnly?: boolean;
 };
 
-/** Documents required from Enterprise customers. */
+/** Documents required from Enterprise customers, as the design lists them. */
 export const ENTERPRISE_DOCUMENTS: RequiredDocument[] = [
   {
     type: "customer_request_letter",
     label: "Customer Request Letter",
     requirement: "Must bear the full business name and be submitted as a signed, non-editable PDF document.",
-    pdfOnly: true,
   },
   {
     type: "cac_document",
@@ -80,36 +77,42 @@ export const ENTERPRISE_DOCUMENTS: RequiredDocument[] = [
   {
     type: "identification_card",
     label: "Identification Card",
-    requirement: "A valid government-issued ID for the business representative.",
-  },
-  {
-    type: "proof_of_ownership",
-    label: "Proof of Ownership",
-    requirement: "Documentation proving ownership of the business and its vehicles.",
-  },
-  {
-    type: "vehicle_license",
-    label: "Vehicle License",
-    requirement: "Valid vehicle licence for each vehicle you are onboarding.",
+    requirement: "Only a National Identification Card or Driver's License is accepted. Any other card will be rejected.",
   },
 ];
 
-/** Documents required from Owner-Operator customers. */
+/**
+ * Documents required from Owner-Operator customers, as the design lists them. Vehicle
+ * licences are attached per vehicle in Add Vehicle, not here.
+ *
+ * ponytail: the API still lists proof_of_ownership in `missingDocuments`, so submit is
+ * refused until the backend matches these lists.
+ */
 export const OWNER_OPERATOR_DOCUMENTS: RequiredDocument[] = [
-  {
-    type: "proof_of_ownership",
-    label: "Proof of Ownership",
-    requirement: "Documentation proving ownership of the business and its vehicles.",
-  },
-  {
-    type: "vehicle_license",
-    label: "Vehicle License",
-    requirement: "Valid vehicle licence for each vehicle you are onboarding.",
-  },
+  ENTERPRISE_DOCUMENTS[0],
+  ENTERPRISE_DOCUMENTS[5],
 ];
 
 export function documentsForCustomerType(type: ApplicantCustomerType): RequiredDocument[] {
   return type === "enterprise" ? ENTERPRISE_DOCUMENTS : OWNER_OPERATOR_DOCUMENTS;
+}
+
+/**
+ * A returning customer already has a relationship or account with MTN, so the design asks
+ * them for the Customer Request Letter only — whatever their customer type.
+ *
+ * ponytail: client-side only. The API still reports its full list in `missingDocuments`
+ * until it learns about returning customers.
+ */
+export const RETURNING_DOCUMENTS: RequiredDocument[] = [ENTERPRISE_DOCUMENTS[0]];
+
+export function documentsForApplicant(type: ApplicantCustomerType, returning: boolean): RequiredDocument[] {
+  return returning ? RETURNING_DOCUMENTS : documentsForCustomerType(type);
+}
+
+/** `?returning=1` — the "Returning Customers" entry: an existing MTN customer. */
+export function isReturningSearch(search: string) {
+  return new URLSearchParams(search).get("returning") === "1";
 }
 
 /**
@@ -135,23 +138,28 @@ export const EMPTY_LICENCE_AND_INDEMNITY: LicenceAndIndemnity = {
 /** The only IoT carrier Fleet Pro provisions today. */
 export const DEFAULT_SIM_CARRIER = "MTN Nigeria";
 
-/** The server's vehicle types (TRU-FE-12 notes the list was inferred — confirm with backend). */
+/**
+ * The server's vehicle types, in the design's order (TRU-FE-12 notes the list was inferred —
+ * confirm with backend). The design also offers "Pickup" and "Other"; the API has no value
+ * for either, and "Tricycle" is the API's own extra.
+ */
 export const VEHICLE_TYPE_LABELS: Record<OnboardingVehicleType, string> = {
-  truck: "Truck",
-  van: "Van",
-  bus: "Bus",
   car: "Car",
   suv: "SUV",
+  van: "Van",
+  truck: "Truck",
   trailer: "Trailer",
+  bus: "Bus",
   motorcycle: "Motorcycle",
   tricycle: "Tricycle",
 };
 
+/** In the design's order and wording. Its "Rental" option has no API value. */
 export const PURCHASE_TYPE_LABELS: Record<OnboardingVehiclePurchaseType, string> = {
-  outright: "Outright purchase",
+  outright: "Owned",
   lease: "Lease",
-  hire_purchase: "Hire purchase",
-  financed: "Finance / loan",
+  financed: "Finance / Loan",
+  hire_purchase: "Hire Purchase",
   other: "Other",
 };
 
@@ -214,19 +222,62 @@ export const APPLY_STEPS: ApplyStep[] = [
   },
   {
     id: 7,
-    label: "Schedule Installation",
+    label: "Installation Scheduling",
   },
 ];
 
-/** Internal step number -> visible step number (1..5). */
+/**
+ * Internal step number -> visible step number (1..5). Review (8) sits between Required
+ * Documents and Payment: 3.5 marks steps 1–3 done with none active, as the design does.
+ */
 export function displayStep(step: number) {
   if (step <= 3)
     return 1;
   if (step === 4)
     return 2;
-  if (step === 5 || step === 8)
+  if (step === 5)
     return 3;
+  if (step === 8)
+    return 3.5;
   if (step === 6)
     return 4;
   return 5;
+}
+
+/** Owner Operator / Individual accounts are limited to this many vehicles. */
+export const OWNER_OPERATOR_VEHICLE_LIMIT = 10;
+
+export const OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE
+  = "Owner Operator / Individual accounts can have a maximum of 10 vehicles. Change your customer type to Enterprise Customer to add more than 10 vehicles.";
+
+/** How requested devices reach the applicant (Fleet Requirements → Device Fulfilment). */
+export type DeviceFulfilment = {
+  method: "pickup" | "delivery";
+  state: string;
+  area: string;
+  store: string;
+  deliveryStreet: string;
+  deliveryCity: string;
+  deliveryState: string;
+};
+
+export const EMPTY_DEVICE_FULFILMENT: DeviceFulfilment = {
+  method: "pickup",
+  state: "",
+  area: "",
+  store: "",
+  deliveryStreet: "",
+  deliveryCity: "",
+  deliveryState: "",
+};
+
+/**
+ * Whether the Device Fulfilment details are filled in. Pickup can't be completed until the
+ * store locations endpoint exists, so only delivery is checked for now (TODO(api)).
+ */
+export function fulfilmentComplete(value: DeviceFulfilment, isOwnerOperator: boolean) {
+  const method = isOwnerOperator ? "pickup" : value.method;
+  if (method === "delivery")
+    return Boolean(value.deliveryStreet.trim() && value.deliveryCity.trim() && value.deliveryState);
+  return true;
 }

@@ -19,6 +19,7 @@ export function DialogFooter({
   continueLoading = false,
   backMuted = false,
   backLabel = "Back",
+  continueArrow = true,
   form,
   extra,
 }: {
@@ -29,6 +30,8 @@ export function DialogFooter({
   continueLoading?: boolean;
   backMuted?: boolean;
   backLabel?: string;
+  /** False drops the → from the Continue button (steps whose design shows a plain label). */
+  continueArrow?: boolean;
   form?: string;
   /** Shown between the two buttons, e.g. "Save & Continue Later". */
   extra?: ReactNode;
@@ -66,10 +69,12 @@ export function DialogFooter({
           )}
         >
           {continueLoading ? "Please wait…" : continueLabel}
-          <ArrowRight
-            className="size-3.5"
-            strokeWidth={1.5}
-          />
+          {continueArrow && (
+            <ArrowRight
+              className="size-3.5"
+              strokeWidth={1.5}
+            />
+          )}
         </button>
       )}
     </footer>

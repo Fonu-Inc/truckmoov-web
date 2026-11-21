@@ -6,8 +6,8 @@ import { setOnboardingTokenStorage } from "@truckmoov/api/auth";
 import { queryClient } from "@truckmoov/api/lib/query-client";
 import { GetStartedDialog } from "@/features/get-started/components/GetStartedDialog";
 
-// The draft token outlives the tab here, so "Apply as Returning Customer" can resume days
-// later. Set before the wizard (and its first request) mounts.
+// The draft token outlives the tab here, so a saved application (or a resume link) can be picked
+// up days later. Set before the wizard (and its first request) mounts.
 setOnboardingTokenStorage("local");
 
 type GetStartedHostProps = {

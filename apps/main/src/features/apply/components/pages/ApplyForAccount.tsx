@@ -4,15 +4,11 @@ import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas"
 import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
 import {
-  AUTH_QUERY_KEY,
   useCreateOnboardingApplication,
   useDeleteOnboardingApplicationDocument,
-  useResumeOnboardingApplication,
   useSendOnboardingApplicationEmailVerification,
   useSendOnboardingApplicationPhoneVerification,
-  useSignOnboardingIndemnity,
   useSubmitOnboardingApplication,
   useUpdateOnboardingApplication,
   useVerifyOnboardingApplicationEmail,
@@ -30,7 +26,10 @@ import {
   useState,
 } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import {
+  useLocation,
+  useNavigate,
+} from "react-router";
 import { toast } from "sonner";
 
 import { Button } from "@/components/shadcn/button";
@@ -50,7 +49,6 @@ import { ReviewStep } from "@/features/apply/components/ui/ReviewStep";
 import { VerificationStep } from "@/features/apply/components/ui/VerificationStep";
 import {
   documentsComplete,
-  isIndemnitySigned,
   useApplySession,
 } from "@/features/apply/hooks/useApplySession";
 import { useConfirmDialog } from "@/features/apply/hooks/useConfirmDialog";
@@ -65,7 +63,8 @@ import {
 } from "@/features/apply/utils/applySchemas";
 import {
   displayStep,
-  documentsForCustomerType,
+  documentsForApplicant,
+  isReturningSearch,
   readStoredCustomerType,
   writeStoredCustomerType,
 } from "@/features/apply/utils/applyTypes";
@@ -145,14 +144,9 @@ function readDetailsDraft(): BusinessDetailsValues {
   }
 }
 
-async function dataUrlToBlob(dataUrl: string) {
-  const res = await fetch(dataUrl);
-  return res.blob();
-}
-
 export default function ApplyForAccount() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const location = useLocation();
   const session = useApplySession();
   const {
     application, applicationId,
@@ -181,9 +175,9 @@ export default function ApplyForAccount() {
     setSaveError,
   ] = useState<string | null>(null);
   const [
-    indemnityNotice,
-    setIndemnityNotice,
-  ] = useState<string | null>(null);
+    emailConflict,
+    setEmailConflict,
+  ] = useState(0);
   const [
     submitError,
     setSubmitError,
@@ -211,18 +205,35 @@ export default function ApplyForAccount() {
 
   const licence = useApplyDraftStore(state => state.licence);
   const setLicence = useApplyDraftStore(state => state.setLicence);
-  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
-  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
+  const returning = useApplyDraftStore(state => state.returning);
+  const setReturning = useApplyDraftStore(state => state.setReturning);
+  const returningEntry = isReturningSearch(location.search);
+
+  // "Returning Customers" lands on `?returning=1`; remember it for the rest of the application.
+  // A plain `/apply` with no application under way is a new customer.
+  const startingFresh = !returningEntry && !applicationId;
+  useEffect(
+    () => {
+      if (returningEntry)
+        setReturning(true);
+      else if (startingFresh)
+        setReturning(false);
+    },
+    [
+      returningEntry,
+      startingFresh,
+      setReturning,
+    ],
+  );
+  const isReturning = returningEntry || (returning && !startingFresh);
 
   const createApplication = useCreateOnboardingApplication();
   const updateApplication = useUpdateOnboardingApplication();
-  const signIndemnity = useSignOnboardingIndemnity();
   const sendEmail = useSendOnboardingApplicationEmailVerification();
   const sendPhone = useSendOnboardingApplicationPhoneVerification();
   const verifyEmail = useVerifyOnboardingApplicationEmail();
   const verifyPhone = useVerifyOnboardingApplicationPhone();
   const submitApplication = useSubmitOnboardingApplication();
-  const resume = useResumeOnboardingApplication();
   const deleteDocument = useDeleteOnboardingApplicationDocument();
   const {
     confirm, dialog: confirmDialog,
@@ -272,7 +283,12 @@ export default function ApplyForAccount() {
     ],
   );
 
-  const requiredDocuments = customerType ? documentsForCustomerType(customerType) : [];
+  const requiredDocuments = customerType
+    ? documentsForApplicant(
+        customerType,
+        isReturning,
+      )
+    : [];
   const emailVerified = Boolean(application?.verification.emailVerified);
   const phoneVerified = Boolean(application?.verification.phoneVerified);
 
@@ -318,7 +334,7 @@ export default function ApplyForAccount() {
         setPhase("status");
         return;
       }
-      const detailsDone = Boolean(application.m2mPlanCode) && isIndemnitySigned(application);
+      const detailsDone = Boolean(application.m2mPlanCode);
       const firstUnfinished = !detailsDone
         ? 1
         : !application.verification.emailVerified
@@ -327,7 +343,13 @@ export default function ApplyForAccount() {
                 ? 3
                 : application.vehicles.length === 0
                   ? 4
-                  : !documentsComplete(application)
+                  : !documentsComplete(
+                      application,
+                      documentsForApplicant(
+                        application.applicantType,
+                        isReturning,
+                      ),
+                    )
                       ? 5
                       : 8;
       // Back to the step they were on — but never past one that isn't finished yet.
@@ -340,6 +362,7 @@ export default function ApplyForAccount() {
       application,
       form,
       setLicence,
+      isReturning,
     ],
   );
 
@@ -419,9 +442,14 @@ export default function ApplyForAccount() {
       return;
     }
     if (err.statusCode === 409 && /email/i.test(err.message)) {
+      setEmailConflict(count => count + 1);
+      // "taken" makes the next Continue open the "You already have a Fleet Pro account" dialog.
       form.setError(
         "businessEmail",
-        { message: err.message },
+        {
+          type: "taken",
+          message: err.message,
+        },
       );
       return;
     }
@@ -458,55 +486,8 @@ export default function ApplyForAccount() {
       return;
     }
 
-    if (pendingSignature) {
-      try {
-        await signIndemnity.mutateAsync({
-          id,
-          signerName: pendingSignature.name,
-          templateVersion: pendingSignature.version,
-          method: pendingSignature.method,
-          file: await dataUrlToBlob(pendingSignature.image),
-        });
-        setPendingSignature(null);
-        setIndemnityNotice(null);
-      }
-      catch (error) {
-        const err = error as ServerErrorResponse;
-        if (err.statusCode === 409 && /version/i.test(err.message)) {
-          // Signed against a superseded version: re-read and sign again, don't retry.
-          setPendingSignature(null);
-          setLicence({ indemnityAccepted: false });
-          queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingIndemnityAgreement });
-          setIndemnityNotice("The indemnity agreement has been updated. Read the current version and sign it again.");
-        }
-        else {
-          // Keep the pending signature — pressing Next again retries the upload.
-          setSaveError(err.message || "Your signature couldn't be saved. Try again.");
-        }
-        setSaving(false);
-        return;
-      }
-    }
-
     setSaving(false);
     setStep(!emailVerified ? 2 : !phoneVerified ? 3 : 4);
-  }
-
-  async function handleSaveForLater() {
-    const email = form.getValues("businessEmail").trim() || application?.organization.businessEmail;
-    if (!email) {
-      toast.error("Enter your business email first.");
-      return;
-    }
-    try {
-      await resume.mutateAsync({ data: { businessEmail: email } });
-      // The reply is the same whether or not an application exists, so never branch on it.
-      toast.success("If your business email is verified, we've sent you a link to continue your application.");
-      navigate("/auth");
-    }
-    catch (error) {
-      toast.error((error as ServerErrorResponse).message || "We couldn't send the link. Try again.");
-    }
   }
 
   /** The type decides the documents asked for — switching it clears any already uploaded. */
@@ -545,7 +526,10 @@ export default function ApplyForAccount() {
       const res = await submitApplication.mutateAsync({ id: applicationId });
       if ("incomplete" in res) {
         setSubmitError(res.message);
-        setStep(!res.planSelected || !res.indemnitySigned
+        // ponytail: the API still gates on the indemnity form and documents the design dropped.
+        // Those refusals stay on Review as the submit error — sending the applicant to a step
+        // with nothing left to do would strand them.
+        const next = !res.planSelected
           ? 1
           : !res.emailVerified
               ? 2
@@ -553,7 +537,13 @@ export default function ApplyForAccount() {
                   ? 3
                   : res.vehicleCount === 0 || !res.deviceAllocationComplete
                     ? 4
-                    : 5);
+                    : !documentsComplete(
+                        application,
+                        requiredDocuments,
+                      )
+                        ? 5
+                        : 8;
+        setStep(next);
         toast.error(res.message);
         return;
       }
@@ -595,13 +585,14 @@ export default function ApplyForAccount() {
     setStep(step - 1);
   }
 
-  /** Visible step (1..5); after submission the payment step is highlighted. */
-  const visibleStep = phase === "status" ? 4 : displayStep(step);
+  /** Visible step (1..5); review and the status screen sit at 3.5 — steps 1–3 done, none active. */
+  const visibleStep = phase === "status" ? 3.5 : displayStep(step);
 
   if (session.isRestoring) {
     return (
       <ApplyShell
         customerType={customerType}
+        returning={isReturning}
         visibleStep={visibleStep}
       >
         <div className="flex min-h-[60vh] items-center justify-center">
@@ -617,17 +608,20 @@ export default function ApplyForAccount() {
   return (
     <ApplyShell
       customerType={customerType}
+      returning={isReturning}
       visibleStep={visibleStep}
     >
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-ml-2 mb-6 text-muted-foreground"
-        onClick={handleBack}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back
-      </Button>
+      {phase === "form" && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 mb-6 text-muted-foreground"
+          onClick={handleBack}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+      )}
 
       <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
         Application for Account Creation
@@ -687,7 +681,6 @@ export default function ApplyForAccount() {
               contactName: form.getValues("contactName") || undefined,
               contactPhone: form.getValues("phoneNumber"),
             }}
-            onBack={() => setStep(6)}
             onDone={() => {
               session.clear();
               navigate("/auth");
@@ -704,28 +697,15 @@ export default function ApplyForAccount() {
         )}
 
         {phase === "form" && customerType && step === 1 && (
-          <>
-            <BusinessDetailsStep
-              form={form}
-              customerType={customerType}
-              submitting={saving}
-              indemnitySigned={isIndemnitySigned(application)}
-              indemnityNotice={indemnityNotice}
-              saveError={saveError}
-              applicationId={applicationId}
-              onSubmit={values => void handleDetailsSubmit(values)}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button
-                variant="ghost"
-                className="text-muted-foreground"
-                loading={resume.isPending}
-                onClick={() => void handleSaveForLater()}
-              >
-                Save & Continue Later
-              </Button>
-            </div>
-          </>
+          <BusinessDetailsStep
+            form={form}
+            customerType={customerType}
+            submitting={saving}
+            saveError={saveError}
+            applicationId={applicationId}
+            emailConflict={emailConflict}
+            onSubmit={values => void handleDetailsSubmit(values)}
+          />
         )}
 
         {needsApplication && (
@@ -820,11 +800,13 @@ export default function ApplyForAccount() {
  */
 function ApplyShell({
   customerType,
+  returning,
   visibleStep,
   complete,
   children,
 }: {
   customerType: ApplicantCustomerType | null;
+  returning: boolean;
   visibleStep: number;
   complete?: boolean;
   children: ReactNode;
@@ -887,11 +869,12 @@ function ApplyShell({
           </div>
 
           <h1 className="mb-4 text-3xl font-bold leading-tight text-sidebar-foreground">
-            Apply for a Fleet Pro account
+            {returning ? "Returning MTN customer onboarding" : "Apply for a Fleet Pro account"}
           </h1>
           <p className="max-w-sm text-sm leading-relaxed text-sidebar-foreground/70">
-            A structured business application. Tell us about your organization, your fleet
-            requirements and upload your compliance documents.
+            {returning
+              ? "You already have an existing relationship or account with MTN, Complete your FleetPro Onboarding."
+              : "A structured business application. Tell us about your organization, your fleet requirements and upload your compliance documents."}
           </p>
         </div>
 
@@ -910,7 +893,8 @@ function ApplyShell({
 
       {/* relative: anchors Radix's hidden absolute inputs here, else they stretch the page past h-screen. */}
       <main className="relative h-full flex-1 overflow-y-auto bg-gradient-auth">
-        <div className="sticky top-0 z-20 flex h-0 justify-end px-4 pt-4">
+        {/* h-0 with the offset in a transform: the toggle floats without pushing the content down. */}
+        <div className="sticky top-0 z-20 flex h-0 translate-y-4 justify-end px-4">
           <ThemeToggle />
         </div>
         <div className="mx-auto w-full max-w-3xl px-6 py-10 pb-16 sm:px-10">

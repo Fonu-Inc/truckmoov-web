@@ -134,8 +134,8 @@ The site should not render anything it doesn't need to:
    hydrates differently from the server HTML. The trigger writes to
    `shared/stores/dialogStore.ts` and holds no state. The host is the
    store's only subscriber, so opening a dialog re-renders nothing else.
-   `<DialogTrigger dialog="get-started" intent="returning">` opens the wizard in resume mode
-   (see [Apply wizard](#apply-wizard-get-started)).
+   `<DialogTrigger dialog="get-started" intent="returning">` opens the wizard for a returning
+   (existing MTN) customer (see [Apply wizard](#apply-wizard-get-started)).
 6. **Header.** The desktop mega menu is CSS-only. `MobileMenu` is the header's only client
    island.
 7. **Images** use `next/image` with an explicit `width`/`height`, or `fill` + `sizes`. The
@@ -152,7 +152,7 @@ It runs the same flow, fields and onboarding-applications API calls as the main 
 (`apps/main/src/features/apply/`). The steps are:
 
 1. customer type
-2. details, M2M plan and indemnity signature
+2. details and M2M plan
 3. email code
 4. phone code
 5. fleet (vehicles and device requests)
@@ -179,8 +179,8 @@ Progress is kept in this browser so the applicant can come back to the step they
 | Where | What |
 |---|---|
 | localStorage `truckmoov_onboarding_token` | draft token (`setOnboardingTokenStorage("local")` in `GetStartedHost`) |
-| localStorage `truckmoov_landing_apply_*` | application id, customer type, current step, step 1 fields typed before the application exists, `saved_at`, and the persisted zustand store (`_draft`: plan, indemnity tick, installation form) |
-| IndexedDB `truckmoov_landing_apply` / `files` | `signature` (indemnity signature drawn before the application exists) and `doc:<slot>` (uploads that failed on network or 5xx, retried from the Documents step) |
+| localStorage `truckmoov_landing_apply_*` | application id, customer type, current step, step 1 fields typed before the application exists, `saved_at`, and the persisted zustand store (`_draft`: plan, returning flag, device fulfilment, installation form) |
+| IndexedDB `truckmoov_landing_apply` / `files` | `doc:<slot>` (uploads that failed on network or 5xx, retried from the Documents step) |
 
 All of it goes through `utils/applyDraftStorage.ts` and `utils/draftFiles.ts`.
 
@@ -188,11 +188,12 @@ Entry points (`dialogStore.open("get-started", intent)`):
 
 - **Apply for Account Creation** (`intent: "new"`): starts fresh. If a draft is saved, it
   first asks "Continue my application" or "Start a new application".
-- **Apply as Returning Customer** (`intent: "returning"`): rehydrates the saved draft. The
-  server stage decides payment, installation or status; otherwise the stored step, never
-  past the first unfinished step. With nothing saved, it asks for the business email and
-  sends a resume link (`useResumeOnboardingApplication`).
-- `DialogHost` reopens the wizard in "returning" mode on page load in two cases:
+- **Apply as Returning Customer** (`intent: "returning"`): the applicant is an **existing MTN
+  customer**, not someone resuming a draft. See [Returning customers](#returning-customers).
+  A draft already saved in this browser still resumes.
+- `DialogHost` reopens the wizard in resume mode (`intent: "resume"`) on page load in two
+  cases. A resume rehydrates the saved draft: the server stage decides payment,
+  installation or status; otherwise the stored step, never past the first unfinished step:
   - a resume link `?token=…&applicationId=…`, which is adopted and then stripped from the
     URL;
   - the payment provider's return, `?payment=return`.
@@ -209,6 +210,55 @@ Cleanup:
   files, which are now on the server, but keeps the token and id so status, payment and
   installation can resume.
 - Closing the dialog never clears anything.
+
+### Returning customers
+
+Both apps follow the design app's two entries: **Apply for Account Creation** (new) and
+**Returning Customers**, meaning an existing MTN customer. Main enters through
+`/apply?returning=1`; the landing page through `intent: "returning"`.
+
+- The flag is persisted with the draft: `returning` in main's `applyDraftStore`, and in the
+  landing draft storage. A reload or a resume link keeps it.
+- Returning changes two things. The heading copy becomes "Returning MTN customer
+  onboarding", and the only required document is the **Customer Request Letter**
+  (`RETURNING_DOCUMENTS` / `documentsForApplicant` in `utils/applyTypes.ts`).
+- ponytail: client-side only. The API doesn't know about returning customers yet. It still
+  lists every document in `missingDocuments`, so a returning submit can come back
+  `incomplete` until the backend supports it.
+
+### Where the design and the API differ
+
+The forms follow the design app (`https://fleetflow-pro-fork.vercel.app`, `/apply`) field for
+field, in both apps.
+
+**Dropped to match the design, though the API still expects them.** Submit shows the API's
+`incomplete` message on Review until the backend catches up:
+
+- the Indemnity Agreement section and its signature upload, which the API needs before submit
+- Proof of Ownership on Documents (still in the API's `missingDocuments`). Vehicle licences
+  are attached in Add Vehicle, as in the design.
+- RC Number / TIN and ID Type / ID Number, which are optional server-side but feed
+  automated approval
+- "Save & Continue Later". Resume links from emails still work.
+
+**Adapted to the API:**
+
+- City and State are plain inputs. The state is normalised to the canonical name
+  (`normalizeState` in `applySchemas.ts`).
+- Installation Time is a clock input. It maps to the API's morning (before 12:00) or
+  afternoon slot, open 08:00–16:00.
+- Vehicle Type and Type of Purchase use the API's values, in the design's order and wording.
+  The design's Pickup, Other (vehicle type) and Rental have no API value.
+
+**Built UI-only until the endpoint exists**, each marked `TODO(api)`:
+
+- Device Fulfilment: the pickup store and area lists are empty, and the choice isn't sent
+- the ID type on the identification card upload
+- the quotation lines Delivery fee / Discount / Subtotal / VAT, shown only when the order
+  returns them
+- device-request edit, done as delete + add
+- the Excel bulk-upload wizard: not built yet. It needs an xlsx parser, and adding one is
+  undecided.
 
 ## SEO
 

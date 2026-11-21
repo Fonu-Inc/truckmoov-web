@@ -14,7 +14,6 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  Info,
   UploadCloud,
 } from "lucide-react";
 import {
@@ -151,7 +150,10 @@ export function VehicleModal({
     setSaving(true);
     setFormError(null);
     try {
-      await onSubmit(values, licence);
+      await onSubmit(
+        values,
+        licence,
+      );
       onOpenChange(false);
     }
     catch (error) {
@@ -178,13 +180,16 @@ export function VehicleModal({
     }
   }
 
-  const textField = (name: keyof VehicleValues, label: string, placeholder?: string) => (
+  const textField = (name: keyof VehicleValues, label: string, placeholder?: string, required = false) => (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
+        <FormItem className="space-y-1.5">
+          <FormLabel className="text-sm">
+            {label}
+            {required && <span className="ml-0.5 text-destructive">*</span>}
+          </FormLabel>
           <FormControl>
             <Input
               placeholder={placeholder}
@@ -202,13 +207,13 @@ export function VehicleModal({
       open={open}
       onOpenChange={next => !saving && onOpenChange(next)}
     >
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="sm:max-w-[640px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initial ? "Edit Vehicle" : "Add Vehicle"}</DialogTitle>
           <DialogDescription>
             {initial
               ? "Update the vehicle's details. Choose a file only to replace its licence."
-              : "Registration number, vehicle type, make and model are required, along with the vehicle licence."}
+              : "Enter the details of the vehicle you want to onboard."}
           </DialogDescription>
         </DialogHeader>
 
@@ -225,22 +230,26 @@ export function VehicleModal({
             {textField(
               "registrationNumber",
               "Registration Number",
-              "LAG-123-XY",
+              "LAG-123-ABC",
+              true,
             )}
 
             <FormField
               control={form.control}
               name="vehicleType"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Vehicle Type</FormLabel>
+                <FormItem className="space-y-1.5">
+                  <FormLabel className="text-sm">
+                    Vehicle Type
+                    <span className="ml-0.5 text-destructive">*</span>
+                  </FormLabel>
                   <Select
                     value={field.value || undefined}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a type" />
+                        <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -266,11 +275,13 @@ export function VehicleModal({
               "make",
               "Vehicle Make",
               "Toyota",
+              true,
             )}
             {textField(
               "model",
               "Vehicle Model",
               "Hilux",
+              true,
             )}
             {textField(
               "year",
@@ -280,14 +291,17 @@ export function VehicleModal({
             {textField(
               "engineNumber",
               "Engine Number",
+              "ENG-000123",
             )}
             {textField(
               "chassisNumber",
               "Chassis Number",
+              "JTEBU5JR9...",
             )}
             {textField(
               "color",
               "Vehicle Color",
+              "White",
             )}
             {textField(
               "engineCapacity",
@@ -296,23 +310,23 @@ export function VehicleModal({
             )}
             {textField(
               "odometer",
-              "Odometer Reading (km)",
-              "84500",
+              "Odometer Reading",
+              "84,500 km",
             )}
 
             <FormField
               control={form.control}
               name="purchaseType"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Type of Purchase</FormLabel>
+                <FormItem className="space-y-1.5">
+                  <FormLabel className="text-sm">Type of Purchase</FormLabel>
                   <Select
                     value={field.value || undefined}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a purchase type" />
+                        <SelectValue placeholder="Select purchase type" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -337,12 +351,18 @@ export function VehicleModal({
             {purchaseType === "other" && textField(
               "otherPurchaseType",
               "Specify Purchase Type",
+              "e.g. Company pool vehicle",
+              true,
             )}
 
-            <div className="space-y-2 sm:col-span-2">
-              <Label className={cn(licenceError && "text-destructive")}>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className={cn(
+                "text-sm",
+                licenceError && "text-destructive",
+              )}
+              >
                 Vehicle License Document
-                {!initial && <span className="text-destructive"> *</span>}
+                {!initial && <span className="ml-0.5 text-destructive">*</span>}
               </Label>
               <input
                 ref={licenceInput}
@@ -354,39 +374,56 @@ export function VehicleModal({
                   event.target.value = "";
                 }}
               />
-              <button
-                type="button"
-                onClick={() => licenceInput.current?.click()}
-                onDragOver={event => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  pickLicence(event.dataTransfer.files?.[0]);
-                }}
-                className={cn(
-                  "flex w-full flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-6 text-center transition-colors hover:bg-muted/40",
-                  licenceError && "border-destructive",
-                )}
-              >
-                {licence
-                  ? (
-                      <>
-                        <FileText className="h-6 w-6 text-primary" />
-                        <span className="max-w-full truncate text-sm font-medium">{licence.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {`${(licence.size / 1024 / 1024).toFixed(2)} MB · click to replace`}
-                        </span>
-                      </>
-                    )
-                  : (
-                      <>
+              {licence
+                ? (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <FileText className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{licence.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {`Vehicle License Document · ${(licence.size / 1024 / 1024).toFixed(2)} MB`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setLicence(null)}
+                      >
+                        Remove document
+                      </Button>
+                    </div>
+                  )
+                : (
+                    <div className={cn(
+                      "rounded-xl border border-dashed border-border/70 p-4",
+                      licenceError && "border-destructive",
+                    )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => licenceInput.current?.click()}
+                        onDragOver={event => event.preventDefault()}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          pickLicence(event.dataTransfer.files?.[0]);
+                        }}
+                        className="flex w-full cursor-pointer flex-col items-center gap-1 text-center"
+                      >
                         <UploadCloud className="h-6 w-6 text-muted-foreground" />
                         <span className="text-sm font-medium">Upload vehicle license</span>
                         <span className="text-xs text-muted-foreground">
                           {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG — max 10MB"}
                         </span>
-                      </>
-                    )}
-              </button>
+                      </button>
+                    </div>
+                  )}
               {licenceError && <p className="text-xs text-destructive">{licenceError}</p>}
             </div>
           </form>
@@ -429,11 +466,14 @@ export const REQUEST_DEVICES_FORM_ID = "apply-request-devices-form";
  */
 export function RequestDevicesModal({
   open,
+  initial,
   maxQuantity,
   onOpenChange,
   onSubmit,
 }: {
   open: boolean;
+  /** Set to edit an existing request ("Edit Device Request"). */
+  initial?: DeviceRequestValues | null;
   maxQuantity: number;
   onOpenChange: (open: boolean) => void;
   /** Rejects with the server error on failure. */
@@ -458,10 +498,11 @@ export function RequestDevicesModal({
   useEffect(
     () => {
       if (open)
-        form.reset(EMPTY_DEVICE_REQUEST);
+        form.reset(initial ?? EMPTY_DEVICE_REQUEST);
     },
     [
       open,
+      initial,
       form,
     ],
   );
@@ -490,22 +531,15 @@ export function RequestDevicesModal({
       open={open}
       onOpenChange={next => !saving && onOpenChange(next)}
     >
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Request Devices</DialogTitle>
-          <DialogDescription>Request tracking devices to be supplied by Fleet Pro.</DialogDescription>
+          <DialogTitle>{initial ? "Edit Device Request" : "Request Devices"}</DialogTitle>
+          <DialogDescription>
+            {initial
+              ? "Update the details of this device request."
+              : "Request tracking devices to be supplied by Fleet Pro."}
+          </DialogDescription>
         </DialogHeader>
-
-        <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <p className="text-xs text-muted-foreground">
-            One device is fitted per vehicle, so you can request up to
-            {" "}
-            <span className="font-medium text-foreground">{maxQuantity}</span>
-            {" "}
-            more. Fleet Pro supplies the hardware.
-          </p>
-        </div>
 
         <Form {...form}>
           <form
@@ -517,8 +551,11 @@ export function RequestDevicesModal({
               control={form.control}
               name="quantity"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Number of Devices</FormLabel>
+                <FormItem className="space-y-1.5">
+                  <FormLabel className="text-sm">
+                    Number of Devices
+                    <span className="ml-0.5 text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -536,12 +573,15 @@ export function RequestDevicesModal({
               control={form.control}
               name="useCase"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Use Case</FormLabel>
+                <FormItem className="space-y-1.5">
+                  <FormLabel className="text-sm">
+                    Use Case
+                    <span className="ml-0.5 text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       rows={3}
-                      placeholder="What will these devices be used for?"
+                      placeholder="Explain how these devices will be used across your fleet."
                       {...field}
                     />
                   </FormControl>
@@ -554,11 +594,12 @@ export function RequestDevicesModal({
               control={form.control}
               name="notes"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (optional)</FormLabel>
+                <FormItem className="space-y-1.5">
+                  <FormLabel className="text-sm">Notes (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={2}
+                      placeholder="Optional"
                       {...field}
                     />
                   </FormControl>
@@ -582,7 +623,7 @@ export function RequestDevicesModal({
             form={REQUEST_DEVICES_FORM_ID}
             loading={saving}
           >
-            Submit Device Request
+            {initial ? "Save Changes" : "Submit Device Request"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,6 @@
 /**
- * The applicant's saved progress in this browser (localStorage), so "Apply as Returning
- * Customer" lands them back on the step they stopped at, in a new tab or days later.
+ * The applicant's saved progress in this browser (localStorage), so reopening the dialog
+ * lands them back on the step they stopped at, in a new tab or days later.
  *
  * Saved progress itself lives on the server. These keys only remember which application
  * it is, the screen they were on, and the step 1 fields typed before the application

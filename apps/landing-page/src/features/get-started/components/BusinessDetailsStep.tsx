@@ -1,17 +1,15 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/get-started/schemas/applySchemas";
 import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
-import { FileText } from "@phosphor-icons/react/dist/ssr";
+import { Envelope } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
 import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
 import { Check } from "lucide-react";
 import { useState } from "react";
-import { useWatch } from "react-hook-form";
-import { CityInput } from "@/features/get-started/components/CityInput";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
-import { IndemnityDialog } from "@/features/get-started/components/IndemnityDialog";
 import {
   InfoRow,
   Notice,
@@ -19,17 +17,14 @@ import {
   StepHeading,
   StepLayout,
 } from "@/features/get-started/components/StepParts";
+import { SubDialog } from "@/features/get-started/components/SubDialog";
 import { useEmailAvailability } from "@/features/get-started/hooks/useEmailAvailability";
-import {
-  IDENTIFICATION_TYPES,
-  NIGERIAN_STATES,
-} from "@/features/get-started/schemas/applySchemas";
 import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
 import {
-  CARD_CLASS,
   FIELD_CLASS,
   LABEL_CLASS,
   LINK_CLASS,
+  PRIMARY_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/features/get-started/utils/getStartedContent";
 import {
@@ -42,82 +37,92 @@ import {
 } from "@/shared/components/shadcn/form";
 import { Input } from "@/shared/components/shadcn/input";
 import { cn } from "@/shared/utils";
+import { SIGN_IN_URL } from "@/shared/utils/routes";
 
 const FORM_ID = "apply-business-details-form";
 
-type TextFieldName = Exclude<keyof BusinessDetailsValues, "state" | "identificationType">;
+/** The design's field label: every Customer Details field is required. The label is flex gap-2,
+ * so -ml-1.5 sits the asterisk 2px from the text, as in the design. */
+function RequiredLabel({ children }: { children: ReactNode }) {
+  return (
+    <FormLabel className={LABEL_CLASS}>
+      {children}
+      <span className="-ml-1.5 text-destructive">*</span>
+    </FormLabel>
+  );
+}
+
+type TextFieldName = Exclude<keyof BusinessDetailsValues, "identificationType">;
 
 /**
- * Customer details, M2M licence plan and the indemnity signature (main app:
- * BusinessDetailsStep). The plan and indemnity are checked here, outside zod, because the
- * server has no field for them on the details body.
+ * Customer details and the M2M licence plan (main app: BusinessDetailsStep), exactly the
+ * design's fields. The plan is checked here, outside zod, because the server has no field
+ * for it on the details body.
+ *
+ * ponytail: the design has no RC Number / TIN / ID fields and no indemnity signature, so
+ * none are collected; the API's submit gate may refuse until it stops requiring them.
  */
 export function BusinessDetailsStep({
   form,
   customerType,
   submitting,
-  indemnitySigned: signedOnServer,
-  indemnityNotice,
   saveError,
   applicationId,
-  savingForLater,
+  emailConflict = 0,
   onSubmit,
   onBack,
-  onSaveForLater,
 }: {
   form: UseFormReturn<BusinessDetailsValues>;
   customerType: ApplicantCustomerType;
   submitting: boolean;
-  /** Signed on the server already (the generated form is in the documents). */
-  indemnitySigned: boolean;
-  /** Set when the agreement changed under the applicant and they must sign again. */
-  indemnityNotice?: string | null;
   /** Error from the last save that belongs to no single field. */
   saveError?: string | null;
   /** Lets the email check ignore the application being edited. */
   applicationId?: string | null;
-  savingForLater: boolean;
+  /** Bumped when the save answers 409 for the email — opens the existing-account dialog. */
+  emailConflict?: number;
   onSubmit: (values: BusinessDetailsValues) => void;
   onBack: () => void;
-  onSaveForLater: () => void;
 }) {
-  useEmailAvailability(
+  const emailTaken = useEmailAvailability(
     form,
     applicationId,
   );
   const isEnterprise = customerType === "enterprise";
   const licence = useApplyDraftStore(state => state.licence);
   const setLicence = useApplyDraftStore(state => state.setLicence);
-  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
-  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
   const plansQuery = useQuery(getOnboardingM2mPlansQueryOptions());
   const plans = plansQuery.data?.data.plans ?? [];
-  // A signature drawn before the application exists is uploaded right after it is saved.
-  const indemnitySigned = signedOnServer || Boolean(pendingSignature);
-  const state = useWatch({
-    control: form.control,
-    name: "state",
-  });
   const [
-    indemnityOpen,
-    setIndemnityOpen,
+    existingAccountOpen,
+    setExistingAccountOpen,
   ] = useState(false);
+  // The save answered 409 for the email: a count above the last one dismissed shows the
+  // same dialog (derived, so coming back to this step doesn't reopen an old conflict).
+  const [
+    dismissedConflict,
+    setDismissedConflict,
+  ] = useState(emailConflict);
+  const accountDialogOpen = existingAccountOpen || emailConflict > dismissedConflict;
   const [
     sectionError,
     setSectionError,
   ] = useState<string | null>(null);
 
+  function setAccountDialogOpen(open: boolean) {
+    setExistingAccountOpen(open);
+    if (!open)
+      setDismissedConflict(emailConflict);
+  }
+
   function handleValid(values: BusinessDetailsValues) {
+    // A taken company email opens the design's "You already have a Fleet Pro account" dialog.
+    if (emailTaken) {
+      setExistingAccountOpen(true);
+      return;
+    }
     if (!licence.licensePlan) {
       setSectionError("Select a license plan to continue.");
-      return;
-    }
-    if (!indemnitySigned) {
-      setSectionError("Review and electronically sign the indemnity form.");
-      return;
-    }
-    if (!licence.indemnityAccepted) {
-      setSectionError("Confirm that you have reviewed the indemnity form.");
       return;
     }
     setSectionError(null);
@@ -138,7 +143,7 @@ export function BusinessDetailsStep({
           !options.wide && "sm:col-span-1",
         )}
         >
-          <FormLabel className={LABEL_CLASS}>{label}</FormLabel>
+          <RequiredLabel>{label}</RequiredLabel>
           <FormControl>
             <Input
               type={options.type ?? "text"}
@@ -160,26 +165,14 @@ export function BusinessDetailsStep({
           onBack={onBack}
           form={FORM_ID}
           continueLabel="Continue"
+          continueArrow={false}
           continueLoading={submitting}
-          extra={(
-            <button
-              type="button"
-              className={cn(
-                LINK_CLASS,
-                "order-last w-full text-center text-xs sm:order-none sm:w-auto",
-              )}
-              disabled={savingForLater}
-              onClick={onSaveForLater}
-            >
-              {savingForLater ? "Sending link…" : "Save & Continue Later"}
-            </button>
-          )}
         />
       )}
     >
       <StepHeading
         title="Customer Details"
-        description="Complete Your Customer Information, Select A License Plan, And Review The Indemnity Form."
+        description="Complete Your Customer Information And Select A License Plan."
       />
 
       <Form {...form}>
@@ -211,10 +204,7 @@ export function BusinessDetailsStep({
               {textField(
                 "organizationName",
                 isEnterprise ? "Company Name" : "Organization Name",
-                {
-                  placeholder: "Lagos Express Logistics Ltd",
-                  wide: true,
-                },
+                { placeholder: isEnterprise ? "Enter company name" : "Lagos Express Logistics Ltd" },
               )}
               {textField(
                 "businessEmail",
@@ -232,142 +222,29 @@ export function BusinessDetailsStep({
                   placeholder: "+234 901 234 5678",
                 },
               )}
-
-              {isEnterprise && (
-                <>
-                  {textField(
-                    "rcNumber",
-                    "RC Number",
-                    { placeholder: "RC1234567" },
-                  )}
-                  {textField(
-                    "taxIdentificationNumber",
-                    "Tax Identification Number (TIN)",
-                    { placeholder: "12345678-0001" },
-                  )}
-                  {textField(
-                    "contactName",
-                    "Contact Person's Full Name",
-                    {
-                      placeholder: "Adaeze Okonkwo",
-                      wide: true,
-                    },
-                  )}
-                </>
+              {isEnterprise && textField(
+                "contactName",
+                "Contact Person’s Full Name",
+                { placeholder: "Adaeze Okonkwo" },
               )}
-
-              {!isEnterprise && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="identificationType"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
-                        <FormLabel className={LABEL_CLASS}>ID Type</FormLabel>
-                        <FormControl>
-                          <select
-                            {...field}
-                            className={cn(
-                              FIELD_CLASS,
-                              !field.value && "text-faint-foreground",
-                            )}
-                          >
-                            <option value="">Select an ID type</option>
-                            {IDENTIFICATION_TYPES.map(type => (
-                              <option
-                                key={type.value}
-                                value={type.value}
-                                className="text-heading"
-                              >
-                                {type.label}
-                              </option>
-                            ))}
-                          </select>
-                        </FormControl>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
-                  {textField(
-                    "identificationNumber",
-                    "ID Number",
-                  )}
-                </>
-              )}
-
               {textField(
                 "streetAddress",
                 isEnterprise ? "Company Address" : "Business Address",
                 {
                   placeholder: "123 Apapa-Oshodi Expressway",
-                  wide: true,
+                  wide: isEnterprise,
                 },
               )}
-
-              <FormField
-                control={form.control}
-                name="state"
-                render={({ field }) => (
-                  <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
-                    <FormLabel className={LABEL_CLASS}>State</FormLabel>
-                    <FormControl>
-                      <select
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(event) => {
-                          field.onChange(event.target.value);
-                          form.setValue(
-                            "city",
-                            "",
-                          );
-                        }}
-                        className={cn(
-                          FIELD_CLASS,
-                          !field.value && "text-faint-foreground",
-                        )}
-                      >
-                        <option
-                          value=""
-                          disabled
-                        >
-                          Select a state
-                        </option>
-                        {NIGERIAN_STATES.map(name => (
-                          <option
-                            key={name}
-                            value={name}
-                            className="text-heading"
-                          >
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
-                    <FormLabel className={LABEL_CLASS}>City</FormLabel>
-                    <FormControl>
-                      <CityInput
-                        state={state ?? ""}
-                        value={field.value}
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              {textField(
+                "city",
+                "City",
+                { placeholder: "Lagos" },
+              )}
+              {textField(
+                "state",
+                "State",
+                { placeholder: "Lagos State" },
+              )}
             </div>
           </section>
 
@@ -452,91 +329,39 @@ export function BusinessDetailsStep({
             </InfoRow>
           </section>
 
-          <section>
-            <SectionHeading
-              title="Indemnity Agreement"
-              description="Please review the indemnity form before completing your application."
-            />
-            <div className={cn(
-              CARD_CLASS,
-              "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
-            )}
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-brand-tint">
-                  <FileText className="size-5 text-brand-deep" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-heading">Fleet Pro Indemnity Form</p>
-                  <p className="text-xs text-muted-foreground">
-                    {signedOnServer
-                      ? "Electronically signed"
-                      : pendingSignature
-                        ? "Signed, saved with your details when you continue"
-                        : "Review and sign electronically"}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className={SECONDARY_BUTTON_CLASS}
-                onClick={() => setIndemnityOpen(true)}
-              >
-                {indemnitySigned ? "Review & Re-sign" : "View & Sign Form"}
-              </button>
-            </div>
-
-            <label className={cn(
-              "mt-4 flex items-start gap-3 rounded-[15px] border-[0.5px] border-border p-4 text-sm leading-5 text-heading",
-              indemnitySigned ? "cursor-pointer" : "cursor-not-allowed opacity-70",
-            )}
-            >
-              <input
-                type="checkbox"
-                className="mt-0.5 size-4 shrink-0 accent-brand-deep"
-                checked={licence.indemnityAccepted}
-                disabled={!indemnitySigned}
-                onChange={(event) => {
-                  setLicence({ indemnityAccepted: event.target.checked });
-                  setSectionError(null);
-                }}
-              />
-              {indemnitySigned
-                ? "I confirm that I have reviewed the indemnity form and agree to its terms."
-                : "Sign the indemnity form before confirming your agreement."}
-            </label>
-          </section>
-
-          {indemnityNotice && !pendingSignature && <Notice>{indemnityNotice}</Notice>}
           {(sectionError || saveError) && <Notice>{sectionError ?? saveError}</Notice>}
         </form>
       </Form>
 
-      <IndemnityDialog
-        open={indemnityOpen}
-        onOpenChange={setIndemnityOpen}
-        initialName={licence.indemnitySignatureName}
-        notice={indemnityNotice}
-        onSigned={({
-          method,
-          name,
-          image,
-          version,
-        }) => {
-          setPendingSignature({
-            method,
-            name,
-            image,
-            version,
-          });
-          // Re-signing clears the confirmation, matching the main app.
-          setLicence({
-            indemnitySignatureName: name,
-            indemnityAccepted: false,
-          });
-          setSectionError(null);
-        }}
-      />
+      <SubDialog
+        open={accountDialogOpen}
+        onOpenChange={setAccountDialogOpen}
+        title="You already have a Fleet Pro account"
+        description={`An account already exists for ${form.getValues("businessEmail")}. We have emailed you the details of your existing account so you can sign in instead of applying again.`}
+        footer={(
+          <>
+            <button
+              type="button"
+              className={SECONDARY_BUTTON_CLASS}
+              onClick={() => setAccountDialogOpen(false)}
+            >
+              Use a different email
+            </button>
+            <button
+              type="button"
+              className={PRIMARY_BUTTON_CLASS}
+              onClick={() => window.location.assign(SIGN_IN_URL)}
+            >
+              Go to sign in
+            </button>
+          </>
+        )}
+      >
+        <span className="flex size-12 items-center justify-center rounded-full bg-brand-tint">
+          <Envelope className="size-6 text-brand-deep" />
+        </span>
+      </SubDialog>
+
     </StepLayout>
   );
 }

@@ -1,6 +1,7 @@
 import type {
   OnboardingApplication,
   OnboardingApplicationVehicle,
+  OnboardingDeviceRequestShortfall,
 } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import type { DetailState } from "@/features/apply/components/ui/DetailDialog";
@@ -16,7 +17,6 @@ import {
 } from "@truckmoov/api/auth";
 import {
   ArrowLeft,
-  ArrowRight,
   Car,
   ChevronDown,
   Eye,
@@ -37,13 +37,18 @@ import {
   VehicleModal,
 } from "@/features/apply/components/forms/ApplyModals";
 import { DetailDialog } from "@/features/apply/components/ui/DetailDialog";
+import { DeviceFulfilmentCard } from "@/features/apply/components/ui/DeviceFulfilmentCard";
 import { requestedDeviceTotal } from "@/features/apply/hooks/useApplySession";
 import { useConfirmDialog } from "@/features/apply/hooks/useConfirmDialog";
+import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import {
   vehicleToPayload,
   vehicleToValues,
 } from "@/features/apply/utils/applySchemas";
 import {
+  fulfilmentComplete,
+  OWNER_OPERATOR_VEHICLE_LIMIT,
+  OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE,
   PURCHASE_TYPE_LABELS,
   VEHICLE_TYPE_LABELS,
   vehicleSummary,
@@ -66,7 +71,7 @@ export function FleetRequirementsStep({
   application,
   onBack,
   onNext,
-  nextLabel,
+  nextLabel = "Continue",
 }: FleetRequirementsStepProps) {
   const id = application.id;
   const addVehicle = useAddOnboardingVehicle();
@@ -93,9 +98,9 @@ export function FleetRequirementsStep({
     setUploadOpen,
   ] = useState(false);
   const [
-    deviceOpen,
-    setDeviceOpen,
-  ] = useState(false);
+    deviceModal,
+    setDeviceModal,
+  ] = useState<{ request: OnboardingApplication["deviceRequests"][number] | null } | null>(null);
   const [
     detail,
     setDetail,
@@ -113,6 +118,32 @@ export function FleetRequirementsStep({
     vehicles.length - deviceTotal,
   );
   const canProceed = vehicles.length > 0;
+  const isOwnerOperator = application.applicantType === "owner_operator";
+  const atVehicleLimit = isOwnerOperator && vehicles.length >= OWNER_OPERATOR_VEHICLE_LIMIT;
+  const fulfilment = useApplyDraftStore(state => state.fulfilment);
+  const setFulfilment = useApplyDraftStore(state => state.setFulfilment);
+
+  function handleNext() {
+    if (!canProceed)
+      return;
+    if (deviceTotal > 0 && !fulfilmentComplete(
+      fulfilment,
+      isOwnerOperator,
+    )) {
+      toast.error("Complete the Device Fulfilment details to continue.");
+      return;
+    }
+    onNext();
+  }
+
+  /** Owner Operators stop at 10 vehicles; the design blocks Upload and Add with a toast. */
+  function guardVehicleLimit(open: () => void) {
+    if (atVehicleLimit) {
+      toast.error(OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE);
+      return;
+    }
+    open();
+  }
 
   async function removeVehicle(vehicle: OnboardingApplicationVehicle) {
     const hasLicence = application.documents.some(document => document.vehicleId === vehicle.id);
@@ -141,6 +172,46 @@ export function FleetRequirementsStep({
     }
     finally {
       setRemovingId(null);
+    }
+  }
+
+  /** Adds a device request; when stock is short, asks before placing it anyway. */
+  async function placeDeviceRequest(data: {
+    quantity: number;
+    useCase: string;
+    notes?: string;
+  }) {
+    const res = await addDeviceRequest.mutateAsync({
+      id,
+      data,
+    });
+    if (res.data.requestSaved)
+      return;
+    // Stock can't cover it and nothing was saved. Placing it anyway waits for stock.
+    const shortfall = res.data as OnboardingDeviceRequestShortfall;
+    const accepted = await confirm({
+      title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} in stock`,
+      description: "Your request can still be placed. Devices are provisioned as stock arrives, which may delay your installation.",
+      confirmLabel: `Request ${data.quantity} anyway`,
+    });
+    if (!accepted) {
+      throw Object.assign(
+        new Error(shortfall.message),
+        { field: "quantity" },
+      );
+    }
+    const confirmed = await addDeviceRequest.mutateAsync({
+      id,
+      data: {
+        ...data,
+        confirmAvailableQuantity: true,
+      },
+    });
+    if (!confirmed.data.requestSaved) {
+      throw Object.assign(
+        new Error((confirmed.data as OnboardingDeviceRequestShortfall).message),
+        { field: "quantity" },
+      );
     }
   }
 
@@ -212,7 +283,7 @@ export function FleetRequirementsStep({
       <div>
         <h2 className="text-lg font-semibold text-foreground">Fleet Requirements</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Add your vehicles and request tracking devices. Devices provisioned through Fleet Pro use
+          Add your vehicles and, request Tracking devices. Devices provisioned through Fleet Pro use
           MTN SIM connectivity.
         </p>
       </div>
@@ -230,15 +301,13 @@ export function FleetRequirementsStep({
           <>
             <Button
               variant="outline"
-              size="sm"
-              onClick={() => setUploadOpen(true)}
+              onClick={() => guardVehicleLimit(() => setUploadOpen(true))}
             >
               <Upload className="mr-2 h-4 w-4" />
               Upload Vehicles
             </Button>
             <Button
-              size="sm"
-              onClick={() => setVehicleModal({ vehicle: null })}
+              onClick={() => guardVehicleLimit(() => setVehicleModal({ vehicle: null }))}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Vehicle
@@ -262,18 +331,24 @@ export function FleetRequirementsStep({
       <SectionCard
         icon={<HardDrive className="h-5 w-5 text-primary" />}
         title="Devices"
-        description="Request one device per vehicle from Fleet Pro. Devices provisioned through Fleet Pro use MTN SIM connectivity."
+        description="Request fleet devices from Fleet Pro. Devices provisioned through Fleet Pro use MTN SIM connectivity."
         count={deviceTotal}
-        summary={`${deviceTotal} of ${vehicles.length} Device${vehicles.length === 1 ? "" : "s"} Requested`}
+        summary={`${deviceTotal} Device${deviceTotal === 1 ? "" : "s"} Requested`}
         expanded={expanded === "devices"}
         onToggle={() => setExpanded(expanded === "devices" ? null : "devices")}
         empty={deviceRequests.length === 0}
         actions={(
           <Button
-            size="sm"
-            disabled={devicesLeft === 0}
-            title={devicesLeft === 0 ? "Every vehicle already has a device requested." : undefined}
-            onClick={() => setDeviceOpen(true)}
+            onClick={() => {
+              // The API fits one device per vehicle.
+              if (devicesLeft === 0) {
+                toast.error(vehicles.length === 0
+                  ? "Add a vehicle before requesting devices."
+                  : "Every vehicle already has a device requested.");
+                return;
+              }
+              setDeviceModal({ request: null });
+            }}
           >
             Request Device
           </Button>
@@ -282,12 +357,12 @@ export function FleetRequirementsStep({
         {deviceRequests.map(request => (
           <Row
             key={request.id}
-            primary={`Request · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`}
+            primary={`Device request · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`}
             secondary={`${request.useCase} · MTN SIM connectivity`}
             badge="Requested"
             removing={removingId === request.id}
             onView={() => setDetail({
-              title: `Device Request · ${request.quantity}`,
+              title: `Device Request · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`,
               editing: false,
               fields: [
                 {
@@ -297,14 +372,21 @@ export function FleetRequirementsStep({
                   key: "useCase", label: "Use Case", value: request.useCase,
                 },
                 {
-                  key: "notes", label: "Additional Notes", value: request.notes ?? "",
+                  key: "notes", label: "Additional Notes", value: request.notes || "—",
                 },
               ],
             })}
+            onEdit={() => setDeviceModal({ request })}
             onRemove={() => void removeDeviceRequest(request.id)}
           />
         ))}
       </SectionCard>
+
+      <DeviceFulfilmentCard
+        isOwnerOperator={isOwnerOperator}
+        value={fulfilment}
+        onChange={setFulfilment}
+      />
 
       <div className="flex items-center justify-between border-t border-border/60 pt-6">
         <Button
@@ -318,16 +400,15 @@ export function FleetRequirementsStep({
           size="lg"
           className="min-w-40"
           disabled={!canProceed}
-          onClick={onNext}
+          onClick={handleNext}
         >
-          {nextLabel ?? "Next"}
-          <ArrowRight className="ml-2 h-4 w-4" />
+          {nextLabel}
         </Button>
       </div>
 
       {!canProceed && (
         <p className="text-right text-xs text-muted-foreground">
-          Add at least one vehicle to continue. Request one device per vehicle before you submit.
+          Add at least one vehicle to continue. Requesting devices is optional.
         </p>
       )}
 
@@ -364,48 +445,51 @@ export function FleetRequirementsStep({
         }}
       />
       <RequestDevicesModal
-        open={deviceOpen}
-        maxQuantity={devicesLeft}
-        onOpenChange={setDeviceOpen}
+        open={Boolean(deviceModal)}
+        initial={deviceModal?.request
+          ? {
+              quantity: deviceModal.request.quantity,
+              useCase: deviceModal.request.useCase,
+              notes: deviceModal.request.notes ?? "",
+            }
+          : null}
+        // Editing frees the request's own devices for the new quantity.
+        maxQuantity={devicesLeft + (deviceModal?.request?.quantity ?? 0)}
+        onOpenChange={open => !open && setDeviceModal(null)}
         onSubmit={async (values) => {
           const data = {
             quantity: values.quantity,
             useCase: values.useCase.trim(),
             notes: values.notes?.trim() || undefined,
           };
-          const res = await addDeviceRequest.mutateAsync({
-            id,
-            data,
-          });
-          if (!res.data.requestSaved) {
-            // Stock can't cover it and nothing was saved. Placing it anyway waits for stock.
-            const shortfall = res.data;
-            const accepted = await confirm({
-              title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} in stock`,
-              description: "Your request can still be placed. Devices are provisioned as stock arrives, which may delay your installation.",
-              confirmLabel: `Request ${data.quantity} anyway`,
-            });
-            if (!accepted) {
-              throw Object.assign(
-                new Error(shortfall.message),
-                { field: "quantity" },
-              );
-            }
-            const confirmed = await addDeviceRequest.mutateAsync({
+          const editing = deviceModal?.request;
+          // TODO(api): no update endpoint for device requests — an edit replaces the request.
+          // Remove first so the one-device-per-vehicle check sees the freed devices.
+          if (editing) {
+            await deleteDeviceRequest.mutateAsync({
               id,
-              data: {
-                ...data,
-                confirmAvailableQuantity: true,
-              },
+              requestId: editing.id,
             });
-            if (!confirmed.data.requestSaved) {
-              throw Object.assign(
-                new Error(confirmed.data.message),
-                { field: "quantity" },
-              );
-            }
           }
-          toast.success("Device request added.");
+          try {
+            await placeDeviceRequest(data);
+          }
+          catch (error) {
+            if (editing) {
+              // Put the original back so a failed edit loses nothing.
+              await addDeviceRequest.mutateAsync({
+                id,
+                data: {
+                  quantity: editing.quantity,
+                  useCase: editing.useCase,
+                  notes: editing.notes ?? undefined,
+                  confirmAvailableQuantity: true,
+                },
+              }).catch(() => undefined);
+            }
+            throw error;
+          }
+          toast.success(editing ? "Device request updated." : "Device request added.");
         }}
       />
       <VehicleImportModal
@@ -462,7 +546,7 @@ function SectionCard({
             {icon}
           </span>
           <div>
-            <p className="flex items-center gap-2 text-base font-semibold text-foreground">
+            <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
               {title}
               {count > 0 && (
                 <Badge
@@ -472,7 +556,7 @@ function SectionCard({
                   {count}
                 </Badge>
               )}
-            </p>
+            </h3>
             <p className="mt-1 max-w-md text-xs text-muted-foreground">{description}</p>
           </div>
         </div>
@@ -520,7 +604,6 @@ function Row({
   badge?: string;
   removing?: boolean;
   onView: () => void;
-  /** Device requests can't be edited — remove and request again. */
   onEdit?: () => void;
   onRemove: () => void;
 }) {
@@ -530,7 +613,7 @@ function Row({
         <p className="truncate text-sm font-medium text-foreground">{primary}</p>
         <p className="truncate text-xs text-muted-foreground">{secondary}</p>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-2">
         {badge && (
           <Badge
             variant="outline"

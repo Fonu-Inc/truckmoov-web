@@ -34,20 +34,21 @@ export function ApplicantTypeCard({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "relative h-[107px] cursor-pointer overflow-hidden rounded-[20px] bg-background px-5 pt-[22px] text-left transition-colors",
+        // min-h: the longer titles and subtitles wrap; pr keeps them clear of the illustration.
+        "relative min-h-[107px] cursor-pointer overflow-hidden rounded-[20px] bg-background px-5 pt-[22px] pb-[18px] text-left transition-colors",
         selected
           ? "border-2 border-brand-bright"
           : "border-[0.5px] border-border hover:border-border-deep",
       )}
     >
       <span className={cn(
-        "block text-lg leading-[22px] text-heading",
+        "relative block pr-16 text-lg leading-[22px] text-heading",
         selected ? "font-semibold" : "font-medium",
       )}
       >
         {title}
       </span>
-      <span className="mt-1.5 block text-xs leading-[17px] whitespace-pre-line text-muted-foreground">
+      <span className="relative mt-1.5 block pr-20 text-xs leading-[17px] whitespace-pre-line text-muted-foreground">
         {description}
       </span>
       <Image

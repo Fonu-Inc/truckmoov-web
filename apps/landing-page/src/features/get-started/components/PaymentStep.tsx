@@ -24,8 +24,10 @@ import {
 import { formatCurrency } from "@/features/get-started/utils/formatCurrency";
 import {
   CARD_CLASS,
+  PRIMARY_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/features/get-started/utils/getStartedContent";
+import { cn } from "@/shared/utils";
 
 /** The provider redirects back to the page with `?payment=return`; confirmation itself arrives by webhook. */
 export const PAYMENT_RETURN_PARAM = "payment";
@@ -53,7 +55,8 @@ function paymentError(error: unknown) {
  * Payment for the M2M package (main app: PaymentStep). Runs on the draft token; no account
  * exists yet. The server prices the order from the device rows, so nothing here computes a
  * total. In demo mode the server settles the payment immediately; with a real provider the
- * browser redirects and the modal reopens to confirm by polling the order.
+ * browser redirects and the modal reopens to confirm by polling the order. As in the
+ * design, the pay / continue button sits in the quotation card and there is no footer.
  */
 export function PaymentStep({
   applicationId,
@@ -167,34 +170,16 @@ export function PaymentStep({
   const plural = order.deviceCount === 1 ? "" : "s";
 
   return (
-    <StepLayout
-      footer={paid
-        ? (
-            <DialogFooter
-              onBack={onBack}
-              continueLabel="Schedule Installation"
-              onContinue={onContinue}
-            />
-          )
-        : (
-            <DialogFooter
-              onBack={onBack}
-              continueLabel={`Pay ${formatCurrency(order.totalNgn)}`}
-              continueLoading={startPayment.isPending}
-              continueDisabled={!orderData.payable || waitingForWebhook}
-              onContinue={() => void pay()}
-            />
-          )}
-    >
+    <StepLayout>
       <StepHeading
         title="Payment"
-        description="Pay For Your M2M Package. You Will Schedule Your Installation In The Next Step."
+        description="Your Application Passed System Verification. Pay Your Quotation, Then Schedule Installation. Your Subscription Becomes Active Only After Installation And Final System Verification."
       />
 
       <div className="mt-[30px] space-y-4">
         <section className={CARD_CLASS}>
           <SectionHeading
-            title="Order Summary"
+            title="Quotation"
             action={paid
               ? <Pill tone="success">Payment Confirmed</Pill>
               : payment?.status === "failed" || payment?.status === "mismatch"
@@ -211,23 +196,76 @@ export function PaymentStep({
             </div>
             <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="mt-px size-4 shrink-0 text-brand-deep" />
-              {`Your M2M package is charged per device and includes the Fleet device, platform license and MTN connectivity. Renewal is ${formatCurrency(order.renewalPerDeviceNgn)} per device a year.`}
+              Your M2M package is charged per device and includes the Fleet device, platform license, and
+              MTN connectivity where applicable.
             </p>
           </div>
           <dl className="mt-4 space-y-2 text-sm">
             <Line
-              label={`M2M package (${order.deviceCount} device${plural})`}
+              label={`M2M package (${order.deviceCount} devices)`}
               value={formatCurrency(order.devicesNgn)}
             />
             <Line
               label="Installation"
               value={formatCurrency(order.installationNgn)}
             />
+            {/* TODO(api): shown once the order endpoint sends these quotation lines. */}
+            {(order.deliveryFeeNgn ?? 0) > 0 && (
+              <Line
+                label="Delivery / fulfilment fee"
+                value={formatCurrency(order.deliveryFeeNgn ?? 0)}
+              />
+            )}
+            {order.discountNgn !== undefined && (
+              <Line
+                label="Discount"
+                value={`- ${formatCurrency(order.discountNgn)}`}
+              />
+            )}
+            {order.subtotalNgn !== undefined && (
+              <Line
+                label="Subtotal"
+                value={formatCurrency(order.subtotalNgn)}
+              />
+            )}
+            {order.vatNgn !== undefined && (
+              <Line
+                label="VAT (7.5%)"
+                value={formatCurrency(order.vatNgn)}
+              />
+            )}
             <div className="flex items-center justify-between border-t border-border pt-3">
               <dt className="font-semibold text-heading">Grand Total</dt>
               <dd className="text-lg font-bold text-heading">{formatCurrency(order.totalNgn)}</dd>
             </div>
           </dl>
+
+          {paid
+            ? (
+                <button
+                  type="button"
+                  className={cn(
+                    PRIMARY_BUTTON_CLASS,
+                    "mt-5 w-full sm:w-auto",
+                  )}
+                  onClick={onContinue}
+                >
+                  Continue to Installation Scheduling
+                </button>
+              )
+            : (
+                <button
+                  type="button"
+                  className={cn(
+                    PRIMARY_BUTTON_CLASS,
+                    "mt-5 w-full sm:w-auto",
+                  )}
+                  disabled={startPayment.isPending || !orderData.payable || waitingForWebhook}
+                  onClick={() => void pay()}
+                >
+                  {startPayment.isPending ? "Please wait…" : "Make Payment"}
+                </button>
+              )}
         </section>
 
         {waitingForWebhook && !pollTimedOut && (

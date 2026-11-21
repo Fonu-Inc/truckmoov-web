@@ -16,7 +16,7 @@ const PAUSE_MS = 400;
  * on something shaped like an address. The save still answers 409, so this is
  * early warning only.
  */
-export function useEmailAvailability(form: UseFormReturn<BusinessDetailsValues>, applicationId?: string | null) {
+export function useEmailAvailability(form: UseFormReturn<BusinessDetailsValues>, applicationId?: string | null): boolean {
   const email = (form.watch("businessEmail") ?? "").trim().toLowerCase();
   const [
     paused,
@@ -64,4 +64,6 @@ export function useEmailAvailability(form: UseFormReturn<BusinessDetailsValues>,
       form,
     ],
   );
+
+  return taken;
 }

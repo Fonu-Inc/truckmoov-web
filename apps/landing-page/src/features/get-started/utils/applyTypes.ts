@@ -55,36 +55,36 @@ export const ENTERPRISE_DOCUMENTS: RequiredDocument[] = [
   {
     type: "identification_card",
     label: "Identification Card",
-    requirement: "A valid government-issued ID for the business representative.",
-  },
-  {
-    type: "proof_of_ownership",
-    label: "Proof of Ownership",
-    requirement: "Documentation proving ownership of the business and its vehicles.",
-  },
-  {
-    type: "vehicle_license",
-    label: "Vehicle License",
-    requirement: "Valid vehicle licence for each vehicle you are onboarding.",
+    requirement: "Only a National Identification Card or Driver's License is accepted. Any other card will be rejected.",
   },
 ];
 
-/** Documents required from Owner-Operator customers. */
+/**
+ * Documents required from Owner-Operator customers: the request letter and an ID card.
+ *
+ * ponytail: the design asks for no Proof of Ownership or per-vehicle licence. The API still
+ * lists them in `missingDocuments`, so its submit gate may refuse until it catches up.
+ */
 export const OWNER_OPERATOR_DOCUMENTS: RequiredDocument[] = [
-  {
-    type: "proof_of_ownership",
-    label: "Proof of Ownership",
-    requirement: "Documentation proving ownership of the business and its vehicles.",
-  },
-  {
-    type: "vehicle_license",
-    label: "Vehicle License",
-    requirement: "Valid vehicle licence for each vehicle you are onboarding.",
-  },
+  ENTERPRISE_DOCUMENTS[0],
+  ENTERPRISE_DOCUMENTS[5],
 ];
 
 export function documentsForCustomerType(type: ApplicantCustomerType): RequiredDocument[] {
   return type === "enterprise" ? ENTERPRISE_DOCUMENTS : OWNER_OPERATOR_DOCUMENTS;
+}
+
+/**
+ * A returning customer already has a relationship or account with MTN, so the design asks
+ * them for the Customer Request Letter only — whatever their customer type.
+ *
+ * ponytail: client-side only. The API still reports its full list in `missingDocuments`
+ * until it learns about returning customers.
+ */
+export const RETURNING_DOCUMENTS: RequiredDocument[] = [ENTERPRISE_DOCUMENTS[0]];
+
+export function documentsForApplicant(type: ApplicantCustomerType, returning: boolean): RequiredDocument[] {
+  return returning ? RETURNING_DOCUMENTS : documentsForCustomerType(type);
 }
 
 /**
@@ -189,21 +189,64 @@ export const APPLY_STEPS: ApplyStep[] = [
   },
   {
     id: 7,
-    label: "Schedule Installation",
+    label: "Installation Scheduling",
   },
 ];
 
-/** Internal step number -> visible step number (1..5). */
+/**
+ * Internal step number -> visible step number (1..5). Review (8) sits between Required
+ * Documents and Payment: 3.5 marks steps 1–3 done with none active, as the design does.
+ */
 export function displayStep(step: number) {
   if (step <= 3)
     return 1;
   if (step === 4)
     return 2;
-  if (step === 5 || step === 8)
+  if (step === 5)
     return 3;
+  if (step === 8)
+    return 3.5;
   if (step === 6)
     return 4;
   return 5;
+}
+
+/** Owner Operator / Individual accounts are limited to this many vehicles. */
+export const OWNER_OPERATOR_VEHICLE_LIMIT = 10;
+
+export const OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE
+  = "Owner Operator / Individual accounts can have a maximum of 10 vehicles. Change your customer type to Enterprise Customer to add more than 10 vehicles.";
+
+/** How requested devices reach the applicant (Fleet Requirements → Device Fulfilment). */
+export type DeviceFulfilment = {
+  method: "pickup" | "delivery";
+  state: string;
+  area: string;
+  store: string;
+  deliveryStreet: string;
+  deliveryCity: string;
+  deliveryState: string;
+};
+
+export const EMPTY_DEVICE_FULFILMENT: DeviceFulfilment = {
+  method: "pickup",
+  state: "",
+  area: "",
+  store: "",
+  deliveryStreet: "",
+  deliveryCity: "",
+  deliveryState: "",
+};
+
+/**
+ * Whether the Device Fulfilment details are filled in. Pickup can't be completed until the
+ * store locations endpoint exists, so only delivery is checked for now (TODO(api)).
+ */
+export function fulfilmentComplete(value: DeviceFulfilment, isOwnerOperator: boolean) {
+  const method = isOwnerOperator ? "pickup" : value.method;
+  if (method === "delivery")
+    return Boolean(value.deliveryStreet.trim() && value.deliveryCity.trim() && value.deliveryState);
+  return true;
 }
 
 /** Every document type the server can return, for the status screen. */

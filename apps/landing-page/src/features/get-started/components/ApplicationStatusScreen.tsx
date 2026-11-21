@@ -29,7 +29,8 @@ const STAGES_AFTER_BOOKING = [
 
 /**
  * Post-submission view from `GET …/:id/status` (main app: ApplicationStatusScreen). Most
- * applications land in `under_review`. Refreshes when the tab regains focus; no polling.
+ * applications land in `under_review`. Refreshes when the tab regains focus, and every 30
+ * seconds while it waits on the review team.
  */
 export function ApplicationStatusScreen({
   applicationId,
@@ -53,6 +54,8 @@ export function ApplicationStatusScreen({
   const statusQuery = useQuery({
     ...getOnboardingApplicationStatusQueryOptions(applicationId),
     refetchOnWindowFocus: true,
+    // The design's "Review in progress…" button has no refresh — check in the background.
+    refetchInterval: query => (waitingStatuses(query.state.data?.data) ? 30_000 : false),
   });
   const status = statusQuery.data?.data;
   const applicationStatus = status?.applicationStatus;
@@ -106,9 +109,9 @@ export function ApplicationStatusScreen({
               <DialogFooter
                 onBack={onClose}
                 backLabel="Close"
-                continueLabel={statusQuery.isFetching ? "Refreshing…" : "Refresh status"}
-                continueDisabled={statusQuery.isFetching}
-                onContinue={() => void statusQuery.refetch()}
+                continueLabel="Review in progress…"
+                continueArrow={false}
+                continueDisabled
               />
             );
 
@@ -156,8 +159,17 @@ export function ApplicationStatusScreen({
                   ? `${status?.decisionReason ?? "We couldn't approve this application."} You can start a new application with the same email address.`
                   : changesRequested
                     ? (status?.decisionReason ?? "You may review the requirements and submit again.")
-                    : "Thank you for your submission. We're reviewing the details you sent, and we'll email you once your application has been approved. You can close this window and come back with \"Apply as Returning Customer\"."}
+                    : "Thank you for your submission. We are currently reviewing the details you sent. Once your application is approved, you will be able to proceed to payment."}
         </p>
+
+        {!approved && !rejected && !changesRequested && (
+          <p className="mt-3 flex max-w-[460px] items-start gap-2 rounded-[15px] bg-surface px-4 py-3 text-left text-xs leading-[17px] text-muted-foreground">
+            <Clock className="mt-px size-4 shrink-0 text-brand-deep" />
+            This review takes a little while — you don't need to stay on this page. We'll email you as
+            soon as your application has been approved, and you can come back then to make your
+            payment.
+          </p>
+        )}
       </div>
 
       {statusQuery.isError && <Notice className="mt-4">We couldn't load the latest status.</Notice>}
@@ -211,4 +223,16 @@ export function ApplicationStatusScreen({
       )}
     </StepLayout>
   );
+}
+
+/** Still waiting on the review team or on device allocation — worth checking again. */
+function waitingStatuses(status?: {
+  applicationStatus?: string;
+  stage?: string;
+}) {
+  if (!status)
+    return false;
+  if (status.applicationStatus === "approved")
+    return status.stage === "provisioning";
+  return status.applicationStatus !== "rejected" && status.applicationStatus !== "changes_requested";
 }

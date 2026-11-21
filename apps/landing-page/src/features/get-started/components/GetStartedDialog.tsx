@@ -6,15 +6,11 @@ import type { BusinessDetailsValues } from "@/features/get-started/schemas/apply
 import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
 import type { DialogIntent } from "@/shared/stores/dialogStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
 import {
-  AUTH_QUERY_KEY,
   useCreateOnboardingApplication,
   useDeleteOnboardingApplicationDocument,
-  useResumeOnboardingApplication,
   useSendOnboardingApplicationEmailVerification,
   useSendOnboardingApplicationPhoneVerification,
-  useSignOnboardingIndemnity,
   useSubmitOnboardingApplication,
   useUpdateOnboardingApplication,
   useVerifyOnboardingApplicationEmail,
@@ -32,10 +28,7 @@ import { BusinessDetailsStep } from "@/features/get-started/components/BusinessD
 import { CustomerTypeStep } from "@/features/get-started/components/CustomerTypeStep";
 import { DialogHeader } from "@/features/get-started/components/DialogHeader";
 import { DocumentsStep } from "@/features/get-started/components/DocumentsStep";
-import {
-  DraftChoiceScreen,
-  ResumeByEmailScreen,
-} from "@/features/get-started/components/EntryScreens";
+import { DraftChoiceScreen } from "@/features/get-started/components/EntryScreens";
 import { FleetRequirementsStep } from "@/features/get-started/components/FleetRequirementsStep";
 import { PaymentStep } from "@/features/get-started/components/PaymentStep";
 import { ReviewStep } from "@/features/get-started/components/ReviewStep";
@@ -65,21 +58,21 @@ import {
   readStoredCustomerType,
   writeDraft,
 } from "@/features/get-started/utils/applyDraftStorage";
-import {
-  documentsComplete,
-  isIndemnitySigned,
-} from "@/features/get-started/utils/applyHelpers";
+import { documentsComplete } from "@/features/get-started/utils/applyHelpers";
 import {
   APPLY_STEPS,
   displayStep,
-  documentsForCustomerType,
+  documentsForApplicant,
 } from "@/features/get-started/utils/applyTypes";
 import {
   Dialog,
   DialogContent,
 } from "@/shared/components/shadcn/dialog";
 import { cn } from "@/shared/utils";
-import { SIGN_IN_URL } from "@/shared/utils/routes";
+import {
+  routes,
+  SIGN_IN_URL,
+} from "@/shared/utils/routes";
 
 /**
  * Internal step numbers, matching the main app's /apply:
@@ -88,8 +81,8 @@ import { SIGN_IN_URL } from "@/shared/utils/routes";
  * `displayStep` folds these into the five visible steps.
  */
 type Phase = "form" | "status" | "payment";
-/** Screens shown before the flow: "continue or start new?", or "email me a resume link". */
-type Entry = "choice" | "resume" | null;
+/** Shown before the flow when a draft is saved: "continue or start new?". */
+type Entry = "choice" | null;
 type Banner = {
   tone: "error" | "info" | "success";
   message: string;
@@ -130,8 +123,10 @@ function readDetailsDraft(): BusinessDetailsValues {
  * The "Apply for Account Creation" wizard: a port of the main app's
  * `ApplyForAccount` page (same steps, same onboarding-applications API calls) in the
  * landing dialog. Progress is saved in this browser (localStorage + IndexedDB, see
- * `utils/applyDraftStorage.ts`), so "Apply as Returning Customer" resumes on the step the
- * applicant stopped at. Controlled by the root DialogHost.
+ * `utils/applyDraftStorage.ts`), so reopening it resumes on the step the applicant stopped at.
+ * "Apply as Returning Customer" (intent "returning") is an existing MTN customer: the same
+ * flow with the persisted `returning` flag, which asks for fewer documents. Controlled by the
+ * root DialogHost.
  */
 export function GetStartedDialog({
   open,
@@ -142,7 +137,6 @@ export function GetStartedDialog({
   intent: DialogIntent;
   onOpenChange: (open: boolean) => void;
 }) {
-  const queryClient = useQueryClient();
   // First: adopts a resume link and drops an expired draft before anything reads storage.
   const session = useApplySession();
   const {
@@ -158,6 +152,11 @@ export function GetStartedDialog({
     wasOpen,
     setWasOpen,
   ] = useState(false);
+  // The returning flag the button that opened the dialog asks for; null keeps the stored one.
+  const [
+    entryReturning,
+    setEntryReturning,
+  ] = useState<boolean | null>(null);
   const [
     customerType,
     setCustomerType,
@@ -179,9 +178,9 @@ export function GetStartedDialog({
     setSaveError,
   ] = useState<string | null>(null);
   const [
-    indemnityNotice,
-    setIndemnityNotice,
-  ] = useState<string | null>(null);
+    emailConflict,
+    setEmailConflict,
+  ] = useState(0);
   const [
     submitError,
     setSubmitError,
@@ -220,26 +219,40 @@ export function GetStartedDialog({
     setWasOpen(open);
     if (open) {
       const saved = Boolean(applicationId) || hasStoredDraft();
-      setEntry(intent === "returning"
-        ? (saved ? null : "resume")
-        : (saved ? "choice" : null));
+      // "new" asks about a saved draft; "returning" (an MTN customer) and "resume" go straight
+      // to it, or to a fresh application when nothing is saved.
+      setEntry(intent === "new" && saved ? "choice" : null);
+      setEntryReturning(intent === "returning" ? true : (intent === "new" && !saved ? false : null));
     }
   }
 
   const licence = useApplyDraftStore(state => state.licence);
   const setLicence = useApplyDraftStore(state => state.setLicence);
-  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
-  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
+  const storedReturning = useApplyDraftStore(state => state.returning);
+  const setReturning = useApplyDraftStore(state => state.setReturning);
+  const fulfilment = useApplyDraftStore(state => state.fulfilment);
+  const setFulfilment = useApplyDraftStore(state => state.setFulfilment);
+  const isReturning = entryReturning ?? storedReturning;
+
+  // Remember the returning flag for the rest of the application (and the next visit).
+  useEffect(
+    () => {
+      if (entryReturning !== null)
+        setReturning(entryReturning);
+    },
+    [
+      entryReturning,
+      setReturning,
+    ],
+  );
 
   const createApplication = useCreateOnboardingApplication();
   const updateApplication = useUpdateOnboardingApplication();
-  const signIndemnity = useSignOnboardingIndemnity();
   const sendEmail = useSendOnboardingApplicationEmailVerification();
   const sendPhone = useSendOnboardingApplicationPhoneVerification();
   const verifyEmail = useVerifyOnboardingApplicationEmail();
   const verifyPhone = useVerifyOnboardingApplicationPhone();
   const submitApplication = useSubmitOnboardingApplication();
-  const resume = useResumeOnboardingApplication();
   const deleteDocument = useDeleteOnboardingApplicationDocument();
   const {
     confirm,
@@ -280,7 +293,7 @@ export function GetStartedDialog({
     ],
   );
 
-  // Remember the screen, so "Apply as Returning Customer" lands back on it.
+  // Remember the screen, so reopening the dialog lands back on it.
   useEffect(
     () => {
       if (phase === "form" && customerType) {
@@ -309,7 +322,12 @@ export function GetStartedDialog({
     ],
   );
 
-  const requiredDocuments = customerType ? documentsForCustomerType(customerType) : [];
+  const requiredDocuments = customerType
+    ? documentsForApplicant(
+        customerType,
+        isReturning,
+      )
+    : [];
   const emailVerified = Boolean(application?.verification.emailVerified);
   const phoneVerified = Boolean(application?.verification.phoneVerified);
 
@@ -361,7 +379,8 @@ export function GetStartedDialog({
         setPhase("status");
         return;
       }
-      const detailsDone = Boolean(application.m2mPlanCode) && isIndemnitySigned(application);
+      // The design has no indemnity step, so a saved plan is all the details step needs.
+      const detailsDone = Boolean(application.m2mPlanCode);
       const firstUnfinished = !detailsDone
         ? 1
         : !application.verification.emailVerified
@@ -370,7 +389,10 @@ export function GetStartedDialog({
                 ? 3
                 : application.vehicles.length === 0
                   ? 4
-                  : !documentsComplete(application)
+                  : !documentsComplete(
+                      application,
+                      isReturning,
+                    )
                       ? 5
                       : 8;
       // Back to the step they were on, but never past one that isn't finished yet.
@@ -383,6 +405,7 @@ export function GetStartedDialog({
       application,
       form,
       setLicence,
+      isReturning,
     ],
   );
 
@@ -476,9 +499,14 @@ export function GetStartedDialog({
       return;
     }
     if (err.statusCode === 409 && /email/i.test(err.message)) {
+      setEmailConflict(count => count + 1);
+      // "taken" makes the next Continue open the "You already have a Fleet Pro account" dialog.
       form.setError(
         "businessEmail",
-        { message: err.message },
+        {
+          type: "taken",
+          message: err.message,
+        },
       );
       return;
     }
@@ -514,58 +542,11 @@ export function GetStartedDialog({
       setSaving(false);
       return;
     }
-
-    if (pendingSignature) {
-      try {
-        await signIndemnity.mutateAsync({
-          id,
-          signerName: pendingSignature.name,
-          templateVersion: pendingSignature.version,
-          method: pendingSignature.method,
-          file: pendingSignature.image,
-        });
-        setPendingSignature(null);
-        setIndemnityNotice(null);
-      }
-      catch (error) {
-        const err = error as ServerErrorResponse;
-        if (err.statusCode === 409 && /version/i.test(err.message)) {
-          // Signed against a superseded version: re-read and sign again, don't retry.
-          setPendingSignature(null);
-          setLicence({ indemnityAccepted: false });
-          void queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingIndemnityAgreement });
-          setIndemnityNotice("The indemnity agreement has been updated. Read the current version and sign it again.");
-        }
-        else {
-          // Keep the pending signature: pressing Continue again retries the upload.
-          setSaveError(err.message || "Your signature couldn't be saved. Try again.");
-        }
-        setSaving(false);
-        return;
-      }
-    }
+    // Saved: coming back to the details must not reopen the existing-account dialog.
+    setEmailConflict(0);
 
     setSaving(false);
     setStep(!emailVerified ? 2 : !phoneVerified ? 3 : 4);
-  }
-
-  async function handleSaveForLater() {
-    const email = form.getValues("businessEmail").trim() || application?.organization.businessEmail;
-    if (!email) {
-      showError("Enter your business email first.");
-      return;
-    }
-    try {
-      await resume.mutateAsync({ data: { businessEmail: email } });
-      // The reply is the same whether or not an application exists, so never branch on it.
-      setBanner({
-        tone: "success",
-        message: "Your progress is saved in this browser. If your business email is verified, we've also emailed you a link to continue on another device.",
-      });
-    }
-    catch (error) {
-      showError((error as ServerErrorResponse).message || "We couldn't send the link. Try again.");
-    }
   }
 
   /** The type decides the documents asked for, so switching it clears any already uploaded. */
@@ -597,6 +578,13 @@ export function GetStartedDialog({
       "customerType",
       next,
     );
+    // Owner Operators always collect devices from a store.
+    if (next === "owner_operator" && fulfilment.method !== "pickup") {
+      setFulfilment({
+        ...fulfilment,
+        method: "pickup",
+      });
+    }
     setStep(1);
   }
 
@@ -608,7 +596,9 @@ export function GetStartedDialog({
       const res = await submitApplication.mutateAsync({ id: applicationId });
       if ("incomplete" in res) {
         setSubmitError(res.message);
-        setStep(!res.planSelected || !res.indemnitySigned
+        // 8 (stay on review): what is left is a gate the design doesn't collect — the
+        // indemnity form or documents it no longer asks for — accepted until the API drops it.
+        setStep(!res.planSelected
           ? 1
           : !res.emailVerified
               ? 2
@@ -616,7 +606,12 @@ export function GetStartedDialog({
                   ? 3
                   : res.vehicleCount === 0 || !res.deviceAllocationComplete
                     ? 4
-                    : 5);
+                    : !documentsComplete(
+                        application,
+                        isReturning,
+                      )
+                        ? 5
+                        : 8);
         showError(res.message);
         return;
       }
@@ -641,9 +636,10 @@ export function GetStartedDialog({
     setPhase("form");
     setSaveError(null);
     setSubmitError(null);
-    setIndemnityNotice(null);
     setDestinations({});
     setEntry(null);
+    // session.clear() reset the stored returning flag; stop overriding it.
+    setEntryReturning(null);
   }
 
   async function confirmStartOver() {
@@ -660,6 +656,14 @@ export function GetStartedDialog({
   async function goToSignIn() {
     await session.clear();
     window.location.assign(SIGN_IN_URL);
+  }
+
+  /** "Return to Home" after booking: the account exists, so the draft is done with. */
+  async function returnHome() {
+    await session.clear();
+    onOpenChange(false);
+    if (window.location.pathname !== routes.home)
+      window.location.assign(routes.home);
   }
 
   function close() {
@@ -682,8 +686,8 @@ export function GetStartedDialog({
     setStep(step - 1);
   }
 
-  /** Visible step (1..5); after submission the payment step is highlighted. */
-  const visibleStep = phase === "status" ? 4 : displayStep(step);
+  /** Visible step (1..5); review and the status screen sit at 3.5 — steps 1–3 done, none active. */
+  const visibleStep = phase === "status" ? 3.5 : displayStep(step);
   // Steps after 1 need the saved application; send anyone without one back to the details.
   const needsApplication = phase === "form" && step > 1 && !application;
   const showStepper = !entry && Boolean(customerType) && !session.isRestoring;
@@ -694,14 +698,6 @@ export function GetStartedDialog({
         <DraftChoiceScreen
           onContinue={() => setEntry(null)}
           onStartNew={() => void confirmStartOver()}
-          onClose={close}
-        />
-      );
-    }
-    if (entry === "resume") {
-      return (
-        <ResumeByEmailScreen
-          onStartNew={() => void startOver()}
           onClose={close}
         />
       );
@@ -754,8 +750,7 @@ export function GetStartedDialog({
             contactName: form.getValues("contactName") || undefined,
             contactPhone: form.getValues("phoneNumber"),
           }}
-          onBack={() => setStep(6)}
-          onDone={() => void goToSignIn()}
+          onDone={() => void returnHome()}
         />
       );
     }
@@ -776,14 +771,11 @@ export function GetStartedDialog({
           form={form}
           customerType={customerType}
           submitting={saving}
-          indemnitySigned={isIndemnitySigned(application)}
-          indemnityNotice={indemnityNotice}
           saveError={saveError}
           applicationId={applicationId}
-          savingForLater={resume.isPending}
+          emailConflict={emailConflict}
           onSubmit={values => void handleDetailsSubmit(values)}
           onBack={handleBack}
-          onSaveForLater={() => void handleSaveForLater()}
         />
       );
     }
@@ -877,7 +869,7 @@ export function GetStartedDialog({
         showCloseButton={false}
         className="flex h-[860px] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden rounded-[30px] border-border-field p-0 shadow-float sm:max-w-[680px]"
       >
-        <DialogHeader />
+        <DialogHeader returning={isReturning} />
 
         {showStepper && (
           <Stepper

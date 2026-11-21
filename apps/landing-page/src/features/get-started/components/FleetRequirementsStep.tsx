@@ -3,6 +3,7 @@
 import type {
   OnboardingApplication,
   OnboardingApplicationVehicle,
+  OnboardingDeviceRequestShortfall,
 } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import type { DetailState } from "@/features/get-started/components/DetailDialog";
@@ -27,6 +28,7 @@ import {
 } from "@truckmoov/api/auth";
 import { useState } from "react";
 import { DetailDialog } from "@/features/get-started/components/DetailDialog";
+import { DeviceFulfilmentCard } from "@/features/get-started/components/DeviceFulfilmentCard";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
 import { RequestDevicesModal } from "@/features/get-started/components/RequestDevicesModal";
 import {
@@ -41,8 +43,12 @@ import {
   vehicleToPayload,
   vehicleToValues,
 } from "@/features/get-started/schemas/applySchemas";
+import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
 import { requestedDeviceTotal } from "@/features/get-started/utils/applyHelpers";
 import {
+  fulfilmentComplete,
+  OWNER_OPERATOR_VEHICLE_LIMIT,
+  OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE,
   PURCHASE_TYPE_LABELS,
   VEHICLE_TYPE_LABELS,
   vehicleSummary,
@@ -58,7 +64,8 @@ import { cn } from "@/shared/utils";
 /**
  * Vehicles one at a time or by CSV, then device requests, all saved on the application as
  * they are made (main app: FleetRequirementsStep). Devices are bound to vehicles: the total
- * requested can never exceed the vehicles added.
+ * requested can never exceed the vehicles added. The main app's toasts show in the dialog's
+ * banner (`onError`) here.
  */
 export function FleetRequirementsStep({
   application,
@@ -97,9 +104,9 @@ export function FleetRequirementsStep({
     setUploadOpen,
   ] = useState(false);
   const [
-    deviceOpen,
-    setDeviceOpen,
-  ] = useState(false);
+    deviceModal,
+    setDeviceModal,
+  ] = useState<{ request: OnboardingApplication["deviceRequests"][number] | null } | null>(null);
   const [
     detail,
     setDetail,
@@ -117,6 +124,40 @@ export function FleetRequirementsStep({
     vehicles.length - deviceTotal,
   );
   const canProceed = vehicles.length > 0;
+  const isOwnerOperator = application.applicantType === "owner_operator";
+  const atVehicleLimit = isOwnerOperator && vehicles.length >= OWNER_OPERATOR_VEHICLE_LIMIT;
+  const fulfilment = useApplyDraftStore(state => state.fulfilment);
+  const setFulfilment = useApplyDraftStore(state => state.setFulfilment);
+  const editingRequest = deviceModal?.request ?? null;
+  const deviceInitial = editingRequest
+    ? {
+        quantity: editingRequest.quantity,
+        useCase: editingRequest.useCase,
+        notes: editingRequest.notes ?? "",
+      }
+    : null;
+
+  function handleNext() {
+    if (!canProceed)
+      return;
+    if (deviceTotal > 0 && !fulfilmentComplete(
+      fulfilment,
+      isOwnerOperator,
+    )) {
+      onError("Complete the Device Fulfilment details to continue.");
+      return;
+    }
+    onNext();
+  }
+
+  /** Owner Operators stop at 10 vehicles; the design blocks Upload and Add with a message. */
+  function guardVehicleLimit(open: () => void) {
+    if (atVehicleLimit) {
+      onError(OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE);
+      return;
+    }
+    open();
+  }
 
   async function removeVehicle(vehicle: OnboardingApplicationVehicle) {
     const hasLicence = application.documents.some(document => document.vehicleId === vehicle.id);
@@ -144,6 +185,46 @@ export function FleetRequirementsStep({
     }
     finally {
       setRemovingId(null);
+    }
+  }
+
+  /** Adds a device request; when stock is short, asks before placing it anyway. */
+  async function placeDeviceRequest(data: {
+    quantity: number;
+    useCase: string;
+    notes?: string;
+  }) {
+    const res = await addDeviceRequest.mutateAsync({
+      id,
+      data,
+    });
+    if (res.data.requestSaved)
+      return;
+    // Stock can't cover it and nothing was saved. Placing it anyway waits for stock.
+    const shortfall = res.data as OnboardingDeviceRequestShortfall;
+    const accepted = await confirm({
+      title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} in stock`,
+      description: "Your request can still be placed. Devices are provisioned as stock arrives, which may delay your installation.",
+      confirmLabel: `Request ${data.quantity} anyway`,
+    });
+    if (!accepted) {
+      throw Object.assign(
+        new Error(shortfall.message),
+        { field: "quantity" },
+      );
+    }
+    const confirmed = await addDeviceRequest.mutateAsync({
+      id,
+      data: {
+        ...data,
+        confirmAvailableQuantity: true,
+      },
+    });
+    if (!confirmed.data.requestSaved) {
+      throw Object.assign(
+        new Error((confirmed.data as OnboardingDeviceRequestShortfall).message),
+        { field: "quantity" },
+      );
     }
   }
 
@@ -234,14 +315,15 @@ export function FleetRequirementsStep({
         <DialogFooter
           onBack={onBack}
           continueLabel="Continue"
+          continueArrow={false}
           continueDisabled={!canProceed}
-          onContinue={onNext}
+          onContinue={handleNext}
         />
       )}
     >
       <StepHeading
         title="Fleet Requirements"
-        description="Add Your Vehicles And Request Tracking Devices. Devices Provisioned Through Fleet Pro Use MTN SIM Connectivity."
+        description="Add Your Vehicles And, Request Tracking Devices. Devices Provisioned Through Fleet Pro Use MTN SIM Connectivity."
       />
 
       <div className="mt-[30px] space-y-4">
@@ -259,7 +341,7 @@ export function FleetRequirementsStep({
               <button
                 type="button"
                 className={SECONDARY_BUTTON_CLASS}
-                onClick={() => setUploadOpen(true)}
+                onClick={() => guardVehicleLimit(() => setUploadOpen(true))}
               >
                 <UploadSimple className="size-4" />
                 Upload Vehicles
@@ -270,7 +352,7 @@ export function FleetRequirementsStep({
                   PRIMARY_BUTTON_CLASS,
                   "h-[37.5px] px-4 text-xs",
                 )}
-                onClick={() => setVehicleModal({ vehicle: null })}
+                onClick={() => guardVehicleLimit(() => setVehicleModal({ vehicle: null }))}
               >
                 <Plus className="size-4" />
                 Add Vehicle
@@ -294,9 +376,9 @@ export function FleetRequirementsStep({
         <SectionCard
           icon={<Cpu className="size-5 text-brand-deep" />}
           title="Devices"
-          description="Request one device per vehicle from Fleet Pro. Devices provisioned through Fleet Pro use MTN SIM connectivity."
+          description="Request fleet devices from Fleet Pro. Devices provisioned through Fleet Pro use MTN SIM connectivity."
           count={deviceTotal}
-          summary={`${deviceTotal} of ${vehicles.length} Device${vehicles.length === 1 ? "" : "s"} Requested`}
+          summary={`${deviceTotal} Device${deviceTotal === 1 ? "" : "s"} Requested`}
           expanded={expanded === "devices"}
           onToggle={() => setExpanded(expanded === "devices" ? null : "devices")}
           empty={deviceRequests.length === 0}
@@ -307,9 +389,16 @@ export function FleetRequirementsStep({
                 PRIMARY_BUTTON_CLASS,
                 "h-[37.5px] px-4 text-xs",
               )}
-              disabled={devicesLeft === 0}
-              title={devicesLeft === 0 ? "Every vehicle already has a device requested." : undefined}
-              onClick={() => setDeviceOpen(true)}
+              onClick={() => {
+                // The API fits one device per vehicle.
+                if (devicesLeft === 0) {
+                  onError(vehicles.length === 0
+                    ? "Add a vehicle before requesting devices."
+                    : "Every vehicle already has a device requested.");
+                  return;
+                }
+                setDeviceModal({ request: null });
+              }}
             >
               Request Device
             </button>
@@ -318,12 +407,12 @@ export function FleetRequirementsStep({
           {deviceRequests.map(request => (
             <Row
               key={request.id}
-              primary={`Request · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`}
+              primary={`Device request · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`}
               secondary={`${request.useCase} · MTN SIM connectivity`}
               badge="Requested"
               removing={removingId === request.id}
               onView={() => setDetail({
-                title: `Device Request · ${request.quantity}`,
+                title: `Device Request · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`,
                 fields: [
                   {
                     key: "quantity",
@@ -338,18 +427,25 @@ export function FleetRequirementsStep({
                   {
                     key: "notes",
                     label: "Additional Notes",
-                    value: request.notes ?? "",
+                    value: request.notes || "—",
                   },
                 ],
               })}
+              onEdit={() => setDeviceModal({ request })}
               onRemove={() => void removeDeviceRequest(request.id)}
             />
           ))}
         </SectionCard>
 
+        <DeviceFulfilmentCard
+          isOwnerOperator={isOwnerOperator}
+          value={fulfilment}
+          onChange={setFulfilment}
+        />
+
         {!canProceed && (
           <p className="text-xs text-muted-foreground">
-            Add at least one vehicle to continue. Request one device per vehicle before you submit.
+            Add at least one vehicle to continue. Requesting devices is optional.
           </p>
         )}
       </div>
@@ -384,46 +480,43 @@ export function FleetRequirementsStep({
         }}
       />
       <RequestDevicesModal
-        open={deviceOpen}
-        maxQuantity={devicesLeft}
-        onOpenChange={setDeviceOpen}
+        open={Boolean(deviceModal)}
+        initial={deviceInitial}
+        // Editing frees the request's own devices for the new quantity.
+        maxQuantity={devicesLeft + (editingRequest?.quantity ?? 0)}
+        onOpenChange={open => !open && setDeviceModal(null)}
         onSubmit={async (values) => {
           const data = {
             quantity: values.quantity,
             useCase: values.useCase.trim(),
             notes: values.notes?.trim() || undefined,
           };
-          const res = await addDeviceRequest.mutateAsync({
-            id,
-            data,
-          });
-          if (res.data.requestSaved)
-            return;
-          // Stock can't cover it and nothing was saved. Placing it anyway waits for stock.
-          const shortfall = res.data;
-          const accepted = await confirm({
-            title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} in stock`,
-            description: "Your request can still be placed. Devices are provisioned as stock arrives, which may delay your installation.",
-            confirmLabel: `Request ${data.quantity} anyway`,
-          });
-          if (!accepted) {
-            throw Object.assign(
-              new Error(shortfall.message),
-              { field: "quantity" },
-            );
+          const editing = editingRequest;
+          // TODO(api): no update endpoint for device requests — an edit replaces the request.
+          // Remove first so the one-device-per-vehicle check sees the freed devices.
+          if (editing) {
+            await deleteDeviceRequest.mutateAsync({
+              id,
+              requestId: editing.id,
+            });
           }
-          const confirmed = await addDeviceRequest.mutateAsync({
-            id,
-            data: {
-              ...data,
-              confirmAvailableQuantity: true,
-            },
-          });
-          if (!confirmed.data.requestSaved) {
-            throw Object.assign(
-              new Error(confirmed.data.message),
-              { field: "quantity" },
-            );
+          try {
+            await placeDeviceRequest(data);
+          }
+          catch (error) {
+            if (editing) {
+              // Put the original back so a failed edit loses nothing.
+              await addDeviceRequest.mutateAsync({
+                id,
+                data: {
+                  quantity: editing.quantity,
+                  useCase: editing.useCase,
+                  notes: editing.notes ?? undefined,
+                  confirmAvailableQuantity: true,
+                },
+              }).catch(() => undefined);
+            }
+            throw error;
           }
         }}
       />
@@ -528,7 +621,6 @@ function Row({
   badge?: string;
   removing?: boolean;
   onView: () => void;
-  /** Device requests can't be edited; remove and request again. */
   onEdit?: () => void;
   onRemove: () => void;
 }) {

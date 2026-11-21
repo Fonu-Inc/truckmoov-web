@@ -3980,6 +3980,11 @@ export type OnboardingOrder = {
   installationNgn: number
   totalNgn: number
   renewalPerDeviceNgn: number
+  // TODO(api): quotation lines the design shows; the order endpoint doesn't send them yet.
+  deliveryFeeNgn?: number
+  discountNgn?: number
+  subtotalNgn?: number
+  vatNgn?: number
 }
 
 export type OnboardingPaymentStatus = 'pending' | 'paid' | 'failed' | 'mismatch' | 'refunded' | 'requires_review'

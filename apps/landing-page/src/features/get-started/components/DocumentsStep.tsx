@@ -7,7 +7,6 @@ import type {
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { RequiredDocument } from "@/features/get-started/utils/applyTypes";
 import type { DraftFile } from "@/features/get-started/utils/draftFiles";
-import { Signature } from "@phosphor-icons/react/dist/ssr";
 import {
   useDeleteOnboardingApplicationDocument,
   useUploadOnboardingApplicationDocument,
@@ -29,7 +28,6 @@ import {
   checkFile,
   describeClaims,
 } from "@/features/get-started/schemas/applySchemas";
-import { isIndemnitySigned } from "@/features/get-started/utils/applyHelpers";
 import {
   deleteDraftFile,
   listDraftFiles,
@@ -37,18 +35,13 @@ import {
 } from "@/features/get-started/utils/draftFiles";
 import {
   CARD_CLASS,
-  LINK_CLASS,
+  FIELD_CLASS,
 } from "@/features/get-started/utils/getStartedContent";
 import { cn } from "@/shared/utils";
 
 type Slot = {
   key: string;
   document: RequiredDocument;
-  /** Set on a `vehicle_license` slot. */
-  vehicle?: {
-    id: string;
-    registrationNumber: string;
-  };
 };
 
 /** A file picked for a slot that never reached the server, kept in IndexedDB. */
@@ -59,20 +52,29 @@ type PendingUpload = {
 
 const PENDING_PREFIX = "doc:";
 
-function uploadError(error: unknown, pdfOnly?: boolean) {
+/** The only identification cards accepted, as the design lists them. */
+const ID_CARD_TYPES = [
+  "National Identification Card",
+  "Driver's License",
+] as const;
+
+const ID_TYPE_REQUIRED = "Select your identification card type first — only a National Identification Card or Driver's License is accepted. Any other card will be rejected.";
+
+function uploadError(error: unknown) {
   const err = error as ServerErrorResponse;
   if (err.statusCode === 413)
-    return "This file is larger than 10 MB. Please upload a smaller file.";
+    return "This file is larger than 10 MB. Please upload a smaller PDF file.";
   return describeClaims(err.claimTypes)
     ?? err.message
-    ?? (pdfOnly ? "Upload a PDF file." : "The file couldn't be uploaded.");
+    ?? "Upload a PDF file.";
 }
 
 /**
- * Required documents (main app: DocumentsStep). The list depends on the customer type, with
- * a licence per vehicle; what is filed and what is missing come from the server. A failed
- * upload is kept in IndexedDB so a returning applicant can retry it without finding the
- * file again. The signed indemnity form is generated at signing and never uploaded here.
+ * Required documents (main app: DocumentsStep). The list depends on the customer type (a
+ * returning MTN customer owes only the Customer Request Letter); what is filed comes from
+ * the server. Every document is a PDF. A failed
+ * upload is kept in IndexedDB so an applicant who comes back can retry it without finding
+ * the file again. The signed indemnity form is generated at signing and never uploaded here.
  */
 export function DocumentsStep({
   application,
@@ -81,7 +83,7 @@ export function DocumentsStep({
   onNext,
 }: {
   application: OnboardingApplication;
-  /** The per-type list; `vehicle_license` is expanded to one slot per vehicle. */
+  /** The per-type list (`documentsForApplicant`). */
   required: RequiredDocument[];
   onBack: () => void;
   onNext: () => void;
@@ -100,28 +102,19 @@ export function DocumentsStep({
     pending,
     setPending,
   ] = useState<Record<string, PendingUpload>>({});
+  // TODO(api): the ID type isn't sent with the upload yet — the API has no field for it.
+  const [
+    idType,
+    setIdType,
+  ] = useState("");
 
-  const slots: Slot[] = required.flatMap<Slot>(document => (
-    document.type === "vehicle_license"
-      ? application.vehicles.map(vehicle => ({
-          key: `vehicle_license:${vehicle.id}`,
-          document,
-          vehicle: {
-            id: vehicle.id,
-            registrationNumber: vehicle.registrationNumber,
-          },
-        }))
-      : [
-          {
-            key: document.type,
-            document,
-          },
-        ]
-  ));
+  const slots: Slot[] = required.map(document => ({
+    key: document.type,
+    document,
+  }));
 
   function filed(slot: Slot): OnboardingApplicationDocument | undefined {
-    return application.documents.find(item => item.documentType === slot.document.type
-      && (slot.vehicle ? item.vehicleId === slot.vehicle.id : true));
+    return application.documents.find(item => item.documentType === slot.document.type);
   }
 
   // Reads the latest documents without re-running the restore when they change: later
@@ -130,9 +123,7 @@ export function DocumentsStep({
     const restored: Record<string, PendingUpload> = {};
     for (const entry of saved) {
       const key = entry.key.slice(PENDING_PREFIX.length);
-      const alreadyFiled = application.documents.some(item => (key.startsWith("vehicle_license:")
-        ? item.documentType === "vehicle_license" && `vehicle_license:${item.vehicleId}` === key
-        : item.documentType === key));
+      const alreadyFiled = application.documents.some(item => item.documentType === key);
       if (alreadyFiled) {
         void deleteDraftFile(entry.key);
         continue;
@@ -166,10 +157,7 @@ export function DocumentsStep({
 
   const uploadedCount = slots.filter(slot => filed(slot)).length;
   const total = slots.length;
-  const needsVehicles = required.some(document => document.type === "vehicle_license") && application.vehicles.length === 0;
-  const missingLicences = application.vehiclesMissingDocuments.filter(item => item.documentType === "vehicle_license");
-  const allPresent = total > 0 && uploadedCount === total && !needsVehicles;
-  const signed = isIndemnitySigned(application);
+  const allPresent = total > 0 && uploadedCount === total;
 
   function setRow<T>(setter: (update: (previous: Record<string, T>) => Record<string, T>) => void, key: string, value?: T) {
     setter((previous) => {
@@ -183,10 +171,13 @@ export function DocumentsStep({
   }
 
   async function handleFile(slot: Slot, file: File) {
-    const localError = checkFile(
-      file,
-      slot.document.pdfOnly,
-    );
+    // The design takes PDFs only, and asks which ID card it is before the upload.
+    const localError = slot.document.type === "identification_card" && !idType
+      ? ID_TYPE_REQUIRED
+      : checkFile(
+          file,
+          true,
+        );
     if (localError) {
       setRow(
         setErrors,
@@ -209,7 +200,6 @@ export function DocumentsStep({
       await upload.mutateAsync({
         id: application.id,
         documentType: slot.document.type,
-        vehicleId: slot.vehicle?.id,
         file,
       });
       setRow(
@@ -219,10 +209,7 @@ export function DocumentsStep({
       void deleteDraftFile(`${PENDING_PREFIX}${slot.key}`);
     }
     catch (error) {
-      const message = uploadError(
-        error,
-        slot.document.pdfOnly,
-      );
+      const message = uploadError(error);
       const status = (error as ServerErrorResponse).statusCode;
       // A file the server refused (bad format, duplicate) won't succeed on retry; only keep
       // the ones lost to the network or a server hiccup.
@@ -313,7 +300,7 @@ export function DocumentsStep({
     >
       <StepHeading
         title="Required Documents"
-        description="Upload Each Document As A PDF, JPG Or PNG Smaller Than 10 MB. The Customer Request Letter Must Be A PDF."
+        description="Upload Each Document As A PDF File Smaller Than 10 MB. Files Are Validated As Soon As They Are Added."
       />
 
       <div className={cn(
@@ -326,12 +313,6 @@ export function DocumentsStep({
           {allPresent && <Pill tone="success">All documents received</Pill>}
         </div>
         <ProgressBar value={total === 0 ? 0 : (uploadedCount / total) * 100} />
-        {missingLicences.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {"Still needs a vehicle licence: "}
-            <span className="font-medium text-heading">{missingLicences.map(item => item.registrationNumber).join(", ")}</span>
-          </p>
-        )}
       </div>
 
       <div className="mt-[25px] space-y-[18px]">
@@ -341,13 +322,13 @@ export function DocumentsStep({
           return (
             <UploadField
               key={slot.key}
-              title={slot.vehicle ? `${slot.document.label} (${slot.vehicle.registrationNumber})` : slot.document.label}
-              description={document?.rejectionReason ?? (slot.vehicle ? "A valid licence for this vehicle." : slot.document.requirement)}
+              title={slot.document.label}
+              description={document?.rejectionReason ?? slot.document.requirement}
               fileName={document?.documentName ?? unsent?.file.name}
               status={document ? (document.status === "rejected" ? "rejected" : "uploaded") : unsent ? "pending" : null}
               error={errors[slot.key] ?? unsent?.error}
               busy={Boolean(busy[slot.key])}
-              pdfOnly={slot.document.pdfOnly}
+              pdfOnly
               onSelect={file => void handleFile(
                 slot,
                 file,
@@ -364,48 +345,46 @@ export function DocumentsStep({
                     document,
                   )
                 : undefined}
-            />
+            >
+              {slot.document.type === "identification_card" && (
+                <select
+                  aria-label="Identification card type"
+                  value={idType}
+                  onChange={(event) => {
+                    setIdType(event.target.value);
+                    setRow(
+                      setErrors,
+                      slot.key,
+                    );
+                  }}
+                  className={cn(
+                    FIELD_CLASS,
+                    "mt-3 h-10 max-w-64 text-xs",
+                    !idType && "text-faint-foreground",
+                  )}
+                >
+                  <option value="">Select ID type</option>
+                  {ID_CARD_TYPES.map(type => (
+                    <option
+                      key={type}
+                      value={type}
+                      className="text-heading"
+                    >
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </UploadField>
           );
         })}
 
-        {needsVehicles && (
-          <p className="rounded-[20px] border border-dashed border-border-field p-4 text-sm text-muted-foreground">
-            Vehicle licences are uploaded per vehicle.
-            {" "}
-            <button
-              type="button"
-              className={LINK_CLASS}
-              onClick={onBack}
-            >
-              Add your vehicles in Fleet Requirements
-            </button>
-            {" "}
-            first.
-          </p>
-        )}
-
-        <div className={cn(
-          CARD_CLASS,
-          "flex items-center gap-3",
-        )}
-        >
-          <span className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-[12px]",
-            signed ? "bg-success-soft text-success-deep" : "bg-surface text-muted-foreground",
-          )}
-          >
-            <Signature className="size-4" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-heading">Signed Indemnity Form</p>
-            <p className="text-xs text-muted-foreground">
-              {signed
-                ? "Generated when you signed the agreement. Nothing to upload."
-                : "Created when you sign the agreement on the Customer Details step."}
-            </p>
-          </div>
-        </div>
       </div>
+
+      <p className="mt-[25px] rounded-[15px] bg-surface p-4 text-xs leading-[17px] text-muted-foreground">
+        Please review your information before submitting your application. Once submitted, your
+        application will be reviewed by the Fleet Pro team.
+      </p>
     </StepLayout>
   );
 }

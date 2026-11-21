@@ -130,10 +130,6 @@ export function useApplySession() {
   };
 }
 
-export function isIndemnitySigned(application?: OnboardingApplication) {
-  return Boolean(application?.documents.some(document => document.documentType === "signed_indemnity_form"));
-}
-
 export function requestedDeviceTotal(application?: OnboardingApplication) {
   return (application?.deviceRequests ?? []).reduce(
     (total, request) => total + request.quantity,
@@ -141,10 +137,12 @@ export function requestedDeviceTotal(application?: OnboardingApplication) {
   );
 }
 
-/** Every non-vehicle document still missing, plus one row per vehicle short of a licence. */
-export function documentsComplete(application?: OnboardingApplication) {
+/**
+ * Every document on the applicant's list is on file. The list is the design's (see
+ * `documentsForApplicant`), not the server's `missingDocuments`, which still asks for more.
+ */
+export function documentsComplete(application: OnboardingApplication | undefined, required: { type: string }[]) {
   if (!application)
     return false;
-  const missing = application.missingDocuments.filter(type => type !== "signed_indemnity_form" && type !== "vehicle_license");
-  return missing.length === 0 && application.vehiclesMissingDocuments.length === 0;
+  return required.every(document => application.documents.some(item => item.documentType === document.type));
 }

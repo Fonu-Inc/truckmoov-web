@@ -6,7 +6,7 @@ import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTy
 const mapIllustration = "/images/get-started/map.png";
 const truckIllustration = "/images/get-started/truck.png";
 
-// `description` keeps the Figma line break (rendered with whitespace-pre-line).
+// `description` wraps inside the card (rendered with whitespace-pre-line).
 export const CUSTOMER_TYPES: {
   id: ApplicantCustomerType;
   title: string;
@@ -20,8 +20,9 @@ export const CUSTOMER_TYPES: {
   {
     id: "enterprise",
     title: "Enterprise Customer",
-    description: "Businesses And Organizations\nManaging A Company Fleet.",
+    description: "For Businesses And Organizations Managing A Large Company Fleet.",
     points: [
+      "No limit on the number of vehicles",
       "Manage company vehicles",
       "Manage fleet devices",
       "Manage SIM cards and connectivity",
@@ -35,9 +36,10 @@ export const CUSTOMER_TYPES: {
   },
   {
     id: "owner_operator",
-    title: "Owner Operator",
-    description: "Individuals Managing Vehicles\nFor Their Own Operation.",
+    title: "Owner Operator / Individual Customer",
+    description: "For Individuals, Companies And Organisations With 10 Vehicles Or Fewer.",
     points: [
+      "Maximum of 10 vehicles",
       "Manage personal vehicles",
       "Manage fleet devices",
       "Manage SIM cards and connectivity",

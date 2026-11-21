@@ -2,10 +2,14 @@
 export type DialogId = "get-started" | "contact";
 
 /**
- * Which button opened the dialog. For Get Started: "new" (Apply for Account Creation) offers
- * a fresh application, "returning" (Apply as Returning Customer) resumes the saved one.
+ * Which button opened the dialog. For Get Started:
+ * - "new" (Apply for Account Creation) offers a fresh application, or asks whether to continue
+ *   the one saved in this browser;
+ * - "returning" (Apply as Returning Customer) is an existing MTN customer: the same flow, with
+ *   the returning flag set (a saved application is still resumed);
+ * - "resume" reopens the saved application directly (a resume link or the payment return).
  */
-export type DialogIntent = "new" | "returning";
+export type DialogIntent = "new" | "returning" | "resume";
 
 type Listener = () => void;
 

@@ -27,9 +27,10 @@ const OPTIONS: {
   {
     id: "enterprise",
     title: "Enterprise Customer",
-    subtitle: "For businesses and organizations managing a company fleet.",
+    subtitle: "For businesses and organizations managing a Large company fleet.",
     icon: Building2,
     points: [
+      "No limit on the number of vehicles",
       "Manage company vehicles",
       "Manage fleet devices",
       "Manage SIM cards and connectivity",
@@ -39,10 +40,11 @@ const OPTIONS: {
   },
   {
     id: "owner_operator",
-    title: "Owner Operator / Individual",
-    subtitle: "For individuals managing vehicles for their own operation.",
+    title: "Owner Operator / Individual Customer",
+    subtitle: "For individuals, companies and organisations with 10 vehicles or fewer.",
     icon: Truck,
     points: [
+      "Maximum of 10 vehicles",
       "Manage personal vehicles",
       "Manage fleet devices",
       "Manage SIM cards and connectivity",
@@ -74,8 +76,8 @@ export function CustomerTypeStep({
       <div>
         <h2 className="text-lg font-semibold text-foreground">What type of customer are you?</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Select the option that matches how you operate. Your customer type is independent of how
-          many vehicles you run.
+          Select the option that matches how you operate. Owner Operator / Individual accounts are
+          limited to 10 vehicles — choose Enterprise Customer if you run more than 10.
         </p>
       </div>
 

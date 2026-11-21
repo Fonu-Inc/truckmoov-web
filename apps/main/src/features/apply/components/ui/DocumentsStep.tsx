@@ -13,7 +13,6 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
-  FileSignature,
   FileText,
   Upload,
   X,
@@ -26,7 +25,13 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Progress } from "@/components/shadcn/progress";
-import { isIndemnitySigned } from "@/features/apply/hooks/useApplySession";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 import {
   checkFile,
   describeClaims,
@@ -35,7 +40,7 @@ import { cn } from "@/lib/utils";
 
 type DocumentsStepProps = {
   application: OnboardingApplication;
-  /** The per-role list; `vehicle_license` is expanded to one slot per vehicle. */
+  /** The applicant's list (`documentsForApplicant`). Vehicle licences go in with each vehicle. */
   required: RequiredDocument[];
   onBack: () => void;
   onNext: () => void;
@@ -45,19 +50,23 @@ type DocumentsStepProps = {
 type Slot = {
   key: string;
   document: RequiredDocument;
-  /** Set on a `vehicle_license` slot. */
-  vehicle?: {
-    id: string; registrationNumber: string;
-  };
 };
 
-function uploadError(error: unknown, pdfOnly?: boolean) {
+/** The only identification cards accepted, as the design lists them. */
+const ID_CARD_TYPES = [
+  "National Identification Card",
+  "Driver's License",
+] as const;
+
+const ID_TYPE_REQUIRED = "Select your identification card type first — only a National Identification Card or Driver's License is accepted. Any other card will be rejected.";
+
+function uploadError(error: unknown) {
   const err = error as ServerErrorResponse;
   if (err.statusCode === 413)
-    return "This file is larger than 10 MB. Please upload a smaller file.";
+    return "This file is larger than 10 MB. Please upload a smaller PDF file.";
   return describeClaims(err.claimTypes)
     ?? err.message
-    ?? (pdfOnly ? "Upload a PDF file." : "The file couldn't be uploaded.");
+    ?? "Upload a PDF file.";
 }
 
 /**
@@ -82,36 +91,24 @@ export function DocumentsStep({
     busy,
     setBusy,
   ] = useState<Record<string, boolean>>({});
+  // TODO(api): the ID type isn't sent with the upload yet — the API has no field for it.
+  const [
+    idType,
+    setIdType,
+  ] = useState("");
 
-  const slots: Slot[] = required.flatMap<Slot>(document => (
-    document.type === "vehicle_license"
-      ? application.vehicles.map(vehicle => ({
-          key: `vehicle_license:${vehicle.id}`,
-          document,
-          vehicle: {
-            id: vehicle.id,
-            registrationNumber: vehicle.registrationNumber,
-          },
-        }))
-      : [
-          {
-            key: document.type,
-            document,
-          },
-        ]
-  ));
+  const slots: Slot[] = required.map(document => ({
+    key: document.type,
+    document,
+  }));
 
   function filed(slot: Slot): OnboardingApplicationDocument | undefined {
-    return application.documents.find(item => item.documentType === slot.document.type
-      && (slot.vehicle ? item.vehicleId === slot.vehicle.id : true));
+    return application.documents.find(item => item.documentType === slot.document.type);
   }
 
   const uploadedCount = slots.filter(slot => filed(slot)).length;
   const total = slots.length;
-  const needsVehicles = required.some(document => document.type === "vehicle_license") && application.vehicles.length === 0;
-  const missingLicences = application.vehiclesMissingDocuments.filter(item => item.documentType === "vehicle_license");
-  const allPresent = total > 0 && uploadedCount === total && !needsVehicles;
-  const signed = isIndemnitySigned(application);
+  const allPresent = total > 0 && uploadedCount === total;
 
   function setRow<T>(setter: (update: (previous: Record<string, T>) => Record<string, T>) => void, key: string, value?: T) {
     setter((previous) => {
@@ -125,10 +122,13 @@ export function DocumentsStep({
   }
 
   async function handleFile(slot: Slot, file: File) {
-    const localError = checkFile(
-      file,
-      slot.document.pdfOnly,
-    );
+    // The design takes PDFs only, and asks which ID card it is before the upload.
+    const localError = slot.document.type === "identification_card" && !idType
+      ? ID_TYPE_REQUIRED
+      : checkFile(
+          file,
+          true,
+        );
     if (localError) {
       setRow(
         setErrors,
@@ -151,7 +151,7 @@ export function DocumentsStep({
       await upload.mutateAsync({
         id: application.id,
         documentType: slot.document.type,
-        vehicleId: slot.vehicle?.id,
+
         file,
       });
     }
@@ -159,10 +159,7 @@ export function DocumentsStep({
       setRow(
         setErrors,
         slot.key,
-        uploadError(
-          error,
-          slot.document.pdfOnly,
-        ),
+        uploadError(error),
       );
     }
     finally {
@@ -209,8 +206,8 @@ export function DocumentsStep({
       <div>
         <h2 className="text-lg font-semibold text-foreground">Required Documents</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Upload each document as a PDF, JPG or PNG smaller than 10 MB. The Customer Request Letter
-          must be a PDF.
+          Upload each document as a PDF file smaller than 10 MB. Files are validated as soon as they
+          are added.
         </p>
       </div>
 
@@ -232,14 +229,6 @@ export function DocumentsStep({
           value={total === 0 ? 0 : (uploadedCount / total) * 100}
           className="mt-3 h-2"
         />
-        {missingLicences.length > 0 && (
-          <p className="mt-3 text-xs text-muted-foreground">
-            {"Still needs a vehicle licence: "}
-            <span className="font-medium text-foreground">
-              {missingLicences.map(item => item.registrationNumber).join(", ")}
-            </span>
-          </p>
-        )}
       </div>
 
       <div className="space-y-3">
@@ -249,9 +238,16 @@ export function DocumentsStep({
             <DocumentRow
               key={slot.key}
               index={index + 1}
-              label={slot.vehicle ? `${slot.document.label} — ${slot.vehicle.registrationNumber}` : slot.document.label}
-              requirement={slot.vehicle ? "A valid licence for this vehicle." : slot.document.requirement}
-              pdfOnly={slot.document.pdfOnly}
+              label={slot.document.label}
+              requirement={slot.document.requirement}
+              idType={slot.document.type === "identification_card" ? idType : undefined}
+              onIdType={(value) => {
+                setIdType(value);
+                setRow(
+                  setErrors,
+                  slot.key,
+                );
+              }}
               document={document}
               busy={Boolean(busy[slot.key])}
               error={errors[slot.key]}
@@ -267,39 +263,11 @@ export function DocumentsStep({
           );
         })}
 
-        {needsVehicles && (
-          <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-            Vehicle licences are uploaded per vehicle.
-            {" "}
-            <button
-              type="button"
-              className="font-medium text-primary underline-offset-2 hover:underline"
-              onClick={onBack}
-            >
-              Add your vehicles in Fleet Requirements
-            </button>
-            {" "}
-            first.
-          </div>
-        )}
+      </div>
 
-        <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card/40 p-4">
-          <span className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-            signed ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-          )}
-          >
-            <FileSignature className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="text-sm font-medium text-foreground">Signed Indemnity Form</p>
-            <p className="text-xs text-muted-foreground">
-              {signed
-                ? "Generated when you signed the agreement — nothing to upload."
-                : "Created when you sign the agreement on the Customer Details step."}
-            </p>
-          </div>
-        </div>
+      <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
+        Please review your information before submitting your application. Once submitted, your
+        application will be reviewed by the Fleet Pro team.
       </div>
 
       <div className="flex items-center justify-between border-t border-border/60 pt-6">
@@ -327,7 +295,8 @@ function DocumentRow({
   index,
   label,
   requirement,
-  pdfOnly,
+  idType,
+  onIdType,
   document,
   busy,
   error,
@@ -337,7 +306,9 @@ function DocumentRow({
   index: number;
   label: string;
   requirement?: string;
-  pdfOnly?: boolean;
+  /** Set on the identification card row: the card type picked in the design's select. */
+  idType?: string;
+  onIdType?: (value: string) => void;
   document?: OnboardingApplicationDocument;
   busy: boolean;
   error?: string;
@@ -389,6 +360,28 @@ function DocumentRow({
             {requirement && (
               <p className="mt-0.5 text-xs text-muted-foreground">{requirement}</p>
             )}
+            {idType !== undefined && (
+              <div className="mt-2 max-w-64">
+                <Select
+                  value={idType}
+                  onValueChange={value => onIdType?.(value)}
+                >
+                  <SelectTrigger className="h-9 rounded-xl text-xs">
+                    <SelectValue placeholder="Select ID type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ID_CARD_TYPES.map(type => (
+                      <SelectItem
+                        key={type}
+                        value={type}
+                      >
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {document && (
               <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-foreground">
                 <FileText className="h-3.5 w-3.5 text-primary" />
@@ -422,7 +415,7 @@ function DocumentRow({
           <input
             ref={inputRef}
             type="file"
-            accept={pdfOnly ? "application/pdf,.pdf" : "application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png"}
+            accept="application/pdf,.pdf"
             className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];

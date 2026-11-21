@@ -77,6 +77,25 @@ export const NIGERIAN_STATES = [
 
 const NG_PHONE = /^(?:\+234|234|0)[789][01]\d{8}$/;
 
+/** "lagos", "Lagos State" -> "Lagos". Null when it isn't a Nigerian state (or the FCT). */
+export function normalizeState(value: string): (typeof NIGERIAN_STATES)[number] | null {
+  const key = value.trim().replace(
+    /\s+state$/i,
+    "",
+  ).toLowerCase();
+  return NIGERIAN_STATES.find(state => state.toLowerCase() === key) ?? null;
+}
+
+/** A typed state (the design uses a plain input), saved as the canonical name. */
+const stateField = z
+  .string()
+  .trim()
+  .refine(
+    value => normalizeState(value) !== null,
+    "Enter a Nigerian state, e.g. Lagos.",
+  )
+  .transform(value => normalizeState(value) ?? value);
+
 const phoneField = z
   .string()
   .trim()
@@ -145,10 +164,7 @@ const businessDetailsBase = z.object({
     2,
     "Enter your city.",
   ),
-  state: z.enum(
-    NIGERIAN_STATES,
-    { message: "Pick a state." },
-  ),
+  state: stateField,
   /**
    * Optional server-side, but automated approval cannot run without them (TRU-FE-11):
    * RC number + TIN for enterprises, ID type + number for owner-operators.
@@ -192,7 +208,7 @@ export const EMPTY_BUSINESS_DETAILS: BusinessDetailsValues = {
   lastName: "",
   streetAddress: "",
   city: "",
-  state: undefined as unknown as BusinessDetailsValues["state"],
+  state: "",
   rcNumber: "",
   taxIdentificationNumber: "",
   identificationType: "",
@@ -422,10 +438,7 @@ export const installationSchema = z.object({
     2,
     "Enter the city.",
   ),
-  state: z.enum(
-    NIGERIAN_STATES,
-    { message: "Pick a state." },
-  ),
+  state: stateField,
   date: z.string()
     .min(
       1,
@@ -489,8 +502,11 @@ const ACCEPTED_MIME = new Set([
  * the server decides the format from the file contents, not the declared type.
  */
 export function checkFile(file: File, pdfOnly = false): string | null {
-  if (file.size > MAX_DOCUMENT_BYTES)
-    return "This file is larger than 10 MB. Please upload a smaller file.";
+  if (file.size > MAX_DOCUMENT_BYTES) {
+    return pdfOnly
+      ? "This file is larger than 10 MB. Please upload a smaller PDF file."
+      : "This file is larger than 10 MB. Please upload a smaller file.";
+  }
 
   if (pdfOnly) {
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"))

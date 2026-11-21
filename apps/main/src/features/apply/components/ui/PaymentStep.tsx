@@ -7,7 +7,6 @@ import {
 } from "@truckmoov/api/auth";
 import {
   AlertCircle,
-  CheckCircle2,
   Loader2,
   RefreshCw,
   ShieldCheck,
@@ -172,13 +171,15 @@ export function PaymentStep({
       <div>
         <h2 className="text-lg font-semibold text-foreground">Payment</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pay for your M2M package. You will schedule your installation in the next step.
+          Your application passed system verification. Pay your quotation, then schedule
+          installation. Your subscription becomes active only after installation and final system
+          verification.
         </p>
       </div>
 
       <div className="rounded-2xl border border-border/70 bg-card/60 p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-base font-semibold text-foreground">Order Summary</h3>
+          <h3 className="text-base font-semibold text-foreground">Quotation</h3>
           {paid
             ? <Badge className="rounded-full bg-success/15 text-success hover:bg-success/15">Payment Confirmed</Badge>
             : payment?.status === "failed" || payment?.status === "mismatch"
@@ -212,24 +213,72 @@ export function PaymentStep({
           </div>
           <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-            {`Your M2M package is charged per device and includes the Fleet device, platform license and MTN connectivity. Renewal is ${formatCurrency(order.renewalPerDeviceNgn)} per device a year.`}
+            Your M2M package is charged per device and includes the Fleet device, platform license, and
+            MTN connectivity where applicable.
           </p>
         </div>
 
         <dl className="mt-4 space-y-2 text-sm">
           <Line
-            label={`M2M package (${order.deviceCount} device${order.deviceCount === 1 ? "" : "s"})`}
+            label={`M2M package (${order.deviceCount} devices)`}
             value={formatCurrency(order.devicesNgn)}
           />
           <Line
             label="Installation"
             value={formatCurrency(order.installationNgn)}
           />
+          {/* TODO(api): shown once the order endpoint sends these quotation lines. */}
+          {(order.deliveryFeeNgn ?? 0) > 0 && (
+            <Line
+              label="Delivery / fulfilment fee"
+              value={formatCurrency(order.deliveryFeeNgn ?? 0)}
+            />
+          )}
+          {order.discountNgn !== undefined && (
+            <Line
+              label="Discount"
+              value={`- ${formatCurrency(order.discountNgn)}`}
+            />
+          )}
+          {order.subtotalNgn !== undefined && (
+            <Line
+              label="Subtotal"
+              value={formatCurrency(order.subtotalNgn)}
+            />
+          )}
+          {order.vatNgn !== undefined && (
+            <Line
+              label="VAT (7.5%)"
+              value={formatCurrency(order.vatNgn)}
+            />
+          )}
           <div className="flex items-center justify-between border-t border-border/60 pt-3">
             <dt className="text-sm font-semibold text-foreground">Grand Total</dt>
             <dd className="text-lg font-bold text-foreground">{formatCurrency(order.totalNgn)}</dd>
           </div>
         </dl>
+
+        {paid
+          ? (
+              <Button
+                size="lg"
+                className="mt-5 w-full sm:w-auto"
+                onClick={onContinue}
+              >
+                Continue to Installation Scheduling
+              </Button>
+            )
+          : (
+              <Button
+                size="lg"
+                className="mt-5 w-full sm:w-auto"
+                loading={startPayment.isPending}
+                disabled={!orderData.payable || waitingForWebhook}
+                onClick={() => void pay()}
+              >
+                Make Payment
+              </Button>
+            )}
       </div>
 
       {waitingForWebhook && !pollTimedOut && (
@@ -269,28 +318,6 @@ export function PaymentStep({
       )}
       {payError && <p className="text-sm text-destructive">{payError}</p>}
 
-      <div className="flex justify-end border-t border-border/60 pt-6">
-        {paid
-          ? (
-              <Button
-                size="lg"
-                onClick={onContinue}
-              >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                Continue to Installation Scheduling
-              </Button>
-            )
-          : (
-              <Button
-                size="lg"
-                loading={startPayment.isPending}
-                disabled={!orderData.payable || waitingForWebhook}
-                onClick={() => void pay()}
-              >
-                {`Pay ${formatCurrency(order.totalNgn)}`}
-              </Button>
-            )}
-      </div>
     </div>
   );
 }
