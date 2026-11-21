@@ -31,6 +31,11 @@ export type SidebarNavItem = {
   icon: LucideIcon;
   /** Page owns its own padding — DashboardLayout drops the `p-6` on `<main>`. */
   fullWidth?: boolean;
+  /**
+   * The page renders its own heading (the design app's in-page `h1` +
+   * description), so the top bar shows no title. `label` stays the nav text.
+   */
+  manualTitle?: boolean;
   /** Roles allowed to see this entry. On a group child, omit to inherit the group's roles. */
   hasPermission?: UserRole[];
 };
@@ -71,7 +76,7 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
 export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   // ─── Overview ──────────────────────────────────────────────────
   {
-    label: "Overview", href: "/", icon: LayoutDashboard, hasPermission: [
+    label: "Overview", href: "/", icon: LayoutDashboard, manualTitle: true, hasPermission: [
       "ENTERPRISE_ADMIN",
       "OWNER_OPERATOR",
     ],

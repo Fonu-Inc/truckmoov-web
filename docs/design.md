@@ -52,6 +52,10 @@ Two consequences worth knowing:
   own body.
 - `fullWidth: true` on an entry drops the `p-6` on `<main>` for full-bleed pages like
   `/map`. It replaced a per-page prop.
+- `manualTitle: true` blanks the top-bar title for pages that render the design app's
+  in-page heading (`h1` + description, actions on the right) themselves. The `label`
+  still names the sidebar link. Used by every admin page (`<PageTitle>`) and by main's
+  `/` overview (`OverviewHeader` in `EnterpriseLogisticsDashboard.tsx`).
 
 Visibility is `hasPermission`: a role sees an entry iff its key is listed, and
 `getEntriesForRole` drops groups whose children are all filtered out.

@@ -74,6 +74,9 @@ const PERIODS = [
 
 type PeriodValue = (typeof PERIODS)[number]["value"];
 
+/** The design app's Recent Activity card lists five events. */
+const ACTIVITY_LIMIT = 5;
+
 /** Recent events shown in the violations lists; stats come from the server totals. */
 const VIOLATION_EVENTS_LIMIT = 100;
 
@@ -237,10 +240,20 @@ export default function EnterpriseLogisticsDashboard() {
     [overview],
   );
 
-  if (isLoading)
-    return <EnterpriseLogisticsDashboardSkeleton />;
-  if (isError || !overview) {
-    return <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />;
+  // The heading stays put while the overview loads or fails: the top bar no
+  // longer carries the title for this route.
+  if (isLoading || isError || !overview) {
+    return (
+      <>
+        <OverviewHeader
+          period={period}
+          onPeriodChange={setPeriod}
+        />
+        {isLoading
+          ? <EnterpriseLogisticsDashboardSkeleton />
+          : <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />}
+      </>
+    );
   }
 
   const violationEvents = violations.data?.data.items ?? [];
@@ -263,103 +276,141 @@ export default function EnterpriseLogisticsDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <Select
-          value={period}
-          onValueChange={v => setPeriod(v as PeriodValue)}
-        >
-          <SelectTrigger className="h-10 px-3.5 w-[180px] rounded-xl">
-            <CalendarRange className="h-4 w-4 mr-2 text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PERIODS.map(p => (
-              <SelectItem
-                key={p.value}
-                value={p.value}
-              >
-                {p.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <QuickActionsCard />
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Vehicles"
-          value={overview.cards.totalVehicles}
-          icon={Truck}
-        />
-        <StatCard
-          title="Total Jobs"
-          value={overview.cards.totalJobs}
-          icon={Package}
-        />
-        <StatCard
-          title="Total Drivers"
-          value={overview.cards.totalDrivers}
-          icon={Users}
-        />
-        <StatCard
-          title="Total Devices"
-          value={devicesSummary.isLoading ? "…" : devicesSummary.isError ? "—" : (devicesSummary.data?.data.total ?? 0)}
-          icon={Cpu}
-        />
-      </div>
-
+    <>
+      <OverviewHeader
+        period={period}
+        onPeriodChange={setPeriod}
+      />
       <div className="space-y-6">
-        <ViolationsCard
-          mode="driver"
-          {...violationProps}
+        <QuickActionsCard />
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Vehicles"
+            value={overview.cards.totalVehicles}
+            icon={Truck}
+          />
+          <StatCard
+            title="Total Jobs"
+            value={overview.cards.totalJobs}
+            icon={Package}
+          />
+          <StatCard
+            title="Total Drivers"
+            value={overview.cards.totalDrivers}
+            icon={Users}
+          />
+          <StatCard
+            title="Total Devices"
+            value={devicesSummary.isLoading ? "…" : devicesSummary.isError ? "—" : (devicesSummary.data?.data.total ?? 0)}
+            icon={Cpu}
+          />
+        </div>
+
+        <RecentActivityCard items={recentActivity.slice(
+          0,
+          ACTIVITY_LIMIT,
+        )}
         />
-        <ViolationsCard
-          mode="vehicle"
-          {...violationProps}
+
+        <div className="space-y-6">
+          <ViolationsCard
+            mode="driver"
+            {...violationProps}
+          />
+          <ViolationsCard
+            mode="vehicle"
+            {...violationProps}
+          />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <MaintenanceListCard
+              variant="due"
+              profiles={dueProfiles}
+              {...maintenanceProfilesState}
+            />
+            <MaintenanceListCard
+              variant="overdue"
+              profiles={overdueProfiles}
+              {...maintenanceProfilesState}
+            />
+            <VehiclesInOperationCard />
+            <VehiclesInMaintenanceCard
+              records={openMaintenanceRecords}
+              vehiclePlate={vehiclePlate}
+              isLoading={maintenanceRecords.isLoading}
+              isError={maintenanceRecords.isError}
+              onRetry={() => maintenanceRecords.refetch()}
+            />
+          </div>
+        </div>
+
+        <JobsOverviewCard
+          jobs={overviewJobs}
+          jobsHref="/jobs"
         />
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <MaintenanceListCard
-            variant="due"
-            profiles={dueProfiles}
-            {...maintenanceProfilesState}
+          <VehiclesOverviewCard
+            vehicles={overviewVehicles}
+            vehiclesHref="/fleet"
           />
-          <MaintenanceListCard
-            variant="overdue"
-            profiles={overdueProfiles}
-            {...maintenanceProfilesState}
-          />
-          <VehiclesInOperationCard />
-          <VehiclesInMaintenanceCard
-            records={openMaintenanceRecords}
-            vehiclePlate={vehiclePlate}
-            isLoading={maintenanceRecords.isLoading}
-            isError={maintenanceRecords.isError}
-            onRetry={() => maintenanceRecords.refetch()}
+          <DriversOverviewCard
+            drivers={overviewDrivers}
+            driversHref="/drivers"
           />
         </div>
       </div>
+    </>
+  );
+}
 
-      <JobsOverviewCard
-        jobs={overviewJobs}
-        jobsHref="/jobs"
-      />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <VehiclesOverviewCard
-          vehicles={overviewVehicles}
-          vehiclesHref="/fleet"
-        />
-        <DriversOverviewCard
-          drivers={overviewDrivers}
-          driversHref="/drivers"
-        />
+/**
+ * The design app's page heading with the period filter in its action slot.
+ * `/` sets `manualTitle` in sidebarNav, so the top bar leaves the title to this.
+ */
+function OverviewHeader({
+  period, onPeriodChange,
+}: {
+  period: PeriodValue; onPeriodChange: (period: PeriodValue) => void;
+}) {
+  return (
+    <div
+      className="mb-6 flex min-w-0 flex-col gap-4 text-left lg:flex-row lg:justify-between lg:items-center"
+      data-page-header
+    >
+      <div className="min-w-0 flex-1">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">Overview</h1>
+        <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">Enterprise-wide job monitoring & provider performance</p>
       </div>
-
-      <RecentActivityCard items={recentActivity} />
+      <div
+        className="min-w-0 shrink-0 empty:hidden lg:max-w-[50%]"
+        data-page-actions
+      >
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex">
+            <Select
+              value={period}
+              onValueChange={v => onPeriodChange(v as PeriodValue)}
+            >
+              <SelectTrigger className="px-3.5 w-[160px] rounded-xl">
+                <CalendarRange className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIODS.map(p => (
+                  <SelectItem
+                    key={p.value}
+                    value={p.value}
+                  >
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -394,10 +445,6 @@ function EnterpriseLogisticsDashboardSkeleton() {
       aria-busy="true"
       aria-live="polite"
     >
-      <div className="flex justify-end">
-        <Skeleton className="h-10 w-[180px] rounded-xl" />
-      </div>
-
       <ListCardSkeleton rows={1} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

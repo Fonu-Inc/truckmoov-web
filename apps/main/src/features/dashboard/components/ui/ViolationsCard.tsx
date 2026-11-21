@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import {
-  DashboardListCard, DashboardListRow, RowPill,
+  DashboardListCard, DashboardListRow, NO_ENDPOINT, RowPill,
 } from "./DashboardListCard";
 
 const RECENT_LIMIT = 5;
@@ -156,14 +156,17 @@ export function ViolationsCard({
         : recent.map((e) => {
             const driver = driverName(e.driverId);
             const plate = vehiclePlate(e.vehicleId);
+            // Reference: "LAG-234-XA · Lagos–Ibadan Expressway · Nov 21, 9:40 PM · 118 km/h (limit 100 km/h)".
+            // The events endpoint has no place name, limit or g-force yet, so those read "-".
             const details = [
               isDriver ? plate : driver,
+              NO_ENDPOINT,
               format(
                 new Date(e.occurredAt),
                 "MMM d, h:mm a",
               ),
-              e.speedKph != null ? `${Math.round(e.speedKph)} km/h` : null,
-            ].filter(Boolean).join(" · ");
+              e.speedKph != null ? `${Math.round(e.speedKph)} km/h (limit ${NO_ENDPOINT})` : NO_ENDPOINT,
+            ].join(" · ");
             return (
               <DashboardListRow
                 key={e.id}

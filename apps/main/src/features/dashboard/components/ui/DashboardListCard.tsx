@@ -2,13 +2,39 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn } from "@/lib/utils";
+
+/**
+ * The design app's card shell. Plain element on purpose: the shared `Card`
+ * adds `border-border bg-card shadow-enterprise`, which override the softer
+ * `surface-sleek` border and shadow the reference renders.
+ */
+export function SleekCard({
+  className, children,
+}: {
+  className?: string; children: ReactNode;
+}) {
+  return (
+    <div className={cn(
+      "rounded-2xl surface-sleek text-card-foreground",
+      className,
+    )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Header of every titled overview card: stacks on mobile, a row from `sm`. */
+export const SLEEK_HEADER = "p-6 pb-4 flex flex-col items-start justify-between gap-3 space-y-0 sm:flex-row sm:flex-wrap";
+
+/** Card title (`CardTitle` adds `leading-none`, which the reference doesn't). */
+export const SLEEK_TITLE = "font-semibold tracking-tight text-foreground font-display text-base";
+
+/** Shown where no endpoint returns the data yet. */
+export const NO_ENDPOINT = "-";
 
 type QueryStatus = {
   isLoading?: boolean;
@@ -38,7 +64,7 @@ export function DashboardListCard({
   /** Tile classes, e.g. `bg-destructive/10 text-destructive`. */
   tint: string;
   title: string;
-  count?: number;
+  count?: number | string;
   description: string;
   actionLabel: string;
   actionHref: string;
@@ -46,8 +72,8 @@ export function DashboardListCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="rounded-2xl surface-sleek flex flex-col">
-      <CardHeader className="p-6 pb-4 flex flex-row items-start justify-between gap-3 space-y-0">
+    <SleekCard className="flex min-w-0 flex-col">
+      <div className={SLEEK_HEADER}>
         <div className="flex items-center gap-3 min-w-0">
           <div className={cn(
             "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
@@ -57,20 +83,16 @@ export function DashboardListCard({
             <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <CardTitle className="font-display text-base truncate">
+            <h3 className={SLEEK_TITLE}>
               {title}
               {count !== undefined && (
                 <>
                   {" "}
-                  <span className="text-muted-foreground font-normal">
-                    (
-                    {count}
-                    )
-                  </span>
+                  <span className="text-muted-foreground font-normal">{`(${count})`}</span>
                 </>
               )}
-            </CardTitle>
-            <CardDescription className="truncate">{description}</CardDescription>
+            </h3>
+            <p className="text-sm text-muted-foreground">{description}</p>
           </div>
         </div>
         <Button
@@ -83,8 +105,8 @@ export function DashboardListCard({
             <ArrowRight className="h-3.5 w-3.5 ml-1" />
           </Link>
         </Button>
-      </CardHeader>
-      <CardContent className="p-6 pt-0 space-y-2 flex-1">
+      </div>
+      <div className="p-6 pt-0 space-y-2 flex-1">
         {status.isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
               <Skeleton
@@ -110,8 +132,8 @@ export function DashboardListCard({
             : status.isEmpty
               ? <p className="py-6 text-center text-sm text-muted-foreground">{status.emptyText}</p>
               : children}
-      </CardContent>
-    </Card>
+      </div>
+    </SleekCard>
   );
 }
 
@@ -126,8 +148,8 @@ export function DashboardListRow({
   right: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-      <div className="min-w-0">
+    <div className="flex flex-col items-start justify-between gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center">
+      <div className="min-w-0 max-w-full">
         <p className="text-sm font-medium truncate">{title}</p>
         <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
       </div>
@@ -143,14 +165,12 @@ export function RowPill({
   className: string; children: ReactNode;
 }) {
   return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "rounded-full px-2.5",
-        className,
-      )}
+    <div className={cn(
+      "inline-flex items-center border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full",
+      className,
+    )}
     >
       {children}
-    </Badge>
+    </div>
   );
 }
