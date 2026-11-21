@@ -12,6 +12,7 @@ import {
   Plug,
   Radio,
   Receipt,
+  ScrollText,
   ShieldCheck,
   Users,
   Wrench,
@@ -78,6 +79,9 @@ export const SETTINGS_TABS: SettingsTab[] = [
   },
   {
     to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ORG_SETTINGS_ROLES,
+  },
+  {
+    to: "/settings/audit-log", label: "Audit Log", icon: ScrollText, hasPermissions: ORG_SETTINGS_ROLES,
   },
   // Routed but off the bar, to match fleetflow's tab set. Still reached by
   // links (TrialBanner, StoragePanel, authRedirect) and the /settings redirect.

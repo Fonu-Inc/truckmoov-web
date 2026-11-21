@@ -419,7 +419,9 @@ tables — API docs, upload previews, print-styled statements — which use
 strings written into a `window.open` print window, which aren't React.
 
 `DataTable` body cells are `whitespace-nowrap` — the wrapper already scrolls
-horizontally, so cells never squash. A column holding long free text opts out
+horizontally, so cells never squash. The pagination footer renders *below* that
+scrolling wrapper, not as a `<tfoot>` inside it, so a wide table never carries
+the Prev/Next controls off-screen. A column holding long free text opts out
 with `meta: { className: "min-w-[240px] whitespace-normal" }` (or truncates with
 `max-w-[…] truncate`).
 

@@ -931,6 +931,14 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "audit-log",
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/audit-log") ?? [],
+                  () => import("@/features/settings/components/ui/AuditLogPanel"),
+                  "AuditLogPanel",
+                ),
+              },
+              {
                 path: "upgrade",
                 lazy: guardedByNamed(
                   settingsTabRoles("/settings/upgrade") ?? [],

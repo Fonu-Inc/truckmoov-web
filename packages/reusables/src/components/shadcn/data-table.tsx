@@ -23,7 +23,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -129,104 +128,104 @@ export function DataTable<TData>({
   }
 
   return (
-    <Table className={className}>
-      <TableHeader>
-        {table.getHeaderGroups().map((group) => (
-          <TableRow key={group.id} className="border-border/50 hover:bg-transparent">
-            {group.headers.map((header) => {
-              const canSort = header.column.getCanSort();
-              const sortDir = header.column.getIsSorted();
-              const headerClass = (header.column.columnDef.meta as { className?: string } | undefined)?.className;
-              return (
-                <TableHead
-                  key={header.id}
-                  className={cn("whitespace-nowrap", headerClass, canSort && "cursor-pointer select-none")}
-                  onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : (
-                        <span className="inline-flex items-center">
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {canSort && (
-                            sortDir === "asc"
-                              ? <ArrowUp className="h-3 w-3 ml-1 inline" />
-                              : sortDir === "desc"
-                                ? <ArrowDown className="h-3 w-3 ml-1 inline" />
-                                : <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-50" />
-                          )}
-                        </span>
-                      )}
-                </TableHead>
-              );
-            })}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {isLoading ? (
-          Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-            <TableRow key={`skeleton-${i}`} className="border-border/50">
-              {Array.from({ length: colCount }).map((__, j) => (
-                <TableCell key={j}>
-                  <Skeleton className="h-4 w-full" />
-                </TableCell>
-              ))}
+    <div>
+      <Table className={className}>
+        <TableHeader>
+          {table.getHeaderGroups().map((group) => (
+            <TableRow key={group.id} className="border-border/50 hover:bg-transparent">
+              {group.headers.map((header) => {
+                const canSort = header.column.getCanSort();
+                const sortDir = header.column.getIsSorted();
+                const headerClass = (header.column.columnDef.meta as { className?: string } | undefined)?.className;
+                return (
+                  <TableHead
+                    key={header.id}
+                    className={cn("whitespace-nowrap", headerClass, canSort && "cursor-pointer select-none")}
+                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : (
+                          <span className="inline-flex items-center">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {canSort && (
+                              sortDir === "asc"
+                                ? <ArrowUp className="h-3 w-3 ml-1 inline" />
+                                : sortDir === "desc"
+                                  ? <ArrowDown className="h-3 w-3 ml-1 inline" />
+                                  : <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-50" />
+                            )}
+                          </span>
+                        )}
+                  </TableHead>
+                );
+              })}
             </TableRow>
-          ))
-        ) : isError ? (
-          <TableRow>
-            <TableCell colSpan={colCount} className="text-center py-8">
-              <p className="text-destructive">{errorMessage}</p>
-              {onRetry && (
-                <Button variant="link" className="mt-1" onClick={onRetry}>
-                  Try again
-                </Button>
-              )}
-            </TableCell>
-          </TableRow>
-        ) : table.getRowModel().rows.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={colCount} className="text-center py-8 text-muted-foreground">
-              {hasActiveFilters ? filteredEmptyState : emptyState}
-            </TableCell>
-          </TableRow>
-        ) : (
-          table.getRowModel().rows.map((row: Row<TData>) => (
-            <TableRow
-              key={row.id}
-              className={cn(
-                "border-border/50",
-                onRowClick && "cursor-pointer",
-                rowClassName?.(row.original),
-              )}
-              onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell
-                  key={cell.id}
-                  className={cn(
-                    "whitespace-nowrap",
-                    (cell.column.columnDef.meta as { className?: string } | undefined)?.className,
-                  )}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
+          ))}
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+              <TableRow key={`skeleton-${i}`} className="border-border/50">
+                {Array.from({ length: colCount }).map((__, j) => (
+                  <TableCell key={j}>
+                    <Skeleton className="h-4 w-full" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : isError ? (
+            <TableRow>
+              <TableCell colSpan={colCount} className="text-center py-8">
+                <p className="text-destructive">{errorMessage}</p>
+                {onRetry && (
+                  <Button variant="link" className="mt-1" onClick={onRetry}>
+                    Try again
+                  </Button>
+                )}
+              </TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
+          ) : table.getRowModel().rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={colCount} className="text-center py-8 text-muted-foreground">
+                {hasActiveFilters ? filteredEmptyState : emptyState}
+              </TableCell>
+            </TableRow>
+          ) : (
+            table.getRowModel().rows.map((row: Row<TData>) => (
+              <TableRow
+                key={row.id}
+                className={cn(
+                  "border-border/50",
+                  onRowClick && "cursor-pointer",
+                  rowClassName?.(row.original),
+                )}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      "whitespace-nowrap",
+                      (cell.column.columnDef.meta as { className?: string } | undefined)?.className,
+                    )}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      {/* Outside <Table>: its wrapper scrolls horizontally, and a wide table
+          would carry the pager controls off-screen with it. */}
       {footer && (
-        <TableFooter className="bg-transparent">
-          <TableRow className="border-t border-border/50 hover:bg-transparent">
-            <TableCell colSpan={colCount} className="p-0">
-              <PaginationBar pagination={footer} />
-            </TableCell>
-          </TableRow>
-        </TableFooter>
+        <div className="border-t border-border/50">
+          <PaginationBar pagination={footer} />
+        </div>
       )}
-    </Table>
+    </div>
   );
 }
 

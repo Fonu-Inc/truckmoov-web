@@ -1,160 +1,293 @@
-import { useFleetOverview } from "@truckmoov/api/fleet";
+import type {
+  OverviewActivity, OverviewDriver, OverviewJob, OverviewVehicle,
+} from "../ui/OverviewSections";
 import {
-  Package, Truck, Users, Wallet,
+  useDevicesSummary,
+  useDriverBehaviorEvents,
+  useDrivers,
+  useFleetOverview,
+  useMaintenanceProfiles,
+  useMaintenanceRecords,
+  useVehicles,
+} from "@truckmoov/api/fleet";
+import {
+  CalendarRange, Cpu, Package, Truck, Users,
 } from "lucide-react";
-import { useMemo } from "react";
+import {
+  useMemo, useState,
+} from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { alertHeadline, zoneNameOf } from "@/features/map/lib/alertText";
-import { ActiveDeliveriesMap, type DeliveryPoint } from "../ui/ActiveDeliveriesMap";
+import { MaintenanceListCard } from "../ui/MaintenanceListCard";
 import {
   DriversOverviewCard,
-  FleetUtilizationCard,
   JobsOverviewCard,
+
   RecentActivityCard,
-  RecentAlertsCard,
-  RecentChatsCard,
   VehiclesOverviewCard,
-  type OverviewActivity,
-  type OverviewAlert,
-  type OverviewChat,
-  type OverviewDriver,
-  type OverviewJob,
-  type OverviewVehicle,
 } from "../ui/OverviewSections";
+import { QuickActionsCard } from "../ui/QuickActionsCard";
+import {
+  VehiclesInMaintenanceCard, VehiclesInOperationCard,
+} from "../ui/VehicleStatusListCard";
+import { ViolationsCard } from "../ui/ViolationsCard";
 
-// ponytail: `time` fields on RecentActivity/Alerts/Chats display the raw ISO
-// string. Swap for a relative formatter when there is one — good enough for now.
+/**
+ * The period filter drives the violations cards — the behaviour-events
+ * endpoint is the only one here that takes a period (`period_days`). The
+ * overview, maintenance and device endpoints have no period parameter yet.
+ * Calendar periods are approximated as day windows ending today.
+ */
+const PERIODS = [
+  {
+    value: "overall", label: "Overall", days: undefined,
+  },
+  {
+    value: "today", label: "Today", days: 1,
+  },
+  {
+    value: "yesterday", label: "Yesterday", days: 2,
+  },
+  {
+    value: "this_week", label: "This Week", days: 7,
+  },
+  {
+    value: "last_week", label: "Last Week", days: 14,
+  },
+  {
+    value: "this_month", label: "This Month", days: 30,
+  },
+  {
+    value: "last_six_months", label: "Last Six Months", days: 180,
+  },
+  {
+    value: "this_year", label: "This Year", days: 365,
+  },
+] as const;
 
-const shortAddress = (address: string) => address.split(",")[0]?.trim() ?? address;
+type PeriodValue = (typeof PERIODS)[number]["value"];
 
-const severityFromAlert = (raw: string): OverviewAlert["severity"] => {
-  const s = raw.toLowerCase();
-  if (s === "critical" || s === "high") return "critical";
-  if (s === "warning" || s === "medium") return "warning";
-  return "info";
+/** Recent events shown in the violations lists; stats come from the server totals. */
+const VIOLATION_EVENTS_LIMIT = 100;
+
+const ACTIVITY_DESCRIPTIONS: Record<string, string> = {
+  job: "A job was created or updated for your fleet.",
+  vehicle: "This vehicle's status or location was updated.",
+  driver: "This driver's details or availability were updated.",
+  maintenance: "Maintenance activity was recorded for this vehicle.",
 };
 
+function activityDescription(entityType: string, action: string) {
+  const type = entityType.toLowerCase();
+  // The generic "…was updated" lines would misdescribe a removal.
+  if (/delet|remov/i.test(action))
+    return undefined;
+  if (type === "job" && /complet|deliver/i.test(action))
+    return "A job was completed and marked as delivered.";
+  return ACTIVITY_DESCRIPTIONS[type];
+}
+
+/** "6 min ago", "1 hr ago", "3 hrs ago", "2 days ago". */
+function timeAgo(iso: string) {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (Number.isNaN(minutes))
+    return "—";
+  if (minutes < 1)
+    return "just now";
+  if (minutes < 60)
+    return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24)
+    return `${hours} ${hours === 1 ? "hr" : "hrs"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? "day" : "days"} ago`;
+}
+
 export default function EnterpriseLogisticsDashboard() {
-  const { format: formatCurrency } = useCurrency();
-  const { data, isLoading, isError, refetch } = useFleetOverview();
+  const [
+    period,
+    setPeriod,
+  ] = useState<PeriodValue>("overall");
+  const periodDays = PERIODS.find(p => p.value === period)?.days;
+
+  const {
+    data, isLoading, isError, refetch,
+  } = useFleetOverview();
+  const devicesSummary = useDevicesSummary();
+  const violations = useDriverBehaviorEvents({
+    params: {
+      period_days: periodDays, limit: VIOLATION_EVENTS_LIMIT,
+    },
+  });
+  const maintenanceProfiles = useMaintenanceProfiles();
+  const maintenanceRecords = useMaintenanceRecords();
+  // Name/plate lookups for the id-only rows (violations, maintenance profiles).
+  const vehicles = useVehicles();
+  const drivers = useDrivers();
 
   const overview = data?.data;
 
-  const deliveryPoints = useMemo<DeliveryPoint[]>(() => {
-    if (!overview) return [];
-    return overview.map.jobs.flatMap((job) => {
-      const pickup = job.waypoints.find((w) => w.type === "pickup");
-      const dropoff = job.waypoints.find((w) => w.type === "dropoff");
-      if (!pickup || !dropoff) return [];
-      return [{
-        id: job.jobId,
-        ref: job.reference,
-        pickup: [pickup.latitude, pickup.longitude],
-        delivery: [dropoff.latitude, dropoff.longitude],
-        label: `${shortAddress(pickup.address)} → ${shortAddress(dropoff.address)}`,
-      }];
-    });
-  }, [overview]);
+  const plateById = useMemo(
+    () => new Map((vehicles.data?.data ?? []).map(v => [
+      v.id,
+      v.plateNumber || v.registrationNumber,
+    ])),
+    [vehicles.data],
+  );
+  const nameById = useMemo(
+    () => new Map((drivers.data?.data ?? []).map(d => [
+      d.id,
+      d.name || `${d.firstName} ${d.lastName}`.trim(),
+    ])),
+    [drivers.data],
+  );
+  const vehiclePlate = (id: string | null) => (id && plateById.get(id)) || "Unknown vehicle";
+  const driverName = (id: string) => nameById.get(id) || "Unknown driver";
 
-  const overviewJobs = useMemo<OverviewJob[]>(() => {
-    if (!overview) return [];
-    return overview.jobs.items.map((j) => ({
-      id: j.id,
-      reference: j.reference,
-      status: j.status,
-      pickup_address: j.pickupAddress,
-      delivery_address: j.dropoffAddress,
-      amount_ngn: j.amountNgn,
-      created_at: j.createdAt,
-    }));
-  }, [overview]);
-
-  const overviewVehicles = useMemo<OverviewVehicle[]>(() => {
-    if (!overview) return [];
-    return overview.vehicles.items.map((v) => ({
-      id: v.id,
-      registration_number: v.plateNumber,
-      make: v.make,
-      model: v.model,
-      year: v.year,
-      status: v.status,
-    }));
-  }, [overview]);
-
-  const overviewDrivers = useMemo<OverviewDriver[]>(() => {
-    if (!overview) return [];
-    return overview.drivers.items.map((d) => ({
-      id: d.id,
-      name: d.name,
-      phone: d.phone,
-      licenseNumber: d.licenseNumber,
-      status: d.status,
-      score: d.performanceScore,
-    }));
-  }, [overview]);
-
-  const utilizationByRegion = useMemo(() => {
-    if (!overview) return [];
-    return overview.fleetUtilization.map((r) => ({
-      region: r.region,
-      utilization: r.utilizationPercent,
-    }));
-  }, [overview]);
-
-  const overviewAlerts = useMemo<OverviewAlert[]>(() => {
-    if (!overview) return [];
-    return overview.alerts.items.map((a) => {
-      const raw = a.details;
-      const nested = raw && typeof raw === "object" && raw.details && typeof raw.details === "object"
-        ? raw.details as Record<string, unknown>
-        : {};
-      const details = raw && typeof raw === "object" ? { ...raw, ...nested } : {};
+  const {
+    dueProfiles, overdueProfiles,
+  } = useMemo(
+    () => {
+      const all = maintenanceProfiles.data?.data ?? [];
+      const byDueDate = (a: { nextDueDate: string | null }, b: { nextDueDate: string | null }) =>
+        (a.nextDueDate ?? "9999").localeCompare(b.nextDueDate ?? "9999");
       return {
-        id: a.id,
-        title: alertHeadline({
-          id: a.id, type: a.type, severity: a.severity, vehicleId: a.vehicleId, details,
-        }),
-        description: typeof raw === "string" ? raw : zoneNameOf(details) ?? undefined,
-        severity: severityFromAlert(a.severity),
-        time: a.triggeredAt,
+        dueProfiles: all.filter(p => p.lifecycleStatus === "due" || p.lifecycleStatus === "upcoming").sort(byDueDate),
+        overdueProfiles: all.filter(p => p.lifecycleStatus === "overdue").sort(byDueDate),
       };
-    });
-  }, [overview]);
+    },
+    [maintenanceProfiles.data],
+  );
 
-  const recentActivity = useMemo<OverviewActivity[]>(() => {
-    if (!overview) return [];
-    return overview.recentActivity.map((a) => ({
-      id: a.id,
-      title: a.summary || a.action,
-      time: a.occurredAt,
-    }));
-  }, [overview]);
+  const openMaintenanceRecords = useMemo(
+    () => (maintenanceRecords.data?.data ?? []).filter(r => r.status === "in_progress" || r.status === "scheduled"),
+    [maintenanceRecords.data],
+  );
 
-  const recentChats = useMemo<OverviewChat[]>(() => {
-    if (!overview) return [];
-    return overview.recentChats.map((c) => ({
-      id: c.id,
-      name: c.contactName,
-      channel: c.channel,
-      preview: c.lastMessage,
-      time: c.lastMessageAt,
-      unread: c.unreadCount,
-    }));
-  }, [overview]);
+  const overviewJobs = useMemo<OverviewJob[]>(
+    () => {
+      if (!overview)
+        return [];
+      return overview.jobs.items.map(j => ({
+        id: j.id,
+        reference: j.reference,
+        status: j.status,
+        pickup_address: j.pickupAddress,
+        delivery_address: j.dropoffAddress,
+        amount_ngn: j.amountNgn,
+        created_at: j.createdAt,
+      }));
+    },
+    [overview],
+  );
 
-  if (isLoading) return <EnterpriseLogisticsDashboardSkeleton />;
+  const overviewVehicles = useMemo<OverviewVehicle[]>(
+    () => {
+      if (!overview)
+        return [];
+      return overview.vehicles.items.map(v => ({
+        id: v.id,
+        registration_number: v.plateNumber,
+        make: v.make,
+        model: v.model,
+        year: v.year,
+        status: v.status,
+      }));
+    },
+    [overview],
+  );
+
+  const overviewDrivers = useMemo<OverviewDriver[]>(
+    () => {
+      if (!overview)
+        return [];
+      return overview.drivers.items.map(d => ({
+        id: d.id,
+        name: d.name,
+        phone: d.phone,
+        licenseNumber: d.licenseNumber,
+        status: d.status,
+        score: d.performanceScore,
+      }));
+    },
+    [overview],
+  );
+
+  const recentActivity = useMemo<OverviewActivity[]>(
+    () => {
+      if (!overview)
+        return [];
+      return overview.recentActivity.map(a => ({
+        id: a.id,
+        title: a.summary || a.action,
+        description: activityDescription(
+          a.entityType,
+          a.action,
+        ),
+        time: timeAgo(a.occurredAt),
+      }));
+    },
+    [overview],
+  );
+
+  if (isLoading)
+    return <EnterpriseLogisticsDashboardSkeleton />;
   if (isError || !overview) {
     return <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />;
   }
 
+  const violationEvents = violations.data?.data.items ?? [];
+  const violationProps = {
+    events: violationEvents,
+    total: violations.data?.data.total ?? violationEvents.length,
+    criticalCount: violations.data?.data.criticalCount ?? 0,
+    driverName,
+    vehiclePlate,
+    isLoading: violations.isLoading,
+    isError: violations.isError,
+    onRetry: () => violations.refetch(),
+  };
+
+  const maintenanceProfilesState = {
+    vehiclePlate,
+    isLoading: maintenanceProfiles.isLoading,
+    isError: maintenanceProfiles.isError,
+    onRetry: () => maintenanceProfiles.refetch(),
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Select
+          value={period}
+          onValueChange={v => setPeriod(v as PeriodValue)}
+        >
+          <SelectTrigger className="h-10 px-3.5 w-[180px] rounded-xl">
+            <CalendarRange className="h-4 w-4 mr-2 text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PERIODS.map(p => (
+              <SelectItem
+                key={p.value}
+                value={p.value}
+              >
+                {p.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <QuickActionsCard />
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Vehicles"
@@ -172,23 +305,47 @@ export default function EnterpriseLogisticsDashboard() {
           icon={Users}
         />
         <StatCard
-          title="Revenue This Month"
-          value={formatCurrency(overview.cards.revenueThisMonthNgn)}
-          icon={Wallet}
-          variant="success"
+          title="Total Devices"
+          value={devicesSummary.isLoading ? "…" : devicesSummary.isError ? "—" : (devicesSummary.data?.data.total ?? 0)}
+          icon={Cpu}
         />
       </div>
 
-      <ActiveDeliveriesMap
-        points={deliveryPoints}
-        height="520px"
-        description="Live view of pickups and drop-offs across the network"
-      />
+      <div className="space-y-6">
+        <ViolationsCard
+          mode="driver"
+          {...violationProps}
+        />
+        <ViolationsCard
+          mode="vehicle"
+          {...violationProps}
+        />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <MaintenanceListCard
+            variant="due"
+            profiles={dueProfiles}
+            {...maintenanceProfilesState}
+          />
+          <MaintenanceListCard
+            variant="overdue"
+            profiles={overdueProfiles}
+            {...maintenanceProfilesState}
+          />
+          <VehiclesInOperationCard />
+          <VehiclesInMaintenanceCard
+            records={openMaintenanceRecords}
+            vehiclePlate={vehiclePlate}
+            isLoading={maintenanceRecords.isLoading}
+            isError={maintenanceRecords.isError}
+            onRetry={() => maintenanceRecords.refetch()}
+          />
+        </div>
+      </div>
 
       <JobsOverviewCard
         jobs={overviewJobs}
         jobsHref="/jobs"
-        formatCurrency={formatCurrency}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -202,51 +359,28 @@ export default function EnterpriseLogisticsDashboard() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <FleetUtilizationCard
-          data={utilizationByRegion}
-          vehiclesHref="/fleet"
-        />
-        <RecentAlertsCard
-          alerts={overviewAlerts}
-          alertsHref="/map"
-        />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <RecentActivityCard items={recentActivity} />
-        <RecentChatsCard
-          chats={recentChats}
-          inboxHref="/inbox"
-        />
-      </div>
+      <RecentActivityCard items={recentActivity} />
     </div>
   );
 }
 
 function StatCardSkeleton() {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <Skeleton className="h-4 w-24" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-8 w-20" />
-      </CardContent>
-    </Card>
-  );
+  return <Skeleton className="h-[98px] w-full rounded-lg" />;
 }
 
 function ListCardSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <Card>
-      <CardHeader className="space-y-2">
+    <Card className="rounded-2xl surface-sleek">
+      <CardHeader className="p-6 pb-4 space-y-2">
         <Skeleton className="h-5 w-40" />
         <Skeleton className="h-4 w-64" />
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="p-6 pt-0 space-y-3">
         {Array.from({ length: rows }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
+          <Skeleton
+            key={i}
+            className="h-10 w-full"
+          />
         ))}
       </CardContent>
     </Card>
@@ -255,7 +389,17 @@ function ListCardSkeleton({ rows = 5 }: { rows?: number }) {
 
 function EnterpriseLogisticsDashboardSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-live="polite">
+    <div
+      className="space-y-6"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className="flex justify-end">
+        <Skeleton className="h-10 w-[180px] rounded-xl" />
+      </div>
+
+      <ListCardSkeleton rows={1} />
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCardSkeleton />
         <StatCardSkeleton />
@@ -263,19 +407,8 @@ function EnterpriseLogisticsDashboardSkeleton() {
         <StatCardSkeleton />
       </div>
 
-      <Skeleton className="h-[520px] w-full rounded-xl" />
-
       <ListCardSkeleton rows={5} />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ListCardSkeleton rows={4} />
-        <ListCardSkeleton rows={4} />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ListCardSkeleton rows={4} />
-        <ListCardSkeleton rows={4} />
-      </div>
+      <ListCardSkeleton rows={5} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ListCardSkeleton rows={4} />
