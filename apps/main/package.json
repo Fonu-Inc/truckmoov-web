@@ -61,7 +61,7 @@
     "file-saver": "^2.0.5",
     "html-to-image": "^1.11.13",
     "input-otp": "^1.4.2",
-    "jsdom": "^20.0.3",
+    "jsdom": "^31.0.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "jssip": "^3.10.1",
