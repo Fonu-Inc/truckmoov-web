@@ -5,6 +5,7 @@ import type {
   OnboardingApplicationVehicle,
   OnboardingDeviceRequestShortfall,
 } from "@truckmoov/api/auth";
+import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { ReactNode } from "react";
 import type { DetailState } from "@/features/get-started/components/DetailDialog";
 import {
@@ -17,16 +18,23 @@ import {
   Truck,
   UploadSimple,
 } from "@phosphor-icons/react/dist/ssr";
+import { useQuery } from "@tanstack/react-query";
 import {
+  getPickupLocationsQueryOptions,
   useAddOnboardingDeviceRequest,
   useAddOnboardingVehicle,
   useDeleteOnboardingDeviceRequest,
   useDeleteOnboardingVehicle,
   useImportOnboardingVehicles,
+  useSetOnboardingFulfilment,
+  useUpdateOnboardingDeviceRequest,
   useUpdateOnboardingVehicle,
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import { DetailDialog } from "@/features/get-started/components/DetailDialog";
 import { DeviceFulfilmentCard } from "@/features/get-started/components/DeviceFulfilmentCard";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
@@ -47,6 +55,7 @@ import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStor
 import { requestedDeviceTotal } from "@/features/get-started/utils/applyHelpers";
 import {
   fulfilmentComplete,
+  fulfilmentToPayload,
   OWNER_OPERATOR_VEHICLE_LIMIT,
   OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE,
   PURCHASE_TYPE_LABELS,
@@ -86,6 +95,8 @@ export function FleetRequirementsStep({
   const importVehicles = useImportOnboardingVehicles();
   const addDeviceRequest = useAddOnboardingDeviceRequest();
   const deleteDeviceRequest = useDeleteOnboardingDeviceRequest();
+  const updateDeviceRequest = useUpdateOnboardingDeviceRequest();
+  const saveFulfilment = useSetOnboardingFulfilment();
   const {
     confirm,
     dialog: confirmDialog,
@@ -137,7 +148,43 @@ export function FleetRequirementsStep({
       }
     : null;
 
-  function handleNext() {
+  // A resumed application in a browser without the draft: show what was saved.
+  const savedFulfilment = application.fulfilment;
+  const pickupLocations = useQuery(getPickupLocationsQueryOptions()).data?.data;
+  useEffect(
+    () => {
+      if (!savedFulfilment || fulfilment.store || fulfilment.deliveryStreet)
+        return;
+      if (savedFulfilment.method === "delivery") {
+        setFulfilment({
+          ...fulfilment,
+          method: "delivery",
+          deliveryStreet: savedFulfilment.deliveryStreet,
+          deliveryCity: savedFulfilment.deliveryCity,
+          deliveryState: savedFulfilment.deliveryState,
+        });
+        return;
+      }
+      const location = pickupLocations?.find(item => item.id === savedFulfilment.pickupLocationId);
+      if (location) {
+        setFulfilment({
+          ...fulfilment,
+          method: "pickup",
+          state: location.state,
+          area: location.area,
+          store: location.id,
+        });
+      }
+    },
+    [
+      savedFulfilment,
+      pickupLocations,
+      fulfilment,
+      setFulfilment,
+    ],
+  );
+
+  async function handleNext() {
     if (!canProceed)
       return;
     if (deviceTotal > 0 && !fulfilmentComplete(
@@ -146,6 +193,21 @@ export function FleetRequirementsStep({
     )) {
       onError("Complete the Device Fulfilment details to continue.");
       return;
+    }
+    if (deviceTotal > 0) {
+      try {
+        await saveFulfilment.mutateAsync({
+          id,
+          data: fulfilmentToPayload(
+            fulfilment,
+            isOwnerOperator,
+          ),
+        });
+      }
+      catch (error) {
+        onError((error as ServerErrorResponse).message || "Your device fulfilment couldn't be saved. Try again.");
+        return;
+      }
     }
     onNext();
   }
@@ -188,16 +250,26 @@ export function FleetRequirementsStep({
     }
   }
 
-  /** Adds a device request; when stock is short, asks before placing it anyway. */
+  /**
+   * Adds a device request, or with `requestId` changes that one in place; when stock is
+   * short, asks before placing it anyway.
+   */
   async function placeDeviceRequest(data: {
     quantity: number;
     useCase: string;
     notes?: string;
-  }) {
-    const res = await addDeviceRequest.mutateAsync({
-      id,
-      data,
-    });
+  }, requestId?: string) {
+    const send = (body: typeof data & { confirmAvailableQuantity?: boolean }) => requestId
+      ? updateDeviceRequest.mutateAsync({
+          id,
+          requestId,
+          data: body,
+        })
+      : addDeviceRequest.mutateAsync({
+          id,
+          data: body,
+        });
+    const res = await send(data);
     if (res.data.requestSaved)
       return;
     // Stock can't cover it and nothing was saved. Placing it anyway waits for stock.
@@ -213,12 +285,9 @@ export function FleetRequirementsStep({
         { field: "quantity" },
       );
     }
-    const confirmed = await addDeviceRequest.mutateAsync({
-      id,
-      data: {
-        ...data,
-        confirmAvailableQuantity: true,
-      },
+    const confirmed = await send({
+      ...data,
+      confirmAvailableQuantity: true,
     });
     if (!confirmed.data.requestSaved) {
       throw Object.assign(
@@ -317,7 +386,7 @@ export function FleetRequirementsStep({
           continueLabel="Continue"
           continueArrow={false}
           continueDisabled={!canProceed}
-          onContinue={handleNext}
+          onContinue={() => void handleNext()}
         />
       )}
     >
@@ -491,33 +560,11 @@ export function FleetRequirementsStep({
             useCase: values.useCase.trim(),
             notes: values.notes?.trim() || undefined,
           };
-          const editing = editingRequest;
-          // TODO(api): no update endpoint for device requests — an edit replaces the request.
-          // Remove first so the one-device-per-vehicle check sees the freed devices.
-          if (editing) {
-            await deleteDeviceRequest.mutateAsync({
-              id,
-              requestId: editing.id,
-            });
-          }
-          try {
-            await placeDeviceRequest(data);
-          }
-          catch (error) {
-            if (editing) {
-              // Put the original back so a failed edit loses nothing.
-              await addDeviceRequest.mutateAsync({
-                id,
-                data: {
-                  quantity: editing.quantity,
-                  useCase: editing.useCase,
-                  notes: editing.notes ?? undefined,
-                  confirmAvailableQuantity: true,
-                },
-              }).catch(() => undefined);
-            }
-            throw error;
-          }
+          // An edit is saved in place; nothing changes if it fails.
+          await placeDeviceRequest(
+            data,
+            editingRequest?.id,
+          );
         }}
       />
       <VehicleImportModal

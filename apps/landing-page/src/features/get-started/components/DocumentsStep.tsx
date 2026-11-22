@@ -3,12 +3,14 @@
 import type {
   OnboardingApplication,
   OnboardingApplicationDocument,
+  OnboardingIdentificationType,
 } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { RequiredDocument } from "@/features/get-started/utils/applyTypes";
 import type { DraftFile } from "@/features/get-started/utils/draftFiles";
 import {
   useDeleteOnboardingApplicationDocument,
+  useUpdateOnboardingApplication,
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
 import {
@@ -25,8 +27,10 @@ import {
 } from "@/features/get-started/components/StepParts";
 import { UploadField } from "@/features/get-started/components/UploadField";
 import {
+  applicationToDetails,
   checkFile,
   describeClaims,
+  detailsToPayload,
 } from "@/features/get-started/schemas/applySchemas";
 import {
   deleteDraftFile,
@@ -53,10 +57,17 @@ type PendingUpload = {
 const PENDING_PREFIX = "doc:";
 
 /** The only identification cards accepted, as the design lists them. */
-const ID_CARD_TYPES = [
-  "National Identification Card",
-  "Driver's License",
-] as const;
+/** The design accepts these two; saved as the application's `identificationType`. */
+const ID_CARD_TYPES: Array<{
+  value: OnboardingIdentificationType; label: string;
+}> = [
+  {
+    value: "nin", label: "National Identification Card",
+  },
+  {
+    value: "drivers_licence", label: "Driver's License",
+  },
+];
 
 const ID_TYPE_REQUIRED = "Select your identification card type first — only a National Identification Card or Driver's License is accepted. Any other card will be rejected.";
 
@@ -102,11 +113,41 @@ export function DocumentsStep({
     pending,
     setPending,
   ] = useState<Record<string, PendingUpload>>({});
-  // TODO(api): the ID type isn't sent with the upload yet — the API has no field for it.
+  const updateApplication = useUpdateOnboardingApplication();
+  const savedIdType = application.registry.identificationType;
   const [
     idType,
     setIdType,
-  ] = useState("");
+  ] = useState<string>(savedIdType === "nin" || savedIdType === "drivers_licence" ? savedIdType : "");
+
+  /** PATCH replaces the details, so the application's own are resent with the ID type. */
+  async function saveIdType(value: string) {
+    setIdType(value);
+    if (!value)
+      return;
+    const details = detailsToPayload(
+      applicationToDetails(application),
+      application.applicantType,
+      application.m2mPlanCode ?? "",
+      application.returningCustomer,
+    );
+    try {
+      await updateApplication.mutateAsync({
+        id: application.id,
+        data: {
+          ...details,
+          identificationType: value as OnboardingIdentificationType,
+        },
+      });
+    }
+    catch (error) {
+      setRow(
+        setErrors,
+        "identification_card",
+        (error as { message?: string }).message || "Your ID type couldn't be saved. Try again.",
+      );
+    }
+  }
 
   const slots: Slot[] = required.map(document => ({
     key: document.type,
@@ -351,11 +392,11 @@ export function DocumentsStep({
                   aria-label="Identification card type"
                   value={idType}
                   onChange={(event) => {
-                    setIdType(event.target.value);
                     setRow(
                       setErrors,
                       slot.key,
                     );
+                    void saveIdType(event.target.value);
                   }}
                   className={cn(
                     FIELD_CLASS,
@@ -366,11 +407,11 @@ export function DocumentsStep({
                   <option value="">Select ID type</option>
                   {ID_CARD_TYPES.map(type => (
                     <option
-                      key={type}
-                      value={type}
+                      key={type.value}
+                      value={type.value}
                       className="text-heading"
                     >
-                      {type}
+                      {type.label}
                     </option>
                   ))}
                 </select>

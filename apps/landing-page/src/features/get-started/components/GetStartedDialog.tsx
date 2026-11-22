@@ -6,11 +6,14 @@ import type { BusinessDetailsValues } from "@/features/get-started/schemas/apply
 import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
 import type { DialogIntent } from "@/shared/stores/dialogStore";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import {
+  AUTH_QUERY_KEY,
   useCreateOnboardingApplication,
   useDeleteOnboardingApplicationDocument,
   useSendOnboardingApplicationEmailVerification,
   useSendOnboardingApplicationPhoneVerification,
+  useSignOnboardingIndemnity,
   useSubmitOnboardingApplication,
   useUpdateOnboardingApplication,
   useVerifyOnboardingApplicationEmail,
@@ -58,7 +61,10 @@ import {
   readStoredCustomerType,
   writeDraft,
 } from "@/features/get-started/utils/applyDraftStorage";
-import { documentsComplete } from "@/features/get-started/utils/applyHelpers";
+import {
+  documentsComplete,
+  isIndemnitySigned,
+} from "@/features/get-started/utils/applyHelpers";
 import {
   APPLY_STEPS,
   displayStep,
@@ -182,6 +188,10 @@ export function GetStartedDialog({
     setEmailConflict,
   ] = useState(0);
   const [
+    indemnityNotice,
+    setIndemnityNotice,
+  ] = useState<string | null>(null);
+  const [
     submitError,
     setSubmitError,
   ] = useState<string | null>(null);
@@ -232,6 +242,8 @@ export function GetStartedDialog({
   const setReturning = useApplyDraftStore(state => state.setReturning);
   const fulfilment = useApplyDraftStore(state => state.fulfilment);
   const setFulfilment = useApplyDraftStore(state => state.setFulfilment);
+  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
+  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
   const isReturning = entryReturning ?? storedReturning;
 
   // Remember the returning flag for the rest of the application (and the next visit).
@@ -253,6 +265,8 @@ export function GetStartedDialog({
   const verifyEmail = useVerifyOnboardingApplicationEmail();
   const verifyPhone = useVerifyOnboardingApplicationPhone();
   const submitApplication = useSubmitOnboardingApplication();
+  const signIndemnity = useSignOnboardingIndemnity();
+  const queryClient = useQueryClient();
   const deleteDocument = useDeleteOnboardingApplicationDocument();
   const {
     confirm,
@@ -379,8 +393,7 @@ export function GetStartedDialog({
         setPhase("status");
         return;
       }
-      // The design has no indemnity step, so a saved plan is all the details step needs.
-      const detailsDone = Boolean(application.m2mPlanCode);
+      const detailsDone = Boolean(application.m2mPlanCode) && isIndemnitySigned(application);
       const firstUnfinished = !detailsDone
         ? 1
         : !application.verification.emailVerified
@@ -522,6 +535,7 @@ export function GetStartedDialog({
       values,
       customerType,
       licence.licensePlan,
+      isReturning,
     );
     let id = applicationId;
     try {
@@ -544,6 +558,36 @@ export function GetStartedDialog({
     }
     // Saved: coming back to the details must not reopen the existing-account dialog.
     setEmailConflict(0);
+
+    if (pendingSignature) {
+      try {
+        await signIndemnity.mutateAsync({
+          id,
+          signerName: pendingSignature.name,
+          templateVersion: pendingSignature.version,
+          method: pendingSignature.method,
+          file: pendingSignature.image,
+        });
+        setPendingSignature(null);
+        setIndemnityNotice(null);
+      }
+      catch (error) {
+        const err = error as ServerErrorResponse;
+        if (err.statusCode === 409 && /version/i.test(err.message)) {
+          // Signed against a superseded version: re-read and sign again, don't retry.
+          setPendingSignature(null);
+          setLicence({ indemnityAccepted: false });
+          void queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingIndemnityAgreement });
+          setIndemnityNotice("The indemnity agreement has been updated. Read the current version and sign it again.");
+        }
+        else {
+          // Keep the pending signature: pressing Continue again retries the upload.
+          setSaveError(err.message || "Your signature couldn't be saved. Try again.");
+        }
+        setSaving(false);
+        return;
+      }
+    }
 
     setSaving(false);
     setStep(!emailVerified ? 2 : !phoneVerified ? 3 : 4);
@@ -596,9 +640,7 @@ export function GetStartedDialog({
       const res = await submitApplication.mutateAsync({ id: applicationId });
       if ("incomplete" in res) {
         setSubmitError(res.message);
-        // 8 (stay on review): what is left is a gate the design doesn't collect — the
-        // indemnity form or documents it no longer asks for — accepted until the API drops it.
-        setStep(!res.planSelected
+        setStep(!res.planSelected || !res.indemnitySigned
           ? 1
           : !res.emailVerified
               ? 2
@@ -771,6 +813,8 @@ export function GetStartedDialog({
           form={form}
           customerType={customerType}
           submitting={saving}
+          indemnitySigned={isIndemnitySigned(application)}
+          indemnityNotice={indemnityNotice}
           saveError={saveError}
           applicationId={applicationId}
           emailConflict={emailConflict}

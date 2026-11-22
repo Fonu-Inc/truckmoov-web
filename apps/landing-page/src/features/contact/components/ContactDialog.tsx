@@ -7,6 +7,7 @@ import {
   TelegramLogo,
   X,
 } from "@phosphor-icons/react/dist/ssr";
+import { sendContactEnquiry } from "@truckmoov/api/auth";
 import { Send } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -69,9 +70,17 @@ export function ContactDialog({
     }
   }
 
-  async function onSubmit(_values: ContactFormValues) {
-    // TODO(api): POST `_values` to the contact endpoint once it exists; surface failures in the form.
-    setSent(true);
+  async function onSubmit(values: ContactFormValues) {
+    try {
+      await sendContactEnquiry({ data: values });
+      setSent(true);
+    }
+    catch (error) {
+      form.setError(
+        "root",
+        { message: (error as { message?: string }).message || "Your message couldn't be sent. Please try again." },
+      );
+    }
   }
 
   return (
@@ -178,6 +187,14 @@ export function ContactDialog({
                       />
                     ))}
                   </div>
+                  {form.formState.errors.root && (
+                    <p
+                      role="alert"
+                      className="mx-[14px] pb-3 text-xs text-destructive sm:mr-[17px]"
+                    >
+                      {form.formState.errors.root.message}
+                    </p>
+                  )}
                   <footer className="mx-[14px] flex shrink-0 justify-end border-t border-border-field py-[26px] pr-1.5 sm:mr-[17px] sm:pr-[9px]">
                     <Button
                       type="submit"

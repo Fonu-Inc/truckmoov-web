@@ -220,11 +220,13 @@ export function detailsToPayload(
   values: BusinessDetailsValues,
   customerType: ApplicantCustomerType,
   m2mPlanCode: string,
+  returningCustomer: boolean,
 ): OnboardingApplicationDetails {
   const enterprise = customerType === "enterprise";
   const optional = (value: string) => value.trim() || undefined;
   return {
     applicantType: customerType,
+    returningCustomer,
     organizationName: values.organizationName.trim(),
     businessEmail: values.businessEmail.trim(),
     organizationPhone: normalizePhone(values.phoneNumber),

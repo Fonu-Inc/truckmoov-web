@@ -319,6 +319,10 @@ import {
   addOnboardingVehicle,
   createOnboardingApplication,
   deleteOnboardingDeviceRequest,
+  updateOnboardingDeviceRequest,
+  getPickupLocations,
+  setOnboardingFulfilment,
+  sendContactEnquiry,
   deleteOnboardingVehicle,
   getOnboardingIndemnityAgreement,
   getOnboardingOrder,
@@ -628,6 +632,7 @@ export const AUTH_QUERY_KEY = {
   onboardingM2mPlans: ['onboardingM2mPlans'],
   onboardingEmailAvailability: (email: string, applicationId?: string) => ['onboardingEmailAvailability', email, applicationId],
   onboardingIndemnityAgreement: ['onboardingIndemnityAgreement'],
+  pickupLocations: ['pickupLocations'],
   onboardingVehicleImportColumns: ['onboardingVehicleImportColumns'],
 
   systemOnboardingApplications: (payload?: SystemOnboardingApplicationsQuery) =>
@@ -2985,6 +2990,26 @@ export const useAddOnboardingVehicle = applicationMutation(addOnboardingVehicle)
 export const useUpdateOnboardingVehicle = applicationMutation(updateOnboardingVehicle)
 export const useDeleteOnboardingVehicle = applicationMutation(deleteOnboardingVehicle)
 export const useDeleteOnboardingDeviceRequest = applicationMutation(deleteOnboardingDeviceRequest)
+export const useSetOnboardingFulfilment = applicationMutation(setOnboardingFulfilment)
+
+/** Same as adding: a stock shortfall answers without saving, so only a saved change is written. */
+export function useUpdateOnboardingDeviceRequest() {
+  return useMutation({
+    mutationFn: updateOnboardingDeviceRequest,
+    onSuccess: (res, variables) => {
+      if (!res.data.requestSaved)
+        return
+      writeOnboardingApplication(variables.id, { ...res, data: res.data })
+    },
+  })
+}
+
+export function getPickupLocationsQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.pickupLocations, queryFn: getPickupLocations, staleTime: 60 * 60 * 1000 })
+}
+
+/** Called directly: the landing contact dialog sits outside any query provider. */
+export { sendContactEnquiry }
 
 /** A stock shortfall answers 201 without saving — only a saved request carries the application. */
 export function useAddOnboardingDeviceRequest() {

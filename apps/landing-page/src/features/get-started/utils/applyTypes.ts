@@ -8,6 +8,7 @@
 import type {
   OnboardingApplicantType,
   OnboardingApplicationVehicle,
+  OnboardingFulfilment,
   OnboardingUploadableDocumentType,
   OnboardingVehiclePurchaseType,
   OnboardingVehicleType,
@@ -61,9 +62,7 @@ export const ENTERPRISE_DOCUMENTS: RequiredDocument[] = [
 
 /**
  * Documents required from Owner-Operator customers: the request letter and an ID card.
- *
- * ponytail: the design asks for no Proof of Ownership or per-vehicle licence. The API still
- * lists them in `missingDocuments`, so its submit gate may refuse until it catches up.
+ * The server requires the same (`missingDocuments`).
  */
 export const OWNER_OPERATOR_DOCUMENTS: RequiredDocument[] = [
   ENTERPRISE_DOCUMENTS[0],
@@ -76,10 +75,8 @@ export function documentsForCustomerType(type: ApplicantCustomerType): RequiredD
 
 /**
  * A returning customer already has a relationship or account with MTN, so the design asks
- * them for the Customer Request Letter only — whatever their customer type.
- *
- * ponytail: client-side only. The API still reports its full list in `missingDocuments`
- * until it learns about returning customers.
+ * them for the Customer Request Letter only — whatever their customer type. The flag is
+ * saved on the application (`returningCustomer`), so the server asks for the same.
  */
 export const RETURNING_DOCUMENTS: RequiredDocument[] = [ENTERPRISE_DOCUMENTS[0]];
 
@@ -238,15 +235,27 @@ export const EMPTY_DEVICE_FULFILMENT: DeviceFulfilment = {
   deliveryState: "",
 };
 
-/**
- * Whether the Device Fulfilment details are filled in. Pickup can't be completed until the
- * store locations endpoint exists, so only delivery is checked for now (TODO(api)).
- */
+/** Whether the Device Fulfilment details are filled in: a pickup point, or a full delivery address. */
 export function fulfilmentComplete(value: DeviceFulfilment, isOwnerOperator: boolean) {
   const method = isOwnerOperator ? "pickup" : value.method;
   if (method === "delivery")
     return Boolean(value.deliveryStreet.trim() && value.deliveryCity.trim() && value.deliveryState);
-  return true;
+  return Boolean(value.store);
+}
+
+/** The fulfilment as the API takes it. `store` holds the pickup location id. */
+export function fulfilmentToPayload(value: DeviceFulfilment, isOwnerOperator: boolean): OnboardingFulfilment {
+  if (!isOwnerOperator && value.method === "delivery") {
+    return {
+      method: "delivery",
+      deliveryStreet: value.deliveryStreet.trim(),
+      deliveryCity: value.deliveryCity.trim(),
+      deliveryState: value.deliveryState,
+    };
+  }
+  return {
+    method: "pickup", pickupLocationId: value.store,
+  };
 }
 
 /** Every document type the server can return, for the status screen. */

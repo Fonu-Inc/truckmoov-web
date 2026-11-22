@@ -4101,6 +4101,9 @@ export type OnboardingApplication = {
   documents: OnboardingApplicationDocument[]
   missingDocuments: OnboardingApplicationDocumentType[]
   vehiclesMissingDocuments: OnboardingVehicleMissingDocument[]
+  /** An existing MTN customer: only the Customer Request Letter is required. */
+  returningCustomer: boolean
+  fulfilment: OnboardingFulfilment | null
   decisionReason: string | null
   submittedAt: string | null
   createdAt: string
@@ -4115,6 +4118,8 @@ export type OnboardingApplicationSetupLink = {
 
 export type OnboardingApplicationDetails = {
   applicantType: OnboardingApplicantType
+  /** Omitted on update keeps the saved value. */
+  returningCustomer?: boolean
   organizationName: string
   businessEmail: string
   organizationPhone: string
@@ -4401,6 +4406,29 @@ export type OnboardingDeviceRequestShortfall = {
 export type OnboardingDeviceRequestSaved = OnboardingApplication & { requestSaved: true }
 export type AddOnboardingDeviceRequestResponse = ServerResponse<OnboardingDeviceRequestSaved | OnboardingDeviceRequestShortfall>
 export type DeleteOnboardingDeviceRequestPayload = { id: string, requestId: string }
+/** Same rules and responses as adding one; the request's own devices are freed for its new quantity. */
+export type UpdateOnboardingDeviceRequestPayload = AddOnboardingDeviceRequestPayload & { requestId: string }
+
+/** An MTN Connect Store or Service Centre. `isDemo` rows are placeholders until MTN's list is loaded. */
+export type PickupLocation = {
+  id: string
+  state: string
+  area: string
+  name: string
+  address: string | null
+  isDemo: boolean
+}
+export type PickupLocationsResponse = ServerResponse<PickupLocation[]>
+
+export type OnboardingFulfilment =
+  | { method: 'pickup', pickupLocationId: string }
+  | { method: 'delivery', deliveryStreet: string, deliveryCity: string, deliveryState: string }
+export type SetOnboardingFulfilmentPayload = { id: string, data: OnboardingFulfilment }
+
+export type ContactEnquiryPayload = {
+  data: { companyName: string, contactName: string, businessEmail: string, message: string }
+}
+export type ContactEnquiryResponse = ServerResponse<{ id: string }>
 
 // ─── System Onboarding Applications (bearer) ─────────────────────────────────
 

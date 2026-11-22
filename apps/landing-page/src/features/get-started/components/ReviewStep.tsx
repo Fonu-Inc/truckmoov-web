@@ -8,7 +8,10 @@ import type {
 } from "@/features/get-started/utils/applyTypes";
 import { PencilSimple } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
-import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
+import {
+  getOnboardingM2mPlansQueryOptions,
+  getPickupLocationsQueryOptions,
+} from "@truckmoov/api/auth";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
 import {
   InfoRow,
@@ -54,6 +57,7 @@ export function ReviewStep({
   const details = applicationToDetails(application);
   const fulfilment = useApplyDraftStore(state => state.fulfilment);
   const delivery = customerType === "enterprise" && fulfilment.method === "delivery";
+  const pickupName = useQuery(getPickupLocationsQueryOptions()).data?.data.find(location => location.id === fulfilment.store)?.name;
   const isEnterprise = customerType === "enterprise";
   const deviceTotal = requestedDeviceTotal(application);
   const documentRows = requiredDocuments.map(document => ({
@@ -171,8 +175,8 @@ export function ReviewStep({
                       fulfilment.deliveryCity,
                       fulfilment.deliveryState,
                     ].filter(part => part.trim()).join(", ")
-                  : fulfilment.store
-                    ? `${fulfilment.store}, ${fulfilment.area}, ${fulfilment.state}`
+                  : pickupName
+                    ? `${pickupName}, ${fulfilment.area}, ${fulfilment.state}`
                     : ""}
               />
             </dl>
