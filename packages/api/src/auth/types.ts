@@ -441,6 +441,8 @@ export type InstallerJobDetail = {
     canTick: boolean
   }
   issues: { ticketId: string, displayId: string, status: string, createdAt: string }[]
+  /** The customer's rating once the job is completed. */
+  feedback: InstallationFeedback | null
 }
 
 export const INSTALLER_ISSUE_TYPES = [
@@ -666,6 +668,7 @@ export type SystemInstallationJobDetail = {
     reason: string
     rejectedAt: string
   }>
+  feedback: InstallationFeedback | null
 }
 
 export type SystemInstallationJobDetailResponse = ServerResponse<SystemInstallationJobDetail>
@@ -5265,6 +5268,9 @@ export type InstallationStatus = {
   } | null
   assignments: { deviceIndex: number; vehicleId: string }[]
   progress: { stage: OnboardingApplicationStage; complete: boolean; current: boolean }[]
+  /** Where the devices are collected; null when none was chosen. */
+  pickup: InstallationPickup | null
+  feedback: InstallationFeedback | null
 }
 export type InstallationStatusResponse = ServerResponse<InstallationStatus>
 
@@ -5279,3 +5285,16 @@ export type InstallationConfirmationResponse = ServerResponse<InstallationConfir
 
 export type InstallationCancellation = { orderNumber: string; status: 'cancelled'; cancelledAt: string | null }
 export type InstallationCancellationResponse = ServerResponse<InstallationCancellation>
+
+export type InstallationPickup = {
+  name: string
+  type: 'Connect Store' | 'Service Centre'
+  address: string | null
+  area: string
+  state: string
+  customerType: 'enterprise' | 'owner_operator'
+}
+
+export type InstallationFeedback = { rating: number; comment: string | null; submittedAt: string }
+export type InstallationFeedbackResponse = ServerResponse<InstallationFeedback>
+export type SubmitInstallationFeedbackPayload = { rating: number; comment?: string }

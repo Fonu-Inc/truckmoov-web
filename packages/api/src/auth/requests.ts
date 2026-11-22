@@ -3003,3 +3003,8 @@ export async function cancelInstallation(body: { reason?: string } = {}) {
   const { data } = await axiosInstance.post<import('./types').InstallationCancellationResponse>('/auth/installation/cancel', body)
   return data
 }
+
+export async function submitInstallationFeedback(body: import('./types').SubmitInstallationFeedbackPayload) {
+  const { data } = await axiosInstance.post<import('./types').InstallationFeedbackResponse>('/auth/installation/feedback', body)
+  return data
+}

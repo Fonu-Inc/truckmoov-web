@@ -342,6 +342,7 @@ import {
   getInstallationStatus,
   confirmInstallation,
   cancelInstallation,
+  submitInstallationFeedback,
   scheduleOnboardingInstallation,
   verifyOnboardingBillingEmail,
   getOnboardingEmailAvailability,
@@ -3688,5 +3689,12 @@ export function useCancelInstallation() {
       queryClient.invalidateQueries({ queryKey: INSTALLATION_STATUS_KEY })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingStatus })
     },
+  })
+}
+
+export function useSubmitInstallationFeedback() {
+  return useMutation({
+    mutationFn: submitInstallationFeedback,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: INSTALLATION_STATUS_KEY }),
   })
 }

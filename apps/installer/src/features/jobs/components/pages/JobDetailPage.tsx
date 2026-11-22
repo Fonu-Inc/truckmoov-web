@@ -341,10 +341,26 @@ export default function JobDetailPage() {
 
         {job.status === "completed"
           ? (
-              <InstallationReport
-                job={job}
-                time={time}
-              />
+              <div className="space-y-6">
+                {job.feedback && (
+                  <SleekCard title="Customer Feedback">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Info
+                        label="Rating"
+                        value={`${job.feedback.rating}/5`}
+                      />
+                      <Info
+                        label="Comment"
+                        value={job.feedback.comment ?? "—"}
+                      />
+                    </div>
+                  </SleekCard>
+                )}
+                <InstallationReport
+                  job={job}
+                  time={time}
+                />
+              </div>
             )
           : (
               <div className="space-y-6">

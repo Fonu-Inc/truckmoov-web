@@ -313,6 +313,28 @@ export function PlatformInstallationDetails({
                     </ul>
                   )}
             </section>
+            {detail?.feedback && (
+              <section className="space-y-3 border-b pb-4">
+                <h3 className="text-base font-semibold">Customer Feedback</h3>
+                <dl className="grid gap-3 sm:grid-cols-2">
+                  <Field
+                    label="Rating"
+                    value={`${detail.feedback.rating}/5`}
+                  />
+                  <Field
+                    label="Submitted"
+                    value={formatDateOnlyInTimezone(
+                      detail.feedback.submittedAt,
+                      timezone,
+                    )}
+                  />
+                  <Field
+                    label="Comment"
+                    value={detail.feedback.comment ?? undefined}
+                  />
+                </dl>
+              </section>
+            )}
           </>
         )}
       </DialogContent>

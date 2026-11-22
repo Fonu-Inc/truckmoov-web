@@ -6,7 +6,7 @@ import {
 } from "@truckmoov/api/auth";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Calendar, Check, Clock, Cpu, Loader2, Mail, MapPin, Phone, Truck, XCircle,
+  Calendar, Check, Clock, Cpu, IdCard, Loader2, Mail, MapPin, Phone, Store, Truck, XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -28,6 +28,7 @@ import {
 } from "@/components/shadcn/card";
 import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
+import { InstallationFeedbackCard } from "@/features/get-started/components/ui/InstallationFeedbackCard";
 import { WelcomeDialog } from "@/features/get-started/components/ui/WelcomeDialog";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,13 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const NOT_CANCELLABLE = [
+  "in_progress",
+  "completed",
+  "cancelled",
+];
+
+// Once installation starts, the devices have been collected.
+const COLLECTED = [
   "in_progress",
   "completed",
   "cancelled",
@@ -125,7 +133,7 @@ export default function GetStartedPage() {
     return <p className="py-20 text-center text-sm text-destructive">{statusQuery.error.message}</p>;
 
   const {
-    order, installer, assignments, progress,
+    order, installer, assignments, progress, pickup, feedback,
   } = statusQuery.data!.data;
   const vehicleCount = new Set(assignments.map(a => a.vehicleId)).size;
   const stage = progress.find(step => step.current)?.stage;
@@ -193,6 +201,45 @@ export default function GetStartedPage() {
           </Button>
         )}
       </div>
+
+      {pickup && !fleetReady && !(order && COLLECTED.includes(order.status)) && (
+        <Card className="overflow-hidden rounded-2xl">
+          <div className="border-b border-border/60 bg-muted/30 px-5 py-4">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Collect your devices</p>
+            <p className="text-base font-semibold">{pickup.name}</p>
+          </div>
+          <CardContent className="grid gap-4 p-5 sm:grid-cols-2">
+            <Detail
+              icon={Store}
+              label="Pickup point"
+              value={`${pickup.name} · ${pickup.type}`}
+            />
+            <Detail
+              icon={MapPin}
+              label="Address"
+              value={[
+                pickup.address,
+                pickup.area,
+                pickup.state,
+              ].filter(Boolean).join(", ")}
+            />
+            <Detail
+              icon={IdCard}
+              label="What to bring"
+              value={order
+                ? `Bring a valid ID and your order number (${order.orderNumber}).`
+                : "Bring a valid ID."}
+            />
+            {pickup.customerType === "enterprise" && (
+              <Detail
+                icon={Phone}
+                label="Telecom Master"
+                value="Regularise your Telecom Master number at the store."
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {!order
         ? (
@@ -385,6 +432,8 @@ export default function GetStartedPage() {
                   </div>
                 )}
               </Card>
+
+              {order.status === "completed" && <InstallationFeedbackCard feedback={feedback} />}
 
               {stage === "connectivity_verification" && (
                 <Card className="rounded-2xl border-border/60 shadow-sm">
