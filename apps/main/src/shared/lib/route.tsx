@@ -1042,7 +1042,9 @@ export const router = createBrowserRouter([
 
           // Help & Support — pathful layout route: HelpLayout owns the tab
           // bar, each tab is a child route ("tabs are routes, not query
-          // params", see design.md). Not in the sidebar, so no guard.
+          // params", see design.md). HelpLayout guards it by the
+          // tenant.support.* permissions, not by role: three staff roles get
+          // support only inside an owner-operator organisation.
           {
             path: "/help",
             lazy: async () => ({ Component: (await import("@/features/help/components/layout/HelpLayout")).HelpLayout }),

@@ -238,6 +238,11 @@ import type {
   SupportTicketContextPayload,
   SupportTicketContextResponse,
   SupportTicketDetailResponse,
+  SupportTicketReplyResponse,
+  SupportTicketAttachmentLinkResponse,
+  SupportTicketCsatResponse,
+  SubmitSupportTicketCsatPayload,
+  CapabilitiesResponse,
   SupportTicketOptionsResponse,
   SupportTicketResponse,
   SupportTicketsListResponse,
@@ -1848,6 +1853,28 @@ export async function attachSupportTicketFiles({ id, data: files, messageId }: A
   return data
 }
 
+export async function getSupportTicketAttachmentLink({ id, attachmentId }: { id: string, attachmentId: string }) {
+  const { data } = await axiosInstance.get<SupportTicketAttachmentLinkResponse>(
+    `/auth/support-tickets/${id}/attachments/${attachmentId}`,
+  )
+  return data
+}
+
+export async function getSupportTicketCsat({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SupportTicketCsatResponse>(`/auth/support-tickets/${id}/csat`)
+  return data
+}
+
+export async function submitSupportTicketCsat({ id, data: body }: SubmitSupportTicketCsatPayload) {
+  const { data } = await axiosInstance.post<SupportTicketCsatResponse>(`/auth/support-tickets/${id}/csat`, body)
+  return data
+}
+
+export async function getCapabilities() {
+  const { data } = await axiosInstance.get<CapabilitiesResponse>('/auth/capabilities')
+  return data
+}
+
 export async function getSupportTicketsSummary() {
   const { data } = await axiosInstance.get<SupportTicketsSummaryResponse>('/auth/support-tickets/summary')
   return data
@@ -2760,7 +2787,7 @@ export async function updateMailboxMessageFlags({
 // ─── Support Tickets (tenant) — reply / close / reopen ───────────────────────
 
 export async function replySupportTicket({ id, data: body }: ReplySupportTicketPayload) {
-  const { data } = await axiosInstance.post<ServerResponse<unknown>>(
+  const { data } = await axiosInstance.post<SupportTicketReplyResponse>(
     `/auth/support-tickets/${id}/reply`,
     body,
   )

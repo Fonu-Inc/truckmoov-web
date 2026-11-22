@@ -2,31 +2,35 @@ import type {
   SupportTicketCategory,
   SupportTicketChannel,
   SupportTicketContextDeviceSnapshot,
-  SupportTicketContextType,
   SupportTicketPriority,
 } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
+  getSimsQueryOptions,
   getSupportTicketContextQueryOptions,
-  getSupportTicketOptionsQueryOptions,
   useCreateSupportTicket,
 } from "@truckmoov/api/auth";
+import {
+  getDevicesQueryOptions,
+  getVehiclesQueryOptions,
+} from "@truckmoov/api/fleet";
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertCircle,
+  ArrowLeft,
   Bell,
   CheckCircle2,
   Cpu,
   CreditCard,
   HelpCircle,
   Loader2,
+  PackageCheck,
+  Rocket,
   Truck,
   Users,
   Wifi,
+  Wrench,
 } from "lucide-react";
-import {
-  useEffect, useMemo, useState,
-} from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -38,47 +42,197 @@ import { Label } from "@/components/shadcn/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
+import { MIN_TICKET_TEXT } from "./ticketAttachments";
 
 type ReportIssueProps = { onSuccess: () => void };
 
-// Icons per category value — options endpoint only carries value/label.
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  device_tracking: Cpu,
-  sim_connectivity: Wifi,
-  messaging: Bell,
-  billing: CreditCard,
-  billing_subscription: CreditCard,
-  account_access: Users,
-  compliance: HelpCircle,
-  onboarding: HelpCircle,
-  other: HelpCircle,
+/** Only these have a record of the tenant's own to pick; the rest skip the context step. */
+type RecordContext = "device" | "sim" | "vehicle";
+
+type IssueCategory = {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  context: RecordContext | null;
+  ticketCategory: SupportTicketCategory;
+  channel: SupportTicketChannel;
+  issues: string[];
 };
 
-// Pre-selects the "what is this about" picker; the reporter can change it. The picker's
-// choices come from options.contextTypes. Only device/vehicle return a snapshot (§C).
-const DEFAULT_CONTEXT: Record<string, string> = {
-  device_tracking: "device",
-  sim_connectivity: "sim",
-  messaging: "whatsapp",
-  billing: "billing",
-  billing_subscription: "billing",
+type ContextItem = {
+  id: string; label: string; status?: string; extra?: string;
 };
-const SNAPSHOT_CONTEXTS = new Set([
-  "device",
-  "vehicle",
-]);
 
-// Context type → ticket channel (values from options.channels).
-const CONTEXT_CHANNEL: Record<string, SupportTicketChannel> = {
-  device: "device",
-  vehicle: "vehicle",
-  sim: "sim",
-  whatsapp: "messaging",
-  billing: "billing",
-  none: "other",
+const CATEGORIES: IssueCategory[] = [
+  {
+    id: "onboarding_activation",
+    label: "Application & Account Activation",
+    description: "Application review, activation link, Get Started steps, subscription activation.",
+    icon: Rocket,
+    context: null,
+    ticketCategory: "account_access",
+    channel: "other",
+    issues: [
+      "My application is still under review",
+      "I did not receive my activation link",
+      "I cannot complete a Get Started step",
+      "My account upgrade request has not been approved",
+    ],
+  },
+  {
+    id: "procurement",
+    label: "Ordering Devices, SIMs & Vehicles",
+    description: "Requests, quotations, payment and order progress before installation.",
+    icon: PackageCheck,
+    context: null,
+    ticketCategory: "billing",
+    channel: "billing",
+    issues: [
+      "My quotation has not been generated",
+      "My payment was made but the order has not moved on",
+      "A quotation has the wrong items or quantities",
+      "I want to change or cancel a request",
+    ],
+  },
+  {
+    id: "installation",
+    label: "Installation & Device Configuration",
+    description: "Installer scheduling, fitting, device configuration and installation reports.",
+    icon: Wrench,
+    context: "device",
+    ticketCategory: "device_tracking",
+    channel: "device",
+    issues: [
+      "My installation has not been scheduled",
+      "The installer did not arrive",
+      "My device was installed but is not configured",
+      "My installation report is missing or wrong",
+    ],
+  },
+  {
+    id: "device_tracking",
+    label: "Devices & Tracking",
+    description: "Offline devices, no location updates, firmware updates, device health.",
+    icon: Cpu,
+    context: "device",
+    ticketCategory: "device_tracking",
+    channel: "device",
+    issues: [
+      "My device is offline",
+      "Vehicle location is not updating",
+      "A firmware update failed",
+      "Device readings look wrong",
+    ],
+  },
+  {
+    id: "sim_connectivity",
+    label: "IoT SIMs & Connectivity",
+    description: "SIM provisioning, activation, data bundles, usage and suspension.",
+    icon: Wifi,
+    context: "sim",
+    ticketCategory: "sim_connectivity",
+    channel: "sim",
+    issues: [
+      "My SIM request has not been approved",
+      "My SIM is not activated or has no data",
+      "My data bundle has run out or expired",
+      "My SIM was suspended",
+    ],
+  },
+  {
+    id: "messaging",
+    label: "WhatsApp, SMS, Calls & Campaigns",
+    description: "Driver messaging, the 24-hour WhatsApp window, campaigns and IVR prompts.",
+    icon: Bell,
+    context: null,
+    ticketCategory: "messaging",
+    channel: "messaging",
+    issues: [
+      "My WhatsApp message would not send",
+      "A driver is not receiving SMS",
+      "A campaign did not go out",
+      "A call or IVR prompt is not working",
+    ],
+  },
+  {
+    id: "billing",
+    label: "Billing, Invoices & Payments",
+    description: "Hardware devices, licensing, installation and subscription charges.",
+    icon: CreditCard,
+    context: null,
+    ticketCategory: "billing",
+    channel: "billing",
+    issues: [
+      "An invoice amount looks wrong",
+      "My payment is not reflecting",
+      "I need a copy of an invoice or receipt",
+      "I want to change my plan or billing details",
+    ],
+  },
+  {
+    id: "jobs_dispatch",
+    label: "Jobs & Dispatch",
+    description: "Creating jobs, recommending or assigning drivers and vehicles, job status.",
+    icon: Truck,
+    context: "vehicle",
+    ticketCategory: "other",
+    channel: "vehicle",
+    issues: [
+      "I cannot recommend or assign a driver or vehicle",
+      "A job is stuck on the wrong status",
+      "A driver did not receive a job offer",
+      "Proof of delivery is missing",
+    ],
+  },
+  {
+    id: "account_access",
+    label: "Account, Users & Access",
+    description: "Invitations, roles and permissions, sign-in problems, organisation profile.",
+    icon: Users,
+    context: null,
+    ticketCategory: "account_access",
+    channel: "other",
+    issues: [
+      "A team member did not receive their invitation",
+      "Someone has the wrong role or permissions",
+      "I cannot sign in",
+      "I need to change my organisation details",
+    ],
+  },
+  {
+    id: "other",
+    label: "Something Else",
+    description: "Anything that does not fit the categories above.",
+    icon: HelpCircle,
+    context: null,
+    ticketCategory: "other",
+    channel: "other",
+    issues: [],
+  },
+];
+
+const CONTEXT_LABELS: Record<RecordContext, string> = {
+  device: "Device", sim: "SIM", vehicle: "Vehicle",
 };
+
+const PRIORITIES: {
+  value: SupportTicketPriority; label: string;
+}[] = [
+  {
+    value: "low", label: "Low - General question or minor issue",
+  },
+  {
+    value: "medium", label: "Medium - Affecting operations",
+  },
+  {
+    value: "high", label: "High - Significant business impact",
+  },
+  {
+    value: "critical", label: "Critical - Complete system down",
+  },
+];
 
 const HEALTH_LABELS: Record<string, string> = {
   online: "Online",
@@ -86,36 +240,110 @@ const HEALTH_LABELS: Record<string, string> = {
   never_reported: "Never reported",
 };
 
-// ponytail: spec's security guard. Anything else returns available:false and
-// makes no upstream call — skip the client round-trip.
-const CONTEXT_ID_PATTERN = /^[\w-]{1,64}$/;
+/** The tenant's own devices, SIMs or vehicles to pick from; each list loads only when its step is open. */
+function useContextItems(context: RecordContext | null) {
+  const devices = useQuery({
+    ...getDevicesQueryOptions(),
+    enabled: context === "device",
+  });
+  const sims = useQuery({
+    ...getSimsQueryOptions({ params: { limit: 100 } }),
+    enabled: context === "sim",
+  });
+  const vehicles = useQuery({
+    ...getVehiclesQueryOptions(),
+    enabled: context === "vehicle",
+  });
+
+  if (context === "device") {
+    return {
+      isLoading: devices.isLoading,
+      isError: devices.isError,
+      refetch: devices.refetch,
+      items: (devices.data?.data ?? []).map((d): ContextItem => ({
+        id: d.id,
+        label: [
+          d.name || [
+            d.manufacturer,
+            d.model,
+          ].filter(Boolean).join(" "),
+          d.imei,
+        ].filter(Boolean).join(" · "),
+        status: d.status,
+        extra: d.lastSeen ? `Last seen ${formatDayMonthTime(d.lastSeen)}` : "Never reported",
+      })),
+    };
+  }
+  if (context === "sim") {
+    return {
+      isLoading: sims.isLoading,
+      isError: sims.isError,
+      refetch: sims.refetch,
+      items: (sims.data?.data.items ?? []).map((s): ContextItem => ({
+        id: s.id,
+        label: `${s.mobileNumber} (${s.iccid.slice(-6)})`,
+        status: s.status,
+        extra: [
+          s.operator,
+          s.dataUsedGb != null && s.dataLimitGb != null ? `${s.dataUsedGb}/${s.dataLimitGb} GB` : null,
+        ].filter(Boolean).join(" · "),
+      })),
+    };
+  }
+  if (context === "vehicle") {
+    return {
+      isLoading: vehicles.isLoading,
+      isError: vehicles.isError,
+      refetch: vehicles.refetch,
+      items: (vehicles.data?.data ?? []).map((v): ContextItem => ({
+        id: v.id,
+        label: [
+          v.registrationNumber || v.plateNumber,
+          [
+            v.make,
+            v.model,
+          ].filter(Boolean).join(" "),
+        ].filter(Boolean).join(" - "),
+        status: v.status,
+      })),
+    };
+  }
+  return {
+    items: [] as ContextItem[], isLoading: false, isError: false, refetch: async () => undefined,
+  };
+}
+
+function StepBadge({
+  n, done,
+}: {
+  n: number; done: boolean;
+}) {
+  return (
+    <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium ${done ? "bg-chart-2 text-white" : "bg-primary text-primary-foreground"}`}>
+      {done ? <CheckCircle2 className="h-4 w-4" /> : n}
+    </div>
+  );
+}
 
 export function ReportIssue({ onSuccess }: ReportIssueProps) {
   const createTicket = useCreateSupportTicket();
-  const optionsQuery = useQuery(getSupportTicketOptionsQueryOptions());
-  const options = optionsQuery.data?.data;
 
   const [
     step,
     setStep,
   ] = useState(1);
-
   const [
-    category,
-    setCategory,
-  ] = useState<string>("");
-  const [
-    contextType,
-    setContextType,
-  ] = useState<string>("none");
+    categoryId,
+    setCategoryId,
+  ] = useState<string | null>(null);
   const [
     contextId,
     setContextId,
-  ] = useState<string>("");
+  ] = useState<string | null>(null);
   const [
-    debouncedContextId,
-    setDebouncedContextId,
-  ] = useState<string>("");
+    contextFilter,
+    setContextFilter,
+  ] = useState("");
   const [
     subject,
     setSubject,
@@ -127,63 +355,58 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
   const [
     priority,
     setPriority,
-  ] = useState<string>("medium");
+  ] = useState<SupportTicketPriority>("medium");
 
-  useEffect(
-    () => {
-      const t = setTimeout(
-        setDebouncedContextId,
-        400,
-        contextId,
-      );
-      return () => clearTimeout(t);
-    },
-    [contextId],
-  );
+  const category = CATEGORIES.find(c => c.id === categoryId) ?? null;
+  const context = category?.context ?? null;
+  const contextItems = useContextItems(step === 2 ? context : null);
+  const filteredItems = contextFilter.trim()
+    ? contextItems.items.filter(i => `${i.label} ${i.extra ?? ""}`.toLowerCase().includes(contextFilter.trim().toLowerCase()))
+    : contextItems.items;
+  const [
+    selectedLabel,
+    setSelectedLabel,
+  ] = useState("");
 
-  const hasContext = contextType !== "none";
-  const takesSnapshot = SNAPSHOT_CONTEXTS.has(contextType);
-  // Submit uses what's typed now; only the lookup is debounced.
-  const typedIdIsValid = contextId.length > 0 && CONTEXT_ID_PATTERN.test(contextId);
-  const contextIdIsValid = debouncedContextId.length > 0 && CONTEXT_ID_PATTERN.test(debouncedContextId);
-
+  // Device and vehicle tickets carry a server-read snapshot; preview the same one.
+  const takesSnapshot = !!contextId && (context === "device" || context === "vehicle");
   const contextQuery = useQuery({
     ...getSupportTicketContextQueryOptions({
-      contextType: contextType as "device" | "vehicle",
-      contextId: debouncedContextId,
+      contextType: context ?? "",
+      contextId: contextId ?? "",
     }),
-    enabled: takesSnapshot && contextIdIsValid,
+    enabled: takesSnapshot,
   });
-  const contextPayload = contextQuery.data?.data;
-  // available:true without a snapshot is still "couldn't read it", never "healthy".
-  const snapshot = contextPayload?.available ? contextPayload.snapshot : null;
-  const lookupFailed = takesSnapshot && contextIdIsValid && !contextQuery.isLoading && !!contextPayload && !snapshot;
-  const contextTypeLabel = options?.contextTypes.find(c => c.value === contextType)?.label ?? contextType;
+  const snapshot = contextQuery.data?.data.available ? contextQuery.data.data.snapshot : null;
 
-  const selectedCategoryLabel = useMemo(
-    () => options?.categories.find(c => c.value === category)?.label ?? category,
-    [
-      options,
-      category,
-    ],
-  );
+  const subjectOk = subject.trim().length >= MIN_TICKET_TEXT;
+  const descriptionOk = description.trim().length >= MIN_TICKET_TEXT;
+  const detailsStep = context ? 3 : 2;
+
+  const pickCategory = (next: IssueCategory) => {
+    setCategoryId(next.id);
+    setSubject("");
+    setContextId(null);
+    setSelectedLabel("");
+    setContextFilter("");
+    setStep(next.context ? 2 : 3);
+  };
 
   const handleSubmit = async () => {
-    if (!category || !subject.trim() || !description.trim())
+    if (!category || !subjectOk || !descriptionOk)
       return;
     try {
       await createTicket.mutateAsync({
         data: {
-          category: category as SupportTicketCategory,
+          category: category.ticketCategory,
           subject: subject.trim(),
           description: description.trim(),
-          priority: priority as SupportTicketPriority,
-          channel: CONTEXT_CHANNEL[contextType] ?? "other",
-          // ⚠️ Never send contextSnapshot — the server reads and stores it, and 400s a client copy (§D).
-          ...(hasContext
+          priority,
+          channel: category.channel,
+          // Context only with a picked record: the server refuses a type without an id.
+          ...(context && contextId
             ? {
-                contextType: contextType as SupportTicketContextType,
-                ...(typedIdIsValid ? { contextId } : {}),
+                contextType: context, contextId,
               }
             : {}),
         },
@@ -192,14 +415,12 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
       onSuccess();
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to log ticket";
-      toast.error(message);
+      toast.error(error instanceof Error ? error.message : "Unable to log ticket");
     }
   };
 
   return (
     <div className="space-y-6 w-full">
-      {/* Step 1: Category */}
       <Card className={step !== 1 ? "opacity-60" : ""}>
         <CardHeader
           className="cursor-pointer"
@@ -207,82 +428,41 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium ${step > 1 ? "bg-chart-2 text-white" : "bg-primary text-primary-foreground"}`}>
-                {step > 1 ? <CheckCircle2 className="h-4 w-4" /> : "1"}
-              </div>
+              <StepBadge
+                n={1}
+                done={step > 1}
+              />
               <CardTitle className="text-lg">Issue Category</CardTitle>
             </div>
-            {category && step > 1 && (
-              <Badge variant="outline">{selectedCategoryLabel}</Badge>
-            )}
+            {category && step > 1 && <Badge variant="outline">{category.label}</Badge>}
           </div>
-          {step === 1 && (
-            <CardDescription>What type of issue are you experiencing?</CardDescription>
-          )}
+          {step === 1 && <CardDescription>What type of issue are you experiencing?</CardDescription>}
         </CardHeader>
         {step === 1 && (
           <CardContent>
-            {optionsQuery.isError
-              ? (
-                  <div className="text-sm text-muted-foreground">
-                    Couldn&apos;t load categories.
-                    <Button
-                      variant="link"
-                      onClick={() => void optionsQuery.refetch()}
-                    >
-                      Try again
-                    </Button>
-                  </div>
-                )
-              : !options
-                  ? (
-                      <div
-                        aria-label="Loading categories"
-                        className="grid gap-3 md:grid-cols-2"
-                      >
-                        {Array.from(
-                          { length: 6 },
-                          (_, i) => (
-                            <Skeleton
-                              key={i}
-                              className="h-14 rounded-lg"
-                            />
-                          ),
-                        )}
-                      </div>
-                    )
-                  : (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {options.categories.map((cat) => {
-                          const Icon = CATEGORY_ICONS[cat.value] ?? HelpCircle;
-                          return (
-                            <button
-                              key={cat.value}
-                              type="button"
-                              onClick={() => {
-                                setCategory(cat.value);
-                                setContextId("");
-                                setDebouncedContextId("");
-                                setContextType(DEFAULT_CONTEXT[cat.value] ?? "none");
-                                setStep(2);
-                              }}
-                              className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors hover:border-primary/50 ${
-                                category === cat.value ? "border-primary bg-primary/5" : ""
-                              }`}
-                            >
-                              <Icon className="h-5 w-5 text-muted-foreground" />
-                              <span className="font-medium">{cat.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+            <div className="grid gap-3 md:grid-cols-2">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => pickCategory(cat)}
+                  className={`flex items-start gap-3 p-4 rounded-lg border text-left transition-colors hover:border-primary/50 ${
+                    categoryId === cat.id ? "border-primary bg-primary/5" : ""
+                  }`}
+                >
+                  <cat.icon className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0">
+                    <span className="block font-medium">{cat.label}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{cat.description}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </CardContent>
         )}
       </Card>
 
-      {/* Step 2: What the issue is about — types from options.contextTypes */}
-      {step >= 2 && (
+      {step >= 2 && context && (
         <Card className={step !== 2 ? "opacity-60" : ""}>
           <CardHeader
             className="cursor-pointer"
@@ -290,141 +470,113 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium ${step > 2 ? "bg-chart-2 text-white" : "bg-primary text-primary-foreground"}`}>
-                  {step > 2 ? <CheckCircle2 className="h-4 w-4" /> : "2"}
-                </div>
-                <CardTitle className="text-lg">What is this about?</CardTitle>
+                <StepBadge
+                  n={2}
+                  done={step > 2}
+                />
+                <CardTitle className="text-lg">{`Select ${CONTEXT_LABELS[context]}`}</CardTitle>
               </div>
-              {step > 2 && hasContext && <Badge variant="outline">{contextTypeLabel}</Badge>}
+              {contextId && step > 2 && (
+                <Badge
+                  variant="outline"
+                  className="max-w-[50%] truncate"
+                >
+                  {selectedLabel}
+                </Badge>
+              )}
             </div>
             {step === 2 && (
               <CardDescription>
-                Pick what the issue relates to. For a device or vehicle we attach its current state to the ticket.
+                {`Select the affected ${CONTEXT_LABELS[context].toLowerCase()} so its details are attached to the ticket.`}
               </CardDescription>
             )}
           </CardHeader>
           {step === 2 && (
             <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <Label>Related to</Label>
-                <Select
-                  value={contextType}
-                  onValueChange={(value) => {
-                    setContextType(value);
-                    setContextId("");
-                    setDebouncedContextId("");
-                  }}
-                  disabled={!options}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={optionsQuery.isLoading ? "Loading…" : "Select"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {options?.contextTypes.map(c => (
-                      <SelectItem
-                        key={c.value}
-                        value={c.value}
-                      >
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {hasContext && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="context-id">
-                    {contextType === "device" ? "Device IMEI or id" : contextType === "vehicle" ? "Vehicle id or registration" : `${contextTypeLabel} reference`}
-                    {" (optional)"}
-                  </Label>
-                  <Input
-                    id="context-id"
-                    value={contextId}
-                    onChange={e => setContextId(e.target.value)}
-                    placeholder={contextType === "device" ? "e.g. 862176050123456" : contextType === "vehicle" ? "e.g. LSR-482-XK" : ""}
-                    maxLength={64}
-                    autoComplete="off"
-                  />
-                  {contextId && !typedIdIsValid && (
-                    <p className="text-xs text-destructive">
-                      Only letters, numbers, hyphens and underscores are allowed (max 64 characters).
-                    </p>
-                  )}
-                </div>
+              {contextItems.items.length > 8 && (
+                <Input
+                  value={contextFilter}
+                  onChange={e => setContextFilter(e.target.value)}
+                  placeholder={`Search your ${CONTEXT_LABELS[context].toLowerCase()}s`}
+                />
               )}
-
-              {takesSnapshot && contextIdIsValid && contextQuery.isLoading && (
-                <p className="text-xs text-muted-foreground flex items-center gap-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Looking up…
-                </p>
-              )}
-
-              {contextType === "device" && snapshot && (() => {
-                const snap = snapshot as SupportTicketContextDeviceSnapshot;
-                return (
-                  <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
-                    <p className="font-medium text-sm">
-                      {[
-                        snap.manufacturer,
-                        snap.model,
-                      ].filter(Boolean).join(" ") || "Device"}
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">IMEI: </span>
-                      {snap.imei ?? "-"}
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">Status: </span>
-                      {snap.status ?? "-"}
-                      {" · "}
-                      <span className="text-muted-foreground">Lifecycle: </span>
-                      {snap.lifecycleStatus ?? "-"}
-                      {" · "}
-                      <span className="text-muted-foreground">Health: </span>
-                      {HEALTH_LABELS[snap.healthStatus] ?? snap.healthStatus}
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">Last seen: </span>
-                      {snap.lastSeen ? formatDayMonthTime(snap.lastSeen) : "Never reported"}
-                    </p>
-                  </div>
-                );
-              })()}
-
-              {contextType === "vehicle" && snapshot && (
-                <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
-                  <p className="font-medium text-sm flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    Vehicle
-                  </p>
-                  {/* ponytail: vehicle snapshot fields aren't specified; render what the server sends. */}
-                  {Object.entries(snapshot as Record<string, unknown>).map(([
-                    key,
-                    value,
-                  ]) => (
-                    <p key={key}>
-                      <span className="text-muted-foreground">{`${key}: `}</span>
-                      {value == null ? "-" : String(value)}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {lookupFailed && (
-                <p className="text-xs text-muted-foreground">
-                  We couldn't read that record right now. You can still submit the ticket — it will be reviewed manually.
-                </p>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2">
+              {contextItems.isLoading
+                ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  )
+                : contextItems.isError
+                  ? (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        {`Couldn't load your ${CONTEXT_LABELS[context].toLowerCase()}s.`}
+                        <Button
+                          variant="link"
+                          onClick={() => void contextItems.refetch()}
+                        >
+                          Try again
+                        </Button>
+                      </div>
+                    )
+                  : filteredItems.length === 0
+                    ? (
+                        <p className="py-6 text-center text-sm text-muted-foreground">
+                          {`No ${CONTEXT_LABELS[context].toLowerCase()}s found.`}
+                        </p>
+                      )
+                    : (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {filteredItems.map(option => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => {
+                                setContextId(option.id);
+                                setSelectedLabel(option.label);
+                                setStep(3);
+                              }}
+                              className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg border text-left transition-colors hover:border-primary/50 ${
+                                contextId === option.id ? "border-primary bg-primary/5" : ""
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{option.label}</p>
+                                {option.extra && <p className="text-xs text-muted-foreground">{option.extra}</p>}
+                              </div>
+                              {option.status && (
+                                <Badge
+                                  variant="outline"
+                                  className="capitalize shrink-0"
+                                >
+                                  {option.status.replace(
+                                    /_/g,
+                                    " ",
+                                  )}
+                                </Badge>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+              <div className="flex items-center justify-between gap-3">
                 <Button
+                  variant="outline"
                   size="sm"
-                  onClick={() => setStep(3)}
-                  disabled={!!contextId && !typedIdIsValid}
+                  onClick={() => setStep(1)}
                 >
-                  Continue
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setContextId(null);
+                    setSelectedLabel("");
+                    setStep(3);
+                  }}
+                >
+                  {`Skip - No specific ${CONTEXT_LABELS[context].toLowerCase()}`}
                 </Button>
               </div>
             </CardContent>
@@ -432,19 +584,94 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
         </Card>
       )}
 
-      {/* Step 3: Ticket details */}
-      {step >= 3 && (
+      {step >= 3 && category && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                3
-              </div>
+              <StepBadge
+                n={detailsStep}
+                done={false}
+              />
               <CardTitle className="text-lg">Ticket Details</CardTitle>
             </div>
             <CardDescription>Describe your issue in detail</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {takesSnapshot && contextQuery.isLoading && (
+              <p className="text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Reading its current state…
+              </p>
+            )}
+            {snapshot && (
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-chart-2" />
+                  Context auto-attached
+                </p>
+                {context === "device"
+                  ? (() => {
+                      const snap = snapshot as SupportTicketContextDeviceSnapshot;
+                      return (
+                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          <div>
+                            {"IMEI: "}
+                            <span className="text-foreground">{snap.imei ?? "-"}</span>
+                          </div>
+                          <div>
+                            {"Status: "}
+                            <span className="text-foreground">{snap.status ?? "-"}</span>
+                          </div>
+                          <div>
+                            {"Health: "}
+                            <span className="text-foreground">{HEALTH_LABELS[snap.healthStatus] ?? snap.healthStatus}</span>
+                          </div>
+                          <div>
+                            {"Last seen: "}
+                            <span className="text-foreground">{snap.lastSeen ? formatDayMonthTime(snap.lastSeen) : "Never reported"}</span>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  : (
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        {Object.entries(snapshot as Record<string, unknown>).slice(
+                          0,
+                          6,
+                        ).map(([
+                          key,
+                          value,
+                        ]) => (
+                          <div key={key}>
+                            {`${key}: `}
+                            <span className="text-foreground">{value == null ? "-" : String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+              </div>
+            )}
+
+            {category.issues.length > 0 && (
+              <div className="space-y-2">
+                <Label>{`Common issues in ${category.label}`}</Label>
+                <div className="flex flex-wrap gap-2">
+                  {category.issues.map(issue => (
+                    <button
+                      key={issue}
+                      type="button"
+                      onClick={() => setSubject(issue)}
+                      className={`rounded-full border px-3 py-1.5 text-xs transition-colors hover:border-primary/50 ${
+                        subject === issue ? "border-primary bg-primary/5" : ""
+                      }`}
+                    >
+                      {issue}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="subject">Subject *</Label>
               <Input
@@ -454,6 +681,9 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
                 onChange={e => setSubject(e.target.value)}
                 maxLength={100}
               />
+              {subject.length > 0 && !subjectOk && (
+                <p className="text-xs text-destructive">{`At least ${MIN_TICKET_TEXT} characters.`}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -465,20 +695,22 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
                 onChange={e => setDescription(e.target.value)}
                 rows={5}
               />
+              {description.length > 0 && !descriptionOk && (
+                <p className="text-xs text-destructive">{`At least ${MIN_TICKET_TEXT} characters.`}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
               <Select
                 value={priority}
-                onValueChange={setPriority}
-                disabled={!options}
+                onValueChange={v => setPriority(v as SupportTicketPriority)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={optionsQuery.isLoading ? "Loading…" : "Priority"} />
+                <SelectTrigger id="priority">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {options?.priorities.map(p => (
+                  {PRIORITIES.map(p => (
                     <SelectItem
                       key={p.value}
                       value={p.value}
@@ -490,33 +722,29 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
               </Select>
             </div>
 
-            {lookupFailed && (
-              <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 p-3 text-xs">
-                <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                <p>
-                  We couldn't read the
-                  {" "}
-                  {contextType}
-                  {" "}
-                  right now, so no snapshot will be attached. The ticket will still be created.
-                </p>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex items-center justify-between gap-3 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setStep(1)}
+                onClick={() => setStep(context ? 2 : 1)}
               >
-                Start Over
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
               </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!subject.trim() || !description.trim() || createTicket.isPending}
-              >
-                {createTicket.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit Ticket
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setStep(1)}
+                >
+                  Start Over
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!subjectOk || !descriptionOk || createTicket.isPending}
+                >
+                  {createTicket.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Submit Ticket
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

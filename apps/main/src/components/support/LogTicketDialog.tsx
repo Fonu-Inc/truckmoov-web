@@ -34,15 +34,15 @@ import {
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useAuthStore } from "@/features/auth/stores/authStore";
+import {
+  addTicketFiles, MIN_TICKET_TEXT, TICKET_FILE_ACCEPT, TICKET_FILE_HINT,
+} from "./ticketAttachments";
 
 type LogTicketDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 };
-
-const ACCEPTED_TYPES = "image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls";
-const MAX_FILE_MB = 10;
 
 export function LogTicketDialog({
   open, onOpenChange, onSuccess,
@@ -121,22 +121,9 @@ export function LogTicketDialog({
   };
 
   const handleFiles = (files: FileList | null) => {
-    if (!files)
-      return;
-    const valid: File[] = [];
-    Array.from(files).forEach((f) => {
-      if (f.size > MAX_FILE_MB * 1024 * 1024) {
-        toast.error(`${f.name} exceeds ${MAX_FILE_MB}MB`);
-        return;
-      }
-      valid.push(f);
-    });
-    setAttachments(prev => [
-      ...prev,
-      ...valid,
-    ].slice(
-      0,
-      8,
+    setAttachments(prev => addTicketFiles(
+      prev,
+      files,
     ));
   };
 
@@ -145,8 +132,8 @@ export function LogTicketDialog({
   };
 
   const handleSubmit = async () => {
-    if (!title.trim() || !message.trim()) {
-      toast.error("Title and message are required");
+    if (title.trim().length < MIN_TICKET_TEXT || message.trim().length < MIN_TICKET_TEXT) {
+      toast.error(`Title and message need at least ${MIN_TICKET_TEXT} characters each`);
       return;
     }
     if (!category || !channel) {
@@ -369,19 +356,17 @@ export function LogTicketDialog({
                 {" "}
                 <span className="text-primary font-medium">browse</span>
               </p>
-              <p className="text-xs text-muted-foreground">
-                Images and documents up to
-                {" "}
-                {MAX_FILE_MB}
-                MB each (max 8 files)
-              </p>
+              <p className="text-xs text-muted-foreground text-center">{TICKET_FILE_HINT}</p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept={ACCEPTED_TYPES}
+                accept={TICKET_FILE_ACCEPT}
                 multiple
                 className="hidden"
-                onChange={e => handleFiles(e.target.files)}
+                onChange={(e) => {
+                  handleFiles(e.target.files);
+                  e.target.value = "";
+                }}
               />
             </div>
 

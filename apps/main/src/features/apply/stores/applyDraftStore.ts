@@ -1,8 +1,8 @@
 /**
- * Client-side state for the apply flow.
- *
- * Steps 1–3 live on the server (the application from `useApplySession`); what is
- * left here is UI state the API has no field for:
+ * Client-side state for the apply flow, persisted to localStorage so a saved application
+ * resumes in a new tab. The application itself lives on the server (`useApplySession`);
+ * what is left here is UI state the API has no field for:
+ * - `fulfilment`: the pickup point picked on the fleet step; saved to the application on Continue.
  * - `licence`: the plan picked before the details are saved, the name typed on the
  *   signature pad and the "I have reviewed it" tick.
  * - `pendingSignature`: a signature drawn before the application exists. It is
@@ -30,15 +30,15 @@ export type PendingSignature = {
   name: string;
   /** The agreement version on screen when it was signed — sent back as template_version. */
   version: string;
-  /** PNG or JPG data URL. */
-  image: string;
+  /** PNG or JPG image. */
+  image: Blob;
 };
 
 type ApplyDraftState = {
   /** Entered through "Returning Customers" (`?returning=1`): an existing MTN customer. */
   returning: boolean;
   licence: LicenceAndIndemnity;
-  /** TODO(api): Device Fulfilment choice — kept here until the onboarding API takes it. */
+  /** `store` holds the pickup location id. */
   fulfilment: DeviceFulfilment;
   pendingSignature: PendingSignature | null;
   installation: InstallationValues | null;
@@ -90,7 +90,7 @@ export const useApplyDraftStore = create<ApplyDraftState>()(persist(
   }),
   {
     name: APPLY_DRAFT_STORAGE_KEY,
-    // The signature data URL can be large; keep it out of persisted storage.
+    // A Blob can't be persisted: a signature not yet uploaded is signed again after a reload.
     partialize: state => ({
       returning: state.returning,
       licence: state.licence,

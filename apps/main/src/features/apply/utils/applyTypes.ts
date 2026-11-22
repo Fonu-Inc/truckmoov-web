@@ -1,14 +1,12 @@
 /**
- * Shared types + reference data for the public "Apply for Account Creation" flow.
- *
- * The visible design comes from the FleetPro design app. Steps 1–3 run against the
- * onboarding-applications API (TRU-FE-11/12/13); payment and installation are still
- * local — see the ponytail note in ApplyForAccount.tsx.
+ * Shared types + reference data for the public "Apply for Account Creation" flow. The
+ * landing page's get-started copy calls the same endpoints; keep the two in step.
  */
 
 import type {
   OnboardingApplicantType,
   OnboardingApplicationVehicle,
+  OnboardingFulfilment,
   OnboardingUploadableDocumentType,
   OnboardingVehiclePurchaseType,
   OnboardingVehicleType,
@@ -16,30 +14,6 @@ import type {
 
 /** The choice the applicant makes on the first screen. */
 export type ApplicantCustomerType = OnboardingApplicantType;
-
-/** Remembers the customer type across reloads so step 1 is not re-asked. */
-export const CUSTOMER_TYPE_STORAGE_KEY = "truckmoov_apply_customer_type";
-
-export function readStoredCustomerType(): ApplicantCustomerType | null {
-  if (typeof window === "undefined")
-    return null;
-  const stored = window.sessionStorage.getItem(CUSTOMER_TYPE_STORAGE_KEY);
-  return stored === "enterprise" || stored === "owner_operator" ? stored : null;
-}
-
-export function writeStoredCustomerType(type: ApplicantCustomerType | null) {
-  if (typeof window === "undefined")
-    return;
-  if (type) {
-    window.sessionStorage.setItem(
-      CUSTOMER_TYPE_STORAGE_KEY,
-      type,
-    );
-  }
-  else {
-    window.sessionStorage.removeItem(CUSTOMER_TYPE_STORAGE_KEY);
-  }
-}
 
 export type RequiredDocument = {
   type: OnboardingUploadableDocumentType;
@@ -84,9 +58,6 @@ export const ENTERPRISE_DOCUMENTS: RequiredDocument[] = [
 /**
  * Documents required from Owner-Operator customers, as the design lists them. Vehicle
  * licences are attached per vehicle in Add Vehicle, not here.
- *
- * ponytail: the API still lists proof_of_ownership in `missingDocuments`, so submit is
- * refused until the backend matches these lists.
  */
 export const OWNER_OPERATOR_DOCUMENTS: RequiredDocument[] = [
   ENTERPRISE_DOCUMENTS[0],
@@ -99,10 +70,8 @@ export function documentsForCustomerType(type: ApplicantCustomerType): RequiredD
 
 /**
  * A returning customer already has a relationship or account with MTN, so the design asks
- * them for the Customer Request Letter only — whatever their customer type.
- *
- * ponytail: client-side only. The API still reports its full list in `missingDocuments`
- * until it learns about returning customers.
+ * them for the Customer Request Letter only — whatever their customer type. The flag is
+ * saved on the application (`returningCustomer`), so the server asks for the same.
  */
 export const RETURNING_DOCUMENTS: RequiredDocument[] = [ENTERPRISE_DOCUMENTS[0]];
 
@@ -271,13 +240,15 @@ export const EMPTY_DEVICE_FULFILMENT: DeviceFulfilment = {
   deliveryState: "",
 };
 
-/**
- * Whether the Device Fulfilment details are filled in. Pickup can't be completed until the
- * store locations endpoint exists, so only delivery is checked for now (TODO(api)).
- */
-export function fulfilmentComplete(value: DeviceFulfilment, isOwnerOperator: boolean) {
-  const method = isOwnerOperator ? "pickup" : value.method;
-  if (method === "delivery")
-    return Boolean(value.deliveryStreet.trim() && value.deliveryCity.trim() && value.deliveryState);
-  return true;
+/** Onboarding fulfilment is pickup-only for both customer types: a chosen pickup point. */
+export function fulfilmentComplete(value: DeviceFulfilment) {
+  return Boolean(value.store);
+}
+
+/** The fulfilment as the API takes it. `store` holds the pickup location id. */
+export function fulfilmentToPayload(value: DeviceFulfilment): OnboardingFulfilment {
+  return {
+    method: "pickup",
+    pickupLocationId: value.store,
+  };
 }

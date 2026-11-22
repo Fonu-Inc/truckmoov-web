@@ -1,24 +1,24 @@
 import {
-  Activity,
   Camera,
   ChevronLeft,
   ChevronRight,
   CircleHelp,
   Cpu,
   FileText,
-  Headphones,
   HelpCircle,
   Image as ImageIcon,
   Loader2,
   MessageCircleQuestion,
   MessageSquareText,
   MessagesSquare,
+  Package,
   Paperclip,
   Plus,
+  Rocket,
+  Route,
   Send,
   ShieldCheck,
   Signal,
-  UserRound,
   Wallet,
   X,
 } from "lucide-react";
@@ -37,14 +37,8 @@ import { useLiveAgentSession } from "@/hooks/useLiveAgentSession";
 import { cn } from "@/lib/utils";
 import { LiveAgentPanel } from "./LiveAgentPanel";
 
-type Msg = {
-  role: "user" | "assistant"; content: string;
-};
 type View = "home" | "topic" | "messages";
 type Tab = "faqs" | "messages";
-
-const CHAT_AUTOMATION_UNAVAILABLE
-  = "Chat automation is currently unavailable. Please check the FAQs for quick help, or tap **Talk to a live agent** and our support team will follow up.";
 
 type FaqItem = {
   question: string;
@@ -58,27 +52,78 @@ type Topic = {
   faqs: FaqItem[];
 };
 
+type PendingAttachment = {
+  file: File;
+  url: string | null;
+};
+
 const TOPICS: Topic[] = [
+  {
+    id: "activation",
+    label: "Getting started & activation",
+    icon: Rocket,
+    blurb: "Activating your account, KYC, and first setup.",
+    faqs: [
+      {
+        question: "How do I activate my account?",
+        answer:
+          "After you choose a plan, the activation steps walk you through adding your **IoT Devices** and **IoT SIMs** (one at a time, by CSV bulk import, or by requesting them from the platform) and enabling features.",
+      },
+      {
+        question: "Where do I complete KYC / KYB?",
+        answer:
+          "Submit your business documents under **Settings → KYC**. If SIM activation is held up by verification, use **Request KYB/KYC Completion** on the **IoT SIMs** page.",
+      },
+      {
+        question: "How do I add my team?",
+        answer:
+          "Go to **Settings → Users → Invite User**, enter their email and pick a role. They'll get an email invitation.",
+      },
+    ],
+  },
+  {
+    id: "ordering",
+    label: "Ordering devices, SIMs & vehicles",
+    icon: Package,
+    blurb: "Requesting trackers and SIMs, and adding vehicles.",
+    faqs: [
+      {
+        question: "How do I order tracking devices?",
+        answer:
+          "On **Devices**, use **Request Device** to order trackers from the platform, or **Request Device Setup** to book an installation. Your requests are tracked on the same page.",
+      },
+      {
+        question: "How do I get IoT SIMs?",
+        answer:
+          "On **IoT SIMs**, use **Request SIM**. Already have SIMs? **Bulk Import** adds them from a CSV.",
+      },
+      {
+        question: "How do I add a vehicle?",
+        answer:
+          "Open **Fleets** and use **Add Vehicle**.",
+      },
+    ],
+  },
   {
     id: "device",
     label: "Device installation & configuration",
     icon: Cpu,
-    blurb: "Setup, IMEI registration, and getting trackers online.",
+    blurb: "Registering trackers and getting them online.",
     faqs: [
       {
         question: "Device not showing online",
         answer:
-          "1. Verify the SIM card is active and inserted correctly.\n2. Confirm the device has clear sky view for GPS lock.\n3. Check power wiring (red to constant 12V, black to ground).\n4. In Devices → select the IMEI → run **Test connectivity**. If still offline, escalate to a live agent.",
+          "1. Check the SIM is active on **IoT SIMs** and inserted correctly.\n2. Make sure the device has a clear view of the sky for a GPS fix.\n3. Check the power wiring (constant 12V and ground).\n4. Check the device's status and last-seen time on **Devices**. If it's still offline, message us here with the IMEI.",
       },
       {
-        question: "How do I configure a new tracker?",
+        question: "How do I add a tracker I already own?",
         answer:
-          "Go to **Devices → Add Device**, enter the IMEI, select the model from the catalog, and assign a SIM. The platform sends the configuration SMS automatically. Status moves to **CONFIGURED** once acknowledged.",
+          "Add it from **Devices**: enter the IMEI and pick the manufacturer and model from the catalog.",
       },
       {
         question: "Where do I find the device IMEI?",
         answer:
-          "The IMEI (15 digits) is printed on the sticker attached to the tracker housing and on the original packaging. You can also retrieve it by sending the SMS command `IMEI123456` to the SIM number.",
+          "The IMEI (15 digits) is printed on the sticker on the tracker housing and on the original packaging.",
       },
     ],
   },
@@ -86,22 +131,17 @@ const TOPICS: Topic[] = [
     id: "sim",
     label: "SIM connectivity",
     icon: Signal,
-    blurb: "IoT SIM activation, data sessions, and APN issues.",
+    blurb: "IoT SIM activation, data bundles, and data sessions.",
     faqs: [
       {
-        question: "SIM stuck on 'Pending activation'",
+        question: "My SIM isn't activating",
         answer:
-          "Activations usually complete within 15 minutes. If it has been longer, open **SIMs → select ICCID → Resync status**. Persistent failures indicate a KYC mismatch — submit the documents in **Compliance**.",
+          "Check the SIM's status on **IoT SIMs**. If it stays pending, KYB/KYC may be incomplete: use **Request KYB/KYC Completion**, or message us here with the ICCID.",
       },
       {
-        question: "No data session on the device",
+        question: "No data on the device",
         answer:
-          "Confirm the APN is set to `mtnplatform.iot`. Check signal strength on the device dashboard — anything below 8/30 indicates poor coverage. Power-cycle the tracker and wait 90 seconds.",
-      },
-      {
-        question: "How do I check my SIM data usage?",
-        answer:
-          "Go to **SIMs → Analytics**. You'll see per-SIM data, SMS, and session counts for the last 30 days, plus alerts when usage exceeds your tier threshold.",
+          "Confirm the SIM is active on **IoT SIMs** and that its bundle hasn't run out under **M2M IoT Bundles** (use **Top Up Bundle** if it has). Then power-cycle the tracker. Still no data? Send us the ICCID and IMEI.",
       },
     ],
   },
@@ -109,22 +149,35 @@ const TOPICS: Topic[] = [
     id: "whatsapp",
     label: "WhatsApp & SMS",
     icon: MessageSquareText,
-    blurb: "Templates, sender IDs, and driver communications.",
+    blurb: "WhatsApp setup, templates, and driver messages.",
     faqs: [
       {
         question: "WhatsApp template not delivering",
         answer:
-          "Templates must be **APPROVED** by Meta before sending. Check **Settings → WhatsApp Templates** for status. Also confirm the recipient has opted in within the last 24 hours, otherwise only utility templates are allowed.",
+          "Templates must be approved by Meta before they can be sent. Check the template's status under **Communications → WhatsApp Setup**. Outside the 24-hour conversation window, WhatsApp only allows approved templates.",
       },
       {
-        question: "How do I request a new SMS sender ID?",
+        question: "Driver isn't receiving messages",
         answer:
-          "Open **Settings → Sender IDs → Request new**. Provide the sender name (max 11 chars, alphanumeric) and a use case. Approval typically takes 1–3 business days.",
+          "Make sure the driver's phone number includes the country code. Check the delivery status in **Communications → Messaging Center**. If it shows **failed**, message us with the number and the time it was sent.",
+      },
+    ],
+  },
+  {
+    id: "jobs",
+    label: "Jobs & dispatch",
+    icon: Route,
+    blurb: "Creating jobs and assigning drivers and vehicles.",
+    faqs: [
+      {
+        question: "How do I create a job?",
+        answer:
+          "Open **Shipments** (shown as **Jobs** or **Dispatch** for some roles) and use **Create Job**.",
       },
       {
-        question: "Driver isn't receiving job offer messages",
+        question: "How do I assign a driver and vehicle?",
         answer:
-          "Verify the driver's phone number includes the country code. Check **Communications → Inbox** for the delivery status. If marked as **failed**, the number may be on a do-not-disturb list.",
+          "From **Shipments**, open the job and assign a driver and vehicle. You pick both yourself; there's no automatic matching.",
       },
     ],
   },
@@ -132,40 +185,22 @@ const TOPICS: Topic[] = [
     id: "billing",
     label: "Billing & subscriptions",
     icon: Wallet,
-    blurb: "Wallet top-ups, plans, invoices, and rates.",
+    blurb: "Wallet top-ups, plans, and invoices.",
     faqs: [
       {
         question: "My wallet top-up didn't reflect",
         answer:
-          "MTN MoMo top-ups normally settle within 60 seconds. If it has been longer, check **Wallet → Transactions** for the reference. Keep the MoMo reference handy and escalate to a live agent if missing after 10 minutes.",
+          "Wallet top-ups are paid with MTN Mobile Money from **Wallet & Billing**. If the balance hasn't updated after a few minutes, look for it in **Wallet Transaction History**, then message us here with your MoMo reference.",
       },
       {
-        question: "How do I upgrade my subscription tier?",
+        question: "How do I change my plan?",
         answer:
-          "Visit **Settings → Subscription**. Pick the new tier (Basic / Standard / Advanced / Premium) and confirm. The upgrade is prorated against your current cycle.",
+          "**Settings → Subscription** shows your current plan. Use **Upgrade** there to move to a higher plan.",
       },
       {
-        question: "Where do I download invoices?",
+        question: "Where are my invoices?",
         answer:
-          "**Billing → Invoices** lists all past statements. Click any row to download the PDF. Invoices are also emailed automatically to the billing contact on file.",
-      },
-    ],
-  },
-  {
-    id: "system",
-    label: "System status & reports",
-    icon: Activity,
-    blurb: "Live platform health and reporting questions.",
-    faqs: [
-      {
-        question: "Is there an outage right now?",
-        answer:
-          "Open **Help & Support → System Status** for live indicators across telemetry ingestion, WhatsApp delivery, SMS gateway, and billing. All-green means no known incidents.",
-      },
-      {
-        question: "How do I export a report?",
-        answer:
-          "Most reports (fleet, fuel, driver behavior, sustainability) include a **Receipt CSV** action in the top-right of the page. PDFs are available where applicable.",
+          "**Billing → Invoices** lists your subscription invoices.",
       },
     ],
   },
@@ -173,21 +208,28 @@ const TOPICS: Topic[] = [
     id: "account",
     label: "Account & access",
     icon: ShieldCheck,
-    blurb: "Sign-in, password resets, and team permissions.",
+    blurb: "Sign-in, password resets, and team access.",
     faqs: [
       {
-        question: "I can't sign in",
+        question: "A teammate can't sign in",
         answer:
-          "Double-check your email and password. Use **Forgot password** on the sign-in screen to reset. If your account is locked or you don't see the reset email, escalate to a live agent.",
+          "They can use **Forgot password** on the sign-in screen to reset it. If the reset email doesn't arrive, check their account under **Settings → Users**, or message us here with their email.",
       },
       {
-        question: "How do I invite a teammate?",
+        question: "How do I see who changed what?",
         answer:
-          "Go to **Settings → Team → Invite member**, enter their email and role. They'll receive an email invitation valid for 7 days.",
+          "**Settings → Audit Log** records account activity and changes made by your team.",
       },
     ],
   },
 ];
+
+const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+const MAX_ATTACHMENTS = 10;
+
+function revokeAll(items: PendingAttachment[]) {
+  items.forEach(a => a.url && URL.revokeObjectURL(a.url));
+}
 
 type SupportChatWidgetProps = {
   open?: boolean;
@@ -208,15 +250,13 @@ export function SupportChatWidget({
     else setInternalOpen(v);
   };
 
-  const user = useAuthStore(s => s.user);
+  const email = useAuthStore(s => s.user?.email);
   const firstName = useMemo(
     () => {
-      const name = user?.name?.trim();
-      if (!name)
-        return "there";
-      return name.split(/\s+/)[0];
+      const local = email?.split("@")[0]?.split(/[._\-+]/)[0];
+      return local ? local[0].toUpperCase() + local.slice(1) : "there";
     },
-    [user?.name],
+    [email],
   );
 
   const [
@@ -235,14 +275,16 @@ export function SupportChatWidget({
     openFaqIdx,
     setOpenFaqIdx,
   ] = useState<number | null>(null);
+  const [
+    pendingTopicId,
+    setPendingTopicId,
+  ] = useState<string | null>(null);
 
   const {
-    session: liveSession, joinQueue,
-  } = useLiveAgentSession();
-  const [
-    messages,
-    setMessages,
-  ] = useState<Msg[]>([]);
+    session, messages, unread, markSeen, isLoading, isJoining, isSending, joinQueue, sendMessage, endSession,
+  } = useLiveAgentSession({ open });
+  const busy = isJoining || isSending;
+
   const [
     input,
     setInput,
@@ -250,34 +292,36 @@ export function SupportChatWidget({
   const [
     attachments,
     setAttachments,
-  ] = useState<File[]>([]);
+  ] = useState<PendingAttachment[]>([]);
   const [
     attachOpen,
     setAttachOpen,
   ] = useState(false);
-  const [
-    isStreaming,
-    setIsStreaming,
-  ] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentsRef = useRef(attachments);
+  attachmentsRef.current = attachments;
 
   const activeTopic = TOPICS.find(t => t.id === activeTopicId) ?? null;
+  const pendingTopic = TOPICS.find(t => t.id === pendingTopicId) ?? null;
+  const chatLive = !!session && session.status !== "ended";
+
+  useEffect(
+    () => () => revokeAll(attachmentsRef.current),
+    [],
+  );
 
   useEffect(
     () => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
+      if (open && tab === "messages")
+        markSeen();
     },
     [
-      messages,
-      isStreaming,
-      view,
+      open,
       tab,
+      markSeen,
     ],
   );
 
@@ -315,98 +359,58 @@ export function SupportChatWidget({
     else setView("messages");
   };
 
-  const seedMessagesIfEmpty = () => {
-    if (messages.length === 0) {
-      setMessages([
-        {
-          role: "assistant",
-          content: `Hi ${firstName}! 👋 Browse the FAQs for quick answers, or tap **Talk to a live agent** below and our support team will follow up.`,
-        },
-      ]);
-    }
+  const openWidget = () => {
+    setOpen(true);
+    if (unread)
+      switchTab("messages");
   };
 
-  const escalate = async () => {
-    setTab("messages");
-    setView("messages");
-    seedMessagesIfEmpty();
-    const lastUser = [...messages].reverse().find(m => m.role === "user");
-    await joinQueue({
-      topic: "Live agent handoff from chat widget",
-      contextSummary: lastUser?.content?.slice(
-        0,
-        500,
-      ) || undefined,
-    });
-  };
-
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || isStreaming)
-      return;
-
-    const userMsg: Msg = {
-      role: "user", content: text.trim(),
-    };
-    setMessages(prev => [
-      ...prev,
-      userMsg,
-    ]);
-    setIsStreaming(true);
-
-    try {
-      await new Promise(resolve => window.setTimeout(
-        resolve,
-        350,
-      ));
-      setMessages(prev => [
-        ...prev,
-        {
-          role: "assistant",
-          content: CHAT_AUTOMATION_UNAVAILABLE,
-        },
-      ]);
-    }
-    finally {
-      setIsStreaming(false);
-    }
-  };
-
-  const askAgentAbout = async (question: string, topicLabel: string) => {
-    setTab("messages");
-    setView("messages");
-    seedMessagesIfEmpty();
-    await joinQueue({
-      topic: `Help with: ${topicLabel}`,
-      contextSummary: question,
-    });
+  const askAgentAbout = (question: string, topicId: string) => {
+    switchTab("messages");
+    if (!chatLive)
+      setPendingTopicId(topicId);
+    setInput(`About "${question}": `);
+    setTimeout(
+      () => inputRef.current?.focus(),
+      50,
+    );
   };
 
   const handleFilesPicked = (files: FileList | null) => {
     if (!files || files.length === 0)
       return;
-    const incoming = Array.from(files);
-    const MAX = 20 * 1024 * 1024; // 20MB
-    const accepted: File[] = [];
-    for (const f of incoming) {
-      if (f.size > MAX) {
-        toast.error(`${f.name} is over 20MB`);
+    const accepted: PendingAttachment[] = [];
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        toast.error(`${file.name} is over 20MB`);
         continue;
       }
-      accepted.push(f);
+      accepted.push({
+        file, url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+      });
     }
-    if (accepted.length === 0)
-      return;
-    setAttachments(prev => [
-      ...prev,
-      ...accepted,
-    ].slice(
+    const room = MAX_ATTACHMENTS - attachments.length;
+    revokeAll(accepted.slice(Math.max(
+      room,
       0,
-      10,
-    ));
+    )));
+    if (room > 0 && accepted.length > 0) {
+      setAttachments(prev => [
+        ...prev,
+        ...accepted.slice(
+          0,
+          room,
+        ),
+      ]);
+    }
     setAttachOpen(false);
   };
 
   const removeAttachment = (idx: number) => {
+    revokeAll(attachments.slice(
+      idx,
+      idx + 1,
+    ));
     setAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
@@ -419,20 +423,28 @@ export function SupportChatWidget({
     );
   };
 
-  const submitForm = (e: React.FormEvent) => {
+  const submitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    const text = input;
-    const atts = attachments;
-    if (!text.trim() && atts.length === 0)
+    const text = input.trim();
+    if (busy || (!text && attachments.length === 0))
+      return;
+    const files = attachments.map(a => a.file);
+    const ok = chatLive
+      ? await sendMessage(
+          text,
+          files,
+        )
+      : await joinQueue(
+          pendingTopic,
+          text,
+          files,
+        );
+    if (!ok)
       return;
     setInput("");
+    revokeAll(attachments);
     setAttachments([]);
-    let composed = text;
-    if (atts.length > 0) {
-      const list = atts.map(a => `📎 ${a.name}`).join("\n");
-      composed = text ? `${text}\n\n${list}` : list;
-    }
-    void sendMessage(composed);
+    setPendingTopicId(null);
   };
 
   const renderContent = (content: string) => {
@@ -464,11 +476,10 @@ export function SupportChatWidget({
 
   return (
     <>
-      {/* Floating icon-only bubble */}
       {!open && (
         <button
-          onClick={() => setOpen(true)}
-          aria-label="Open support chat"
+          onClick={openWidget}
+          aria-label={unread ? "Open support chat, new reply" : "Open support chat"}
           className={cn(
             "fixed bottom-6 right-6 z-50 group",
             "flex h-14 w-14 items-center justify-center rounded-full",
@@ -483,17 +494,18 @@ export function SupportChatWidget({
             className="fill-primary-foreground text-primary w-[35px] h-[35px]"
             strokeWidth={2}
           />
-          <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background shadow-sm" />
+          {unread && (
+            <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background shadow-sm" />
+          )}
         </button>
       )}
 
-      {/* Chat panel */}
       {open && (
         <div
           className={cn(
             "fixed z-50 flex flex-col",
             "bottom-4 right-4 left-4 sm:left-auto sm:bottom-6 sm:right-6",
-            "sm:w-[400px] h-[min(620px,calc(100vh-2rem))] sm:max-h-[calc(100vh-3rem)]",
+            "sm:w-[400px] h-[min(620px,calc(100dvh-2rem))] sm:max-h-[calc(100dvh-3rem)]",
             "rounded-3xl overflow-hidden",
             "bg-background backdrop-blur-xl",
             "border border-border",
@@ -501,7 +513,6 @@ export function SupportChatWidget({
             "animate-in slide-in-from-bottom-4 fade-in duration-300",
           )}
         >
-          {/* Header */}
           <div className="relative flex items-center justify-between gap-3 px-4 py-3.5 bg-foreground text-background overflow-hidden shrink-0">
             <div
               aria-hidden
@@ -524,15 +535,13 @@ export function SupportChatWidget({
                   className="fill-primary-foreground bg-transparent text-primary w-[25px] h-[30px] border-0"
                   strokeWidth={2}
                 />
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-foreground animate-pulse" />
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-sm leading-tight tracking-tight truncate">
-                  {view === "topic" && activeTopic ? activeTopic.label : "FleetPro Support"}
+                  {view === "topic" && activeTopic ? activeTopic.label : "TruckMoov Support"}
                 </p>
-                <p className="text-[11px] text-background/70 flex items-center gap-1.5 mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                  Support team · here to help
+                <p className="text-[11px] text-background/70 mt-0.5">
+                  Our support team replies in this chat
                 </p>
               </div>
             </div>
@@ -547,9 +556,7 @@ export function SupportChatWidget({
             </Button>
           </div>
 
-          {/* Body */}
           <div className="flex-1 min-h-0 flex flex-col bg-muted/30">
-            {/* HOME view */}
             {view === "home" && tab === "faqs" && (
               <ScrollArea className="flex-1">
                 <div className="px-5 pt-6 pb-4">
@@ -558,12 +565,9 @@ export function SupportChatWidget({
                     Help center
                   </div>
                   <h2 className="text-2xl font-bold tracking-tight leading-tight mt-2">
-                    Hi
-                    {firstName}
-                    {" "}
-                    👋
+                    {`Hi ${firstName} 👋`}
                   </h2>
-                  <h3 className="text-xl font-semibold text-muted-foreground mt-0.5">How can I help you?</h3>
+                  <h3 className="text-xl font-semibold text-muted-foreground mt-0.5">How can we help?</h3>
                 </div>
                 <div className="px-3 pb-4">
                   <div className="rounded-2xl bg-card border border-border/60 shadow-sm overflow-hidden">
@@ -599,7 +603,6 @@ export function SupportChatWidget({
               </ScrollArea>
             )}
 
-            {/* TOPIC view */}
             {view === "topic" && tab === "faqs" && activeTopic && (
               <ScrollArea className="flex-1">
                 <div className="px-5 pt-5 pb-3">
@@ -642,14 +645,14 @@ export function SupportChatWidget({
                                   {renderContent(faq.answer)}
                                 </div>
                                 <button
-                                  onClick={() => void askAgentAbout(
+                                  onClick={() => askAgentAbout(
                                     faq.question,
-                                    activeTopic.label,
+                                    activeTopic.id,
                                   )}
                                   className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80 hover:text-foreground"
                                 >
                                   <CircleHelp className="h-3 w-3" />
-                                  Still stuck? Talk to a live agent
+                                  Still stuck? Message our support team
                                 </button>
                               </div>
                             )}
@@ -662,138 +665,90 @@ export function SupportChatWidget({
               </ScrollArea>
             )}
 
-            {/* MESSAGES view */}
-            {tab === "messages" && liveSession && (
-              <LiveAgentPanel />
-            )}
-
-            {tab === "messages" && !liveSession && (
+            {tab === "messages" && (
               <>
-                <ScrollArea
-                  className="flex-1 px-4 py-4"
-                  ref={scrollRef as any}
-                >
-                  <div className="space-y-4">
-                    {messages.length === 0 && (
-                      <div className="text-center py-8 px-2">
-                        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground mb-3 shadow-sm">
-                          <CircleHelp className="h-5 w-5" />
-                        </div>
-                        <p className="text-sm font-semibold">
-                          Hi
-                          {firstName}
-                          , how can I help?
-                        </p>
-                        <p className="text-[12px] text-muted-foreground mt-1">
-                          Need help? Talk to a live agent below.
-                        </p>
-                      </div>
+                {session
+                  ? (
+                      <LiveAgentPanel
+                        session={session}
+                        messages={messages}
+                        onEnd={() => void endSession()}
+                      />
+                    )
+                  : (
+                      <ScrollArea className="flex-1 px-4 py-4">
+                        {isLoading
+                          ? (
+                              <div className="flex justify-center py-10">
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                              </div>
+                            )
+                          : (
+                              <div className="text-center py-8 px-2">
+                                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground mb-3 shadow-sm">
+                                  <CircleHelp className="h-5 w-5" />
+                                </div>
+                                <p className="text-sm font-semibold">
+                                  {`Hi ${firstName}, how can we help?`}
+                                </p>
+                                <p className="text-[12px] text-muted-foreground mt-1">
+                                  Send a message to start a chat with our support team. We'll reply right here.
+                                </p>
+                                {pendingTopic && (
+                                  <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 text-[11px] font-medium">
+                                    {`Topic: ${pendingTopic.label}`}
+                                    <button
+                                      type="button"
+                                      onClick={() => setPendingTopicId(null)}
+                                      aria-label="Clear topic"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                      </ScrollArea>
                     )}
-                    {messages.map((m, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "flex gap-2.5",
-                          m.role === "user" && "flex-row-reverse",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "flex h-7 w-7 items-center justify-center rounded-full shrink-0 mt-0.5 ring-1",
-                            m.role === "user"
-                              ? "bg-muted ring-border text-foreground"
-                              : "bg-primary text-primary-foreground ring-primary/30",
-                          )}
-                        >
-                          {m.role === "user"
-                            ? (
-                                <UserRound className="h-3.5 w-3.5" />
-                              )
-                            : (
-                                <CircleHelp className="h-3.5 w-3.5" />
-                              )}
-                        </div>
-                        <div
-                          className={cn(
-                            "rounded-2xl px-3.5 py-2.5 text-sm max-w-[80%] leading-relaxed shadow-sm",
-                            m.role === "user"
-                              ? "bg-foreground text-background rounded-tr-sm"
-                              : "bg-card text-foreground rounded-tl-sm border border-border/60",
-                          )}
-                        >
-                          {renderContent(m.content)}
-                        </div>
-                      </div>
-                    ))}
-                    {isStreaming && messages[messages.length - 1]?.role === "user" && (
-                      <div className="flex gap-2.5">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0 mt-0.5 ring-1 ring-primary/30">
-                          <CircleHelp className="h-3.5 w-3.5" />
-                        </div>
-                        <div className="rounded-2xl rounded-tl-sm bg-card border border-border/60 px-3.5 py-2.5">
-                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
 
-                {/* Quick actions */}
-                <div className="px-4 py-2.5 border-t border-border/60 bg-background/80 backdrop-blur-sm shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={escalate}
-                    className="w-full gap-2 text-xs h-8 hover:bg-primary/10 hover:text-foreground hover:border-primary/40"
-                    disabled={isStreaming}
-                  >
-                    <Headphones className="h-3.5 w-3.5" />
-                    Talk to a live agent
-                  </Button>
-                </div>
-
-                {/* Attachments preview */}
                 {attachments.length > 0 && (
                   <div className="px-3 pt-2.5 pb-1 border-t border-border/60 bg-background shrink-0">
                     <div className="flex flex-wrap gap-2">
-                      {attachments.map((file, idx) => {
-                        const isImage = file.type.startsWith("image/");
-                        const url = isImage ? URL.createObjectURL(file) : null;
-                        return (
-                          <div
-                            key={idx}
-                            className="relative group flex items-center gap-2 rounded-xl border border-border/60 bg-muted/60 pl-1.5 pr-7 py-1.5 max-w-[180px]"
+                      {attachments.map(({
+                        file, url,
+                      }, idx) => (
+                        <div
+                          key={`${file.name}-${idx}`}
+                          className="relative group flex items-center gap-2 rounded-xl border border-border/60 bg-muted/60 pl-1.5 pr-7 py-1.5 max-w-[180px]"
+                        >
+                          {url
+                            ? (
+                                <img
+                                  src={url}
+                                  alt={file.name}
+                                  className="h-8 w-8 rounded-lg object-cover"
+                                />
+                              )
+                            : (
+                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-foreground">
+                                  <FileText className="h-4 w-4" />
+                                </span>
+                              )}
+                          <span className="text-[11px] font-medium truncate min-w-0">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeAttachment(idx)}
+                            aria-label="Remove attachment"
+                            className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background hover:bg-foreground transition-colors"
                           >
-                            {isImage && url
-                              ? (
-                                  <img
-                                    src={url}
-                                    alt={file.name}
-                                    className="h-8 w-8 rounded-lg object-cover"
-                                  />
-                                )
-                              : (
-                                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-foreground">
-                                    <FileText className="h-4 w-4" />
-                                  </span>
-                                )}
-                            <span className="text-[11px] font-medium truncate min-w-0">{file.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeAttachment(idx)}
-                              aria-label="Remove attachment"
-                              className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background hover:bg-foreground transition-colors"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        );
-                      })}
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* Hidden file inputs */}
                 <input
                   ref={photoInputRef}
                   type="file"
@@ -827,9 +782,8 @@ export function SupportChatWidget({
                   }}
                 />
 
-                {/* Input */}
                 <form
-                  onSubmit={submitForm}
+                  onSubmit={e => void submitForm(e)}
                   className="flex items-center gap-2 p-3 border-t border-border/60 bg-background shrink-0"
                 >
                   <Popover
@@ -841,7 +795,7 @@ export function SupportChatWidget({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        disabled={isStreaming}
+                        disabled={busy}
                         aria-label="Add attachment"
                         className="shrink-0 h-9 w-9 rounded-full bg-muted hover:bg-muted/80 text-foreground"
                       >
@@ -919,19 +873,6 @@ export function SupportChatWidget({
                           </span>
                           <span className="text-[12px] font-medium truncate">Check account status</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAttachOpen(false);
-                            escalate();
-                          }}
-                          className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
-                        >
-                          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
-                            <Headphones className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="text-[12px] font-medium truncate">Talk to a live agent</span>
-                        </button>
                       </div>
                     </PopoverContent>
                   </Popover>
@@ -939,24 +880,24 @@ export function SupportChatWidget({
                     ref={inputRef}
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    placeholder="Type a message…"
-                    disabled={isStreaming}
+                    placeholder={chatLive ? "Type a message…" : "Describe your issue to start a chat…"}
+                    disabled={busy}
                     className="flex-1 rounded-full border-border/80 focus-visible:ring-primary/40 focus-visible:border-primary/60"
                   />
                   <Button
                     type="submit"
                     size="icon"
-                    disabled={(!input.trim() && attachments.length === 0) || isStreaming}
+                    aria-label="Send message"
+                    disabled={(!input.trim() && attachments.length === 0) || busy}
                     className="shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground border-0 shadow-md"
                   >
-                    {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </form>
               </>
             )}
           </div>
 
-          {/* Bottom tab bar */}
           <div className="grid grid-cols-2 border-t border-border bg-background shrink-0">
             <button
               onClick={() => switchTab("faqs")}
@@ -973,12 +914,9 @@ export function SupportChatWidget({
               FAQs
             </button>
             <button
-              onClick={() => {
-                switchTab("messages");
-                seedMessagesIfEmpty();
-              }}
+              onClick={() => switchTab("messages")}
               className={cn(
-                "flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors",
+                "relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors",
                 tab === "messages" ? "text-foreground" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -988,6 +926,9 @@ export function SupportChatWidget({
               )}
               />
               Messages
+              {unread && tab !== "messages" && (
+                <span className="absolute top-2 left-[calc(50%+6px)] h-2 w-2 rounded-full bg-destructive" />
+              )}
             </button>
           </div>
         </div>

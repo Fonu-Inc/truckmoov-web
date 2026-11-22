@@ -1,64 +1,325 @@
-import { useCallback } from "react";
+import type { SupportTicketCategory } from "@truckmoov/api/auth";
+import {
+  useQuery, useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getSupportTicketQueryOptions,
+  getSupportTicketsQueryOptions,
+  useAttachSupportTicketFiles,
+  useCloseSupportTicket,
+  useCreateSupportTicket,
+  useReplySupportTicket,
+} from "@truckmoov/api/auth";
+import {
+  useCallback, useMemo, useState,
+} from "react";
+import { toast } from "sonner";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { useSupportTicketLiveUpdates } from "@/hooks/useSupportTicketLiveUpdates";
 
-export type LiveSessionStatus = "queued" | "assigned" | "active" | "ended" | "abandoned";
+export type LiveSessionStatus = "waiting" | "connected" | "ended";
 
 export type LiveSession = {
-  id: string;
-  tenant_id: string;
-  org_id: string | null;
-  requester_id: string;
-  requester_name: string | null;
-  requester_email: string | null;
-  topic: string | null;
-  context_summary: string | null;
+  ticketId: string;
+  subject: string;
   status: LiveSessionStatus;
-  agent_id: string | null;
-  agent_name: string | null;
-  ticket_id: string | null;
-  queued_at: string;
-  assigned_at: string | null;
-  started_at: string | null;
-  ended_at: string | null;
-  wait_seconds: number | null;
-  duration_seconds: number | null;
-  ended_reason: string | null;
+  agentName: string | null;
+  startedAt: string;
+  connectedAt: string | null;
 };
 
 export type LiveMessage = {
   id: string;
-  session_id: string;
-  sender_id: string;
-  sender_name: string | null;
-  sender_role: "user" | "agent" | "system";
+  role: "user" | "agent";
+  senderName: string | null;
   message: string;
-  created_at: string;
+  createdAt: string;
+  attachments: string[];
 };
 
-/**
- * Manages a single live-agent chat session for the current end-user.
- */
-export function useLiveAgentSession() {
-  const session: LiveSession | null = null;
-  const messages: LiveMessage[] = [];
-  const queuePosition: number | null = null;
-  const isJoining = false;
+export type LiveChatTopic = {
+  id: string;
+  label: string;
+};
 
-  const joinQueue = useCallback(
-    async (_opts: {
-      topic?: string; contextSummary?: string;
-    }) => null,
-    [],
+/** Tickets raised from the chat widget carry this otherChannel so the widget can find them again. */
+const LIVE_CHAT_CHANNEL = "live chat";
+const ENDED_KEY = "support-chat:ended-ticket";
+const SEEN_KEY = "support-chat:last-seen-reply";
+const ENDED_STATUSES = new Set([
+  "resolved",
+  "closed",
+]);
+
+const TOPIC_CATEGORY: Record<string, SupportTicketCategory> = {
+  activation: "onboarding",
+  device: "device_tracking",
+  sim: "sim_connectivity",
+  whatsapp: "messaging",
+  billing: "billing",
+  account: "account_access",
+};
+
+function readStorage(key: string) {
+  try {
+    return localStorage.getItem(key);
+  }
+  catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: string) {
+  try {
+    localStorage.setItem(
+      key,
+      value,
+    );
+  }
+  catch {}
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  return (error as { message?: string } | null)?.message || fallback;
+}
+
+/**
+ * Live chat backed by a support ticket: joining raises a ticket, messages are its
+ * public thread, and replies go back through the ticket reply endpoint.
+ */
+export function useLiveAgentSession({ open }: { open: boolean }) {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore(s => s.user?.id);
+  const [
+    ticketId,
+    setTicketId,
+  ] = useState<string | null>(null);
+  const [
+    endedId,
+    setEndedId,
+  ] = useState(() => readStorage(ENDED_KEY));
+  const [
+    lastSeenId,
+    setLastSeenId,
+  ] = useState(() => readStorage(SEEN_KEY));
+
+  const list = useQuery({
+    ...getSupportTicketsQueryOptions(),
+    enabled: !!userId && !ticketId,
+  });
+  const restoredId = useMemo(
+    () => (list.data?.data.tickets ?? [])
+      .filter(t => t.createdBy === userId
+        && t.otherChannel?.toLowerCase() === LIVE_CHAT_CHANNEL
+        && !ENDED_STATUSES.has(t.status)
+        && t.id !== endedId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+      ?.id ?? null,
+    [
+      list.data,
+      userId,
+      endedId,
+    ],
   );
-  const sendMessage = useCallback(
-    async (_text: string) => {},
-    [],
+  const activeId = ticketId ?? restoredId;
+
+  // Agent replies arrive over the realtime socket; the slow poll only covers a dropped connection.
+  useSupportTicketLiveUpdates(activeId);
+  const detail = useQuery({
+    ...getSupportTicketQueryOptions(activeId ?? ""),
+    enabled: !!activeId,
+    refetchInterval: open ? 30_000 : 120_000,
+  });
+
+  const ticket = detail.data?.data.ticket;
+  const messages = useMemo<LiveMessage[]>(
+    () => {
+      const data = detail.data?.data;
+      if (!data)
+        return [];
+      const filesFor = (messageId: string | null) => data.attachments
+        .filter(a => a.messageId === messageId)
+        .map(a => a.filename);
+      return [
+        {
+          id: `${data.ticket.id}:description`,
+          role: "user",
+          senderName: null,
+          message: data.ticket.description,
+          createdAt: data.ticket.createdAt,
+          attachments: filesFor(null),
+        },
+        ...data.messages
+          .filter(m => !m.isInternal)
+          .map(m => ({
+            id: m.id,
+            role: m.senderRole === "tenant" ? "user" as const : "agent" as const,
+            senderName: m.senderName || null,
+            message: m.message,
+            createdAt: m.createdAt,
+            attachments: filesFor(m.id),
+          })),
+      ];
+    },
+    [detail.data],
   );
-  const endSession = useCallback(
-    async (_reason?: string) => {},
-    [],
+
+  const agentMessages = messages.filter(m => m.role === "agent");
+  const firstAgent = agentMessages[0];
+  const lastAgent = agentMessages[agentMessages.length - 1];
+
+  const session: LiveSession | null = ticket
+    ? {
+        ticketId: ticket.id,
+        subject: ticket.subject,
+        status: ENDED_STATUSES.has(ticket.status)
+          ? "ended"
+          : ticket.status === "in_progress" || firstAgent ? "connected" : "waiting",
+        agentName: lastAgent?.senderName ?? null,
+        startedAt: ticket.createdAt,
+        connectedAt: firstAgent?.createdAt ?? null,
+      }
+    : null;
+
+  const unread = !!lastAgent && lastAgent.id !== lastSeenId;
+  const lastAgentId = lastAgent?.id;
+  const markSeen = useCallback(
+    () => {
+      if (!lastAgentId || lastAgentId === lastSeenId)
+        return;
+      setLastSeenId(lastAgentId);
+      writeStorage(
+        SEEN_KEY,
+        lastAgentId,
+      );
+    },
+    [
+      lastAgentId,
+      lastSeenId,
+    ],
   );
+
+  const create = useCreateSupportTicket();
+  const reply = useReplySupportTicket();
+  const attach = useAttachSupportTicketFiles();
+  const close = useCloseSupportTicket();
+
+  const uploadFiles = async (id: string, files: File[], messageId?: string) => {
+    if (files.length === 0)
+      return;
+    try {
+      await attach.mutateAsync({
+        id, data: files, messageId,
+      });
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "Your message was sent, but the attachments failed to upload",
+      ));
+    }
+    await queryClient.invalidateQueries({ queryKey: getSupportTicketQueryOptions(id).queryKey });
+  };
+
+  const joinQueue = async (topic: LiveChatTopic | null, text: string, files: File[] = []) => {
+    const trimmed = text.trim();
+    // The backend needs at least 3 characters of description.
+    const description = trimmed.length >= 3
+      ? trimmed
+      : [
+          trimmed,
+          files.length > 0 ? "(see attachments)" : "(sent from live chat)",
+        ].filter(Boolean).join(" ");
+    try {
+      const res = await create.mutateAsync({
+        data: {
+          subject: topic ? `Live chat: ${topic.label}` : "Live chat",
+          description,
+          category: (topic && TOPIC_CATEGORY[topic.id]) || "other",
+          channel: "other",
+          otherChannel: LIVE_CHAT_CHANNEL,
+        },
+      });
+      const id = res.data.id;
+      setTicketId(id);
+      toast.success("Chat started. A support agent will reply here.");
+      await uploadFiles(
+        id,
+        files,
+      );
+      return true;
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "Couldn't start the chat. Please try again.",
+      ));
+      return false;
+    }
+  };
+
+  const sendMessage = async (text: string, files: File[] = []) => {
+    if (!activeId)
+      return false;
+    try {
+      const res = await reply.mutateAsync({
+        id: activeId,
+        data: { message: text.trim() || "Shared an attachment" },
+      });
+      const messageId = res.data?.message?.id;
+      await uploadFiles(
+        activeId,
+        files,
+        messageId,
+      );
+      return true;
+    }
+    catch (error) {
+      toast.error(errorMessage(
+        error,
+        "Message not sent. Please try again.",
+      ));
+      return false;
+    }
+  };
+
+  const endSession = async () => {
+    if (!activeId)
+      return;
+    if (ticket?.status === "resolved") {
+      try {
+        await close.mutateAsync({ id: activeId });
+        toast.success("Chat closed");
+      }
+      catch (error) {
+        toast.error(errorMessage(
+          error,
+          "Couldn't close the chat",
+        ));
+        return;
+      }
+    }
+    else if (ticket && !ENDED_STATUSES.has(ticket.status)) {
+      toast.info("Chat ended. Your ticket stays open until an agent closes it; follow it under Help → Tickets.");
+    }
+    setEndedId(activeId);
+    writeStorage(
+      ENDED_KEY,
+      activeId,
+    );
+    setTicketId(null);
+  };
 
   return {
-    session, messages, queuePosition, isJoining, joinQueue, sendMessage, endSession,
+    session,
+    messages,
+    unread,
+    markSeen,
+    isLoading: !!activeId && detail.isPending,
+    isJoining: create.isPending,
+    isSending: reply.isPending || attach.isPending,
+    joinQueue,
+    sendMessage,
+    endSession,
   };
 }

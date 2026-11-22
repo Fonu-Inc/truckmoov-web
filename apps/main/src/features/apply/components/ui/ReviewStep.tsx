@@ -5,7 +5,10 @@ import type {
 } from "@/features/apply/utils/applyTypes";
 
 import { useQuery } from "@tanstack/react-query";
-import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
+import {
+  getOnboardingM2mPlansQueryOptions,
+  getPickupLocationsQueryOptions,
+} from "@truckmoov/api/auth";
 
 import {
   ArrowLeft,
@@ -16,8 +19,8 @@ import {
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
 import { requestedDeviceTotal } from "@/features/apply/hooks/useApplySession";
-import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import { applicationToDetails } from "@/features/apply/utils/applySchemas";
 
 type ReviewStepProps = {
@@ -52,8 +55,9 @@ export function ReviewStep({
   const plan = plansQuery.data?.data.plans.find(entry => entry.code === application.m2mPlanCode);
   const { organization } = application;
   const details = applicationToDetails(application);
-  const fulfilment = useApplyDraftStore(state => state.fulfilment);
-  const delivery = customerType === "enterprise" && fulfilment.method === "delivery";
+  const savedFulfilment = application.fulfilment;
+  const pickupId = savedFulfilment?.method === "pickup" ? savedFulfilment.pickupLocationId : null;
+  const pickup = useQuery(getPickupLocationsQueryOptions()).data?.data.find(location => location.id === pickupId);
 
   const isEnterprise = customerType === "enterprise";
   const deviceTotal = requestedDeviceTotal(application);
@@ -159,19 +163,11 @@ export function ReviewStep({
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Field
               label="Device fulfilment method"
-              value={delivery ? "Delivery" : "Pickup"}
+              value="Pickup"
             />
             <Field
-              label={delivery ? "Delivery address" : "Pickup location"}
-              value={delivery
-                ? [
-                    fulfilment.deliveryStreet,
-                    fulfilment.deliveryCity,
-                    fulfilment.deliveryState,
-                  ].filter(part => part.trim()).join(", ")
-                : fulfilment.store
-                  ? `${fulfilment.store}, ${fulfilment.area}, ${fulfilment.state}`
-                  : ""}
+              label="Pickup location"
+              value={pickup ? `${pickup.name}, ${pickup.area}, ${pickup.state}` : ""}
             />
           </div>
         )}
@@ -266,7 +262,7 @@ export function ReviewStep({
         application will be reviewed by the Fleet Pro team.
       </div>
 
-      <div className="flex items-center justify-between border-t border-border/60 pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
         <Button
           variant="ghost"
           onClick={onBack}
@@ -274,6 +270,7 @@ export function ReviewStep({
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
+        <ApplicationSaveButton />
         <Button
           size="lg"
           className="min-w-48"

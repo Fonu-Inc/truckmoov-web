@@ -40,6 +40,7 @@ import {
 import { DataTable } from "@/components/shadcn/data-table";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import { useSupportTicketLiveUpdates } from "@/hooks/useSupportTicketLiveUpdates";
 import { TicketDetailSheet } from "./TicketDetailSheet";
 
 const statusConfig: Record<SupportTicketStatus, {
@@ -100,15 +101,8 @@ function formatCategory(category: string) {
   );
 }
 
-function shortId(id?: string) {
-  return id ? id.slice(
-    0,
-    8,
-  ) : "—";
-}
-
 function reporterName(ticket: SupportTicket) {
-  return ticket.createdBy ? `User #${shortId(ticket.createdBy)}` : "—";
+  return ticket.reporterName ?? "Former user";
 }
 
 function channelName(ticket: SupportTicket) {
@@ -121,6 +115,7 @@ function channelName(ticket: SupportTicket) {
 }
 
 export function MyTickets() {
+  useSupportTicketLiveUpdates();
   const [
     search,
     setSearch,
@@ -269,7 +264,7 @@ export function MyTickets() {
       header: "Ticket ID",
       enableSorting: false,
       meta: { className: "font-mono text-xs" },
-      cell: ({ row }) => `#${shortId(row.original.id)}`,
+      cell: ({ row }) => row.original.displayId,
     },
     {
       accessorKey: "subject",
@@ -405,7 +400,7 @@ export function MyTickets() {
                   setSearch(value);
                   updateSearch(value);
                 }}
-                searchPlaceholder="Search by ID, title, or description..."
+                searchPlaceholder="Search by ticket number (#tkt-1000), title, or description..."
                 status={statusFilter}
                 onStatusChange={setStatusFilter}
                 statusOptions={statusOptions}

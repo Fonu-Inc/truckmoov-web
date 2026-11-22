@@ -4,8 +4,12 @@ import type {
   SupportTicketPriority,
   SupportTicketStatus,
 } from "@truckmoov/api/auth";
-import { useQuery } from "@tanstack/react-query";
 import {
+  useQuery, useQueryClient,
+} from "@tanstack/react-query";
+import {
+  AUTH_QUERY_KEY,
+  getSupportTicketAttachmentLink,
   getSupportTicketQueryOptions,
   useCloseSupportTicket,
   useReopenSupportTicket,
@@ -37,6 +41,7 @@ import {
 import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 import { Textarea } from "@/components/shadcn/textarea";
+
 import { TicketCsatPanel } from "./TicketCsatPanel";
 
 type TicketDetailSheetProps = {
@@ -95,18 +100,129 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024).toFixed(0)} KB`;
 }
 
+// Links are signed for five minutes; refetch a little before that.
+const LINK_STALE_MS = 4 * 60 * 1000;
+
+function attachmentLinkQuery(attachment: SupportTicketAttachment) {
+  return {
+    queryKey: [
+      ...AUTH_QUERY_KEY.supportTicket(attachment.ticketId),
+      "attachment",
+      attachment.id,
+    ],
+    queryFn: () => getSupportTicketAttachmentLink({
+      id: attachment.ticketId, attachmentId: attachment.id,
+    }),
+    staleTime: LINK_STALE_MS,
+  };
+}
+
+/** Opens the attachment in a new tab; the tab is opened first so the popup blocker allows it. */
+function useOpenAttachment() {
+  const queryClient = useQueryClient();
+  return async (attachment: SupportTicketAttachment) => {
+    const tab = window.open(
+      "",
+      "_blank",
+    );
+    try {
+      const { data } = await queryClient.fetchQuery(attachmentLinkQuery(attachment));
+      if (tab) {
+        tab.opener = null;
+        tab.location.href = data.url;
+      }
+      else {
+        window.location.assign(data.url);
+      }
+    }
+    catch {
+      tab?.close();
+      toast.error(`Couldn't open ${attachment.filename}`);
+    }
+  };
+}
+
+function ImageThumb({
+  attachment, onOpen,
+}: {
+  attachment: SupportTicketAttachment; onOpen: () => void;
+}) {
+  const { data } = useQuery(attachmentLinkQuery(attachment));
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group relative block aspect-video overflow-hidden rounded-md border bg-muted"
+    >
+      {data?.data.url
+        ? (
+            <img
+              src={data.data.url}
+              alt={attachment.filename}
+              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            />
+          )
+        : (
+            <div className="flex h-full w-full items-center justify-center">
+              <ImageIcon className="h-6 w-6 text-muted-foreground" />
+            </div>
+          )}
+      <div className="absolute inset-x-0 bottom-0 truncate bg-background/80 px-2 py-1 text-left text-[10px]">
+        {attachment.filename}
+      </div>
+    </button>
+  );
+}
+
+function AttachmentList({ attachments }: { attachments: SupportTicketAttachment[] }) {
+  const open = useOpenAttachment();
+  const images = attachments.filter(isImageAttachment);
+  const files = attachments.filter(a => !isImageAttachment(a));
+  return (
+    <div className="space-y-2">
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {images.map(attachment => (
+            <ImageThumb
+              key={attachment.id}
+              attachment={attachment}
+              onOpen={() => void open(attachment)}
+            />
+          ))}
+        </div>
+      )}
+      {files.length > 0 && (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {files.map(attachment => (
+            <button
+              key={attachment.id}
+              type="button"
+              onClick={() => void open(attachment)}
+              className="flex items-center gap-2 rounded-lg border bg-card p-2.5 text-left transition-colors hover:border-primary/50"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium">{attachment.filename}</p>
+                <p className="text-[10px] text-muted-foreground">{formatBytes(attachment.sizeBytes)}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
   const {
     attachments, messages, ticket,
   } = detail;
   const status = statusConfig[ticket.status];
   const priority = priorityStyles[ticket.priority];
-  const reporterDisplay = ticket.createdBy
-    ? `User #${ticket.createdBy.slice(
-      0,
-      8,
-    )}`
-    : "—";
+  const reporterDisplay = ticket.reporterName ?? "Former user";
+  const ticketAttachments = attachments.filter(a => !a.messageId);
   const channelLabel = ticket.otherChannel ?? ticket.channel ?? ticket.contextType;
 
   return (
@@ -118,13 +234,7 @@ function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
         </div>
         <div className="space-y-1">
           <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Ticket ID</Label>
-          <p className="text-sm font-medium font-mono">
-            #
-            {ticket.id.slice(
-              0,
-              8,
-            )}
-          </p>
+          <p className="text-sm font-medium font-mono">{ticket.displayId}</p>
         </div>
       </div>
 
@@ -197,35 +307,12 @@ function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
         <Label className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
           <Paperclip className="h-3 w-3" />
           Attachments (
-          {attachments.length}
+          {ticketAttachments.length}
           )
         </Label>
-        {attachments.length === 0
+        {ticketAttachments.length === 0
           ? <p className="text-sm text-muted-foreground">No attachments.</p>
-          : (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {attachments.map(attachment => (
-                  <div
-                    key={attachment.id}
-                    className="flex items-center gap-2 rounded-lg border bg-card p-2.5"
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
-                      {isImageAttachment(attachment)
-                        ? <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                        : <FileText className="h-4 w-4 text-muted-foreground" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium">{attachment.filename}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {attachment.contentType}
-                        {" · "}
-                        {formatBytes(attachment.sizeBytes)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          : <AttachmentList attachments={ticketAttachments} />}
       </div>
 
       <div className="space-y-2">
@@ -256,6 +343,11 @@ function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
                       </p>
                     </div>
                     <p className="whitespace-pre-wrap text-sm">{message.message}</p>
+                    {attachments.some(a => a.messageId === message.id) && (
+                      <div className="mt-2">
+                        <AttachmentList attachments={attachments.filter(a => a.messageId === message.id)} />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

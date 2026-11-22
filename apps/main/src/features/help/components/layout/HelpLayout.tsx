@@ -1,10 +1,37 @@
+import { Loader2 } from "lucide-react";
 import {
-  NavLink, Outlet,
+  Navigate, NavLink, Outlet, useLocation,
 } from "react-router";
+import { useSupportAccess } from "@/features/help/hooks/useSupportAccess";
 import { HELP_TABS } from "@/features/help/utils/helpNav";
 import { cn } from "@/lib/utils";
 
 export function HelpLayout() {
+  const {
+    isLoading, canView, canManage,
+  } = useSupportAccess();
+  const { pathname } = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  const tabs = HELP_TABS.filter(tab => (tab.requiresManage ? canManage : canView));
+  if (!tabs.some(tab => tab.to === pathname.replace(
+    /\/$/,
+    "",
+  ))) {
+    return (
+      <Navigate
+        to={tabs[0]?.to ?? "/not-authorized"}
+        replace
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* ponytail: label-only tabs, mirrors the fleetflow-pro reference at
@@ -13,7 +40,7 @@ export function HelpLayout() {
         aria-label="Help sections"
         className="bg-muted/50 text-muted-foreground flex flex-wrap gap-1 h-auto rounded-md p-1 justify-center"
       >
-        {HELP_TABS.map(tab => (
+        {tabs.map(tab => (
           <NavLink
             key={tab.to}
             to={tab.to}

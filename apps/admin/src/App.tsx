@@ -5,18 +5,11 @@ import { useEffect } from "react";
 import { Outlet } from "react-router";
 import { Toaster as Sonner } from "@/components/shadcn/sonner";
 import { AuthGuard } from "@/features/auth/components/providers/AuthGuard";
-import { GlobalSupportChat } from "./components/support/GlobalSupportChat";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { FonuCallProvider } from "./contexts/FonuCallContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { useAuthStore } from "./stores/authStore";
-
-function AuthenticatedSupportChat() {
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-
-  return isAuthenticated ? <GlobalSupportChat /> : null;
-}
 
 /**
  * Root layout route (pathless). Owns the provider tower and the auth gate;
@@ -46,7 +39,6 @@ function App() {
                 <ErrorBoundary variant="page">
                   <Outlet />
                 </ErrorBoundary>
-                <AuthenticatedSupportChat />
               </AuthGuard>
             </FonuCallProvider>
           </PreferencesProvider>

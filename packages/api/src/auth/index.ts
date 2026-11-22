@@ -8,6 +8,10 @@ import { setOnboardingToken as persistOnboardingToken } from '../lib/onboarding-
 import { queryClient } from '../lib/query-client'
 import {
   attachSupportTicketFiles,
+  getSupportTicketAttachmentLink,
+  getSupportTicketCsat,
+  submitSupportTicketCsat,
+  getCapabilities,
   approveSystemDeviceSetupRequest,
   assignSystemDeviceSetupRequest,
   assignSystemDevices,
@@ -472,6 +476,9 @@ export const AUTH_QUERY_KEY = {
     payload ? ['supportTickets', payload] : ['supportTickets'],
   supportTicket: (id: string) => ['supportTicket', id],
   supportTicketsSummary: ['supportTicketsSummary'],
+  supportTicketCsat: (id: string) => ['supportTicketCsat', id],
+  // Keyed by user: the query cache outlives a sign-out.
+  capabilities: (userId: string) => ['capabilities', userId],
   supportTicketOptions: ['supportTicketOptions'],
   supportTicketContext: (payload: SupportTicketContextPayload) =>
     ['supportTicketContext', payload],
@@ -2437,6 +2444,33 @@ export function useCreateSupportTicket() {
 
 export function useAttachSupportTicketFiles() {
   return useMutation({ mutationFn: attachSupportTicketFiles })
+}
+
+export { getSupportTicketAttachmentLink }
+
+export function getSupportTicketCsatQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.supportTicketCsat(id),
+    queryFn: () => getSupportTicketCsat({ id }),
+    enabled: !!id,
+  })
+}
+
+export function useSubmitSupportTicketCsat() {
+  return useMutation({
+    mutationFn: submitSupportTicketCsat,
+    onSuccess: (res, variables) => queryClient.setQueryData(AUTH_QUERY_KEY.supportTicketCsat(variables.id), res),
+  })
+}
+
+/** Permissions of the signed-in user; cached for the session since they change rarely. */
+export function getCapabilitiesQueryOptions(userId: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.capabilities(userId),
+    queryFn: getCapabilities,
+    staleTime: 5 * 60 * 1000,
+    enabled: !!userId,
+  })
 }
 
 export function getSupportTicketsSummaryQueryOptions() {

@@ -1350,6 +1350,11 @@ export type AttachSupportTicketFilesPayload = {
 
 export type SupportTicket = {
   id: string
+  ticketNumber: number
+  /** The number people quote, e.g. "#tkt-1000". */
+  displayId: string
+  /** The reporter's full name, else their email; null when the user is gone. */
+  reporterName: string | null
   tenantId: string
   category: string
   subject: string
@@ -1415,6 +1420,39 @@ export type SupportTicketDetail = {
 }
 
 export type SupportTicketDetailResponse = ServerResponse<SupportTicketDetail>
+
+export type SupportTicketReplyResponse = ServerResponse<{
+  message: SupportTicketMessage
+  ticketStatus: SupportTicketStatus
+}>
+
+/** A signed download link; it expires a few minutes after it is issued. */
+export type SupportTicketAttachmentLink = {
+  id: string
+  fileName: string
+  size: number
+  mimeType: string
+  url: string
+  expiresAt: string
+}
+export type SupportTicketAttachmentLinkResponse = ServerResponse<SupportTicketAttachmentLink>
+
+export type SupportTicketCsat = {
+  rating: number
+  comment: string | null
+  wouldRecommend: boolean | null
+  userId: string
+  createdAt: string
+}
+export type SupportTicketCsatResponse = ServerResponse<SupportTicketCsat | null>
+export type SubmitSupportTicketCsatPayload = {
+  id: string
+  data: { rating: number, comment?: string, wouldRecommend?: boolean }
+}
+
+/** GET /auth/capabilities — what the signed-in user may do, organisation grants included. */
+export type Capabilities = { portal: string, permissions: string[] }
+export type CapabilitiesResponse = ServerResponse<Capabilities>
 
 // TRU-FE-10 §A — Tenant summary cards
 export type SupportTicketsSummary = {
@@ -1562,6 +1600,8 @@ export type SystemSupportTicketMessage = {
 export type SystemSupportTicketDetail = SystemSupportTicket & {
   messages: SystemSupportTicketMessage[]
   attachments: SupportTicketAttachment[]
+  /** The tenant's rating, read-only; null until they give one. */
+  csat?: SupportTicketCsat | null
 }
 
 export type SystemSupportEscalatedTicket = SystemSupportTicket & {

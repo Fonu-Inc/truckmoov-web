@@ -1,12 +1,14 @@
 import type {
   OnboardingApplication,
   OnboardingApplicationDocument,
+  OnboardingIdentificationType,
 } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { RequiredDocument } from "@/features/apply/utils/applyTypes";
 
 import {
   useDeleteOnboardingApplicationDocument,
+  useUpdateOnboardingApplication,
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
 import {
@@ -32,9 +34,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
 import {
+  applicationToDetails,
   checkFile,
   describeClaims,
+  detailsToPayload,
 } from "@/features/apply/utils/applySchemas";
 import { cn } from "@/lib/utils";
 
@@ -52,11 +57,20 @@ type Slot = {
   document: RequiredDocument;
 };
 
-/** The only identification cards accepted, as the design lists them. */
-const ID_CARD_TYPES = [
-  "National Identification Card",
-  "Driver's License",
-] as const;
+/** The only identification cards accepted, as the design lists them; saved as `identificationType`. */
+const ID_CARD_TYPES: Array<{
+  value: OnboardingIdentificationType;
+  label: string;
+}> = [
+  {
+    value: "nin",
+    label: "National Identification Card",
+  },
+  {
+    value: "drivers_licence",
+    label: "Driver's License",
+  },
+];
 
 const ID_TYPE_REQUIRED = "Select your identification card type first — only a National Identification Card or Driver's License is accepted. Any other card will be rejected.";
 
@@ -91,11 +105,42 @@ export function DocumentsStep({
     busy,
     setBusy,
   ] = useState<Record<string, boolean>>({});
-  // TODO(api): the ID type isn't sent with the upload yet — the API has no field for it.
+  const updateApplication = useUpdateOnboardingApplication();
+  const savedIdType = application.registry.identificationType;
   const [
     idType,
     setIdType,
-  ] = useState("");
+  ] = useState<string>(savedIdType === "nin" || savedIdType === "drivers_licence" ? savedIdType : "");
+
+  /** PATCH replaces the details, so the application's own are resent with the ID type. */
+  async function saveIdType(value: string) {
+    setIdType(value);
+    setRow(
+      setErrors,
+      "identification_card",
+    );
+    try {
+      await updateApplication.mutateAsync({
+        id: application.id,
+        data: {
+          ...detailsToPayload(
+            applicationToDetails(application),
+            application.applicantType,
+            application.m2mPlanCode ?? "",
+            application.returningCustomer,
+          ),
+          identificationType: value as OnboardingIdentificationType,
+        },
+      });
+    }
+    catch (error) {
+      setRow(
+        setErrors,
+        "identification_card",
+        (error as ServerErrorResponse).message || "Your ID type couldn't be saved. Try again.",
+      );
+    }
+  }
 
   const slots: Slot[] = required.map(document => ({
     key: document.type,
@@ -241,13 +286,7 @@ export function DocumentsStep({
               label={slot.document.label}
               requirement={slot.document.requirement}
               idType={slot.document.type === "identification_card" ? idType : undefined}
-              onIdType={(value) => {
-                setIdType(value);
-                setRow(
-                  setErrors,
-                  slot.key,
-                );
-              }}
+              onIdType={value => void saveIdType(value)}
               document={document}
               busy={Boolean(busy[slot.key])}
               error={errors[slot.key]}
@@ -270,7 +309,7 @@ export function DocumentsStep({
         application will be reviewed by the Fleet Pro team.
       </div>
 
-      <div className="flex items-center justify-between border-t border-border/60 pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
         <Button
           variant="ghost"
           onClick={onBack}
@@ -278,6 +317,7 @@ export function DocumentsStep({
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
+        <ApplicationSaveButton />
         <Button
           size="lg"
           className="min-w-48"
@@ -372,10 +412,10 @@ function DocumentRow({
                   <SelectContent>
                     {ID_CARD_TYPES.map(type => (
                       <SelectItem
-                        key={type}
-                        value={type}
+                        key={type.value}
+                        value={type.value}
                       >
-                        {type}
+                        {type.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

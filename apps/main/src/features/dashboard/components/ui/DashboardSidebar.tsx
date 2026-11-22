@@ -38,6 +38,7 @@ import {
   getEntriesForRole,
   isNavGroup,
 } from "@/features/dashboard/utils/sidebarNav";
+import { useSupportAccess } from "@/features/help/hooks/useSupportAccess";
 import { cn } from "@/lib/utils";
 
 /**
@@ -244,6 +245,7 @@ const NavGroup = memo(NavGroupBase);
 function DashboardSidebarBase() {
   const role = useAuthStore(s => s.user?.role);
   const logout = useAuthStore(s => s.logout);
+  const supportAccess = useSupportAccess();
   const collapsed = useSidebarStore(s => s.collapsed);
 
   // Branding is effectively static for a session — without a staleTime this
@@ -370,21 +372,23 @@ function DashboardSidebarBase() {
         {/* Footer Section (user moved to top bar) */}
         <div className="border-t border-sidebar-border p-3">
           <div className="space-y-0.5">
-            <FooterRow
-              collapsed={collapsed}
-              label="Ticketing & Support"
-            >
-              <NavLink
-                to="/help"
-                className={({ isActive }) => cn(
-                  FOOTER_ROW,
-                  isActive ? ROW_ACTIVE : ROW_IDLE,
-                )}
+            {supportAccess.canView && (
+              <FooterRow
+                collapsed={collapsed}
+                label="Ticketing & Support"
               >
-                <Ticket className={ICON} />
-                {!collapsed && <span>Ticketing & Support</span>}
-              </NavLink>
-            </FooterRow>
+                <NavLink
+                  to="/help"
+                  className={({ isActive }) => cn(
+                    FOOTER_ROW,
+                    isActive ? ROW_ACTIVE : ROW_IDLE,
+                  )}
+                >
+                  <Ticket className={ICON} />
+                  {!collapsed && <span>Ticketing & Support</span>}
+                </NavLink>
+              </FooterRow>
+            )}
             <FooterRow
               collapsed={collapsed}
               label="Sign Out"

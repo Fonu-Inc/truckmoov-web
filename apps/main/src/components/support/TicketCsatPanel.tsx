@@ -1,6 +1,13 @@
+import type { SupportTicketStatus } from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSupportTicketCsatQueryOptions,
+  useSubmitSupportTicketCsat,
+} from "@truckmoov/api/auth";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { Star } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
@@ -9,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   ticketId: string;
-  ticketStatus: "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
+  ticketStatus: SupportTicketStatus;
 };
 
 const RATING_LABELS = [
@@ -22,12 +29,32 @@ const RATING_LABELS = [
 ];
 
 export function TicketCsatPanel({
-  ticketId: _ticketId, ticketStatus,
+  ticketId, ticketStatus,
 }: Props) {
-  const csat: any = null;
-  const isLoading = false;
-  const isSubmitting = false;
-  const submit = async (..._args: any[]) => {};
+  const rateable = ticketStatus === "resolved" || ticketStatus === "closed";
+  const csatQuery = useQuery({
+    ...getSupportTicketCsatQueryOptions(ticketId),
+    enabled: rateable,
+  });
+  const csat = csatQuery.data?.data ?? null;
+  const submitCsat = useSubmitSupportTicketCsat();
+  const isSubmitting = submitCsat.isPending;
+  const submit = (data: {
+    rating: number; comment: string; wouldRecommend: boolean;
+  }) => submitCsat.mutate(
+    {
+      id: ticketId,
+      data: {
+        rating: data.rating,
+        comment: data.comment.trim() || undefined,
+        wouldRecommend: data.wouldRecommend,
+      },
+    },
+    {
+      onSuccess: () => toast.success("Thanks for your feedback"),
+      onError: error => toast.error(error.message),
+    },
+  );
   const [
     rating,
     setRating,
@@ -45,9 +72,7 @@ export function TicketCsatPanel({
     setRecommend,
   ] = useState(true);
 
-  if (ticketStatus !== "resolved" && ticketStatus !== "closed")
-    return null;
-  if (isLoading)
+  if (!rateable || csatQuery.isPending)
     return null;
 
   if (csat) {
@@ -55,11 +80,11 @@ export function TicketCsatPanel({
       <div className="rounded-lg border bg-success/5 border-success/30 p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-            Your feedback
+            Feedback
           </Label>
           <span className="text-[11px] text-muted-foreground">
             {formatWithPattern(
-              csat.created_at,
+              csat.createdAt,
               "PPp",
             )}
           </span>
@@ -85,11 +110,11 @@ export function TicketCsatPanel({
         {csat.comment && (
           <p className="text-sm whitespace-pre-wrap leading-relaxed">{csat.comment}</p>
         )}
-        {csat.would_recommend !== null && (
+        {csat.wouldRecommend !== null && (
           <p className="text-xs text-muted-foreground">
-            {csat.would_recommend
-              ? "Would recommend FleetPro support to a colleague."
-              : "Would not recommend FleetPro support to a colleague."}
+            {csat.wouldRecommend
+              ? "Would recommend TruckMoov support to a colleague."
+              : "Would not recommend TruckMoov support to a colleague."}
           </p>
         )}
       </div>
@@ -103,7 +128,7 @@ export function TicketCsatPanel({
       <div className="space-y-1">
         <Label className="text-sm font-semibold">How was your support experience?</Label>
         <p className="text-xs text-muted-foreground">
-          Your rating is shared with the platform support team and stored privately for your tenant.
+          One rating per ticket for your whole account. The support team sees it.
         </p>
       </div>
 
@@ -162,7 +187,7 @@ export function TicketCsatPanel({
           htmlFor="csat-recommend"
           className="text-xs"
         >
-          Would you recommend FleetPro support to a colleague?
+          Would you recommend TruckMoov support to a colleague?
         </Label>
         <Switch
           id="csat-recommend"

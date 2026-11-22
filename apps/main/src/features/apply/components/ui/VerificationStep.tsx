@@ -17,6 +17,7 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/shadcn/input-otp";
+import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
 
 type VerificationStepProps = {
   channel: "email" | "phone";
@@ -176,7 +177,7 @@ export function VerificationStep({
             </div>
           )}
 
-      <div className="flex items-center justify-between border-t border-border/60 pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
         <Button
           variant="outline"
           size="lg"
@@ -185,6 +186,7 @@ export function VerificationStep({
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
+        <ApplicationSaveButton />
         <Button
           size="lg"
           className="min-w-40"

@@ -3,8 +3,10 @@ import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import { LogTicketDialog } from "@/components/support/LogTicketDialog";
 import { MyTickets } from "@/components/support/MyTickets";
+import { useSupportAccess } from "@/features/help/hooks/useSupportAccess";
 
 export default function TicketsPage() {
+  const { canManage } = useSupportAccess();
   const [
     logTicketOpen,
     setLogTicketOpen,
@@ -20,14 +22,16 @@ export default function TicketsPage() {
               View, search, and track the status of all support tickets logged on the platform.
             </p>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setLogTicketOpen(true)}
-            className="shrink-0"
-          >
-            <Ticket className="h-4 w-4 mr-2" />
-            Log Ticket
-          </Button>
+          {canManage && (
+            <Button
+              size="sm"
+              onClick={() => setLogTicketOpen(true)}
+              className="shrink-0"
+            >
+              <Ticket className="h-4 w-4 mr-2" />
+              Log Ticket
+            </Button>
+          )}
         </div>
         <MyTickets />
       </div>

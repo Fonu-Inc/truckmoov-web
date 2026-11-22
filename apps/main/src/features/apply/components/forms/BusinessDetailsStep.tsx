@@ -4,9 +4,16 @@ import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas"
 import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
 
 import { useQuery } from "@tanstack/react-query";
-import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
 import {
+  CITIES_BY_STATE,
+  getOnboardingM2mPlansQueryOptions,
+} from "@truckmoov/api/auth";
+import {
+  ArrowLeft,
   Check,
+  ExternalLink,
+  FileSignature,
+  FileText,
   Mail,
 } from "lucide-react";
 import {
@@ -16,6 +23,7 @@ import {
 import { useNavigate } from "react-router";
 
 import { Button } from "@/components/shadcn/button";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +41,18 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
+import { IndemnityDialog } from "@/features/apply/components/ui/IndemnityDialog";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
+import { NIGERIAN_STATES } from "@/features/apply/utils/applySchemas";
 import { useEmailAvailability } from "@/features/apply/utils/useEmailAvailability";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +64,10 @@ type BusinessDetailsStepProps = {
   form: UseFormReturn<BusinessDetailsValues>;
   customerType: ApplicantCustomerType;
   submitting: boolean;
+  /** Whether the server already holds a signature for the current agreement. */
+  indemnitySigned: boolean;
+  /** Set when the agreement changed since the applicant signed, or a resumed draft lost an unsent signature. */
+  indemnityNotice?: string | null;
   /** Error from the last save that belongs to no single field. */
   saveError?: string | null;
   nextLabel?: string;
@@ -53,22 +76,28 @@ type BusinessDetailsStepProps = {
   /** Bumped when the save answers 409 for the email — opens the existing-account dialog. */
   emailConflict?: number;
   onSubmit: (values: BusinessDetailsValues) => void;
+  /** Back to the customer type choice. */
+  onBack?: () => void;
 };
 
 /**
- * Customer Details, field for field as the design app has it: business details and the
- * M2M license plan. Every field is a plain text input; the state is normalised to the
- * canonical name by the schema.
+ * Customer Details as the design app has it: business details (state → city from the
+ * Nigerian catalogue), the M2M license plan and the indemnity signature. The plan and
+ * indemnity are checked here, outside zod; a signature made before the application exists
+ * is uploaded right after the details are saved (see ApplyForAccount).
  */
 export function BusinessDetailsStep({
   form,
   customerType,
   submitting,
+  indemnitySigned: signedOnServer,
+  indemnityNotice,
   saveError,
   nextLabel = "Continue",
   applicationId,
   emailConflict = 0,
   onSubmit,
+  onBack,
 }: BusinessDetailsStepProps) {
   const navigate = useNavigate();
   const emailTaken = useEmailAvailability(
@@ -78,6 +107,13 @@ export function BusinessDetailsStep({
   const isEnterprise = customerType === "enterprise";
   const licence = useApplyDraftStore(state => state.licence);
   const setLicence = useApplyDraftStore(state => state.setLicence);
+  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
+  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
+  const indemnitySigned = signedOnServer || Boolean(pendingSignature);
+  const [
+    indemnityOpen,
+    setIndemnityOpen,
+  ] = useState(false);
   const plansQuery = useQuery(getOnboardingM2mPlansQueryOptions());
   const plans = plansQuery.data?.data.plans ?? [];
   const [
@@ -99,6 +135,13 @@ export function BusinessDetailsStep({
   );
 
   function handleValid(values: BusinessDetailsValues) {
+    if (!(CITIES_BY_STATE[values.state] ?? []).includes(values.city)) {
+      form.setError(
+        "city",
+        { message: "Select your city." },
+      );
+      return;
+    }
     // A taken company email opens the design's "You already have a Fleet Pro account" dialog.
     if (emailTaken) {
       setExistingAccountOpen(true);
@@ -107,6 +150,14 @@ export function BusinessDetailsStep({
     // ponytail: the plan lives outside the zod schema (it is sent as m2mPlanCode).
     if (!licence.licensePlan) {
       setSectionError("Select a license plan to continue.");
+      return;
+    }
+    if (!indemnitySigned) {
+      setSectionError("Review and electronically sign the indemnity form.");
+      return;
+    }
+    if (!licence.indemnityAccepted) {
+      setSectionError("Confirm that you have reviewed the indemnity form.");
       return;
     }
     setSectionError(null);
@@ -145,12 +196,97 @@ export function BusinessDetailsStep({
     />
   );
 
+  const selectedState = form.watch("state");
+  const cities = CITIES_BY_STATE[selectedState] ?? [];
+
+  const stateField = (
+    <FormField
+      key="state"
+      control={form.control}
+      name="state"
+      render={({ field: input }) => (
+        <FormItem className="space-y-1.5">
+          <FormLabel className="text-sm">
+            State
+            <span className="ml-0.5 text-destructive">*</span>
+          </FormLabel>
+          <Select
+            value={input.value ?? ""}
+            onValueChange={(value) => {
+              input.onChange(value);
+              // A city belongs to one state: changing the state clears it.
+              form.setValue(
+                "city",
+                "",
+              );
+            }}
+          >
+            <FormControl>
+              <SelectTrigger aria-label="State">
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent className="max-h-72">
+              {NIGERIAN_STATES.map(state => (
+                <SelectItem
+                  key={state}
+                  value={state}
+                >
+                  {state}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
+  const cityField = (
+    <FormField
+      key="city"
+      control={form.control}
+      name="city"
+      render={({ field: input }) => (
+        <FormItem className="space-y-1.5">
+          <FormLabel className="text-sm">
+            City
+            <span className="ml-0.5 text-destructive">*</span>
+          </FormLabel>
+          <Select
+            value={cities.includes(input.value) ? input.value : ""}
+            disabled={!selectedState}
+            onValueChange={input.onChange}
+          >
+            <FormControl>
+              <SelectTrigger aria-label="City">
+                <SelectValue placeholder={selectedState ? "Select city" : "Select a state first"} />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent className="max-h-72">
+              {cities.map(city => (
+                <SelectItem
+                  key={city}
+                  value={city}
+                >
+                  {city}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-semibold text-foreground">Customer Details</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Complete your customer information and select a license plan.
+          Complete your customer information, select a license plan, and review the indemnity form.
         </p>
       </div>
 
@@ -199,16 +335,8 @@ export function BusinessDetailsStep({
                       "123 Apapa-Oshodi Expressway",
                       { className: "sm:col-span-2" },
                     ),
-                    field(
-                      "city",
-                      "City",
-                      "Lagos",
-                    ),
-                    field(
-                      "state",
-                      "State",
-                      "Lagos State",
-                    ),
+                    stateField,
+                    cityField,
                   ]
                 : [
                     field(
@@ -242,16 +370,8 @@ export function BusinessDetailsStep({
                       "Business Address",
                       "123 Apapa-Oshodi Expressway",
                     ),
-                    field(
-                      "city",
-                      "City",
-                      "Lagos",
-                    ),
-                    field(
-                      "state",
-                      "State",
-                      "Lagos State",
-                    ),
+                    stateField,
+                    cityField,
                   ]}
             </div>
           </section>
@@ -370,11 +490,87 @@ export function BusinessDetailsStep({
             </p>
           </section>
 
+          {/* ─── Indemnity Agreement ──────────────────────────────────────── */}
+          <section className="space-y-5">
+            <div>
+              <h3 className="text-base font-semibold text-foreground">Indemnity Agreement</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Please review the indemnity form before completing your application.
+              </p>
+            </div>
+            <div className="flex flex-col gap-4 rounded-2xl border border-border bg-muted/30 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <FileText className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Fleet Pro Indemnity Form</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {signedOnServer
+                      ? "Electronically signed"
+                      : pendingSignature
+                        ? "Signed, saved with your details when you continue"
+                        : "Review and sign electronically"}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant={indemnitySigned ? "outline" : "default"}
+                onClick={() => setIndemnityOpen(true)}
+              >
+                {indemnitySigned ? <FileSignature className="mr-2 h-4 w-4" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+                {indemnitySigned ? "Review Signature" : "View & Sign Form"}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Review and electronically sign the form here. No separate upload is required.
+            </p>
+            <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+              <Checkbox
+                id="indemnity-confirmation"
+                checked={licence.indemnityAccepted}
+                disabled={!indemnitySigned}
+                onCheckedChange={(checked) => {
+                  setLicence({ indemnityAccepted: checked === true });
+                  setSectionError(null);
+                }}
+              />
+              <Label
+                htmlFor="indemnity-confirmation"
+                className="cursor-pointer text-sm leading-5 text-foreground"
+              >
+                {indemnitySigned
+                  ? "I confirm that I have reviewed the indemnity form and agree to its terms."
+                  : "Sign the indemnity form before confirming your agreement."}
+              </Label>
+            </div>
+            {indemnityNotice && !pendingSignature && (
+              <p className="text-sm text-warning">{indemnityNotice}</p>
+            )}
+          </section>
+
           {(sectionError || saveError) && (
             <p className="text-sm text-destructive">{sectionError ?? saveError}</p>
           )}
 
-          <div className="flex justify-end border-t border-border/60 pt-6">
+          <div className={cn(
+            "flex flex-wrap items-center gap-3 border-t border-border/60 pt-6",
+            onBack ? "justify-between" : "justify-end",
+          )}
+          >
+            {onBack && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onBack}
+                disabled={submitting}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+            )}
+            <ApplicationSaveButton />
             <Button
               type="submit"
               size="lg"
@@ -386,6 +582,22 @@ export function BusinessDetailsStep({
           </div>
         </form>
       </Form>
+
+      <IndemnityDialog
+        open={indemnityOpen}
+        onOpenChange={setIndemnityOpen}
+        initialName={licence.indemnitySignatureName}
+        notice={indemnityNotice}
+        onSigned={(signature) => {
+          setPendingSignature(signature);
+          // Re-signing clears the confirmation, as the design does.
+          setLicence({
+            indemnitySignatureName: signature.name,
+            indemnityAccepted: false,
+          });
+          setSectionError(null);
+        }}
+      />
 
       <Dialog
         open={existingAccountOpen}
