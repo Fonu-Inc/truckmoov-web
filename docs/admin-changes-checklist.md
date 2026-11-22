@@ -128,7 +128,8 @@ Reference moved to `fleetflow-pro-fork-main` (`src/pages/platform/*`). Ported fr
 - [x] M2M IoT Bundles — controlled top-level tabs above the KPI strip (`flex w-fit mx-auto …`), `<PageTitle>` "M2M Data Bundles" / "Tenant Adoption", Add Bundle in `<PageActions>`, `p-6` dropped; Tenant Adoption loses the Carrier filter, column, search term and CSV column — `PlatformDataBundles.tsx`
 - [x] Support — `TAB_HEADINGS` (Support Dashboard / All Tickets / Escalated Tickets) + `<PageTitle>` under the wrapping `TabsList` — `PlatformSupport.tsx`
 - [x] All Tickets — **Tenant Type** column (Owner-Operator / Enterprise / —) from each tenant's organisation types (`getSystemTenantsQueryOptions`) — `AllTickets.tsx`. Not in the CSV: export is server-side
-- [~] Ticket thread `<PageTitle>` — admin has no ticket-thread page (tickets open in `AdminTicketSheet`); nothing to port
+- [x] All Tickets — reporter shows the API's `reporterName` (installer name, or the tenant user resolved from `createdBy`), and ticket IDs use the server's `#tkt-n` `displayId`
+- [x] Manage Ticket — status block above the tabs; Details / Escalate tabs; **Open Conversation** opens `TicketConversationDialog` with the message thread and reply composer; no duplicate Messages tab
 - [~] Fork `lib/bundleRenewalOutlook.ts` / `bundleTransactionReceipt.ts` — used only by the tenant `admin/DataBundles` page, not the platform one; not ported here
 
 ### Installation & Platform Dashboard

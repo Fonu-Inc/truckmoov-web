@@ -68,7 +68,9 @@ import { useSupportTenantDirectory } from "./useSupportTenantDirectory";
 
 type TicketPriority = "low" | "medium" | "high" | "critical";
 
-const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+const statusConfig: Record<TicketStatus, {
+  label: string; variant: "default" | "secondary" | "destructive" | "outline";
+}> = {
   open: {
     label: "Open", variant: "default",
   },
@@ -89,7 +91,9 @@ const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "
   },
 };
 
-const priorityConfig: Record<TicketPriority, { label: string; className: string }> = {
+const priorityConfig: Record<TicketPriority, {
+  label: string; className: string;
+}> = {
   low: {
     label: "Low", className: "bg-muted text-muted-foreground",
   },
@@ -106,7 +110,9 @@ const priorityConfig: Record<TicketPriority, { label: string; className: string 
 
 // Not in fleetflow (its Filter button opens nothing) — the popover's category
 // field drives the live `category` query param.
-const categoryOptions: { value: SystemSupportTicketCategory; label: string }[] = [
+const categoryOptions: {
+  value: SystemSupportTicketCategory; label: string;
+}[] = [
   {
     value: "device_tracking", label: "Device Tracking",
   },
@@ -150,23 +156,26 @@ function channelFromContext(c?: string): string {
   }
 }
 
-const formatCategory = (c: string) =>
-  c.replace(
+function formatCategory(c: string) {
+  return c.replace(
     /_/g,
     " ",
   ).replace(
     /\b\w/g,
     l => l.toUpperCase(),
   );
+}
 
-const shortId = (id?: string) => (id
-  ? id.slice(
-      0,
-      8,
-    )
-  : "—");
+function shortId(id?: string) {
+  return id
+    ? id.slice(
+        0,
+        8,
+      )
+    : "—";
+}
 
-const reporterName = (ticket: SupportTicket) => shortId(ticket.createdBy);
+const reporterName = (ticket: SupportTicket) => ticket.reporterName?.trim() || "Unknown reporter";
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [

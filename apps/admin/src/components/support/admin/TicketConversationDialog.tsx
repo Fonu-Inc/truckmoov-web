@@ -60,11 +60,10 @@ export function TicketConversationDialog({
           {ticket && (
             <p className="text-sm text-muted-foreground mt-1 truncate">
               <span className="font-mono">
-                #
-                {ticket.id.slice(
+                {ticket.displayId ?? `#${ticket.id.slice(
                   0,
                   8,
-                )}
+                )}`}
               </span>
               {" · "}
               {ticket.subject}

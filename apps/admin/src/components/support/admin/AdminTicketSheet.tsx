@@ -1,10 +1,8 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  getSupportTicketMessagesQueryOptions,
   getSystemSupportTicketQueryOptions,
   useAssignSystemSupportTicket,
-  useCreateSupportTicketMessage,
   useEscalateSupportTicket,
   useUpdateSupportTicketStatus,
 } from "@truckmoov/api/auth";
@@ -14,8 +12,7 @@ import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowUpRight,
   Loader2,
-  Lock,
-  Send,
+  MessageSquare,
 } from "lucide-react";
 import {
   useEffect,
@@ -26,7 +23,6 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +40,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -52,20 +47,15 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
+import { TicketConversationDialog } from "./TicketConversationDialog";
 import { toSheetTicket } from "./toSheetTicket";
 
 export type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
-type TicketMessage = {
-  id: string;
-  message: string;
-  isInternal: boolean;
-  createdAt?: string;
-  senderName?: string;
-};
 
 export type SupportTicket = {
   id: string;
+  displayId?: string;
   tenantId: string;
   category: string;
   subject: string;
@@ -214,84 +204,14 @@ function formatCreatedAt(date: string) {
       );
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
-function readString(source: Record<string, unknown> | null, key: string): string | undefined {
-  const value = source?.[key];
-  return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function readBoolean(source: Record<string, unknown> | null, key: string): boolean {
-  const value = source?.[key];
-  return typeof value === "boolean" ? value : false;
-}
-
-function extractMessages(response: unknown): TicketMessage[] {
-  const root = asRecord(response);
-  const data = root?.data;
-  const dataRecord = asRecord(data);
-  const candidates = Array.isArray(data)
-    ? data
-    : dataRecord
-      ? [
-          dataRecord.messages,
-          dataRecord.items,
-          dataRecord.rows,
-          dataRecord.data,
-        ].find(Array.isArray)
-      : [];
-
-  return (Array.isArray(candidates) ? candidates : [])
-    .map(asRecord)
-    .filter(Boolean)
-    .map(raw => ({
-      id: readString(
-        raw,
-        "id",
-      ) ?? readString(
-        raw,
-        "messageId",
-      ) ?? crypto.randomUUID(),
-      message: readString(
-        raw,
-        "message",
-      ) ?? readString(
-        raw,
-        "content",
-      ) ?? "",
-      isInternal: readBoolean(
-        raw,
-        "isInternal",
-      ),
-      createdAt: readString(
-        raw,
-        "createdAt",
-      ),
-      senderName: readString(
-        raw,
-        "senderName",
-      ) ?? readString(
-        raw,
-        "createdByName",
-      ),
-    }))
-    .filter(message => message.message);
-}
-
 export function AdminTicketSheet({
   ticket: listTicket,
   onClose,
 }: AdminTicketSheetProps) {
   const [
-    internalNote,
-    setInternalNote,
+    conversationOpen,
+    setConversationOpen,
   ] = useState(false);
-  const [
-    message,
-    setMessage,
-  ] = useState("");
   const [
     status,
     setStatus,
@@ -329,12 +249,7 @@ export function AdminTicketSheet({
     ],
   );
   const attachments = detail?.id === listTicket?.id ? detail?.attachments ?? [] : [];
-  const messagesQuery = useQuery({
-    ...getSupportTicketMessagesQueryOptions(ticket?.id ?? ""),
-    enabled: !!ticket,
-  });
   const statusMutation = useUpdateSupportTicketStatus();
-  const messageMutation = useCreateSupportTicketMessage();
   const escalateMutation = useEscalateSupportTicket();
   const assignMutation = useAssignSystemSupportTicket();
   const myId = useAuthStore(state => state.user?.id);
@@ -349,20 +264,6 @@ export function AdminTicketSheet({
       setEscalationNotes(ticket.escalationNotes ?? "");
     },
     [ticket],
-  );
-
-  // Only a different ticket clears the reply box — a detail refetch must not wipe a draft.
-  useEffect(
-    () => {
-      setMessage("");
-      setInternalNote(false);
-    },
-    [ticket?.id],
-  );
-
-  const messages = useMemo(
-    () => extractMessages(messagesQuery.data),
-    [messagesQuery.data],
   );
 
   function handleStatusChange(value: TicketStatus) {
@@ -380,28 +281,6 @@ export function AdminTicketSheet({
           setStatus(ticket.status);
           toast.error(error.message);
         },
-      },
-    );
-  }
-
-  function handleSendMessage() {
-    if (!ticket || !message.trim())
-      return;
-    messageMutation.mutate(
-      {
-        id: ticket.id,
-        data: {
-          message: message.trim(),
-          isInternal: internalNote,
-        },
-      },
-      {
-        onSuccess: () => {
-          setMessage("");
-          setInternalNote(false);
-          toast.success(internalNote ? "Internal note added" : "Message sent");
-        },
-        onError: error => toast.error(error.message),
       },
     );
   }
@@ -443,340 +322,54 @@ export function AdminTicketSheet({
   if (!ticket)
     return null;
 
-  const reporterName = ticket.reporterName || `User ${shortId(ticket.createdBy || ticket.id)}`;
+  const reporterName = ticket.reporterName?.trim() || "Unknown reporter";
   const priority = priorityStyles[ticket.priority] ?? priorityStyles.medium;
 
   return (
-    <Dialog
-      open={!!ticket}
-      onOpenChange={open => !open && onClose()}
-    >
-      <DialogContent className="max-h-[92vh] max-w-2xl gap-0 overflow-hidden p-0">
-        <DialogHeader className="border-b px-7 py-7">
-          <DialogTitle className="text-xl">Manage Ticket</DialogTitle>
-          <DialogDescription className="max-w-xl text-sm">
-            Review the ticket details, respond to the reporter, and update the status or escalate as needed.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="max-h-[calc(92vh-113px)] overflow-y-auto px-7 py-5">
-          <Tabs
-            defaultValue="details"
-            className="space-y-6"
-          >
-            <TabsList className="grid h-11 w-full grid-cols-3 p-1">
-              <TabsTrigger
-                value="details"
-                className="h-9 text-base font-semibold"
+    <>
+      <Dialog
+        open={!!ticket}
+        onOpenChange={open => !open && onClose()}
+      >
+        <DialogContent className="max-h-[92vh] max-w-2xl gap-0 overflow-hidden p-0">
+          <DialogHeader className="border-b px-7 py-7">
+            <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
+              <div>
+                <DialogTitle className="text-xl">Manage Ticket</DialogTitle>
+                <DialogDescription className="mt-1.5 max-w-xl text-sm">
+                  Review the ticket details, respond to the reporter, and update the status or escalate as needed.
+                </DialogDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConversationOpen(true)}
               >
-                Details
-              </TabsTrigger>
-              <TabsTrigger
-                value="messages"
-                className="h-9 text-base font-semibold"
-              >
-                Messages
-              </TabsTrigger>
-              <TabsTrigger
-                value="escalate"
-                className="h-9 text-base font-semibold"
-              >
-                Escalate
-              </TabsTrigger>
-            </TabsList>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Open Conversation
+              </Button>
+            </div>
+          </DialogHeader>
 
-            <TabsContent
-              value="details"
-              className="mt-0 space-y-6"
-            >
-              <div className="space-y-2">
-                <FieldLabel>Title</FieldLabel>
-                <p className="font-semibold">{ticket.subject}</p>
-              </div>
-
-              <div className="space-y-2">
-                <FieldLabel>Ticket ID</FieldLabel>
-                <p className="font-mono font-semibold">
-                  #
-                  {shortId(ticket.id)}
-                </p>
-              </div>
-
-              <div className="grid gap-x-12 gap-y-6 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <FieldLabel>Category</FieldLabel>
-                  <p className="font-semibold">{titleCase(ticket.category)}</p>
-                </div>
-                <div className="space-y-2">
-                  <FieldLabel>Priority</FieldLabel>
-                  <Badge
-                    variant="outline"
-                    className={priority.className}
-                  >
-                    {priority.label}
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <FieldLabel>Channel</FieldLabel>
-                  <p className="font-semibold">{channelFromContext(ticket.contextType)}</p>
-                </div>
-                <div className="space-y-2">
-                  <FieldLabel>Reporter</FieldLabel>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                      {getInitials(reporterName)}
-                    </div>
-                    <p className="font-semibold">{reporterName}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <FieldLabel>Created</FieldLabel>
-                <p className="font-semibold">{formatCreatedAt(ticket.createdAt)}</p>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <FieldLabel>Issue Description</FieldLabel>
-                <div className="rounded-md bg-secondary/60 p-4 font-semibold leading-relaxed">
-                  {ticket.description || "No description provided."}
-                </div>
-              </div>
-
-              {ticket.contextSnapshot && Object.keys(ticket.contextSnapshot).length > 0 && (
-                <div className="space-y-2">
-                  <FieldLabel>
-                    {`${ticket.contextType} snapshot (read server-side at creation)`}
-                  </FieldLabel>
-                  <dl className="grid grid-cols-2 gap-x-6 gap-y-1 rounded-md border bg-secondary/40 p-3 text-xs">
-                    {Object.entries(ticket.contextSnapshot).map(([
-                      key,
-                      value,
-                    ]) => (
-                      <div
-                        key={key}
-                        className="contents"
-                      >
-                        <dt className="text-muted-foreground">{key}</dt>
-                        <dd className="font-mono">{value == null ? "-" : String(value)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              )}
-
-              {attachments.length > 0 && (
-                <div className="space-y-2">
-                  <FieldLabel>{`Attachments (${attachments.length})`}</FieldLabel>
-                  <ul className="space-y-1 rounded-md border bg-secondary/40 p-3 text-xs">
-                    {attachments.map(a => (
-                      <li
-                        key={a.id}
-                        className="flex justify-between gap-4"
-                      >
-                        <span className="truncate font-semibold">{a.filename}</span>
-                        <span className="shrink-0 text-muted-foreground">
-                          {`${a.contentType} · ${Math.max(
-                            1,
-                            Math.round(a.sizeBytes / 1024),
-                          )} KB`}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between rounded-md border bg-background/40 p-4">
+          <div className="max-h-[calc(92vh-113px)] overflow-y-auto px-7 py-5">
+            <div className="mb-5 rounded-md border bg-background/40 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <FieldLabel>Assignee</FieldLabel>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {ticket.assignedTo ? (ticket.assignedTo === myId ? "You" : shortId(ticket.assignedTo)) : "Unassigned"}
-                  </p>
+                  <FieldLabel>Update Ticket Status</FieldLabel>
+                  <p className="mt-1 text-sm text-muted-foreground">Change the workflow stage of this ticket. To escalate, use the Escalate tab.</p>
                 </div>
-                {ticket.assignedTo !== myId && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={assignMutation.isPending || !myId}
-                    onClick={handleAssignToMe}
-                  >
-                    Assign to me
-                  </Button>
-                )}
-              </div>
-
-              <div className="rounded-md border bg-background/40 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <FieldLabel>Update Ticket Status</FieldLabel>
-                    <p className="mt-1 text-sm text-muted-foreground">Change the workflow stage of this ticket. To escalate, use the Escalate tab.</p>
-                  </div>
-                  <Select
-                    value={status}
-                    onValueChange={value => handleStatusChange(value as TicketStatus)}
-                  >
-                    <SelectTrigger
-                      className="h-11 sm:w-56"
-                      disabled={statusMutation.isPending}
-                    >
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.filter(option => option.value !== "escalated" || status === "escalated").map(option => (
-                        <SelectItem
-                          key={option.value}
-                          value={option.value}
-                        >
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent
-              value="messages"
-              className="mt-0 space-y-6"
-            >
-              <div className="space-y-3">
-                <FieldLabel>Conversation</FieldLabel>
-                <div className="h-80 space-y-3 overflow-y-auto rounded-md border bg-background/40 p-4">
-                  {messagesQuery.isLoading
-                    ? (
-                        <div
-                          className="space-y-3"
-                          aria-hidden
-                        >
-                          {Array.from(
-                            { length: 3 },
-                            (_, index) => (
-                              <div
-                                key={index}
-                                className="space-y-2 rounded-md border p-3"
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <Skeleton className="h-4 w-28" />
-                                  <Skeleton className="h-3 w-20" />
-                                </div>
-                                <Skeleton className="h-4 w-full" />
-                                <Skeleton className="h-4 w-2/3" />
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      )
-                    : messages.length === 0
-                      ? (
-                          <div className="flex h-full items-center justify-center text-muted-foreground">
-                            No messages yet.
-                          </div>
-                        )
-                      : (
-                          messages.map(item => (
-                            <div
-                              key={item.id}
-                              className="rounded-md border bg-secondary/50 p-3"
-                            >
-                              <div className="mb-2 flex items-center justify-between gap-3">
-                                <p className="text-sm font-semibold">{item.senderName || "Support"}</p>
-                                <div className="flex items-center gap-2">
-                                  {item.isInternal && (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-primary/20 bg-primary/10 text-primary"
-                                    >
-                                      Internal
-                                    </Badge>
-                                  )}
-                                  {item.createdAt && (
-                                    <span className="text-xs text-muted-foreground">{formatCreatedAt(item.createdAt)}</span>
-                                  )}
-                                </div>
-                              </div>
-                              <p className="text-sm leading-relaxed">{item.message}</p>
-                            </div>
-                          ))
-                        )}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <FieldLabel>Reply to Tenant</FieldLabel>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="internal-note"
-                    checked={internalNote}
-                    onCheckedChange={checked => setInternalNote(checked === true)}
-                  />
-                  <Label
-                    htmlFor="internal-note"
-                    className="flex items-center gap-1.5 font-semibold"
-                  >
-                    <Lock className="h-4 w-4" />
-                    Mark as internal note (not visible to tenant)
-                  </Label>
-                </div>
-                <div className="flex items-end gap-2">
-                  <Textarea
-                    value={message}
-                    onChange={event => setMessage(event.target.value)}
-                    placeholder="Type your message..."
-                    rows={4}
-                    className="resize-none"
-                  />
-                  <Button
-                    size="icon"
-                    className="h-10 w-10 shrink-0"
-                    disabled={!message.trim() || messageMutation.isPending}
-                    onClick={handleSendMessage}
-                  >
-                    {messageMutation.isPending
-                      ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        )
-                      : (
-                          <Send className="h-4 w-4" />
-                        )}
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent
-              value="escalate"
-              className="mt-0 space-y-6"
-            >
-              <div className="rounded-md bg-secondary/60 p-4 font-semibold leading-relaxed">
-                Escalate this ticket when it requires action from an external party. The tenant will see the escalation
-                status but cannot escalate directly.
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="escalate-target"
-                  className="font-semibold"
-                >
-                  Escalate To
-                  {" "}
-                  <span className="text-destructive">*</span>
-                </Label>
                 <Select
-                  value={escalateTo}
-                  onValueChange={value => setEscalateTo(value as EscalationType)}
+                  value={status}
+                  onValueChange={value => handleStatusChange(value as TicketStatus)}
                 >
                   <SelectTrigger
-                    id="escalate-target"
-                    className="h-11"
+                    className="h-11 sm:w-56"
+                    disabled={statusMutation.isPending}
                   >
-                    <SelectValue placeholder="Select escalation target" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    {escalationOptions.map(option => (
+                    {statusOptions.filter(option => option.value !== "escalated" || status === "escalated").map(option => (
                       <SelectItem
                         key={option.value}
                         value={option.value}
@@ -787,63 +380,254 @@ export function AdminTicketSheet({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label
-                  htmlFor="escalate-reference"
-                  className="font-semibold"
+            <Tabs
+              defaultValue="details"
+              className="space-y-6"
+            >
+              <TabsList className="grid h-11 w-full grid-cols-2 p-1">
+                <TabsTrigger
+                  value="details"
+                  className="h-9 text-base font-semibold"
                 >
-                  External Reference ID
-                  {" "}
-                  <span className="font-normal text-muted-foreground">(optional)</span>
-                </Label>
-                <Input
-                  id="escalate-reference"
-                  value={referenceId}
-                  onChange={event => setReferenceId(event.target.value)}
-                  placeholder="e.g., Fonu ticket #12345"
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="escalate-notes"
-                  className="font-semibold"
+                  Details
+                </TabsTrigger>
+                <TabsTrigger
+                  value="escalate"
+                  className="h-9 text-base font-semibold"
                 >
-                  Escalation Notes
-                  {" "}
-                  <span className="font-normal text-muted-foreground">(optional)</span>
-                </Label>
-                <Textarea
-                  id="escalate-notes"
-                  value={escalationNotes}
-                  onChange={event => setEscalationNotes(event.target.value)}
-                  placeholder="Internal notes about the escalation..."
-                  rows={4}
-                />
-              </div>
+                  Escalate
+                </TabsTrigger>
+              </TabsList>
 
-              <Button
-                className="h-10 w-full font-semibold"
-                variant="destructive"
-                disabled={!escalateTo || escalateMutation.isPending}
-                onClick={handleEscalate}
+              <TabsContent
+                value="details"
+                className="mt-0 space-y-6"
               >
-                {escalateMutation.isPending
-                  ? (
-                      <Loader2 className="mr-3 h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <ArrowUpRight className="mr-3 h-4 w-4" />
-                    )}
-                Escalate Ticket
-              </Button>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </DialogContent>
-    </Dialog>
+                <div className="space-y-2">
+                  <FieldLabel>Title</FieldLabel>
+                  <p className="font-semibold">{ticket.subject}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <FieldLabel>Ticket ID</FieldLabel>
+                  <p className="font-mono font-semibold">
+                    {ticket.displayId ?? `#${shortId(ticket.id)}`}
+                  </p>
+                </div>
+
+                <div className="grid gap-x-12 gap-y-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <FieldLabel>Category</FieldLabel>
+                    <p className="font-semibold">{titleCase(ticket.category)}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <FieldLabel>Priority</FieldLabel>
+                    <Badge
+                      variant="outline"
+                      className={priority.className}
+                    >
+                      {priority.label}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <FieldLabel>Channel</FieldLabel>
+                    <p className="font-semibold">{channelFromContext(ticket.contextType)}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <FieldLabel>Reporter</FieldLabel>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        {getInitials(reporterName)}
+                      </div>
+                      <p className="font-semibold">{reporterName}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <FieldLabel>Created</FieldLabel>
+                  <p className="font-semibold">{formatCreatedAt(ticket.createdAt)}</p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <FieldLabel>Issue Description</FieldLabel>
+                  <div className="rounded-md bg-secondary/60 p-4 font-semibold leading-relaxed">
+                    {ticket.description || "No description provided."}
+                  </div>
+                </div>
+
+                {ticket.contextSnapshot && Object.keys(ticket.contextSnapshot).length > 0 && (
+                  <div className="space-y-2">
+                    <FieldLabel>
+                      {`${ticket.contextType} snapshot (read server-side at creation)`}
+                    </FieldLabel>
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-1 rounded-md border bg-secondary/40 p-3 text-xs">
+                      {Object.entries(ticket.contextSnapshot).map(([
+                        key,
+                        value,
+                      ]) => (
+                        <div
+                          key={key}
+                          className="contents"
+                        >
+                          <dt className="text-muted-foreground">{key}</dt>
+                          <dd className="font-mono">{value == null ? "-" : String(value)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                )}
+
+                {attachments.length > 0 && (
+                  <div className="space-y-2">
+                    <FieldLabel>{`Attachments (${attachments.length})`}</FieldLabel>
+                    <ul className="space-y-1 rounded-md border bg-secondary/40 p-3 text-xs">
+                      {attachments.map(a => (
+                        <li
+                          key={a.id}
+                          className="flex justify-between gap-4"
+                        >
+                          <span className="truncate font-semibold">{a.filename}</span>
+                          <span className="shrink-0 text-muted-foreground">
+                            {`${a.contentType} · ${Math.max(
+                              1,
+                              Math.round(a.sizeBytes / 1024),
+                            )} KB`}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between rounded-md border bg-background/40 p-4">
+                  <div>
+                    <FieldLabel>Assignee</FieldLabel>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {ticket.assignedTo ? (ticket.assignedTo === myId ? "You" : shortId(ticket.assignedTo)) : "Unassigned"}
+                    </p>
+                  </div>
+                  {ticket.assignedTo !== myId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={assignMutation.isPending || !myId}
+                      onClick={handleAssignToMe}
+                    >
+                      Assign to me
+                    </Button>
+                  )}
+                </div>
+
+              </TabsContent>
+
+              <TabsContent
+                value="escalate"
+                className="mt-0 space-y-6"
+              >
+                <div className="rounded-md bg-secondary/60 p-4 font-semibold leading-relaxed">
+                  Escalate this ticket when it requires action from an external party. The tenant will see the escalation
+                  status but cannot escalate directly.
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="escalate-target"
+                    className="font-semibold"
+                  >
+                    Escalate To
+                    {" "}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={escalateTo}
+                    onValueChange={value => setEscalateTo(value as EscalationType)}
+                  >
+                    <SelectTrigger
+                      id="escalate-target"
+                      className="h-11"
+                    >
+                      <SelectValue placeholder="Select escalation target" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {escalationOptions.map(option => (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="escalate-reference"
+                    className="font-semibold"
+                  >
+                    External Reference ID
+                    {" "}
+                    <span className="font-normal text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Input
+                    id="escalate-reference"
+                    value={referenceId}
+                    onChange={event => setReferenceId(event.target.value)}
+                    placeholder="e.g., Fonu ticket #12345"
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="escalate-notes"
+                    className="font-semibold"
+                  >
+                    Escalation Notes
+                    {" "}
+                    <span className="font-normal text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Textarea
+                    id="escalate-notes"
+                    value={escalationNotes}
+                    onChange={event => setEscalationNotes(event.target.value)}
+                    placeholder="Internal notes about the escalation..."
+                    rows={4}
+                  />
+                </div>
+
+                <Button
+                  className="h-10 w-full font-semibold"
+                  variant="destructive"
+                  disabled={!escalateTo || escalateMutation.isPending}
+                  onClick={handleEscalate}
+                >
+                  {escalateMutation.isPending
+                    ? (
+                        <Loader2 className="mr-3 h-4 w-4 animate-spin" />
+                      )
+                    : (
+                        <ArrowUpRight className="mr-3 h-4 w-4" />
+                      )}
+                  Escalate Ticket
+                </Button>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <TicketConversationDialog
+        ticket={ticket}
+        open={conversationOpen}
+        onClose={() => setConversationOpen(false)}
+      />
+    </>
   );
 }
 

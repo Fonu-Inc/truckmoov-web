@@ -22,7 +22,7 @@ export function useSupportTenantDirectory() {
 
       return {
         /** Tenant name, or `undefined` while unknown so each caller keeps the fork's own fallback copy. */
-        tenantName: (id: string) => tenants.get(id)?.name,
+        tenantName: (id: string) => (id === "system" ? "System / Platform" : tenants.get(id)?.name),
         /** Fleetflow's tenant-type rule: owner-operator wins, else any fleet org type is Enterprise. */
         tenantType: (id: string) => {
           const types = tenants.get(id)?.types;

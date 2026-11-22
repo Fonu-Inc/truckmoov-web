@@ -228,8 +228,7 @@ export function EscalatedTickets() {
 
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                         <span className="font-mono text-muted-foreground">
-                          #
-                          {shortId(ticket.id)}
+                          {ticket.displayId ?? `#${shortId(ticket.id)}`}
                         </span>
                         <span className="text-muted-foreground">•</span>
                         <span className="text-foreground">{tenantLabel(ticket.tenantId)}</span>

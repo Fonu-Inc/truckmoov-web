@@ -29,16 +29,31 @@ import { useSupportTenantDirectory } from "./useSupportTenantDirectory";
 
 const CATEGORY_LABELS: Record<string, string> = {
   device_tracking: "Device & Tracking",
+  device_hardware: "Device & Hardware",
   sim_connectivity: "SIM & Connectivity",
   messaging: "Messaging (WhatsApp/SMS)",
   billing: "Billing & Subscription",
   billing_subscription: "Billing & Subscription",
   account_access: "Account Access",
+  configuration_setup: "Configuration & Setup",
+  site_access_safety: "Site Access & Safety",
   compliance: "Compliance",
   onboarding: "Onboarding",
   enterprise_enquiry: "Enterprise Enquiry",
   other: "Other",
 };
+
+function categoryLabel(category: string) {
+  return CATEGORY_LABELS[category] ?? category
+    .replace(
+      /_/g,
+      " ",
+    )
+    .replace(
+      /\b\w/g,
+      letter => letter.toUpperCase(),
+    );
+}
 
 // TRU-FE-10 §F: `null` means nothing has resolved yet — don't show it as "0h"
 // (that reads as instant resolution). Zero is a legitimate value.
@@ -257,15 +272,14 @@ export function SupportDashboard() {
                         <div className="min-w-0 pr-3">
                           <p className="font-medium text-sm truncate">{ticket.subject}</p>
                           <p className="text-xs text-muted-foreground truncate">
-                            #
-                            {ticket.id.slice(
+                            {ticket.displayId ?? `#${ticket.id.slice(
                               0,
                               8,
-                            )}
+                            )}`}
                             {" • "}
                             {tenantName(ticket.tenantId)}
                             {" • "}
-                            {CATEGORY_LABELS[ticket.category] || ticket.category}
+                            {categoryLabel(ticket.category)}
                           </p>
                         </div>
                         <Badge
@@ -305,12 +319,7 @@ export function SupportDashboard() {
                     className="space-y-1.5"
                   >
                     <div className="flex items-center justify-between text-sm">
-                      <span>
-                        {CATEGORY_LABELS[category] || category.replace(
-                          /_/g,
-                          " ",
-                        )}
-                      </span>
+                      <span>{categoryLabel(category)}</span>
                       <Badge variant="secondary">{count}</Badge>
                     </div>
                     <Progress
@@ -392,15 +401,14 @@ export function SupportDashboard() {
                         <div className="min-w-0 pr-3">
                           <p className="font-medium text-sm truncate">{ticket.subject}</p>
                           <p className="text-xs text-muted-foreground truncate">
-                            #
-                            {ticket.id.slice(
+                            {ticket.displayId ?? `#${ticket.id.slice(
                               0,
                               8,
-                            )}
+                            )}`}
                             {" • "}
                             {tenantName(ticket.tenantId)}
                             {" • "}
-                            {CATEGORY_LABELS[ticket.category] || ticket.category}
+                            {categoryLabel(ticket.category)}
                           </p>
                         </div>
                         <Badge

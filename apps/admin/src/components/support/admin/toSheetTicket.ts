@@ -7,6 +7,8 @@ import type {
 export function toSheetTicket(t: SystemSupportTicket): SupportTicket {
   return {
     id: t.id,
+    displayId: t.displayId,
+    reporterName: t.reporterName ?? undefined,
     tenantId: t.tenantId,
     category: t.category,
     subject: t.subject,

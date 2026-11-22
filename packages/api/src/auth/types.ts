@@ -1521,6 +1521,9 @@ export type SystemSupportTicketsQuery = {
 // core plus the timestamps only, so the rest is optional.
 export type SystemSupportTicket = {
   id: string
+  displayId?: string
+  reporterName?: string | null
+  relatedJob?: { id: string; jobNumber: string } | null
   tenantId: string
   subject: string
   category: string
@@ -1695,6 +1698,7 @@ export type SystemSupportTicketSummary = {
   }>
   needsAttention: Array<{
     id: string
+    displayId?: string
     subject: string
     tenantId: string
     category: string
@@ -1703,6 +1707,7 @@ export type SystemSupportTicketSummary = {
   }>
   recentlyResolved: Array<{
     id: string
+    displayId?: string
     subject: string
     tenantId: string
     category: string
