@@ -125,129 +125,8 @@ type TenantAdoption = {
   sims: TenantSim[];
 };
 
-// ponytail: mock data from fleetflow parity port — wire to packages/api
-// No tenant-adoption endpoint yet; fleetflow's demo tenants feed the Tenant
-// Adoption tab and the three adoption KPIs.
-const DUMMY_TENANT_USAGE: TenantAdoption[] = [
-  {
-    tenant: "Lagos Express Logistics",
-    sims: [
-      {
-        msisdn: "+2348031000111",
-        iccid: "8923401000000000111",
-        carrier: "MTN Nigeria",
-        vehicle: "TRK-001",
-        bundles: [
-          { name: "MTN 10GB Monthly", type: "subscription", price_ngn: 9500, expires_in_days: 12 },
-          { name: "MTN 1GB Top-up", type: "top-up", price_ngn: 1500, expires_in_days: 5 },
-        ],
-      },
-      {
-        msisdn: "+2348031000112",
-        iccid: "8923401000000000112",
-        carrier: "MTN Nigeria",
-        vehicle: "TRK-002",
-        bundles: [{ name: "MTN 25GB Monthly", type: "subscription", price_ngn: 18000, expires_in_days: 22 }],
-      },
-      {
-        msisdn: "+2348031000113",
-        iccid: "8923401000000000113",
-        carrier: "MTN Nigeria",
-        vehicle: "TRK-003",
-        bundles: [{ name: "MTN 10GB Monthly", type: "subscription", price_ngn: 9000, expires_in_days: 8 }],
-      },
-      {
-        msisdn: "+2348031000114",
-        iccid: "8923401000000000114",
-        carrier: "MTN Nigeria",
-        vehicle: "TRK-004",
-        bundles: [
-          { name: "MTN 3GB Monthly", type: "subscription", price_ngn: 3500, expires_in_days: 17 },
-          { name: "MTN 500MB Top-up", type: "top-up", price_ngn: 800, expires_in_days: 3 },
-        ],
-      },
-    ],
-  },
-  {
-    tenant: "Northern Haulage Co.",
-    sims: [
-      {
-        msisdn: "+2348091200201",
-        iccid: "8923401000000000201",
-        carrier: "MTN Nigeria",
-        vehicle: "NH-101",
-        bundles: [{ name: "MTN 5GB Monthly", type: "subscription", price_ngn: 5500, expires_in_days: 14 }],
-      },
-      {
-        msisdn: "+2348091200202",
-        iccid: "8923401000000000202",
-        carrier: "MTN Nigeria",
-        vehicle: "NH-102",
-        bundles: [{ name: "MTN 5GB Monthly", type: "subscription", price_ngn: 5500, expires_in_days: 9 }],
-      },
-      {
-        msisdn: "+2348091200203",
-        iccid: "8923401000000000203",
-        carrier: "MTN Nigeria",
-        vehicle: "NH-103",
-        bundles: [{ name: "MTN 2GB Monthly", type: "subscription", price_ngn: 2200, expires_in_days: 25 }],
-      },
-    ],
-  },
-  {
-    tenant: "Trans-Sahara Freight",
-    sims: [
-      {
-        msisdn: "+2348051300301",
-        iccid: "8923401000000000301",
-        carrier: "MTN Nigeria",
-        vehicle: "TS-001",
-        bundles: [
-          { name: "MTN 50GB Yearly", type: "subscription", price_ngn: 65000, expires_in_days: 220 },
-          { name: "MTN 2GB Top-up", type: "top-up", price_ngn: 2000, expires_in_days: 6 },
-        ],
-      },
-      {
-        msisdn: "+2348051300302",
-        iccid: "8923401000000000302",
-        carrier: "MTN Nigeria",
-        vehicle: "TS-002",
-        bundles: [{ name: "MTN 10GB Monthly", type: "subscription", price_ngn: 9500, expires_in_days: 19 }],
-      },
-    ],
-  },
-  {
-    tenant: "Niger Delta Movers",
-    sims: [
-      {
-        msisdn: "+2348071400401",
-        iccid: "8923401000000000401",
-        carrier: "MTN Nigeria",
-        vehicle: "ND-77",
-        bundles: [{ name: "MTN 3GB Monthly", type: "subscription", price_ngn: 3500, expires_in_days: 11 }],
-      },
-    ],
-  },
-  {
-    tenant: "Abuja Cargo Wings",
-    sims: [
-      {
-        msisdn: "+2348061500501",
-        iccid: "8923401000000000501",
-        carrier: "MTN Nigeria",
-        vehicle: "AC-12",
-        bundles: [{ name: "MTN 25GB Monthly", type: "subscription", price_ngn: 18000, expires_in_days: 4 }],
-      },
-      {
-        msisdn: "+2348061500502",
-        iccid: "8923401000000000502",
-        carrier: "MTN Nigeria",
-        vehicle: "AC-13",
-        bundles: [{ name: "MTN 60GB Yearly", type: "subscription", price_ngn: 75000, expires_in_days: 300 }],
-      },
-    ],
-  },
-];
+// No tenant-adoption endpoint yet; keep the tab empty rather than invent tenants.
+const TENANT_ADOPTION: TenantAdoption[] = [];
 
 type BundleFormState = {
   id?: string;
@@ -384,15 +263,6 @@ export default function PlatformDataBundles() {
   );
 
   const totalActive = catalog.filter(b => b.is_active).length;
-  const expiringSoon = DUMMY_TENANT_USAGE.reduce(
-    (s, t) => s + t.sims.reduce((ss, sim) => ss + sim.bundles.filter(b => b.expires_in_days <= 7).length, 0),
-    0,
-  );
-  const totalSimsAcrossTenants = DUMMY_TENANT_USAGE.reduce((s, t) => s + t.sims.length, 0);
-  const totalMonthlySpend = DUMMY_TENANT_USAGE.reduce(
-    (s, t) => s + t.sims.reduce((ss, sim) => ss + sim.bundles.reduce((b, x) => b + x.price_ngn, 0), 0),
-    0,
-  );
   // Fleetflow's form has no carrier field and defaults new bundles to MTN Nigeria.
   const defaultCarrierId = (carrierList.find(c => /mtn/i.test(`${c.id} ${c.name}`)) ?? carrierList[0])?.id ?? "";
 
@@ -530,17 +400,17 @@ export default function PlatformDataBundles() {
           />
           <StatCard
             title="Expiring in 7 Days"
-            value={expiringSoon}
+            value="—"
             icon={Clock}
           />
           <StatCard
             title="SIMs Across Tenants"
-            value={totalSimsAcrossTenants}
+            value="—"
             icon={Building2}
           />
           <StatCard
             title="Monthly Bundle Spend"
-            value={fmtCurrency(totalMonthlySpend)}
+            value="—"
             icon={TrendingUp}
           />
         </div>
@@ -655,14 +525,26 @@ export default function PlatformDataBundles() {
                   {filtered.length === 0
                     ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                          <TableCell
+                            colSpan={8}
+                            className="text-center py-6 text-muted-foreground"
+                          >
                             {catalogQuery.isPending
                               ? "Loading bundles…"
                               : catalogQuery.isError
                                 ? (
-                                    <span role="alert" className="inline-flex items-center gap-3 text-destructive">
+                                    <span
+                                      role="alert"
+                                      className="inline-flex items-center gap-3 text-destructive"
+                                    >
                                       Unable to load the bundle catalog.
-                                      <Button variant="outline" size="sm" onClick={() => void catalogQuery.refetch()}>Try again</Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => void catalogQuery.refetch()}
+                                      >
+                                        Try again
+                                      </Button>
                                     </span>
                                   )
                                 : "No bundles found"}
@@ -690,10 +572,20 @@ export default function PlatformDataBundles() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => openEdit(b)} title="Edit">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEdit(b)}
+                                title="Edit"
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => void handleToggle(b)} title={b.is_active ? "Deactivate" : "Activate"}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => void handleToggle(b)}
+                                title={b.is_active ? "Deactivate" : "Activate"}
+                              >
                                 <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
                               </Button>
                             </div>
@@ -708,7 +600,7 @@ export default function PlatformDataBundles() {
 
         {/* TENANT ADOPTION */}
         <TabsContent value="adoption">
-          <TenantAdoptionTable data={DUMMY_TENANT_USAGE} />
+          <TenantAdoptionTable data={TENANT_ADOPTION} />
         </TabsContent>
       </Tabs>
 
@@ -729,22 +621,22 @@ export default function PlatformDataBundles() {
           </DialogHeader>
 
           <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Billing Cycle</Label>
-                <Select
-                  value={form.billing_cycle}
-                  onValueChange={v => setForm(f => ({
-                    ...f,
-                    billing_cycle: v as "monthly" | "yearly",
-                  }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Billing Cycle</Label>
+              <Select
+                value={form.billing_cycle}
+                onValueChange={v => setForm(f => ({
+                  ...f,
+                  billing_cycle: v as "monthly" | "yearly",
+                }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-2">
               <Label>Display Name</Label>
@@ -846,7 +738,6 @@ export default function PlatformDataBundles() {
 
 /* ─────────────── Tenant Adoption (per-SIM) ─────────────── */
 
-
 function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
   const { format: fmtCurrency } = useCurrency();
   const [
@@ -920,7 +811,13 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
   );
 
   const tenantSpend = (t: TenantAdoption) =>
-    t.sims.reduce((s, sim) => s + sim.bundles.reduce((b, x) => b + x.price_ngn, 0), 0);
+    t.sims.reduce(
+      (s, sim) => s + sim.bundles.reduce(
+        (b, x) => b + x.price_ngn,
+        0,
+      ),
+      0,
+    );
 
   const exportCsv = () => {
     const rows: string[][] = [
@@ -1090,13 +987,19 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
               {filtered.length === 0
                 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-6 text-muted-foreground"
+                      >
                         No tenants match the current filters
                       </TableCell>
                     </TableRow>
                   )
                 : filtered.map((t) => {
-                    const totalBundles = t.sims.reduce((s, sim) => s + sim.bundles.length, 0);
+                    const totalBundles = t.sims.reduce(
+                      (s, sim) => s + sim.bundles.length,
+                      0,
+                    );
                     const isOpen = !!openTenants[t.tenant];
                     return (
                       <Collapsible
@@ -1123,7 +1026,10 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
                           </CollapsibleTrigger>
                           <CollapsibleContent asChild>
                             <TableRow>
-                              <TableCell colSpan={5} className="bg-secondary/20 p-0">
+                              <TableCell
+                                colSpan={5}
+                                className="bg-secondary/20 p-0"
+                              >
                                 <div className="p-4">
                                   <div className="text-xs text-muted-foreground uppercase mb-2 font-medium">
                                     SIMs &amp; attached bundles
@@ -1151,7 +1057,10 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
                                           <TableCell>
                                             <div className="flex flex-col gap-1">
                                               {sim.bundles.map(b => (
-                                                <div key={`${b.type}-${b.name}`} className="flex items-center gap-2 text-sm">
+                                                <div
+                                                  key={`${b.type}-${b.name}`}
+                                                  className="flex items-center gap-2 text-sm"
+                                                >
                                                   <Badge
                                                     variant={b.type === "subscription" ? "default" : "secondary"}
                                                     className="text-[10px] uppercase"

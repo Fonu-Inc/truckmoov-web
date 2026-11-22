@@ -654,10 +654,11 @@ AI config) are kept so the backend contract stays typed.
 - **Subscribe with a selector**, always: `useSidebarStore(s => s.collapsed)`, not
   `const { collapsed } = useSidebarStore()`. The destructuring form subscribes to
   the whole store, so any write anywhere re-renders the component.
-- Realtime: nothing is wired. `useRealtimeNotifications`, `useRealtimeMessages`
-  and `lib/dummyNotifications.ts` are deleted — they served invented alerts and
-  hardcoded zero counts. The header bell (`features/dashboard/components/ui/
-  NotificationCenter.tsx`) is a stateless empty state until a real feed exists.
+- Realtime: `useRealtimeNotifications` reads the live `GET /auth/system/activity-log`
+  feed; read and cleared state is local. `useRealtimeMessages` is not wired, and the
+  old `lib/dummyNotifications.ts` demo feed is gone. The header bell
+  (`features/dashboard/components/ui/NotificationCenter.tsx`) shows those live entries
+  and deep-links security items to `/audit-compliance`.
 
 ## Notes
 

@@ -379,119 +379,7 @@ export function TenantKYCVerification({
     return Math.round(docProgress + infoProgress);
   };
 
-  // Demo documents fallback when none uploaded
-  const DEMO_DOCUMENTS: KYCDocument[] = useMemo(
-    () => ([
-      {
-        id: "demo-1",
-        tenant_id: tenantId,
-        document_type: "certificate_of_incorporation",
-        document_name: "Certificate_of_Incorporation_LEL_2015.pdf",
-        file_path: "",
-        file_size: 1248576,
-        mime_type: "application/pdf",
-        status: "approved",
-        rejection_reason: null,
-        expires_at: null,
-        created_at: new Date(Date.now() - 86400000 * 14).toISOString(),
-      },
-      {
-        id: "demo-2",
-        tenant_id: tenantId,
-        document_type: "tax_clearance",
-        document_name: "Tax_Clearance_Certificate_2024.pdf",
-        file_path: "",
-        file_size: 845120,
-        mime_type: "application/pdf",
-        status: "approved",
-        rejection_reason: null,
-        expires_at: null,
-        created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
-      },
-      {
-        id: "demo-3",
-        tenant_id: tenantId,
-        document_type: "memorandum_of_association",
-        document_name: "Memorandum_of_Association.pdf",
-        file_path: "",
-        file_size: 2340352,
-        mime_type: "application/pdf",
-        status: "under_review",
-        rejection_reason: null,
-        expires_at: null,
-        created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-      },
-      {
-        id: "demo-4",
-        tenant_id: tenantId,
-        document_type: "business_license",
-        document_name: "Business_Operating_License_Lagos.pdf",
-        file_path: "",
-        file_size: 612480,
-        mime_type: "application/pdf",
-        status: "approved",
-        rejection_reason: null,
-        expires_at: null,
-        created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
-      },
-      {
-        id: "demo-5",
-        tenant_id: tenantId,
-        document_type: "proof_of_address",
-        document_name: "Utility_Bill_Ikeja_Office.jpg",
-        file_path: "",
-        file_size: 384256,
-        mime_type: "image/jpeg",
-        status: "pending",
-        rejection_reason: null,
-        expires_at: null,
-        created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-      },
-      {
-        id: "demo-6",
-        tenant_id: tenantId,
-        document_type: "director_id",
-        document_name: "Director_Passport_Olumide_Adeyemi.pdf",
-        file_path: "",
-        file_size: 524288,
-        mime_type: "application/pdf",
-        status: "approved",
-        rejection_reason: null,
-        expires_at: null,
-        created_at: new Date(Date.now() - 86400000 * 18).toISOString(),
-      },
-      {
-        id: "demo-7",
-        tenant_id: tenantId,
-        document_type: "insurance_certificate",
-        document_name: "Fleet_Insurance_Cert_2024.pdf",
-        file_path: "",
-        file_size: 967680,
-        mime_type: "application/pdf",
-        status: "rejected",
-        rejection_reason: "Document expired — please upload current cover",
-        expires_at: null,
-        created_at: new Date(Date.now() - 86400000 * 9).toISOString(),
-      },
-      {
-        id: "demo-8",
-        tenant_id: tenantId,
-        document_type: "vat_certificate",
-        document_name: "VAT_Registration_FIRS.pdf",
-        file_path: "",
-        file_size: 287744,
-        mime_type: "application/pdf",
-        status: "approved",
-        rejection_reason: null,
-        expires_at: null,
-        created_at: new Date(Date.now() - 86400000 * 22).toISOString(),
-      },
-    ]),
-    [tenantId],
-  );
-
-  const usingDemoDocs = documents.length === 0;
-  const displayDocuments = usingDemoDocs ? DEMO_DOCUMENTS : documents;
+  const displayDocuments = documents;
 
   const filteredDocuments = useMemo(
     () => {
@@ -981,14 +869,6 @@ export function TenantKYCVerification({
               <div>
                 <CardTitle className="text-lg flex items-center gap-2">
                   Uploaded Documents
-                  {usingDemoDocs && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs"
-                    >
-                      Demo data
-                    </Badge>
-                  )}
                 </CardTitle>
                 <CardDescription>
                   {readOnly ? "Receipt submitted verification documents" : "All uploaded verification documents"}
@@ -1098,7 +978,6 @@ export function TenantKYCVerification({
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleViewDocument(doc)}
-                                  disabled={usingDemoDocs}
                                 >
                                   <Download className="w-4 h-4 mr-2" />
                                   Download
@@ -1110,7 +989,6 @@ export function TenantKYCVerification({
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleViewDocument(doc)}
-                                    disabled={usingDemoDocs}
                                   >
                                     <Eye className="w-4 h-4" />
                                   </Button>
@@ -1118,7 +996,6 @@ export function TenantKYCVerification({
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleDeleteDocument(doc)}
-                                    disabled={usingDemoDocs}
                                     className="text-destructive hover:text-destructive"
                                   >
                                     <Trash2 className="w-4 h-4" />

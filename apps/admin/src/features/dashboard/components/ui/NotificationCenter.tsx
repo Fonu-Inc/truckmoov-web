@@ -1,4 +1,4 @@
-import type { PlatformNotification } from "@/features/dashboard/utils/dummyNotifications";
+import type { PlatformNotification } from "@/features/dashboard/utils/notifications";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   Bell, CheckCheck, Trash2,
@@ -13,7 +13,7 @@ import {
 } from "@/components/shadcn/popover";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
-import { auditEventHref } from "@/features/dashboard/utils/dummyNotifications";
+import { auditEventHref } from "@/features/dashboard/utils/notifications";
 
 type NotificationCenterProps = {
   notifications: PlatformNotification[];
@@ -41,9 +41,7 @@ const TYPE_ICONS: Record<PlatformNotification["type"], string> = {
 };
 
 /**
- * The top-bar bell — fleetflow's `components/platform/NotificationCenter.tsx`.
- * State lives in `useRealtimeNotifications` (DashboardHeader), seeded from
- * fleetflow's platform-admin demo notifications until a real feed exists.
+ * The top-bar bell — live system activity, with local read/clear state.
  */
 export function NotificationCenter({
   notifications,

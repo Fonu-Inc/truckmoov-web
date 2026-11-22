@@ -1,4 +1,3 @@
-import type { SystemOnboardingApplicationRow } from "@truckmoov/api/auth";
 import type { FilterValues } from "@/components/shadcn/table-toolbar";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -51,21 +50,6 @@ import { inDateWindow } from "@/features/tenants/utils/tenants";
 // renders every application in one unpaged table with client-side filters, so this loads
 // the first 100 and filters those; a note shows when there are more.
 const APPLICATIONS_LIMIT = 100;
-
-/**
- * ponytail: mock data from fleetflow parity port — wire to packages/api
- * The list row carries a document count, not document types, so fleetflow's
- * "Returning customer" check (only a Customer Request Letter submitted) can't run here.
- * The application review page applies it to the live documents.
- */
-const isReturningRow = (_row: SystemOnboardingApplicationRow) => false;
-
-/**
- * ponytail: mock data from fleetflow parity port — wire to packages/api
- * Fleetflow's application kind (Customer / Payer). Applications carry no kind; the
- * reference defaults to "Customer".
- */
-const APPLICATION_KIND = "Customer";
 
 /** Fleetflow's KYCReviewPanel — Tenants → Onboarding. Decisions happen on the application review page. */
 export function TenantOnboardingPanel() {
@@ -262,14 +246,6 @@ export function TenantOnboardingPanel() {
                               >
                                 {a.businessEmail}
                               </p>
-                              {isReturningRow(a) && (
-                                <Badge
-                                  variant="secondary"
-                                  className="mt-1 rounded-full text-[10px]"
-                                >
-                                  Returning customer
-                                </Badge>
-                              )}
                             </TableCell>
                             <TableCell className="text-sm break-words">{a.contactFullName || "—"}</TableCell>
                             <TableCell>
@@ -337,7 +313,6 @@ export function TenantOnboardingPanel() {
       record.application.businessEmail,
       record.application.contactFullName,
       organizationTypeOf(record.application.applicantType),
-      APPLICATION_KIND,
       decisionLabel(record.decision),
       formatWithPattern(
         record.application.submittedAt ?? record.application.createdAt,
@@ -350,7 +325,6 @@ export function TenantOnboardingPanel() {
         "Email",
         "Contact Person",
         "Tenant Type",
-        "Application Type",
         "Status",
         "Date Submitted",
       ],

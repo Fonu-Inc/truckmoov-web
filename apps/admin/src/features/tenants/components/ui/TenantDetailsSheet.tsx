@@ -79,7 +79,6 @@ import {
 } from "@/features/tenants/utils/onboarding";
 import {
   inDateWindow,
-  minutesAgo,
   normalizeStatus,
   tenantTypeOf,
 } from "@/features/tenants/utils/tenants";
@@ -137,47 +136,6 @@ function getStatusBadge(status: string) {
   }
 }
 
-/**
- * ponytail: mock data from fleetflow parity port — wire to packages/api
- * The reference shows these sample audit events (with a "Demo data" badge) when a
- * tenant has no audit entries yet.
- */
-function demoAudit(tenant: SystemTenant): AuditRow[] {
-  const domain = tenant.email?.split("@")[1] ?? "tenant.com";
-  return [
-    {
-      id: "demo-a1", event_type: "TENANT_LOGIN", description: `Admin logged in for ${tenant.name}.`, severity: "info", created_at: minutesAgo(8), user_name: `olumide.adeyemi@${domain}`,
-    },
-    {
-      id: "demo-a2", event_type: "VEHICLE_CREATED", description: "New vehicle LSR-482-XK registered (MAN TGS 33.480).", severity: "info", created_at: minutesAgo(47), user_name: `fleet.manager@${domain}`,
-    },
-    {
-      id: "demo-a3", event_type: "DRIVER_INVITED", description: "Invitation sent to chinedu.okafor@gmail.com (role: driver).", severity: "info", created_at: minutesAgo(60 * 2), user_name: `hr@${domain}`,
-    },
-    {
-      id: "demo-a4", event_type: "PAYMENT_SUCCEEDED", description: "Wallet top-up of ₦250,000 via MTN MoMo (ref: MTN-9F2A1B).", severity: "info", created_at: minutesAgo(60 * 5), user_name: `billing@${domain}`,
-    },
-    {
-      id: "demo-a5", event_type: "GEOFENCE_BREACH", description: "Vehicle LSR-117-AA exited 'Apapa Port' geofence at 14:23.", severity: "warning", created_at: minutesAgo(60 * 9), user_name: "system",
-    },
-    {
-      id: "demo-a6", event_type: "KYC_DOCUMENT_UPLOADED", description: "Tax Clearance Certificate uploaded (under review).", severity: "info", created_at: minutesAgo(60 * 18), user_name: `compliance@${domain}`,
-    },
-    {
-      id: "demo-a7", event_type: "FAILED_LOGIN_ATTEMPT", description: `3 consecutive failed logins for admin@${domain}.`, severity: "warning", created_at: minutesAgo(60 * 27), user_name: "security",
-    },
-    {
-      id: "demo-a8", event_type: "SUBSCRIPTION_RENEWED", description: "Professional plan auto-renewed for next billing cycle.", severity: "info", created_at: minutesAgo(60 * 48), user_name: "system",
-    },
-    {
-      id: "demo-a9", event_type: "ROLE_CHANGED", description: "User adebayo.t@ promoted from dispatcher to manager.", severity: "info", created_at: minutesAgo(60 * 72), user_name: `olumide.adeyemi@${domain}`,
-    },
-    {
-      id: "demo-a10", event_type: "API_KEY_GENERATED", description: "New API key created (scope: read:vehicles, read:trips).", severity: "info", created_at: minutesAgo(60 * 96), user_name: `developer@${domain}`,
-    },
-  ];
-}
-
 // Page-mode chrome. Declared at module scope so the tab tree is never remounted
 // by a component identity that changes on every render (react/static-components).
 type ShellSlotProps = {
@@ -223,7 +181,10 @@ function ResourceNotice({
   return null;
 }
 
-/** Fleetflow's platform TenantDetailsSheet. */
+/**
+ * Tenant details drawer. The overview, resources, documents and audit tabs all
+ * read live tenant endpoints; empty tabs render their own empty state.
+ */
 export function TenantDetailsSheet({
   tenant,
   tenantType,
@@ -326,8 +287,7 @@ export function TenantDetailsSheet({
     created_at: log.occurredAt,
     user_name: log.actorName || log.actorEmail,
   }));
-  const usingDemoAudit = liveAudit.length === 0 && !loadingAudit;
-  const events = usingDemoAudit ? demoAudit(tenant) : liveAudit;
+  const events = liveAudit;
 
   // ponytail: tenant documents have no download link in packages/api yet.
   const documentUnavailable = () => toast.info("This document can't be opened from here yet.");
@@ -875,7 +835,6 @@ export function TenantDetailsSheet({
               <AuditLogTab
                 events={events}
                 loading={loadingAudit}
-                usingDemo={usingDemoAudit}
                 search={auditSearch}
                 onSearchChange={setAuditSearch}
                 filters={auditFilters}
@@ -949,7 +908,6 @@ const SEVERITY_OPTIONS = [
 function AuditLogTab({
   events,
   loading,
-  usingDemo,
   search,
   onSearchChange,
   filters,
@@ -958,7 +916,6 @@ function AuditLogTab({
 }: {
   events: AuditRow[];
   loading: boolean;
-  usingDemo: boolean;
   search: string;
   onSearchChange: (v: string) => void;
   filters: FilterValues;
@@ -998,14 +955,6 @@ function AuditLogTab({
           {`Recent Activity (${events.length})`}
         </h4>
         <div className="flex items-center gap-2">
-          {usingDemo && (
-            <Badge
-              variant="outline"
-              className="text-xs"
-            >
-              Demo data
-            </Badge>
-          )}
           <Button
             variant="ghost"
             size="sm"

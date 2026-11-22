@@ -296,16 +296,14 @@ export default function TenantsPage() {
     }
   };
 
-  // ponytail: mock data from fleetflow parity port — wire to packages/api
-  // Overdue invoices per tenant (id -> count): the reference tints ~25% of rows
-  // (index % 4 === 1) as overdue for demo. No overdue flag on SystemTenant yet.
+  // Overdue invoices per tenant, counted by the tenants endpoint.
   const overdueByTenant = useMemo<Record<string, number>>(
     () => {
       const map: Record<string, number> = {};
-      allTenants.forEach((t, i) => {
-        if ((i % 4) === 1)
-          map[t.id] = (i % 3) + 1;
-      });
+      for (const tenant of allTenants) {
+        if (tenant.overdueInvoices && tenant.overdueInvoices > 0)
+          map[tenant.id] = tenant.overdueInvoices;
+      }
       return map;
     },
     [allTenants],

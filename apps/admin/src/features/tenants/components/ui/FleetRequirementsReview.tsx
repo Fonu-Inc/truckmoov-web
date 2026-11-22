@@ -124,7 +124,7 @@ export function FleetRequirementsReview({
     ],
   }));
 
-  const row = (item: FleetDetailItem, kind?: string) => (
+  const row = (item: FleetDetailItem) => (
     <div
       key={item.id}
       className="flex flex-col gap-3 rounded-xl border border-border/60 p-3 sm:flex-row sm:items-center sm:justify-between"
@@ -140,16 +140,6 @@ export function FleetRequirementsReview({
             className="rounded-full text-[11px]"
           >
             {item.badge}
-          </Badge>
-        )}
-        {/* ponytail: mock data from fleetflow parity port — wire to packages/api
-            (no per-request decision on device requests; the reference shows "Pending review" until one is made). */}
-        {kind && (
-          <Badge
-            variant="outline"
-            className="rounded-full text-[11px]"
-          >
-            Pending review
           </Badge>
         )}
         {!item.noDetails && (
@@ -171,9 +161,7 @@ export function FleetRequirementsReview({
     icon: ReactNode,
     items: FleetDetailItem[],
     empty: string,
-    opts?: {
-      kind?: string; hint?: string;
-    },
+    opts?: { hint?: string },
   ) => (
     <div className="space-y-3 rounded-2xl border border-border/60 p-4">
       <div className="flex items-center gap-2">
@@ -191,10 +179,7 @@ export function FleetRequirementsReview({
         ? <p className="text-sm text-muted-foreground">{empty}</p>
         : (
             <div className="space-y-2">
-              {items.map(item => row(
-                item,
-                opts?.kind,
-              ))}
+              {items.map(item => row(item))}
             </div>
           )}
     </div>
@@ -214,10 +199,7 @@ export function FleetRequirementsReview({
           <Cpu className="h-4 w-4" />,
           deviceRequests,
           "No devices requested.",
-          {
-            kind: "Device",
-            hint: "Quantity requested and use case, as submitted by the customer.",
-          },
+          { hint: "Quantity requested and use case, as submitted by the customer." },
         )}
       </div>
 

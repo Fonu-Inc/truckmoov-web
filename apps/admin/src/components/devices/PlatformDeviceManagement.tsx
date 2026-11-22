@@ -1,6 +1,5 @@
 import type { SystemSimItem } from "@truckmoov/api/auth";
-import type { DeviceEditValues } from "./DeviceEditDialog";
-import type { DeviceBucket, PlatformDevice } from "./management/deviceStatus";
+import type { PlatformDevice } from "./management/deviceStatus";
 import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import {
   useQuery,
@@ -10,7 +9,6 @@ import {
   getSystemDevicesExportQueryOptions,
   getSystemDevicesQueryOptions,
   getSystemSimsQueryOptions,
-  getSystemTenantsQueryOptions,
   useReinstateSystemDevice,
   useSuspendSystemDevice,
 } from "@truckmoov/api/auth";
@@ -23,13 +21,10 @@ import {
   Download,
   Eye,
   MoreHorizontal,
-  Pencil,
   Search,
   Signal,
   SignalLow,
   SignalZero,
-  Trash2,
-  UserPlus,
   XCircle,
 } from "lucide-react";
 import {
@@ -74,8 +69,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { PageActions } from "@/shared/components/layout/PageTitle";
-import { DeviceEditDialog } from "./DeviceEditDialog";
 import { DeviceDetailSheet } from "./management/DeviceDetailSheet";
 import {
   formatLastSeen,
@@ -86,13 +79,6 @@ import {
   statusClasses,
   statusLabels,
 } from "./management/deviceStatus";
-import { RecordDeviceAssignmentDialog } from "./RecordDeviceAssignmentDialog";
-
-type Assignment = {
-  tenantId: string;
-  tenantName: string;
-  at: string;
-};
 
 const ONLINE_STATUSES = [
   "active",
@@ -117,50 +103,39 @@ export function PlatformDeviceManagement() {
   const queryClient = useQueryClient();
   const devicesQuery = useQuery(getSystemDevicesQueryOptions());
   const simsQuery = useQuery(getSystemSimsQueryOptions());
-  const tenantsQuery = useQuery(getSystemTenantsQueryOptions());
   const suspendMutation = useSuspendSystemDevice();
   const reinstateMutation = useReinstateSystemDevice();
 
-  const [showAssign, setShowAssign] = useState(false);
-  // ponytail: mock data from fleetflow parity port — wire to packages/api
-  // Record Assignment, Edit Details and Delete have no platform endpoint; their results live in page state only.
-  const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
-  const [edits, setEdits] = useState<Record<string, DeviceEditValues>>({});
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [filterDraft, setFilterDraft] = useState<FilterDraft>({
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
+    filterDraft,
+    setFilterDraft,
+  ] = useState<FilterDraft>({
     lastSeen: { enabled: false },
     tenant: { enabled: false },
     manufacturer: { enabled: false },
   });
-  const [selectedDevice, setSelectedDevice] = useState<PlatformDevice | null>(null);
-  const [showDetailsSheet, setShowDetailsSheet] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [
+    selectedDevice,
+    setSelectedDevice,
+  ] = useState<PlatformDevice | null>(null);
+  const [
+    showDetailsSheet,
+    setShowDetailsSheet,
+  ] = useState(false);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
 
-  const devices = useMemo<PlatformDevice[]>(
-    () => (devicesQuery.data?.data?.devices ?? [])
-      .filter(d => !deletedIds.has(d.id))
-      .map((d) => {
-        const assignment = assignments[d.id];
-        const edit = edits[d.id];
-        return {
-          ...d,
-          ...(assignment
-            ? {
-                tenantId: assignment.tenantId,
-                tenantName: assignment.tenantName,
-                assignedAt: assignment.at,
-                statusOverride: "active" as DeviceBucket,
-              }
-            : {}),
-          ...(edit ?? {}),
-        };
-      }),
-    [devicesQuery.data, deletedIds, assignments, edits],
-  );
+  const devices = devicesQuery.data?.data?.devices ?? [];
 
   // SIM cards linked to devices (the system links SIMs; admins only view)
   const simByDevice = useMemo(
@@ -173,13 +148,6 @@ export function PlatformDeviceManagement() {
       return map;
     },
     [simsQuery.data],
-  );
-  const tenantList = useMemo(
-    () => (tenantsQuery.data?.data?.tenants ?? []).map(t => ({
-      id: t.id,
-      name: t.name,
-    })),
-    [tenantsQuery.data],
   );
 
   const tenantName = (device: PlatformDevice) => device.tenantId ? device.tenantName || "Unknown tenant" : "Unknown tenant";
@@ -217,7 +185,10 @@ export function PlatformDeviceManagement() {
 
     const lastSeenFilter = filterDraft.lastSeen;
     const days = lastSeenFilter?.enabled && lastSeenFilter.value ? LAST_SEEN_DAYS[lastSeenFilter.value] ?? 0 : 0;
-    const matchesLastSeen = days > 0 ? seenWithinDays(device.lastSeen, days) : true;
+    const matchesLastSeen = days > 0 ? seenWithinDays(
+      device.lastSeen,
+      days,
+    ) : true;
 
     return matchesSearch && matchesStatus && matchesManufacturer && matchesTenantFilter && matchesLastSeen;
   });
@@ -225,11 +196,6 @@ export function PlatformDeviceManagement() {
   const handleViewDetails = (device: PlatformDevice) => {
     setSelectedDevice(device);
     setShowDetailsSheet(true);
-  };
-
-  const handleEditDevice = (device: PlatformDevice) => {
-    setSelectedDevice(device);
-    setShowEditDialog(true);
   };
 
   const handleSuspend = (device: PlatformDevice) => {
@@ -252,34 +218,14 @@ export function PlatformDeviceManagement() {
     );
   };
 
-  const handleDelete = (device: PlatformDevice) => {
-    // eslint-disable-next-line no-alert -- the fork confirms with the native dialog
-    if (!window.confirm(`Delete device ${device.imei}? This cannot be undone.`))
-      return;
-    setDeletedIds(prev => new Set(prev).add(device.id));
-    toast.success("Device deleted");
-  };
-
-  const recordAssignment = (ids: string[], tenant: { id: string; name: string }) => {
-    const at = new Date().toISOString();
-    setAssignments((prev) => {
-      const next = { ...prev };
-      ids.forEach((id) => {
-        next[id] = {
-          tenantId: tenant.id,
-          tenantName: tenant.name,
-          at,
-        };
-      });
-      return next;
-    });
-  };
-
   const handleExport = async () => {
     setIsExporting(true);
     try {
       const blob = await queryClient.fetchQuery(getSystemDevicesExportQueryOptions());
-      downloadBlob(blob as Blob, "devices.csv");
+      downloadBlob(
+        blob as Blob,
+        "devices.csv",
+      );
     }
     catch {
       toast.error("Export failed");
@@ -327,15 +273,6 @@ export function PlatformDeviceManagement() {
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <PageActions>
-              <Button
-                size="sm"
-                onClick={() => setShowAssign(true)}
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Record Assignment
-              </Button>
-            </PageActions>
             <Button
               variant="outline"
               size="sm"
@@ -351,11 +288,21 @@ export function PlatformDeviceManagement() {
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
           {[
-            { label: "All Devices", value: stats.all, cls: "" },
-            { label: "Active", value: stats.active, cls: "text-success" },
-            { label: "Inactive", value: stats.inactive, cls: "text-muted-foreground" },
-            { label: "Assigned", value: stats.assigned, cls: "text-primary" },
-            { label: "Unassigned", value: stats.unassigned, cls: "text-warning" },
+            {
+              label: "All Devices", value: stats.all, cls: "",
+            },
+            {
+              label: "Active", value: stats.active, cls: "text-success",
+            },
+            {
+              label: "Inactive", value: stats.inactive, cls: "text-muted-foreground",
+            },
+            {
+              label: "Assigned", value: stats.assigned, cls: "text-primary",
+            },
+            {
+              label: "Unassigned", value: stats.unassigned, cls: "text-warning",
+            },
           ].map(k => (
             <div
               key={k.label}
@@ -404,9 +351,15 @@ export function PlatformDeviceManagement() {
                 label: "Last Seen",
                 type: "select",
                 options: [
-                  { value: "7d", label: "Last 7 days" },
-                  { value: "30d", label: "Last 30 days" },
-                  { value: "90d", label: "Last 90 days" },
+                  {
+                    value: "7d", label: "Last 7 days",
+                  },
+                  {
+                    value: "30d", label: "Last 30 days",
+                  },
+                  {
+                    value: "90d", label: "Last 90 days",
+                  },
                 ],
               },
               {
@@ -417,7 +370,9 @@ export function PlatformDeviceManagement() {
                   new Set(devices.map(d => tenantName(d))),
                 )
                   .filter(n => n && n !== "Unknown tenant")
-                  .map(n => ({ value: n, label: n })),
+                  .map(n => ({
+                    value: n, label: n,
+                  })),
               },
               {
                 key: "manufacturer",
@@ -425,7 +380,9 @@ export function PlatformDeviceManagement() {
                 type: "select",
                 options: manufacturers
                   .filter(m => m !== "all")
-                  .map(m => ({ value: m, label: m })),
+                  .map(m => ({
+                    value: m, label: m,
+                  })),
               },
             ]}
             value={filterDraft}
@@ -528,7 +485,10 @@ export function PlatformDeviceManagement() {
                                     <div>
                                       <p className="font-mono text-xs">{sim.iccid}</p>
                                       <p className="text-xs text-muted-foreground">
-                                        {[sim.msisdn, sim.carrier].filter(Boolean).join(" · ") || "—"}
+                                        {[
+                                          sim.msisdn,
+                                          sim.carrier,
+                                        ].filter(Boolean).join(" · ") || "—"}
                                       </p>
                                     </div>
                                   )
@@ -546,7 +506,10 @@ export function PlatformDeviceManagement() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                {getSignalIcon(device.signalStrength, lifecycleStatus)}
+                                {getSignalIcon(
+                                  device.signalStrength,
+                                  lifecycleStatus,
+                                )}
                                 {device.signalStrength !== null && (
                                   <span className="text-sm">{`${device.signalStrength}%`}</span>
                                 )}
@@ -557,7 +520,10 @@ export function PlatformDeviceManagement() {
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                               {device.tenantId
-                                ? formatWithPattern(device.assignedAt, "M/d/yyyy, h:mm:ss a")
+                                ? formatWithPattern(
+                                    device.assignedAt,
+                                    "M/d/yyyy, h:mm:ss a",
+                                  )
                                 : "—"}
                             </TableCell>
                             <TableCell>
@@ -576,44 +542,30 @@ export function PlatformDeviceManagement() {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditDevice(device)}>
-                                    <Pencil className="h-4 w-4 mr-2" />
-                                    Edit Details
-                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  {device.tenantId
-                                    ? (
-                                        isSuspended
-                                          ? (
-                                              <DropdownMenuItem
-                                                className="text-success"
-                                                disabled={reinstateMutation.isPending}
-                                                onClick={() => handleReactivate(device)}
-                                              >
-                                                <CheckCircle className="h-4 w-4 mr-2" />
-                                                Reactivate
-                                              </DropdownMenuItem>
-                                            )
-                                          : (
-                                              <DropdownMenuItem
-                                                className="text-warning"
-                                                disabled={suspendMutation.isPending}
-                                                onClick={() => handleSuspend(device)}
-                                              >
-                                                <XCircle className="h-4 w-4 mr-2" />
-                                                Suspend Device
-                                              </DropdownMenuItem>
-                                            )
-                                      )
-                                    : (
-                                        <DropdownMenuItem
-                                          className="text-destructive"
-                                          onClick={() => handleDelete(device)}
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      )}
+                                  {device.tenantId && (
+                                    isSuspended
+                                      ? (
+                                          <DropdownMenuItem
+                                            className="text-success"
+                                            disabled={reinstateMutation.isPending}
+                                            onClick={() => handleReactivate(device)}
+                                          >
+                                            <CheckCircle className="h-4 w-4 mr-2" />
+                                            Reactivate
+                                          </DropdownMenuItem>
+                                        )
+                                      : (
+                                          <DropdownMenuItem
+                                            className="text-warning"
+                                            disabled={suspendMutation.isPending}
+                                            onClick={() => handleSuspend(device)}
+                                          >
+                                            <XCircle className="h-4 w-4 mr-2" />
+                                            Suspend Device
+                                          </DropdownMenuItem>
+                                        )
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -633,28 +585,6 @@ export function PlatformDeviceManagement() {
         sim={selectedDevice ? simByDevice[selectedDevice.id] : undefined}
         open={showDetailsSheet}
         onOpenChange={setShowDetailsSheet}
-      />
-
-      {/* Edit Device Dialog */}
-      <DeviceEditDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        device={selectedDevice}
-        normalizedStatus={selectedDevice ? normalizeDeviceStatus(selectedDevice) : "unassigned"}
-        onSaved={(values) => {
-          if (selectedDevice)
-            setEdits(prev => ({ ...prev, [selectedDevice.id]: values }));
-          setShowEditDialog(false);
-          setSelectedDevice(null);
-        }}
-      />
-
-      <RecordDeviceAssignmentDialog
-        open={showAssign}
-        onOpenChange={setShowAssign}
-        devices={devices}
-        tenants={tenantList}
-        onAssigned={recordAssignment}
       />
     </Card>
   );

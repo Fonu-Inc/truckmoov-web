@@ -38,7 +38,6 @@ import {
 import { AuditEntryDialog } from "@/features/audit/components/ui/AuditEntryDialog";
 import { useHorizontalOverflow } from "@/features/audit/hooks/useHorizontalOverflow";
 import {
-  buildDemoAuditEntries,
   CATEGORY_LABELS,
   filterUnifiedAudit,
   fromSystemAuditEntry,
@@ -103,9 +102,8 @@ const exportColumns = [
  * platform operations — with saved views as tabs, kept in `?view=`. Replaces the old
  * Security section and Compliance & Audit page (both URLs redirect here).
  *
- * Live rows come from GET /auth/system/audit-log. When that errors or returns
- * nothing, the page shows fleetflow's 30 demo entries instead, so it never
- * renders empty — real records replace the sample entries.
+ * Live rows come from GET /auth/system/audit-log. An empty log renders the
+ * page's normal empty state.
  */
 export default function AuditCompliancePage() {
   const [
@@ -138,7 +136,7 @@ export default function AuditCompliancePage() {
     () => {
       if (isLoading)
         return [];
-      return live && live.length > 0 ? live.map(fromSystemAuditEntry) : buildDemoAuditEntries();
+      return live?.map(fromSystemAuditEntry) ?? [];
     },
     [
       isLoading,

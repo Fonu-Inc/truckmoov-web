@@ -803,12 +803,15 @@ export type SystemDevicesQuery = {
 export type ActivityLog = {
   id: string
   tenantId: string
+  tenantName?: string | null
   service: string
   action: string
   entityType: string
   entityId: string
   summary: string
   actorId: string
+  actorName?: string | null
+  actorEmail?: string | null
   actorRole: string
   metadata: Record<string, unknown>
   occurredAt: string
@@ -2016,6 +2019,10 @@ export type SystemTenant = SystemTenantSuspension & {
   planName: string | null
   /** False means no plan: null quota limits are then not unlimited. */
   planAssigned: boolean
+  /** Prepaid/postpaid, from the tenant's plan entitlements. Null when unknown. */
+  billingModel?: 'prepaid' | 'postpaid' | null
+  /** Overdue invoices for this tenant, counted at read time. */
+  overdueInvoices?: number
   status: 'active' | 'pending' | 'trial' | 'suspended' | 'inactive' | 'terminated'
   organizationType: string | null
   vehicleCount: number

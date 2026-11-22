@@ -84,13 +84,6 @@ import {
 import { formatCurrency } from "@/lib/currency";
 import { PageTitle } from "@/shared/components/layout/PageTitle";
 
-/**
- * ponytail: mock data from fleetflow parity port — wire to packages/api
- * Fleetflow's application kind (Customer / Payer). Applications carry no kind; the
- * reference defaults to "Customer".
- */
-const APPLICATION_KIND = "Customer";
-
 type DialogKind = Exclude<Decision, "pending">;
 
 /** Fleetflow's applicationFormSections, filled from the live application. */
@@ -323,7 +316,7 @@ export default function OnboardingApplicationPage() {
       <div className="space-y-5">
         <PageTitle
           title={app.organizationName}
-          description={`${organizationTypeOf(app.applicantType)} · ${APPLICATION_KIND}`}
+          description={organizationTypeOf(app.applicantType)}
           primaryActions={(
             <div className="flex flex-wrap justify-end gap-2">
               <Button

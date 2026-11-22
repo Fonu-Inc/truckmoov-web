@@ -42,25 +42,18 @@ export function tenantTypeOf(tenant: Pick<SystemTenant, "organizationTypes" | "o
 }
 
 /**
- * ponytail: mock data from fleetflow parity port — wire to packages/api
- * Billing model (prepaid vs postpaid). SystemTenant carries no billing model, so this
- * is the reference's stable per-tenant fallback: a char-code hash of the id.
+ * Prepaid vs postpaid, from the tenant's plan entitlements. Returns null when
+ * the plan has no payment model rather than inventing one.
  */
 export function getBillingModel(tenant: {
-  id: string; billingModel?: string | null;
-}): "prepaid" | "postpaid" {
+  billingModel?: string | null;
+}): "prepaid" | "postpaid" | null {
   const raw = (tenant.billingModel || "").toLowerCase();
   if (raw === "postpaid")
     return "postpaid";
   if (raw === "prepaid" || raw === "subscription")
     return "prepaid";
-  const hash = String(tenant.id)
-    .split("")
-    .reduce(
-      (acc, c) => acc + c.charCodeAt(0),
-      0,
-    );
-  return hash % 2 === 0 ? "prepaid" : "postpaid";
+  return null;
 }
 
 /** Epoch ms for sorting; 0 when missing, so undated rows sort first ascending. */
