@@ -244,7 +244,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
 
   // ─── Reports & analytics ───────────────────────────────────────
   {
-    label: "Reports", href: "/reports", icon: BarChart3,
+    label: "Reports", href: "/reports", icon: BarChart3, manualTitle: true,
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "AGGREGATOR_ADMIN",

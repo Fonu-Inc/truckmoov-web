@@ -10,22 +10,20 @@ import {
 } from "@truckmoov/api/fleet";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Activity, CheckCircle, CreditCard, Download, FileText,
+  Activity, CheckCircle, CreditCard, FileText,
   Fuel, MessageSquare, Package, Route, Truck, Users, Wrench,
 } from "lucide-react";
 import { useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { Button } from "@/components/shadcn/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import {
-  exportToCSV, TREND_RANGES,
-} from "@/features/reports/utils/reportsUtils";
+import { TREND_RANGES } from "@/features/reports/utils/reportsUtils";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { ReportsGate } from "./ReportsGate";
 import {
   ActivityRows, RowsSkeleton, SectionCard, SummaryStat,
@@ -41,7 +39,7 @@ function TrendRangeSelect({
       value={value}
       onValueChange={v => onChange(v as ReportTrendRange)}
     >
-      <SelectTrigger className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
+      <SelectTrigger className="h-9 px-3.5 rounded-xl w-[150px]"><SelectValue /></SelectTrigger>
       <SelectContent>
         {TREND_RANGES.map(r => (
           <SelectItem
@@ -203,13 +201,8 @@ function summaryRows(summary: ReportsSummary, licence: TenantLicence | null | un
   };
 }
 
-function periodLabel(mode: ReportPeriod, summary: ReportsSummary) {
-  if (mode === "daily") {
-    return formatWithPattern(
-      summary.period.from,
-      "EEEE, dd MMM yyyy",
-    );
-  }
+/** "16 Nov – 21 Nov 2026" — the design app shows the period as a range on both tabs. */
+function periodLabel(summary: ReportsSummary) {
   return `${formatWithPattern(
     summary.period.from,
     "dd MMM",
@@ -235,139 +228,84 @@ export function PeriodSummary({ mode }: { mode: ReportPeriod }) {
   const operations = summary?.operations;
   const fleet = summary?.fleet;
 
-  const sections: [string, Row[]][] = rows
-    ? [
-        [
-          "Operations",
-          rows.operationRows,
-        ],
-        [
-          "Fleet",
-          rows.fleetRows,
-        ],
-        [
-          "Administration",
-          rows.adminRows,
-        ],
-      ]
-    : [];
-
-  const handleExport = () => summary && exportToCSV(
-    `${mode}_summary`,
-    [
-      "Section",
-      "Metric",
-      "Value",
-    ],
-    [
-      ...sections.flatMap(([
-        section,
-        sectionRows,
-      ]) => sectionRows.map(r => [
-        section,
-        r.label,
-        r.count,
-      ])),
-      [
-        "Financial",
-        "Revenue",
-        summary.revenueNgn,
-      ],
-    ],
-  );
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">{mode === "daily" ? "Daily Summary" : "Weekly Summary"}</h2>
-          <p className="text-sm text-muted-foreground min-h-5">
-            {summary && periodLabel(
-              mode,
-              summary,
-            )}
-          </p>
+    <>
+      <PageHeader
+        title={mode === "daily" ? "Daily Summary" : "Weekly Summary"}
+        description={`Key totals and recent operational activity for this account.${summary ? `\n${periodLabel(summary)}` : ""}`}
+      />
+      <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <SummaryStat
+              icon={Package}
+              label="Jobs created"
+              value={operations ? `${operations.jobsCreated}` : "—"}
+              hint={mode === "daily" ? "Today" : "This week"}
+              loading={loading}
+            />
+            <SummaryStat
+              icon={CheckCircle}
+              label="Jobs completed"
+              value={operations ? `${operations.jobsCompleted}` : "—"}
+              hint={operations && `${operations.jobsInProgress} in progress`}
+              loading={loading}
+            />
+            <SummaryStat
+              icon={Truck}
+              label="Vehicles active"
+              value={fleet ? `${fleet.activeVehicles}/${fleet.totalVehicles}` : "—"}
+              hint={fleet && `${fleet.vehiclesInMaintenance} in maintenance`}
+              loading={loading}
+            />
+            <SummaryStat
+              icon={CreditCard}
+              label="Revenue booked"
+              value={summary ? formatCurrency(summary.revenueNgn) : "—"}
+              hint="Completed jobs"
+              loading={loading}
+            />
+          </div>
+
+          <ActivityTrendCard initialRange={mode === "daily" ? "today" : "last_week"} />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <SectionCard
+              title="Operations"
+              description="Job and dispatch activity"
+            >
+              <ReportsGate
+                query={summaryQuery}
+                skeleton={<RowsSkeleton />}
+              >
+                {rows && <ActivityRows rows={rows.operationRows} />}
+              </ReportsGate>
+            </SectionCard>
+            <SectionCard
+              title="Fleet & people"
+              description="Assets and drivers"
+            >
+              <ReportsGate
+                query={summaryQuery}
+                skeleton={<RowsSkeleton />}
+              >
+                {rows && <ActivityRows rows={rows.fleetRows} />}
+              </ReportsGate>
+            </SectionCard>
+            <SectionCard
+              title="Administration"
+              description="Documents, communications and account"
+            >
+              <ReportsGate
+                query={summaryQuery}
+                skeleton={<RowsSkeleton />}
+              >
+                {rows && <ActivityRows rows={rows.adminRows} />}
+              </ReportsGate>
+            </SectionCard>
+          </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!summary}
-          onClick={handleExport}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {" "}
-          Export summary
-        </Button>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryStat
-          icon={Package}
-          label="Jobs created"
-          value={operations ? `${operations.jobsCreated}` : "—"}
-          hint={mode === "daily" ? "Today" : "This week"}
-          loading={loading}
-        />
-        <SummaryStat
-          icon={CheckCircle}
-          label="Jobs completed"
-          value={operations ? `${operations.jobsCompleted}` : "—"}
-          hint={operations && `${operations.jobsInProgress} in progress`}
-          loading={loading}
-        />
-        <SummaryStat
-          icon={Truck}
-          label="Vehicles active"
-          value={fleet ? `${fleet.activeVehicles}/${fleet.totalVehicles}` : "—"}
-          hint={fleet && `${fleet.vehiclesInMaintenance} in maintenance`}
-          loading={loading}
-        />
-        <SummaryStat
-          icon={CreditCard}
-          label="Revenue booked"
-          value={summary ? formatCurrency(summary.revenueNgn) : "—"}
-          hint="Completed jobs"
-          loading={loading}
-        />
-      </div>
-
-      <ActivityTrendCard initialRange={mode === "daily" ? "today" : "last_week"} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <SectionCard
-          title="Operations"
-          description="Job and dispatch activity"
-        >
-          <ReportsGate
-            query={summaryQuery}
-            skeleton={<RowsSkeleton />}
-          >
-            {rows && <ActivityRows rows={rows.operationRows} />}
-          </ReportsGate>
-        </SectionCard>
-        <SectionCard
-          title="Fleet & people"
-          description="Assets and drivers"
-        >
-          <ReportsGate
-            query={summaryQuery}
-            skeleton={<RowsSkeleton />}
-          >
-            {rows && <ActivityRows rows={rows.fleetRows} />}
-          </ReportsGate>
-        </SectionCard>
-        <SectionCard
-          title="Administration"
-          description="Documents, communications and account"
-        >
-          <ReportsGate
-            query={summaryQuery}
-            skeleton={<RowsSkeleton />}
-          >
-            {rows && <ActivityRows rows={rows.adminRows} />}
-          </ReportsGate>
-        </SectionCard>
-      </div>
-    </div>
+    </>
   );
 }
