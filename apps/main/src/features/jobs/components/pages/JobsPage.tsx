@@ -19,7 +19,7 @@ import {
   useUpdateJobScheduling,
 } from "@truckmoov/api/dispatch";
 import {
-  useDrivers, useVehicles,
+  useDrivers, useFleetGroups, useVehicles,
 } from "@truckmoov/api/fleet";
 import { format } from "date-fns";
 import {
@@ -388,6 +388,19 @@ export default function JobsPage() {
   const jobsSummaryQuery = useJobsSummary();
   const driversQuery = useDrivers();
   const vehiclesQuery = useVehicles();
+  // Enterprise accounts see each vehicle's fleet under its plate, as the design app does; owner operators don't.
+  const showFleet = role === "ENTERPRISE_ADMIN";
+  const fleetGroupsQuery = useFleetGroups();
+  const fleetNameByVehicle = useMemo(
+    () => new Map((showFleet ? fleetGroupsQuery.data?.data ?? [] : []).flatMap(f => f.vehicleIds.map(id => [
+      id,
+      f.name,
+    ] as const))),
+    [
+      showFleet,
+      fleetGroupsQuery.data,
+    ],
+  );
   const selectedJobDetailsQuery = useJob(isFormOpen ? selectedJob?.id ?? "" : "");
   const allJobs = jobsQuery.data?.data;
   // The API takes one status at a time, so "All Statuses" fetches everything
@@ -601,7 +614,8 @@ export default function JobsPage() {
       },
       {
         onSuccess: () => {
-          toast.success(kind === "driver" ? "Driver assigned to job" : "Vehicle assigned to job");
+          const what = kind === "driver" ? "Driver" : "Vehicle";
+          toast.success(recommendOnly ? `${what} recommended for job` : `${what} assigned to job`);
           setMatchingKind(null);
           // Names/plates in the table come from the fleet lists, so refresh those with the jobs.
           jobsQuery.refetch();
@@ -978,10 +992,15 @@ export default function JobsPage() {
                               <TableCell>
                                 {job.assigned_vehicle_id && plate
                                   ? (
-                                      <p className="text-sm font-medium flex items-center gap-1.5">
-                                        <Truck className="h-3.5 w-3.5 text-primary" />
-                                        {plate}
-                                      </p>
+                                      <div className="space-y-0.5">
+                                        <p className="text-sm font-medium flex items-center gap-1.5">
+                                          <Truck className="h-3.5 w-3.5 text-primary" />
+                                          {plate}
+                                        </p>
+                                        {showFleet && fleetNameByVehicle.has(job.assigned_vehicle_id) && (
+                                          <p className="text-xs text-muted-foreground break-words">{`Fleet: ${fleetNameByVehicle.get(job.assigned_vehicle_id)}`}</p>
+                                        )}
+                                      </div>
                                     )
                                   : job.assigned_vehicle_id
                                     ? <span className="text-xs text-muted-foreground">—</span>

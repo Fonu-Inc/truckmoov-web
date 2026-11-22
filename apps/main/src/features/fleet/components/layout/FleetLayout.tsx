@@ -1,6 +1,7 @@
 import {
   NavLink, Outlet,
 } from "react-router";
+import { useIsOwnerOperatorAccount } from "@/features/auth/hooks/useOrganizationType";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getFleetTabsForRole } from "@/features/fleet/utils/fleetNav";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ const ACTIVE_CLASS = "bg-background text-foreground shadow-sm border-b-2 border-
  */
 export function FleetLayout() {
   const role = useAuthStore(s => s.user?.role);
+  const ownerOperatorAccount = useIsOwnerOperatorAccount();
   return (
     <div className="space-y-6">
       <div className="flex justify-center">
@@ -23,7 +25,10 @@ export function FleetLayout() {
           aria-label="Fleet sections"
           className="inline-flex items-center justify-center rounded-xl p-1 text-muted-foreground bg-muted/50 h-auto max-w-full flex-wrap gap-1"
         >
-          {getFleetTabsForRole(role).map(tab => (
+          {getFleetTabsForRole(
+            role,
+            ownerOperatorAccount,
+          ).map(tab => (
             <NavLink
               key={tab.to}
               to={tab.to}

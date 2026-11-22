@@ -1,7 +1,8 @@
 import type { DeviceTrackerType } from "@truckmoov/api/fleet";
-import { NIGERIAN_STATES } from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
+import { getPickupLocationsQueryOptions } from "@truckmoov/api/auth";
 import {
-  ArrowLeft, Loader2, Send,
+  ArrowLeft, Loader2, MapPin, Send,
 } from "lucide-react";
 import {
   useEffect, useState,
@@ -16,11 +17,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
+import { cn } from "@/lib/utils";
 
 export type RequestDevicePayload = {
   quantity: number;
   useCase: string;
   notes?: string;
+  /** Devices are collected from a pickup point for every customer type. */
+  pickupLocationId: string;
   state?: string;
   city?: string;
   preferredDate?: string;
@@ -43,9 +47,7 @@ const EMPTY = {
   useCase: "",
   notes: "",
   state: "",
-  city: "",
-  preferredDate: "",
-  preferredTime: "",
+  pickupLocationId: "",
 };
 
 function Required() {
@@ -53,9 +55,10 @@ function Required() {
 }
 
 /**
- * "Request Device" in two steps: what is needed, then where it should be
- * fulfilled. Hardware (manufacturer / tracker type) is chosen by the platform,
- * so the request carries only the tenant's intent.
+ * "Request Device" in two steps: what is needed, then the pickup point it is
+ * collected from (pickup only, for every customer type). Hardware
+ * (manufacturer / tracker type) is chosen by the platform, so the request
+ * carries only the tenant's intent.
  */
 export function RequestDeviceDialog({
   open, onOpenChange, onSubmit,
@@ -89,18 +92,26 @@ export function RequestDeviceDialog({
   const quantity = Number(form.quantity);
   const detailsValid = Number.isInteger(quantity) && quantity > 0 && form.useCase.trim().length > 0;
 
+  const locationsQuery = useQuery({
+    ...getPickupLocationsQueryOptions(),
+    enabled: open,
+  });
+  const locations = locationsQuery.data?.data ?? [];
+  const states = [...new Set(locations.map(location => location.state))];
+  const shown = form.state ? locations.filter(location => location.state === form.state) : locations;
+  const pickup = locations.find(location => location.id === form.pickupLocationId);
+
   const submit = async () => {
-    if (!detailsValid)
+    if (!detailsValid || !pickup)
       return;
     setIsSubmitting(true);
     const result = await onSubmit({
       quantity,
       useCase: form.useCase.trim(),
       notes: form.notes.trim() || undefined,
-      state: form.state || undefined,
-      city: form.city.trim() || undefined,
-      preferredDate: form.preferredDate || undefined,
-      preferredTime: form.preferredTime || undefined,
+      pickupLocationId: pickup.id,
+      state: pickup.state,
+      city: pickup.area,
     });
     setIsSubmitting(false);
     if (result)
@@ -118,7 +129,7 @@ export function RequestDeviceDialog({
           <DialogDescription>
             {step === "details"
               ? "Tell us how many devices you need and how you will use them. Next, choose how you will receive them."
-              : "Choose when and where the devices should be delivered or installed."}
+              : "Select where you will collect your requested devices. Your request will be sent for approval after you submit."}
           </DialogDescription>
         </DialogHeader>
 
@@ -172,71 +183,88 @@ export function RequestDeviceDialog({
             )
           : (
               <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>State</Label>
-                    <Select
-                      value={form.state}
-                      onValueChange={value => set(
-                        "state",
-                        value,
-                      )}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                      <SelectContent>
-                        {NIGERIAN_STATES.map(state => (
-                          <SelectItem
-                            key={state}
-                            value={state}
-                          >
-                            {state}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="req-city">City</Label>
-                    <Input
-                      id="req-city"
-                      value={form.city}
-                      onChange={e => set(
-                        "city",
-                        e.target.value,
-                      )}
-                      placeholder="e.g. Lagos"
-                    />
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Select
+                    value={form.state}
+                    onValueChange={value => set(
+                      "state",
+                      value,
+                    )}
+                    disabled={states.length === 0}
+                  >
+                    <SelectTrigger><SelectValue placeholder="All states" /></SelectTrigger>
+                    <SelectContent>
+                      {states.map(state => (
+                        <SelectItem
+                          key={state}
+                          value={state}
+                        >
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    MTN Connect Store / Service Centre
+                    <Required />
+                  </Label>
+                  {locationsQuery.isLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                  {locationsQuery.isError && (
+                    <p className="text-sm text-destructive">
+                      Pickup points couldn't be loaded.
+                      {" "}
+                      <button
+                        type="button"
+                        className="font-medium underline"
+                        onClick={() => void locationsQuery.refetch()}
+                      >
+                        Try again
+                      </button>
+                    </p>
+                  )}
+                  {locationsQuery.isSuccess && shown.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No pickup points are available yet.</p>
+                  )}
+                  <div
+                    role="radiogroup"
+                    aria-label="Pickup point"
+                    className="max-h-64 space-y-2 overflow-y-auto"
+                  >
+                    {shown.map(location => (
+                      <button
+                        key={location.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={form.pickupLocationId === location.id}
+                        onClick={() => set(
+                          "pickupLocationId",
+                          location.id,
+                        )}
+                        className={cn(
+                          "flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors",
+                          form.pickupLocationId === location.id
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                            : "border-border/70 hover:border-primary/40",
+                        )}
+                      >
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>
+                          <span className="block text-sm font-semibold">{location.name}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {[
+                              location.address,
+                              location.area,
+                              location.state,
+                            ].filter(Boolean).join(", ")}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="req-date">Preferred Date</Label>
-                    <Input
-                      id="req-date"
-                      type="date"
-                      value={form.preferredDate}
-                      onChange={e => set(
-                        "preferredDate",
-                        e.target.value,
-                      )}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="req-time">Preferred Time</Label>
-                    <Input
-                      id="req-time"
-                      type="time"
-                      value={form.preferredTime}
-                      onChange={e => set(
-                        "preferredTime",
-                        e.target.value,
-                      )}
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Fulfilment details are optional. The platform will confirm the final schedule.
-                </p>
               </div>
             )}
 
@@ -273,7 +301,7 @@ export function RequestDeviceDialog({
             : (
                 <Button
                   type="button"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !pickup}
                   onClick={() => void submit()}
                 >
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}

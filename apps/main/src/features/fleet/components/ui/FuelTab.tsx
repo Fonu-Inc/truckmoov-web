@@ -14,6 +14,7 @@ import {
 import {
   useEffect, useMemo, useState,
 } from "react";
+import { Navigate } from "react-router";
 import {
   Bar,
   BarChart,
@@ -61,6 +62,7 @@ import {
 import {
   Tabs, TabsContent, TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { useIsOwnerOperatorAccount } from "@/features/auth/hooks/useOrganizationType";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 
@@ -111,6 +113,19 @@ function capitalizeFuelType(value: string) {
 
 /** `/fleet/fuel` — the design app's Fuel tab. */
 export function FuelTab() {
+  // Fuel is hidden in owner operators' accounts (manual records only); a direct link lands on Vehicles.
+  if (useIsOwnerOperatorAccount()) {
+    return (
+      <Navigate
+        to="/fleet"
+        replace
+      />
+    );
+  }
+  return <FuelTabContent />;
+}
+
+function FuelTabContent() {
   const [
     searchQuery,
     setSearchQuery,

@@ -449,7 +449,8 @@ export function FleetAnalyticsTab() {
   const fleetStatus = fleetStatusQuery.data?.data;
   const jobPipeline = jobPipelineQuery.data?.data;
   const fuelLevels = Array.isArray(fuelLevelsQuery.data?.data) ? fuelLevelsQuery.data.data : EMPTY_FUEL_LEVELS;
-  const safetyScores = Array.isArray(safetyScoresQuery.data?.data) ? safetyScoresQuery.data.data : EMPTY_DRIVER_SCORES;
+  const safetyScores = (Array.isArray(safetyScoresQuery.data?.data) ? safetyScoresQuery.data.data : EMPTY_DRIVER_SCORES)
+    .flatMap(score => (score.safetyScore === null ? [] : [score.safetyScore]));
   const driverScores = Array.isArray(driverScoresQuery.data?.data) ? driverScoresQuery.data.data : EMPTY_DRIVER_SCORES;
   const events = Array.isArray(eventsQuery.data?.data) ? eventsQuery.data.data : EMPTY_EVENTS;
 
@@ -469,7 +470,7 @@ export function FleetAnalyticsTab() {
   const averageSafetyScore
     = safetyScores.length > 0
       ? clampScore(safetyScores.reduce(
-          (sum, score) => sum + score.safetyScore,
+          (sum, score) => sum + score,
           0,
         ) / safetyScores.length)
       : 0;
@@ -542,7 +543,7 @@ export function FleetAnalyticsTab() {
       ]
     : [];
 
-  const driverScoresChart = [...driverScores].sort((a, b) => b.safetyScore - a.safetyScore);
+  const driverScoresChart = [...driverScores].sort((a, b) => (b.safetyScore ?? -1) - (a.safetyScore ?? -1));
   const recentEvents = events.map((event) => {
     const triggeredAt = new Date(event.triggeredAt);
     const hasValidDate = Number.isFinite(triggeredAt.getTime());
@@ -1020,10 +1021,10 @@ export function FleetAnalyticsTab() {
                               <span
                                 className={cn(
                                   "text-sm font-bold",
-                                  driver.safetyScore >= 80 ? "text-success" : driver.safetyScore >= 60 ? "text-warning" : "text-destructive",
+                                  driver.safetyScore === null ? "text-muted-foreground" : driver.safetyScore >= 80 ? "text-success" : driver.safetyScore >= 60 ? "text-warning" : "text-destructive",
                                 )}
                               >
-                                {driver.safetyScore}
+                                {driver.safetyScore ?? "—"}
                               </span>
                             </div>
                           </div>

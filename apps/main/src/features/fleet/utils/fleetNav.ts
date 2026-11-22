@@ -15,6 +15,8 @@ export type FleetTab = {
    * `/fleet` role sees every tab; switch to an allow-list if that stops holding.
    */
   hiddenFor?: UserRole[];
+  /** Hidden from everyone in an owner operator's account, staff roles included. */
+  hiddenInOwnerOperatorAccounts?: boolean;
 };
 
 /** Every /fleet role except FINANCE_VIEWER — the design app has no Analytics tab. */
@@ -45,7 +47,7 @@ export const FLEET_TABS: FleetTab[] = [
   },
   {
     // Hidden for Owner-Operators as in the design app; fuel is manual records only (TD-1).
-    to: "/fleet/fuel", label: "Fuel", icon: Fuel, end: true, hiddenFor: ["OWNER_OPERATOR"],
+    to: "/fleet/fuel", label: "Fuel", icon: Fuel, end: true, hiddenFor: ["OWNER_OPERATOR"], hiddenInOwnerOperatorAccounts: true,
   },
   {
     to: "/fleet/compliance", label: "Compliance", icon: Shield, end: true, hiddenFor: ["FINANCE_VIEWER"],
@@ -60,6 +62,7 @@ export const FLEET_TABS: FleetTab[] = [
 ];
 
 /** Tabs this role may see, in tab-bar order. */
-export function getFleetTabsForRole(role: UserRole | undefined): FleetTab[] {
-  return FLEET_TABS.filter(t => !role || !t.hiddenFor?.includes(role));
+export function getFleetTabsForRole(role: UserRole | undefined, ownerOperatorAccount = false): FleetTab[] {
+  return FLEET_TABS.filter(t => (!role || !t.hiddenFor?.includes(role))
+    && !(ownerOperatorAccount && t.hiddenInOwnerOperatorAccounts));
 }

@@ -34,7 +34,7 @@ import {
 import { formatCurrency } from "@/lib/currency";
 
 type FuelRow = {
-  vehicle: string; type: string; totalKm: number; liters: number; cost: number;
+  vehicle: string; type: string; totalKm: number | null; liters: number; cost: number;
   efficiency: number | null; trips: number;
 };
 
@@ -53,7 +53,7 @@ const FUEL_COLUMNS: ColumnDef<FuelRow>[] = [
     accessorKey: "totalKm",
     header: "Distance (km)",
     meta: { className: "text-right" },
-    cell: ({ row }) => row.original.totalKm.toLocaleString(),
+    cell: ({ row }) => row.original.totalKm?.toLocaleString() ?? "—",
   },
   {
     accessorKey: "liters",
@@ -332,9 +332,11 @@ function FuelConsumptionReport({ report }: { report: FleetFuelReport }) {
         return false;
     }
     if (distEnabled) {
-      if (distMin && v.totalKm < Number(distMin))
+      if ((distMin || distMax) && v.totalKm === null)
         return false;
-      if (distMax && v.totalKm > Number(distMax))
+      if (distMin && v.totalKm! < Number(distMin))
+        return false;
+      if (distMax && v.totalKm! > Number(distMax))
         return false;
     }
     if (effEnabled) {
@@ -396,9 +398,7 @@ function FuelConsumptionReport({ report }: { report: FleetFuelReport }) {
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Total Distance</p>
                 <p className="text-2xl font-bold truncate">
-                  {totalKm.toLocaleString()}
-                  {" "}
-                  km
+                  {totalKm === null ? "—" : `${totalKm.toLocaleString()} km`}
                 </p>
               </div>
             </div>
@@ -727,7 +727,7 @@ function FuelConsumptionReport({ report }: { report: FleetFuelReport }) {
                   header: "Fuel type", accessor: "type",
                 },
                 {
-                  header: "Distance (km)", accessor: "totalKm",
+                  header: "Distance (km)", accessor: r => r.totalKm ?? "",
                 },
                 {
                   header: "Fuel (L)", accessor: "liters",

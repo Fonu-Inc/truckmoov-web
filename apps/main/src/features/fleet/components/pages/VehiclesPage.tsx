@@ -6,6 +6,7 @@ import {
 
   useCreateVehicle,
   useDeleteVehicle,
+  useFleetGroups,
   useUpdateVehicle,
   useVehicles,
   useVehiclesSummary,
@@ -84,6 +85,21 @@ const LOADING_ROWS = [
 ];
 
 /** `/fleet` — the design app's Vehicles tab. */
+/** "22 Nov 2026, 14:48", as the design app shows it. */
+function formatAddedDate(iso?: string) {
+  if (!iso)
+    return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleString(
+        "en-GB",
+        {
+          day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+        },
+      );
+}
+
 export default function VehiclesPage() {
   const { requireSubscription } = useRequireSubscription();
   // ponytail: single-role check inline; extract to a helper if a third role or fourth page needs it
@@ -181,6 +197,14 @@ export default function VehiclesPage() {
     data: vehiclesResp, isLoading,
   } = useVehicles({ params: vehicleQueryParams });
   const { data: vehiclesSummaryResp } = useVehiclesSummary();
+  const fleetGroupsQuery = useFleetGroups();
+  const fleetNameByVehicle = useMemo(
+    () => new Map((fleetGroupsQuery.data?.data ?? []).flatMap(f => f.vehicleIds.map(id => [
+      id,
+      f.name,
+    ] as const))),
+    [fleetGroupsQuery.data],
+  );
   // The server refuses vehicles past the plan's allowance; at the limit, Add and Upload
   // open the upgrade prompt instead (the design app's 10-vehicle Owner-Operator cap).
   const allowance = vehiclesSummaryResp?.data?.allowance;
@@ -557,13 +581,11 @@ export default function VehiclesPage() {
                                       </div>
                                     )}
                               </td>
-                              {/* ponytail: no endpoint returns a vehicle's fleet membership — wire when one lands */}
                               <td className="py-4 pr-6">
-                                <span className="text-sm text-foreground">-</span>
+                                <span className="text-sm text-foreground">{fleetNameByVehicle.get(vehicle.id) ?? "—"}</span>
                               </td>
-                              {/* ponytail: the vehicles endpoint returns no created/added date — wire when it does */}
                               <td className="py-4 pr-6">
-                                <span className="text-sm text-muted-foreground">-</span>
+                                <span className="text-sm text-muted-foreground">{formatAddedDate(vehicle.createdAt)}</span>
                               </td>
                               <td className="py-4 text-right">
                                 <DropdownMenu>

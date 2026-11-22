@@ -382,6 +382,7 @@ export default function DeviceManagement() {
     quantity: number;
     useCase: string;
     notes?: string;
+    pickupLocationId: string;
     state?: string;
     city?: string;
     preferredDate?: string;

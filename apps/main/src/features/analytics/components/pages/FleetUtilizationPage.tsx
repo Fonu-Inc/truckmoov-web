@@ -1,10 +1,10 @@
 import type {
-  FleetUtilization, Vehicle,
+  FleetUtilization, FleetUtilizationDay, Vehicle,
 } from "@truckmoov/api/fleet";
 import type { UtilizationPeriod } from "@/features/analytics/utils/fleetUtilizationPeriod";
 import { useQuery } from "@tanstack/react-query";
 import {
-  getFleetFuelReportQueryOptions, getFleetUtilizationReportQueryOptions, useVehicles,
+  getFleetUtilizationReportQueryOptions, useVehicles,
 } from "@truckmoov/api/fleet";
 import {
   Activity,
@@ -104,23 +104,35 @@ type UtilizationRow = {
   registration: string;
   /** Null until the vehicle list has loaded (or the vehicle isn't in it). */
   driver: string | null;
-  /** Null when the fuel report has no distance for this vehicle. */
-  distanceKm: number | null;
   utilization: number;
-  previousUtilization: number;
+  /** Null when the vehicle has no row in the previous period. */
+  previousUtilization: number | null;
+  activeDays: number;
+  lastActiveAt: string | null;
   band: Band;
 };
 
-type SortKey = "distance" | "active" | "idle" | "utilization";
+type SortKey = "utilization";
+
+/** Neither distance nor engine hours are recorded on jobs yet. */
+const UNKNOWN = "—";
 
 function formatPercent(value: number): string {
   return `${Number(value.toFixed(1))}%`;
 }
 
-function percentChange(current: number, previous: number): number {
+/** "new" when there was nothing to compare against but there is activity now. */
+function percentChange(current: number, previous: number): number | "new" {
   if (previous === 0)
-    return current === 0 ? 0 : 100;
+    return current === 0 ? 0 : "new";
   return ((current - previous) / previous) * 100;
+}
+
+function averageActiveVehicles(daily: FleetUtilizationDay[]): number {
+  return daily.length > 0 ? daily.reduce(
+    (sum, d) => sum + d.activeVehicles,
+    0,
+  ) / daily.length : 0;
 }
 
 function fleetStats(report: FleetUtilization | undefined) {
@@ -132,8 +144,20 @@ function fleetStats(report: FleetUtilization | undefined) {
     total,
     active,
     idle: total - active,
-    rate: total > 0 ? (active / total) * 100 : 0,
+    rate: report.summary.avgUtilizationPercent,
+    dailyActive: averageActiveVehicles(report.daily),
   };
+}
+
+function formatLastActive(iso: string | null): string {
+  return iso === null
+    ? "No jobs on record"
+    : new Date(iso).toLocaleDateString(
+        "en-GB",
+        {
+          day: "numeric", month: "short", year: "numeric",
+        },
+      );
 }
 
 export default function FleetUtilizationPage() {
@@ -147,7 +171,6 @@ export default function FleetUtilizationPage() {
   );
   const query = useQuery(getFleetUtilizationReportQueryOptions({ params: span.range }));
   const previousQuery = useQuery(getFleetUtilizationReportQueryOptions({ params: span.previousRange }));
-  const fuelQuery = useQuery(getFleetFuelReportQueryOptions({ params: span.range }));
   const vehiclesQuery = useVehicles();
   const report = query.data?.data;
 
@@ -198,7 +221,6 @@ export default function FleetUtilizationPage() {
           <FleetUtilizationReport
             report={report}
             previous={previousQuery.data?.data}
-            distanceByVehicle={fuelQuery.data?.data.vehicles}
             vehicles={vehiclesQuery.data?.data}
             days={span.days}
           />
@@ -214,8 +236,8 @@ function KpiTile({
   label: string;
   value: string;
   icon: React.ElementType;
-  /** Percent change vs the previous period; null renders `-`. */
-  delta: number | null;
+  /** Percent change vs the previous period; null when there is no previous period to compare. */
+  delta: number | "new" | null;
 }) {
   return (
     <div className={CARD}>
@@ -230,15 +252,17 @@ function KpiTile({
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-1.5 text-xs">
-          {delta === null
-            ? <span className="inline-flex items-center gap-1 font-medium text-muted-foreground">-</span>
-            : (
-                <span className={`inline-flex items-center gap-1 font-medium ${delta >= 0 ? "text-success" : "text-warning"}`}>
-                  {delta >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                  {`${Math.abs(delta).toFixed(1)}%`}
-                </span>
-              )}
-          <span className="text-muted-foreground">vs previous period</span>
+          {delta === null && <span className="font-medium text-muted-foreground">Comparison unavailable</span>}
+          {delta === "new" && <span className="font-medium text-success">New activity</span>}
+          {typeof delta === "number" && (
+            <>
+              <span className={`inline-flex items-center gap-1 font-medium ${delta >= 0 ? "text-success" : "text-warning"}`}>
+                {delta >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                {`${Math.abs(delta).toFixed(1)}%`}
+              </span>
+              <span className="text-muted-foreground">vs previous period</span>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -246,13 +270,10 @@ function KpiTile({
 }
 
 function FleetUtilizationReport({
-  report, previous, distanceByVehicle, vehicles, days,
+  report, previous, vehicles, days,
 }: {
   report: FleetUtilization;
   previous: FleetUtilization | undefined;
-  distanceByVehicle: {
-    vehicleId: string; distanceKm: number;
-  }[] | undefined;
   vehicles: Vehicle[] | undefined;
   days: Date[];
 }) {
@@ -267,10 +288,6 @@ function FleetUtilizationReport({
         v.vehicleId,
         v.utilizationPercent,
       ]));
-      const distanceById = new Map((distanceByVehicle ?? []).map(v => [
-        v.vehicleId,
-        v.distanceKm,
-      ]));
       const vehicleById = new Map((vehicles ?? []).map(v => [
         v.id,
         v,
@@ -283,9 +300,10 @@ function FleetUtilizationReport({
           plate: v.plateNumber,
           registration: vehicle?.registrationNumber || v.plateNumber,
           driver: vehicle ? (vehicle.assignedDriverName || "Unassigned") : null,
-          distanceKm: distanceById.get(v.vehicleId) ?? null,
           utilization: v.utilizationPercent,
-          previousUtilization: previousById.get(v.vehicleId) ?? 0,
+          previousUtilization: previousById.get(v.vehicleId) ?? null,
+          activeDays: v.activeDays,
+          lastActiveAt: v.lastActiveAt,
           band: bandFor(v.utilizationPercent),
         };
       });
@@ -293,7 +311,6 @@ function FleetUtilizationReport({
     [
       report,
       previous,
-      distanceByVehicle,
       vehicles,
     ],
   );
@@ -305,13 +322,23 @@ function FleetUtilizationReport({
     ...b,
     count: rows.filter(r => r.band === b.value).length,
   }));
-  const trend = days.map(day => ({
+  const shareActive = (r: FleetUtilization | undefined, i: number) => {
+    const day = r?.daily[i];
+    return day && r.summary.fleetSize > 0 ? Number(((day.activeVehicles / r.summary.fleetSize) * 100).toFixed(1)) : null;
+  };
+  const trend = days.map((day, i) => ({
     day: formatChartDay(day),
-    // ponytail: no endpoint returns a per-day utilization series yet — the chart keeps its axes and legend with no data.
-    current: null,
-    previous: null,
+    current: shareActive(
+      report,
+      i,
+    ),
+    previous: shareActive(
+      previous,
+      i,
+    ),
   }));
-  const underutilized = rows.filter(r => r.utilization < 30 && r.previousUtilization < 30);
+  // A vehicle with nothing to compare against is not judged underutilized.
+  const underutilized = rows.filter(r => r.utilization < 30 && r.previousUtilization !== null && r.previousUtilization < 30);
 
   return (
     <>
@@ -345,9 +372,12 @@ function FleetUtilizationReport({
         />
         <KpiTile
           label="Average Daily Usage"
-          value="-"
+          value={current ? `${current.dailyActive.toFixed(1)} vehicles/day` : "-"}
           icon={CalendarRange}
-          delta={null}
+          delta={current && prior ? percentChange(
+            current.dailyActive,
+            prior.dailyActive,
+          ) : null}
         />
       </div>
 
@@ -355,7 +385,7 @@ function FleetUtilizationReport({
         <div className={`${CARD} min-w-0 xl:col-span-2`}>
           <div className="flex flex-col space-y-1.5 p-6 pb-4">
             <h3 className={CARD_TITLE}>Fleet Utilization Trend</h3>
-            <p className="text-sm text-muted-foreground">Share of the fleet recording activity each day, compared with the preceding equivalent period.</p>
+            <p className="text-sm text-muted-foreground">Share of the fleet with a job on it each day, compared with the preceding equivalent period.</p>
           </div>
           <div className="p-6 pt-0">
             <div
@@ -402,9 +432,11 @@ function FleetUtilizationReport({
                     fontSize={11}
                     tick={{ fill: "hsl(var(--muted-foreground))" }}
                   />
-                  <Tooltip contentStyle={{
-                    backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))",
-                  }}
+                  <Tooltip
+                    formatter={v => `${v}%`}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))",
+                    }}
                   />
                   <Legend wrapperStyle={{ fontSize: "12px" }} />
                   <Area
@@ -434,7 +466,7 @@ function FleetUtilizationReport({
         <div className={`${CARD} min-w-0`}>
           <div className="flex flex-col space-y-1.5 p-6 pb-4">
             <h3 className={CARD_TITLE}>Vehicle Usage Distribution</h3>
-            <p className="text-sm text-muted-foreground">Active hours as a share of 24 hours per vehicle per day.</p>
+            <p className="text-sm text-muted-foreground">Share of days in the period each vehicle had a job on it.</p>
           </div>
           <div className="p-6 pt-0 space-y-5">
             {bandCounts.map((b) => {
@@ -494,10 +526,6 @@ function matchesSearch(row: UtilizationRow, search: string): boolean {
     row.plate,
     row.driver ?? "",
   ].some(v => v.toLowerCase().includes(term));
-}
-
-function formatDistance(km: number | null): string {
-  return km === null ? "—" : `${Math.round(km).toLocaleString("en-GB")} km`;
 }
 
 /** Filter popover listing the utilization bands — Apply / Show All, like the other fleet filters. */
@@ -629,7 +657,7 @@ function ExportDataButton({
             header: "Assigned Driver", accessor: r => r.driver ?? "",
           },
           {
-            header: "Total Distance (km)", accessor: r => r.distanceKm ?? "",
+            header: "Active Days", accessor: "activeDays",
           },
           {
             header: "Utilization Rate (%)", accessor: "utilization",
@@ -680,11 +708,7 @@ function UtilizationBreakdownCard({
         search,
       ) && (bands.length === 0 || bands.includes(r.band)));
       const sign = sort.dir === "asc" ? 1 : -1;
-      // Active and idle hours have no endpoint, so those sorts keep the list order.
-      if (sort.key === "utilization")
-        list.sort((a, b) => sign * (a.utilization - b.utilization));
-      if (sort.key === "distance")
-        list.sort((a, b) => sign * ((a.distanceKm ?? -1) - (b.distanceKm ?? -1)));
+      list.sort((a, b) => sign * (a.utilization - b.utilization));
       return list;
     },
     [
@@ -708,6 +732,17 @@ function UtilizationBreakdownCard({
   const last = Math.min(
     page * pageSize,
     total,
+  );
+
+  const unsortable = (label: string) => (
+    <button
+      type="button"
+      className={SORT_BUTTON}
+      disabled
+      title={`${label} is not recorded yet`}
+    >
+      {label}
+    </button>
   );
 
   const sortHeader = (key: SortKey, label: string) => {
@@ -738,7 +773,7 @@ function UtilizationBreakdownCard({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className={CARD_TITLE}>Vehicle Utilization Breakdown</h3>
-            <p className="text-sm text-muted-foreground">Distance, active time and idle time for each vehicle in the selected period.</p>
+            <p className="text-sm text-muted-foreground">Days with a job on each vehicle in the selected period. Distance and engine hours are not recorded yet.</p>
           </div>
           <ExportDataButton
             rows={filtered}
@@ -772,22 +807,13 @@ function UtilizationBreakdownCard({
                   <th className={`${TH} w-[145px]`}>Registration Number</th>
                   <th className={`${TH} w-[170px]`}>Assigned Driver</th>
                   <th className={`${TH} w-[130px]`}>
-                    {sortHeader(
-                      "distance",
-                      "Total Distance",
-                    )}
+                    {unsortable("Total Distance")}
                   </th>
                   <th className={`${TH} w-[120px]`}>
-                    {sortHeader(
-                      "active",
-                      "Active Hours",
-                    )}
+                    {unsortable("Active Hours")}
                   </th>
                   <th className={`${TH} w-[110px]`}>
-                    {sortHeader(
-                      "idle",
-                      "Idle Hours",
-                    )}
+                    {unsortable("Idle Hours")}
                   </th>
                   <th className={`${TH} w-[140px]`}>
                     {sortHeader(
@@ -824,9 +850,9 @@ function UtilizationBreakdownCard({
                       </td>
                       <td className={`${TD} break-words`}>{row.registration}</td>
                       <td className={`${TD} break-words`}>{row.driver ?? "—"}</td>
-                      <td className={`${TD} tabular-nums`}>{formatDistance(row.distanceKm)}</td>
-                      <td className={`${TD} tabular-nums`}>-</td>
-                      <td className={`${TD} tabular-nums`}>-</td>
+                      <td className={`${TD} tabular-nums`}>{UNKNOWN}</td>
+                      <td className={`${TD} tabular-nums`}>{UNKNOWN}</td>
+                      <td className={`${TD} tabular-nums`}>{UNKNOWN}</td>
                       <td className={TD}>
                         <span className="font-medium tabular-nums">{formatPercent(row.utilization)}</span>
                         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
@@ -1019,8 +1045,8 @@ function UnderutilizedCard({
                     <td className={`${TD} py-4 font-medium`}>{row.registration}</td>
                     <td className={TD}>{row.driver ?? "—"}</td>
                     <td className={TD}>{formatPercent(row.utilization)}</td>
-                    <td className={TD}>-</td>
-                    <td className={TD}>-</td>
+                    <td className={TD}>{UNKNOWN}</td>
+                    <td className={TD}>{formatLastActive(row.lastActiveAt)}</td>
                     <td className={`${TD} text-right`}>
                       <Button
                         variant="outline"
@@ -1065,15 +1091,23 @@ function UtilizationDetailDialog({
         ],
         [
           "Total Distance",
-          formatDistance(row.distanceKm),
+          UNKNOWN,
         ],
         [
           "Active Hours",
-          "-",
+          UNKNOWN,
         ],
         [
           "Idle Hours",
-          "-",
+          UNKNOWN,
+        ],
+        [
+          "Active Days",
+          String(row.activeDays),
+        ],
+        [
+          "Last Recorded Activity",
+          formatLastActive(row.lastActiveAt),
         ],
         [
           "Utilization Rate",
@@ -1081,7 +1115,7 @@ function UtilizationDetailDialog({
         ],
         [
           "Previous Period",
-          formatPercent(row.previousUtilization),
+          row.previousUtilization === null ? "Comparison unavailable" : formatPercent(row.previousUtilization),
         ],
         [
           "Status",

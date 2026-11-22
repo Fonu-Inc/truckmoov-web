@@ -2,7 +2,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { OnboardingApplicationSummary } from "@truckmoov/api/auth";
 import type { DeviceSetupRequest } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
-import { getOnboardingStatusQueryOptions } from "@truckmoov/api/auth";
+import {
+  getOnboardingStatusQueryOptions, getPickupLocationsQueryOptions,
+} from "@truckmoov/api/auth";
 import {
   getDeviceSetupRequestQueryOptions,
   useDeviceSetupRequests,
@@ -117,6 +119,11 @@ function RequestDetailsDialog({
   const cancelRequest = useUpdateDeviceSetupRequestStatus();
   const request = detailQuery.data?.data;
   const info = request ? statusInfo(request.status) : null;
+  const pickupQuery = useQuery({
+    ...getPickupLocationsQueryOptions(),
+    enabled: Boolean(request?.pickupLocationId),
+  });
+  const pickup = pickupQuery.data?.data.find(location => location.id === request?.pickupLocationId);
 
   const cancel = () => {
     if (!request)
@@ -191,6 +198,15 @@ function RequestDetailsDialog({
                       request.city,
                       request.state,
                     ].filter(Boolean).join(", ")}
+                  />
+                  <Detail
+                    label="Pickup Point"
+                    value={pickup
+                      ? [
+                          pickup.name,
+                          pickup.address,
+                        ].filter(Boolean).join(", ")
+                      : request.pickupLocationId}
                   />
                   <Detail
                     label="Use Case"

@@ -25,6 +25,30 @@ import { formatMonthLabel } from "@/features/analytics/utils/period";
 import { formatCurrency } from "@/lib/currency";
 
 type MonthRow = FleetProfitLoss["monthly"][number];
+
+const COST_LABELS: Record<keyof FleetProfitLoss["summary"]["costs"], string> = {
+  fuel: "Fuel",
+  maintenance: "Maintenance",
+  wages: "Wages",
+  insurance: "Insurance",
+  depreciation: "Depreciation",
+  other: "Other",
+};
+
+const COMPACT_NGN = new Intl.NumberFormat(
+  "en-NG",
+  {
+    notation: "compact", maximumFractionDigits: 1,
+  },
+);
+
+/** ₦1.2M, ₦850k. */
+function formatCompactNgn(value: number): string {
+  return `₦${COMPACT_NGN.format(value).replace(
+    "K",
+    "k",
+  )}`;
+}
 type RangeKey = "revenue" | "costs" | "profit" | "margin";
 type RangeFilter = {
   enabled: boolean; min: string; max: string;
@@ -105,6 +129,12 @@ function ProfitLossReport({ report }: { report: FleetProfitLoss }) {
   const {
     revenue: totalRevenue, totalCosts, netProfit, marginPercent, deliveredJobs,
   } = report.summary;
+  const costCategories = Object.entries(report.summary.costs)
+    .filter(([
+      , amount,
+    ]) => amount > 0)
+    .map(([key]) => COST_LABELS[key as keyof typeof COST_LABELS])
+    .join(" + ");
   const displayMonthlyData = report.monthly.map(m => ({
     ...m,
     month: formatMonthLabel(m.month),
@@ -197,7 +227,7 @@ function ProfitLossReport({ report }: { report: FleetProfitLoss }) {
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Total Costs</p>
                 <p className="text-2xl font-bold text-destructive truncate">{formatCurrency(totalCosts)}</p>
-                <p className="text-xs text-muted-foreground">Fuel + Maintenance + Wages</p>
+                <p className="text-xs text-muted-foreground">{costCategories || "No costs recorded"}</p>
               </div>
             </div>
           </div>
@@ -257,7 +287,7 @@ function ProfitLossReport({ report }: { report: FleetProfitLoss }) {
               <YAxis
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                tickFormatter={v => `₦${(v / 1000).toFixed(0)}k`}
+                tickFormatter={formatCompactNgn}
               />
               <Tooltip
                 contentStyle={{

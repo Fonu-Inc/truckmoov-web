@@ -324,6 +324,8 @@ export type CreateDeviceSetupRequestPayload = {
     city?: string
     preferredDate?: string
     preferredTime?: string
+    /** Pickup point id from `getPickupLocationsQueryOptions`; devices are collected, not delivered. */
+    pickupLocationId: string
     useCase: string
     notes?: string
     organisationName?: string
@@ -1250,6 +1252,8 @@ export type Vehicle = {
   assignedDriverId: string | null
   assignedDriverName?: string | null
   fuelLevelPercent?: number | null
+  /** When the vehicle was added (ISO 8601). */
+  createdAt?: string
   gpsDevice: VehicleGpsDevice | null
   devices?: FleetDevice[]
   maintenanceRecords?: MaintenanceRecord[]
@@ -1654,6 +1658,8 @@ export type DeviceSetupRequest = {
   city: string | null
   preferredDate: string | null
   preferredTime: string | null
+  /** Null on requests made before pickup was required. */
+  pickupLocationId: string | null
   useCase: string | null
   notes: string | null
   status: string
@@ -1736,6 +1742,10 @@ export type FleetAnalyticsSummary = {
     open: number
     critical: number
   }
+  /** Average of scored drivers (0-100); null when nobody was scored in the period. */
+  safetyScore: number | null
+  /** Delivered job amounts in the period (NGN), counted as profit and loss counts revenue. */
+  revenue: number
   periodDays: number
 }
 
@@ -1777,7 +1787,8 @@ export type FleetAnalyticsDriverScore = {
   incidents: number
   harshBraking: number
   overspeeding: number
-  safetyScore: number
+  /** Null when no event was recorded against the driver in the period. */
+  safetyScore: number | null
 }
 
 export type FleetAnalyticsEvent = {
@@ -1786,6 +1797,8 @@ export type FleetAnalyticsEvent = {
   severity: string
   status: string
   vehicleId: string | null
+  /** Driver currently assigned to the vehicle. */
+  driverName: string | null
   jobId: string | null
   details: Record<string, unknown>
   triggeredAt: string
@@ -2060,6 +2073,13 @@ export type FleetUtilizationVehicle = {
   revenue: number
   activeDays: number
   utilizationPercent: number
+  /** End of the latest job on the vehicle up to the end of the window. */
+  lastActiveAt: string | null
+}
+
+export type FleetUtilizationDay = {
+  date: string
+  activeVehicles: number
 }
 
 export type FleetUtilization = {
@@ -2068,12 +2088,15 @@ export type FleetUtilization = {
   days: number
   summary: FleetUtilizationSummary
   vehicles: FleetUtilizationVehicle[]
+  /** One entry per day in the window. */
+  daily: FleetUtilizationDay[]
 }
 
 export type FleetFuelReportSummary = {
   totalLitres: number
   totalCostNgn: number
-  totalDistanceKm: number
+  /** Null when no vehicle has two odometer readings in the window. */
+  totalDistanceKm: number | null
   avgEfficiencyKmPerLitre: number | null
   fillUps: number
   vehiclesWithFuel: number
@@ -2088,7 +2111,8 @@ export type FleetFuelReportVehicle = {
   fillUps: number
   litres: number
   costNgn: number
-  distanceKm: number
+  /** Null with fewer than two odometer readings in the window. */
+  distanceKm: number | null
   efficiencyKmPerLitre: number | null
   trips: number
 }

@@ -12,6 +12,8 @@ export type AnalyticsTab = {
   icon: ElementType;
   /** Roles that may see this tab. Empty means every role reaching /analytics. */
   hasPermissions: UserRole[];
+  /** Hidden from everyone in an owner operator's account, staff roles included. */
+  hiddenInOwnerOperatorAccounts?: boolean;
 };
 
 const FLEET_OPERATORS: UserRole[] = [
@@ -49,10 +51,12 @@ export const ANALYTICS_TABS: AnalyticsTab[] = [
   {
     // The design app has no Fuel Consumption tab; kept for FINANCE_VIEWER only,
     // who would otherwise be left with a single analytics tab.
-    to: "/analytics/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: ["FINANCE_VIEWER"],
+    to: "/analytics/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: ["FINANCE_VIEWER"], hiddenInOwnerOperatorAccounts: true,
   },
 ];
 
-export function canSeeTab(tab: AnalyticsTab, role?: UserRole): boolean {
+export function canSeeTab(tab: AnalyticsTab, role?: UserRole, ownerOperatorAccount = false): boolean {
+  if (ownerOperatorAccount && tab.hiddenInOwnerOperatorAccounts)
+    return false;
   return tab.hasPermissions.length === 0 || (!!role && tab.hasPermissions.includes(role));
 }

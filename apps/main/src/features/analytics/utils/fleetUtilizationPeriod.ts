@@ -1,11 +1,14 @@
 import type { PeriodRange } from "@/features/analytics/utils/period";
 
 /** The Fleet Utilization tab's period select (the design app's header control). */
-export type UtilizationPeriod = "this-week" | "last-week" | "this-month" | "last-month";
+export type UtilizationPeriod = "today" | "this-week" | "last-week" | "this-month" | "last-month";
 
 export const UTILIZATION_PERIOD_OPTIONS: {
   value: UtilizationPeriod; label: string;
 }[] = [
+  {
+    value: "today", label: "Today",
+  },
   {
     value: "this-week", label: "This Week",
   },
@@ -82,8 +85,9 @@ export type UtilizationWindow = {
 };
 
 /**
- * The selected period (weeks run Monday–Sunday) and the preceding period of the
- * same length, which the KPI deltas and the trend chart compare against.
+ * The selected period (weeks run Monday–Sunday; "this" week or month stops at
+ * today) and the preceding period of the same length, which the KPI deltas and
+ * the trend chart compare against.
  */
 export function utilizationWindow(period: UtilizationPeriod, now = new Date()): UtilizationWindow {
   const today = startOfDay(now);
@@ -105,17 +109,17 @@ export function utilizationWindow(period: UtilizationPeriod, now = new Date()): 
         -1,
       );
       break;
+    case "today":
+      from = today;
+      to = today;
+      break;
     case "this-month":
       from = new Date(
         today.getFullYear(),
         today.getMonth(),
         1,
       );
-      to = new Date(
-        today.getFullYear(),
-        today.getMonth() + 1,
-        0,
-      );
+      to = today;
       break;
     case "last-month":
       from = new Date(
@@ -131,10 +135,7 @@ export function utilizationWindow(period: UtilizationPeriod, now = new Date()): 
       break;
     default:
       from = thisMonday;
-      to = addDays(
-        thisMonday,
-        6,
-      );
+      to = today;
   }
   const length = Math.round((to.getTime() - from.getTime()) / DAY_MS) + 1;
   const previousTo = addDays(

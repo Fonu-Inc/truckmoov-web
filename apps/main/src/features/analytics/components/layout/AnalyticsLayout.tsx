@@ -4,6 +4,7 @@ import {
 import {
   ANALYTICS_TABS, canSeeTab,
 } from "@/features/analytics/utils/analyticsNav";
+import { useIsOwnerOperatorAccount } from "@/features/auth/hooks/useOrganizationType";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { cn } from "@/lib/utils";
 
@@ -17,17 +18,34 @@ import { cn } from "@/lib/utils";
  */
 export function AnalyticsLayout() {
   const role = useAuthStore(s => s.user?.role);
+  const ownerOperatorAccount = useIsOwnerOperatorAccount();
   const { pathname } = useLocation();
   const visibleTabs = ANALYTICS_TABS.filter(tab => canSeeTab(
     tab,
     role,
+    ownerOperatorAccount,
   ));
+  const fuelTab = ANALYTICS_TABS.find(tab => tab.to === "/analytics/fuel-consumption");
+  // A direct link to a tab this account can't see lands on the first one it can.
+  if (fuelTab && pathname === fuelTab.to && !canSeeTab(
+    fuelTab,
+    role,
+    ownerOperatorAccount,
+  ) && visibleTabs.length > 0) {
+    return (
+      <Navigate
+        to={visibleTabs[0].to}
+        replace
+      />
+    );
+  }
 
   // If the index tab (Profit & Loss) is hidden for this role, redirect to
   // the first visible tab so /analytics doesn't render an empty Outlet.
   if (pathname === "/analytics" && !canSeeTab(
     ANALYTICS_TABS[0],
     role,
+    ownerOperatorAccount,
   ) && visibleTabs.length > 0) {
     return (
       <Navigate

@@ -3,9 +3,7 @@ import type {
   FleetAnalyticsEvent,
   FleetAnalyticsPeriodDays,
 } from "@truckmoov/api/fleet";
-import { useQuery } from "@tanstack/react-query";
 import {
-  getFleetProfitLossQueryOptions,
   useFleetAnalyticsDriverScores,
   useFleetAnalyticsEvents,
   useFleetAnalyticsFleetStatus,
@@ -33,7 +31,7 @@ import {
   Zap,
 } from "lucide-react";
 import {
-  useEffect, useMemo, useState,
+  useMemo, useState,
 } from "react";
 import {
   Bar,
@@ -57,7 +55,6 @@ import { Button } from "@/components/shadcn/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import { periodToRange } from "@/features/analytics/utils/period";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
@@ -360,10 +357,6 @@ function CardHeading({
 /** `/analytics/operations` — the design app's Operations & Safety tab. */
 export default function OperationsSafetyPage() {
   const [
-    lastRefresh,
-    setLastRefresh,
-  ] = useState(() => new Date());
-  const [
     fleetStatusPeriod,
     setFleetStatusPeriod,
   ] = useState<FleetAnalyticsPeriodDays>(30);
@@ -386,8 +379,6 @@ export default function OperationsSafetyPage() {
 
   // The KPI row has no period control in the design app; it reads the last 30 days.
   const summaryQuery = useFleetAnalyticsSummary({ params: { period_days: 30 } });
-  const revenueQuery = useQuery(getFleetProfitLossQueryOptions({ params: periodToRange("30d") }));
-  const safetyScoresQuery = useFleetAnalyticsDriverScores({ params: { period_days: 30 } });
   const fleetStatusQuery = useFleetAnalyticsFleetStatus({ params: { period_days: fleetStatusPeriod } });
   const jobPipelineQuery = useFleetAnalyticsJobPipeline({ params: { period_days: jobPipelinePeriod } });
   const safetyRadarQuery = useVehicleSafetyRadar({ params: { period_days: safetyRadarPeriod } });
@@ -404,8 +395,6 @@ export default function OperationsSafetyPage() {
 
   const queries = [
     summaryQuery,
-    revenueQuery,
-    safetyScoresQuery,
     fleetStatusQuery,
     jobPipelineQuery,
     safetyRadarQuery,
@@ -413,26 +402,15 @@ export default function OperationsSafetyPage() {
     eventsQuery,
   ];
 
-  useEffect(
-    () => {
-      const interval = setInterval(
-        () => setLastRefresh(new Date()),
-        30000,
-      );
-      return () => clearInterval(interval);
-    },
-    [],
-  );
-
   const summary = summaryQuery.data?.data;
   const fleetStatus = fleetStatusQuery.data?.data;
   const jobPipeline = jobPipelineQuery.data?.data;
-  const safetyScores = Array.isArray(safetyScoresQuery.data?.data) ? safetyScoresQuery.data.data : EMPTY_DRIVER_SCORES;
   const driverScores = Array.isArray(driverScoresQuery.data?.data) ? driverScoresQuery.data.data : EMPTY_DRIVER_SCORES;
   const events = Array.isArray(eventsQuery.data?.data) ? eventsQuery.data.data : EMPTY_EVENTS;
 
   const connected = queries.every(query => query.isSuccess);
   const isRefreshing = queries.some(query => query.isFetching);
+  const lastFetchedAt = Math.max(...queries.map(query => query.dataUpdatedAt));
 
   const activeVehicles = summary?.vehicles.active ?? 0;
   const totalVehicles = summary?.vehicles.total ?? 0;
@@ -440,13 +418,8 @@ export default function OperationsSafetyPage() {
   const totalDrivers = summary?.drivers.total ?? 0;
   const fleetUtilization = totalVehicles > 0 ? Math.round((activeVehicles / totalVehicles) * 100) : 0;
   const driverUtilization = totalDrivers > 0 ? Math.round((activeDrivers / totalDrivers) * 100) : 0;
-  const averageSafetyScore = safetyScores.length > 0
-    ? clampScore(safetyScores.reduce(
-        (sum, score) => sum + score.safetyScore,
-        0,
-      ) / safetyScores.length)
-    : 0;
-  const revenue = revenueQuery.data?.data.summary.revenue;
+  const safetyScore = summary?.safetyScore == null ? null : clampScore(summary.safetyScore);
+  const revenue = summary?.revenue;
 
   const fleetStatusChart = useMemo(
     () => Object.entries(fleetStatus?.byStatus ?? {})
@@ -525,14 +498,13 @@ export default function OperationsSafetyPage() {
       ]
     : [];
 
-  const rankedDrivers = [...driverScores].sort((a, b) => b.safetyScore - a.safetyScore).slice(
+  const rankedDrivers = [...driverScores].sort((a, b) => (b.safetyScore ?? -1) - (a.safetyScore ?? -1)).slice(
     0,
     8,
   );
 
   async function refreshAll() {
     await Promise.all(queries.map(query => query.refetch()));
-    setLastRefresh(new Date());
   }
 
   return (
@@ -560,7 +532,7 @@ export default function OperationsSafetyPage() {
                   </span>
                 )}
           </div>
-          <span className="text-xs text-muted-foreground">{`Updated ${formatTime(lastRefresh)}`}</span>
+          {lastFetchedAt > 0 && <span className="text-xs text-muted-foreground">{`Updated ${formatTime(new Date(lastFetchedAt))}`}</span>}
         </div>
         <Button
           variant="outline"
@@ -603,11 +575,11 @@ export default function OperationsSafetyPage() {
         />
         <KpiCard
           title="Safety Score"
-          value={averageSafetyScore || "—"}
+          value={safetyScore ?? "—"}
           icon={ShieldAlert}
           subtitle={`${summary?.safety.critical ?? 0} critical events`}
-          trend={averageSafetyScore >= 80 ? "up" : averageSafetyScore >= 60 ? "neutral" : "down"}
-          trendValue={averageSafetyScore >= 80 ? "Good" : averageSafetyScore >= 60 ? "Fair" : "Poor"}
+          trend={safetyScore === null ? undefined : safetyScore >= 80 ? "up" : safetyScore >= 60 ? "neutral" : "down"}
+          trendValue={safetyScore === null ? undefined : safetyScore >= 80 ? "Good" : safetyScore >= 60 ? "Fair" : "Poor"}
         />
         <KpiCard
           title="Maintenance"
@@ -805,10 +777,10 @@ export default function OperationsSafetyPage() {
                       <div className={`${BADGE} ${BADGE_SECONDARY} text-[10px] px-1.5`}>-</div>
                       <span className={cn(
                         "text-sm font-bold",
-                        driver.safetyScore >= 80 ? "text-success" : driver.safetyScore >= 60 ? "text-warning" : "text-destructive",
+                        driver.safetyScore === null ? "text-muted-foreground" : driver.safetyScore >= 80 ? "text-success" : driver.safetyScore >= 60 ? "text-warning" : "text-destructive",
                       )}
                       >
-                        {driver.safetyScore}
+                        {driver.safetyScore ?? "—"}
                       </span>
                     </div>
                   </div>
@@ -847,8 +819,7 @@ export default function OperationsSafetyPage() {
                           " ",
                         ).toLowerCase()}
                       </p>
-                      {/* ponytail: the events endpoint returns no driver name for an event. */}
-                      <p className="text-xs text-muted-foreground break-words">-</p>
+                      <p className="text-xs text-muted-foreground break-words">{event.driverName ?? "—"}</p>
                       <p className="text-[10px] text-muted-foreground">{formatEventTime(event.triggeredAt)}</p>
                     </div>
                     <div className={`${BADGE} ${event.severity === "critical" ? BADGE_DESTRUCTIVE : BADGE_SECONDARY} text-[10px] px-1.5 shrink-0`}>{event.severity}</div>

@@ -1795,6 +1795,8 @@ export type AuthUser = {
   email: string
   role: UserRole
   tenantId: string
+  /** The account's type, so an owner operator's staff can be told from an enterprise's. Absent on sessions issued before it existed; null when unknown. */
+  organizationType?: 'fleet_provider' | 'enterprise' | 'aggregator' | 'owner_operator' | null
 }
 
 export type AuthSession = {
