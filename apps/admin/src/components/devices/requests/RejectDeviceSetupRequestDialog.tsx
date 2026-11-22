@@ -24,7 +24,10 @@ import { Textarea } from "@/components/shadcn/textarea";
 const FORM_ID = "reject-device-setup-request-form";
 
 const schema = z.object({
-  reason: z.string().trim().min(1, "Rejection reason is required."),
+  reason: z.string().trim().min(
+    1,
+    "Rejection reason is required.",
+  ),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -49,10 +52,16 @@ export function RejectDeviceSetupRequestDialog({
     defaultValues: { reason: "" },
   });
 
-  useEffect(() => {
-    if (!open)
-      form.reset();
-  }, [open, form]);
+  useEffect(
+    () => {
+      if (!open)
+        form.reset();
+    },
+    [
+      open,
+      form,
+    ],
+  );
 
   return (
     <Dialog

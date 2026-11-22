@@ -1,7 +1,9 @@
-import type { MessagingConversation, MessagingMessage, PlatformMessagingSocket } from "@truckmoov/api/notification";
+import type {
+  MessagingConversation, MessagingMessage, PlatformMessagingSocket,
+} from "@truckmoov/api/notification";
+import type { MessagingConnection } from "../useMessagingSocket";
 import { useState } from "react";
 import { isLocalMessage } from "../messagingLogic";
-import type { MessagingConnection } from "../useMessagingSocket";
 import { useConversationActions } from "../useConversationActions";
 import { useMarkRead } from "../useMarkRead";
 import { useSendMessage } from "../useSendMessage";
@@ -34,22 +36,47 @@ async function succeeded(run: () => Promise<unknown>) {
   }
 }
 
-export function ThreadPanel({ conversation, socket, connection, canManage, onBack }: Props) {
+export function ThreadPanel({
+  conversation, socket, connection, canManage, onBack,
+}: Props) {
   const thread = useThread(conversation.id);
-  const { send, retry } = useSendMessage(socket);
+  const {
+    send, retry,
+  } = useSendMessage(socket);
   const actions = useConversationActions(conversation.id);
-  const { locked, secondsLeft } = useWindowLock(conversation);
+  const {
+    locked, secondsLeft,
+  } = useWindowLock(conversation);
   const { nameOf } = useStaffDirectory();
-  const [contactOpen, setContactOpen] = useState(false);
-  const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [repliesOpen, setRepliesOpen] = useState(false);
-  useMarkRead(socket, connection === "connected", conversation, canManage);
+  const [
+    contactOpen,
+    setContactOpen,
+  ] = useState(false);
+  const [
+    templatesOpen,
+    setTemplatesOpen,
+  ] = useState(false);
+  const [
+    repliesOpen,
+    setRepliesOpen,
+  ] = useState(false);
+  useMarkRead(
+    socket,
+    connection === "connected",
+    conversation,
+    canManage,
+  );
 
   const retryMessage = (message: MessagingMessage) => {
-    if (isLocalMessage(message))
-      void retry(conversation.id, message);
-    else
+    if (isLocalMessage(message)) {
+      void retry(
+        conversation.id,
+        message,
+      );
+    }
+    else {
       actions.retry.mutate(message.id);
+    }
   };
 
   return (
@@ -84,11 +111,20 @@ export function ThreadPanel({ conversation, socket, connection, canManage, onBac
         locked={locked}
         canManage={canManage}
         connection={connection}
-        busy={{ media: actions.media.isPending, schedule: actions.schedule.isPending, note: actions.note.isPending }}
-        onSend={text => void send(conversation.id, text)}
+        busy={{
+          media: actions.media.isPending, schedule: actions.schedule.isPending, note: actions.note.isPending,
+        }}
+        onSend={text => void send(
+          conversation.id,
+          text,
+        )}
         onNote={text => succeeded(() => actions.note.mutateAsync(text))}
-        onMedia={(file, caption) => succeeded(() => actions.media.mutateAsync({ file, caption: caption || undefined }))}
-        onSchedule={(text, sendAt) => succeeded(() => actions.schedule.mutateAsync({ text, sendAt }))}
+        onMedia={(file, caption) => succeeded(() => actions.media.mutateAsync({
+          file, caption: caption || undefined,
+        }))}
+        onSchedule={(text, sendAt) => succeeded(() => actions.schedule.mutateAsync({
+          text, sendAt,
+        }))}
         onOpenTemplates={() => setTemplatesOpen(true)}
         onManageReplies={() => setRepliesOpen(true)}
       />
@@ -103,8 +139,16 @@ export function ThreadPanel({ conversation, socket, connection, canManage, onBac
         onOpenChange={setContactOpen}
         onUpdate={change => actions.update.mutate(change)}
       />
-      <StartConversationDialog open={templatesOpen} onOpenChange={setTemplatesOpen} conversationId={conversation.id} />
-      <CannedRepliesDialog open={repliesOpen} canManage={canManage} onOpenChange={setRepliesOpen} />
+      <StartConversationDialog
+        open={templatesOpen}
+        onOpenChange={setTemplatesOpen}
+        conversationId={conversation.id}
+      />
+      <CannedRepliesDialog
+        open={repliesOpen}
+        canManage={canManage}
+        onOpenChange={setRepliesOpen}
+      />
     </>
   );
 }

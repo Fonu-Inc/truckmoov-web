@@ -3,10 +3,19 @@ import { getOrganizationUsersQueryOptions } from "@truckmoov/api/auth";
 import { useMemo } from "react";
 import { useCurrentUserId } from "./useCurrentUserId";
 
-export type StaffMember = { id: string; name: string };
+export type StaffMember = {
+  id: string; name: string;
+};
 
-function displayName(user: { email: string; profile?: { firstName?: string; lastName?: string; fullName?: string } | null }) {
-  const full = user.profile?.fullName || [user.profile?.firstName, user.profile?.lastName].filter(Boolean).join(" ");
+function displayName(user: {
+  email: string; profile?: {
+    firstName?: string; lastName?: string; fullName?: string;
+  } | null;
+}) {
+  const full = user.profile?.fullName || [
+    user.profile?.firstName,
+    user.profile?.lastName,
+  ].filter(Boolean).join(" ");
   return full.trim() || user.email;
 }
 
@@ -16,9 +25,13 @@ function displayName(user: { email: string; profile?: { firstName?: string; last
  */
 export function useStaffDirectory() {
   const me = useCurrentUserId();
-  const query = useQuery({ ...getOrganizationUsersQueryOptions({ params: { status: "active" } }), retry: false });
+  const query = useQuery({
+    ...getOrganizationUsersQueryOptions({ params: { status: "active" } }), retry: false,
+  });
   const staff = useMemo<StaffMember[]>(
-    () => (query.data?.data.users ?? []).map(user => ({ id: user.userId, name: displayName(user) })),
+    () => (query.data?.data.users ?? []).map(user => ({
+      id: user.userId, name: displayName(user),
+    })),
     [query.data],
   );
 
@@ -30,5 +43,7 @@ export function useStaffDirectory() {
     return staff.find(member => member.id === userId)?.name ?? "A teammate";
   };
 
-  return { staff, nameOf, me, isLoading: query.isLoading };
+  return {
+    staff, nameOf, me, isLoading: query.isLoading,
+  };
 }

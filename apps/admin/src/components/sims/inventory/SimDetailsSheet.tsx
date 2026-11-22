@@ -1,12 +1,18 @@
+import type { ReactNode } from "react";
+import type {
+  SimLookups,
+  SimRow,
+} from "./simInventoryShared";
 import { useQuery } from "@tanstack/react-query";
 import { getSystemSimQueryOptions } from "@truckmoov/api/auth";
-import { formatDate, formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  formatDate, formatRelative,
+} from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowUpDown,
   Pencil,
   Wifi,
 } from "lucide-react";
-import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -24,10 +30,6 @@ import {
   SimSignalIcon,
   SimStatusBadge,
 } from "./SimInventoryBadges";
-import type {
-  SimLookups,
-  SimRow,
-} from "./simInventoryShared";
 import {
   EMPTY_VALUE,
   formatNgn,
@@ -89,7 +91,10 @@ function UsageBar({
         </span>
       </div>
       <Progress
-        value={getUsagePercentage(usage, limit)}
+        value={getUsagePercentage(
+          usage,
+          limit,
+        )}
         className="h-2"
       />
     </div>
@@ -118,7 +123,10 @@ export function SimDetailsSheet({
   const lastActivity = detailQuery.data?.data?.lastActivity ?? null;
   const expiryDate = detailQuery.data?.data?.expiryDate ?? null;
   const details = useMemo(
-    () => detailQuery.data?.data ? mapSimToRow(detailQuery.data.data, lookups) : sim,
+    () => detailQuery.data?.data ? mapSimToRow(
+      detailQuery.data.data,
+      lookups,
+    ) : sim,
     [
       detailQuery.data,
       lookups,
@@ -162,7 +170,12 @@ export function SimDetailsSheet({
 
               <Section title="Assignment">
                 <Field label="Tenant">{details.tenant || "Unassigned"}</Field>
-                <Field label="Device">{details.deviceId ? details.deviceId.slice(0, 8) : "None"}</Field>
+                <Field label="Device">
+                  {details.deviceId ? details.deviceId.slice(
+                    0,
+                    8,
+                  ) : "None"}
+                </Field>
                 <Field label="Device IMEI"><span className="font-mono">{details.deviceImei || EMPTY_VALUE}</span></Field>
               </Section>
 
@@ -208,7 +221,12 @@ export function SimDetailsSheet({
 
               <Section title="Billing">
                 <Field label="Monthly Cost"><span className="font-medium">{formatNgn(details.monthlyCost)}</span></Field>
-                <Field label="Activation Date">{formatDate(details.activationDate, "Not activated")}</Field>
+                <Field label="Activation Date">
+                  {formatDate(
+                    details.activationDate,
+                    "Not activated",
+                  )}
+                </Field>
                 <Field label="Expiry Date">{formatDate(expiryDate)}</Field>
               </Section>
 

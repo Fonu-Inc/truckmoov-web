@@ -1,5 +1,26 @@
-import { getBillingInvoiceQueryOptions, useEnforcementSettings } from "@truckmoov/api/billing";
 import { useQuery } from "@tanstack/react-query";
+import {
+  getBillingInvoiceQueryOptions, useEnforcementSettings,
+} from "@truckmoov/api/billing";
+import {
+  customerTypeLabel,
+  formatDateOnly,
+  formatIsoDateTime,
+  formatNgn,
+  methodLabel,
+} from "@/components/platform/billing/billingFormat";
+import {
+  DueStateText,
+  InvoiceStatusBadge,
+  PaymentStatusBadge,
+  RenewalBadge,
+} from "@/components/platform/billing/billingUi";
+import {
+  DetailField,
+  DetailsLoadError,
+  LineItemsTable,
+  TotalsBlock,
+} from "@/components/platform/billing/QuotationDetailsDialog";
 import {
   Dialog,
   DialogContent,
@@ -8,23 +29,6 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { DetailSkeleton } from "@/components/ui/skeletons";
-import {
-  customerTypeLabel,
-  formatDateOnly,
-  formatIsoDateTime,
-  DueStateText,
-  formatNgn,
-  InvoiceStatusBadge,
-  RenewalBadge,
-  methodLabel,
-  PaymentStatusBadge,
-} from "@/components/platform/billing/billingUi";
-import {
-  DetailField,
-  DetailsLoadError,
-  LineItemsTable,
-  TotalsBlock,
-} from "@/components/platform/billing/QuotationDetailsDialog";
 
 export function InvoiceDetailsDialog({
   id,
@@ -33,14 +37,19 @@ export function InvoiceDetailsDialog({
   id: string | null;
   onClose: () => void;
 }) {
-  const { data, isLoading, isError, error, refetch } = useQuery(
+  const {
+    data, isLoading, isError, error, refetch,
+  } = useQuery(
     getBillingInvoiceQueryOptions(id ?? ""),
   );
   const invoice = data?.data;
   const graceDays = useEnforcementSettings().data?.data.graceDays ?? null;
 
   return (
-    <Dialog open={id !== null} onOpenChange={open => !open && onClose()}>
+    <Dialog
+      open={id !== null}
+      onOpenChange={open => !open && onClose()}
+    >
       <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
@@ -52,22 +61,45 @@ export function InvoiceDetailsDialog({
         </DialogHeader>
 
         {isLoading && <DetailSkeleton items={6} />}
-        {isError && <DetailsLoadError message={error.message} onRetry={() => void refetch()} />}
+        {isError && (
+          <DetailsLoadError
+            message={error.message}
+            onRetry={() => void refetch()}
+          />
+        )}
         {invoice && (
           <div className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-3">
-              <DetailField label="Linked quotation" value={invoice.quotationNumber ?? "-"} />
-              <DetailField label="Billing email" value={invoice.billingEmail} />
+              <DetailField
+                label="Linked quotation"
+                value={invoice.quotationNumber ?? "-"}
+              />
+              <DetailField
+                label="Billing email"
+                value={invoice.billingEmail}
+              />
               <DetailField
                 label="Delivery"
                 value={invoice.emailedAt ? `Emailed ${formatIsoDateTime(invoice.emailedAt)}` : "Not emailed"}
               />
-              <DetailField label="Issue date" value={formatDateOnly(invoice.issueDate)} />
-              <DetailField label="Due date" value={formatDateOnly(invoice.dueDate)} />
+              <DetailField
+                label="Issue date"
+                value={formatDateOnly(invoice.issueDate)}
+              />
+              <DetailField
+                label="Due date"
+                value={formatDateOnly(invoice.dueDate)}
+              />
               {invoice.isRenewal && (
-                <DetailField label="Licence period ends" value={invoice.periodEnd ? formatDateOnly(invoice.periodEnd) : "-"} />
+                <DetailField
+                  label="Licence period ends"
+                  value={invoice.periodEnd ? formatDateOnly(invoice.periodEnd) : "-"}
+                />
               )}
-              <DetailField label="Customer type" value={customerTypeLabel(invoice.customerType)} />
+              <DetailField
+                label="Customer type"
+                value={customerTypeLabel(invoice.customerType)}
+              />
             </div>
 
             {invoice.isRenewal && (
@@ -75,15 +107,29 @@ export function InvoiceDetailsDialog({
                 Renewal invoice. Paying it extends the licence from its current end date.
               </p>
             )}
-            <div><DueStateText invoice={invoice} graceDays={graceDays} /></div>
+            <div>
+              <DueStateText
+                invoice={invoice}
+                graceDays={graceDays}
+              />
+            </div>
 
             <LineItemsTable lines={invoice.lines} />
             <TotalsBlock totals={invoice} />
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <DetailField label="Invoice total" value={formatNgn(invoice.totalNgn)} />
-              <DetailField label="Amount paid" value={formatNgn(invoice.amountPaidNgn)} />
-              <DetailField label="Outstanding" value={formatNgn(invoice.outstandingNgn)} />
+              <DetailField
+                label="Invoice total"
+                value={formatNgn(invoice.totalNgn)}
+              />
+              <DetailField
+                label="Amount paid"
+                value={formatNgn(invoice.amountPaidNgn)}
+              />
+              <DetailField
+                label="Outstanding"
+                value={formatNgn(invoice.outstandingNgn)}
+              />
             </div>
 
             <div>

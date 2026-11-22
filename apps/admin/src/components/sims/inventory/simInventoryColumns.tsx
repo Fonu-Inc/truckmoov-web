@@ -1,4 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import type { SimRow } from "./simInventoryShared";
+import type { SimRowActions } from "./SimRowMenu";
 import {
   Building2,
   Cpu,
@@ -7,16 +9,16 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Progress } from "@/components/shadcn/progress";
-import { SimRowMenu, type SimRowActions } from "./SimRowMenu";
 import {
+  EmptyCell,
   SimSignalIcon,
   SimStatusBadge,
 } from "./SimInventoryBadges";
-import type { SimRow } from "./simInventoryShared";
 import {
   EMPTY_VALUE,
   getUsagePercentage,
 } from "./simInventoryShared";
+import { SimRowMenu } from "./SimRowMenu";
 
 type SimColumnOptions = SimRowActions & {
   selectedIds: Set<string>;
@@ -24,10 +26,6 @@ type SimColumnOptions = SimRowActions & {
   onToggleAll: () => void;
   onToggleOne: (id: string) => void;
 };
-
-function EmptyCell() {
-  return <span className="text-muted-foreground">{EMPTY_VALUE}</span>;
-}
 
 export function getSimColumns(options: SimColumnOptions): ColumnDef<SimRow>[] {
   return [
@@ -56,7 +54,10 @@ export function getSimColumns(options: SimColumnOptions): ColumnDef<SimRow>[] {
           className="rounded bg-secondary px-2 py-1 font-mono text-xs"
           title={row.original.id}
         >
-          {row.original.id.slice(0, 8)}
+          {row.original.id.slice(
+            0,
+            8,
+          )}
         </span>
       ),
     },
@@ -104,7 +105,12 @@ export function getSimColumns(options: SimColumnOptions): ColumnDef<SimRow>[] {
                 title={row.original.deviceId}
               >
                 <Cpu className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{row.original.deviceImei ?? row.original.deviceId.slice(0, 8)}</span>
+                <span className="text-sm">
+                  {row.original.deviceImei ?? row.original.deviceId.slice(
+                    0,
+                    8,
+                  )}
+                </span>
               </div>
             )
           : <EmptyCell />,
@@ -134,7 +140,10 @@ export function getSimColumns(options: SimColumnOptions): ColumnDef<SimRow>[] {
             </span>
           </div>
           <Progress
-            value={getUsagePercentage(row.original.dataUsage, row.original.dataLimit)}
+            value={getUsagePercentage(
+              row.original.dataUsage,
+              row.original.dataLimit,
+            )}
             className="h-1.5"
           />
         </div>

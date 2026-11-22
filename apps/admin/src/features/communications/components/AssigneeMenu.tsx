@@ -17,19 +17,31 @@ type Props = {
   onAssign: (userId: string) => void;
 };
 
-export function AssigneeMenu({ conversation, disabled, onAssign }: Props) {
-  const { staff, nameOf, me } = useStaffDirectory();
+export function AssigneeMenu({
+  conversation, disabled, onAssign,
+}: Props) {
+  const {
+    staff, nameOf, me,
+  } = useStaffDirectory();
   const others = staff.filter(member => member.id !== me);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled} aria-label="Assign conversation">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          aria-label="Assign conversation"
+        >
           <UserRound className="h-3.5 w-3.5" />
           {nameOf(conversation.assignee_user_id)}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+      <DropdownMenuContent
+        align="end"
+        className="max-h-72 overflow-y-auto"
+      >
         {me && <DropdownMenuItem onSelect={() => onAssign(me)}>Assign to me</DropdownMenuItem>}
         {conversation.assignee_user_id && <DropdownMenuItem onSelect={() => onAssign("")}>Unassign</DropdownMenuItem>}
         {others.length > 0 && (
@@ -37,7 +49,12 @@ export function AssigneeMenu({ conversation, disabled, onAssign }: Props) {
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Teammates</DropdownMenuLabel>
             {others.map(member => (
-              <DropdownMenuItem key={member.id} onSelect={() => onAssign(member.id)}>{member.name}</DropdownMenuItem>
+              <DropdownMenuItem
+                key={member.id}
+                onSelect={() => onAssign(member.id)}
+              >
+                {member.name}
+              </DropdownMenuItem>
             ))}
           </>
         )}

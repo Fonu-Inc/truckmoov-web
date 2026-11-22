@@ -206,7 +206,7 @@ export function PhoneNumberManagement() {
       selectedNumber.id,
       selectedTenantId,
       tenant.name,
-      user?.name || "Platform Admin",
+      user?.email || "Platform Admin",
     );
 
     setIsAssignDialogOpen(false);

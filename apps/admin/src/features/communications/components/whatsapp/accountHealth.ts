@@ -1,4 +1,6 @@
-import type { WhatsAppAccount, WhatsAppConnectionStep } from "@truckmoov/api/notification";
+import type {
+  WhatsAppAccount, WhatsAppConnectionStep,
+} from "@truckmoov/api/notification";
 
 export type Tone = "good" | "warn" | "bad" | "neutral";
 
@@ -60,7 +62,10 @@ const SIGNUP_STEP_LABEL: Record<string, string> = {
 export function humanize(value: string | undefined) {
   if (!value)
     return "";
-  const text = value.replace(/_/g, " ").toLowerCase();
+  const text = value.replace(
+    /_/g,
+    " ",
+  ).toLowerCase();
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -97,17 +102,33 @@ export function failedSteps(account: WhatsAppAccount | undefined) {
 }
 
 /** What staff must act on, most urgent first. Empty when the number is healthy. */
-export function attentionNotices(account: WhatsAppAccount | undefined): { tone: Tone; text: string }[] {
+export function attentionNotices(account: WhatsAppAccount | undefined): {
+  tone: Tone; text: string;
+}[] {
   if (!account)
     return [];
-  const notices: { tone: Tone; text: string }[] = [];
-  if (needsReconnect(account))
-    notices.push({ tone: "bad", text: "Meta no longer accepts the saved access token. Messages cannot be sent until you reconnect." });
-  if (account.number_status === "FLAGGED" || account.number_status === "RESTRICTED")
-    notices.push({ tone: "warn", text: `Meta has marked this number ${humanize(account.number_status).toLowerCase()}. Check WhatsApp Manager.` });
-  if (account.name_status === "DECLINED")
-    notices.push({ tone: "warn", text: "Meta declined the display name. Edit it in WhatsApp Manager and resubmit." });
-  if (account.quality_rating === "RED")
-    notices.push({ tone: "warn", text: "The number's quality rating is low. Reduce unsolicited messages to avoid limits." });
+  const notices: {
+    tone: Tone; text: string;
+  }[] = [];
+  if (needsReconnect(account)) {
+    notices.push({
+      tone: "bad", text: "Meta no longer accepts the saved access token. Messages cannot be sent until you reconnect.",
+    });
+  }
+  if (account.number_status === "FLAGGED" || account.number_status === "RESTRICTED") {
+    notices.push({
+      tone: "warn", text: `Meta has marked this number ${humanize(account.number_status).toLowerCase()}. Check WhatsApp Manager.`,
+    });
+  }
+  if (account.name_status === "DECLINED") {
+    notices.push({
+      tone: "warn", text: "Meta declined the display name. Edit it in WhatsApp Manager and resubmit.",
+    });
+  }
+  if (account.quality_rating === "RED") {
+    notices.push({
+      tone: "warn", text: "The number's quality rating is low. Reduce unsolicited messages to avoid limits.",
+    });
+  }
   return notices;
 }

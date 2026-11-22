@@ -65,7 +65,12 @@ function SimCardContent({ sim }: { sim: SystemSimItem | undefined }) {
       {sim.status && (
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">SIM Status</span>
-          <span className="capitalize">{String(sim.status).replace(/_/g, " ")}</span>
+          <span className="capitalize">
+            {String(sim.status).replace(
+              /_/g,
+              " ",
+            )}
+          </span>
         </div>
       )}
       <div className="space-y-2 rounded-xl border p-3">
@@ -76,7 +81,10 @@ function SimCardContent({ sim }: { sim: SystemSimItem | undefined }) {
           </span>
         </div>
         <Progress
-          value={dataLimitMb > 0 ? Math.min(100, Math.round((dataUsedMb / dataLimitMb) * 100)) : 0}
+          value={dataLimitMb > 0 ? Math.min(
+            100,
+            Math.round((dataUsedMb / dataLimitMb) * 100),
+          ) : 0}
         />
       </div>
       <div className="space-y-3 rounded-xl border p-3">
@@ -91,7 +99,12 @@ function SimCardContent({ sim }: { sim: SystemSimItem | undefined }) {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Last Active</span>
-          <span>{formatWithPattern(sim.lastActivity, "M/d/yyyy, h:mm:ss a")}</span>
+          <span>
+            {formatWithPattern(
+              sim.lastActivity,
+              "M/d/yyyy, h:mm:ss a",
+            )}
+          </span>
         </div>
       </div>
     </>
@@ -110,7 +123,9 @@ export function DeviceDetailSheet({
     enabled: open && Boolean(device?.id),
   });
   const live = detailQuery.data?.data;
-  const selectedDevice: PlatformDevice | null = device && live ? { ...device, ...live, tenantId: device.tenantId, tenantName: device.tenantName ?? live.tenantName } : device;
+  const selectedDevice: PlatformDevice | null = device && live ? {
+    ...device, ...live, tenantId: device.tenantId, tenantName: device.tenantName ?? live.tenantName,
+  } : device;
   const lifecycle = selectedDevice ? selectedDevice.lifecycleStatus || selectedDevice.operationalStatus : "";
   const secondary = selectedDevice && selectedDevice.operationalStatus !== lifecycle ? selectedDevice.operationalStatus : null;
 
@@ -156,13 +171,19 @@ export function DeviceDetailSheet({
                   <div>
                     <p className="text-sm text-muted-foreground">Last Seen</p>
                     <p className="text-sm font-medium mt-1">
-                      {formatRelative(selectedDevice.lastSeen, "Never")}
+                      {formatRelative(
+                        selectedDevice.lastSeen,
+                        "Never",
+                      )}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Tenant assigned to</p>
                     <p className="text-sm font-medium mt-1">
-                      {selectedDevice.tenantName || (selectedDevice.tenantId ? `${selectedDevice.tenantId.slice(0, 8)}...` : "—")}
+                      {selectedDevice.tenantName || (selectedDevice.tenantId ? `${selectedDevice.tenantId.slice(
+                        0,
+                        8,
+                      )}...` : "—")}
                     </p>
                   </div>
                   <div>

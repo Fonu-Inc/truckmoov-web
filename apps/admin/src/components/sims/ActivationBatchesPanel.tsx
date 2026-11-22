@@ -1,1 +1,3 @@
-export { ActivationTab, ActivationTab as ActivationBatchesPanel } from "./activation/ActivationTab";
+export {
+  ActivationTab as ActivationBatchesPanel, ActivationTab,
+} from "./activation/ActivationTab";

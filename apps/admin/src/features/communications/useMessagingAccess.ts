@@ -15,7 +15,13 @@ export function useMessagingAccess() {
     isLoading: query.isPending,
     isError: query.isError,
     refetch: query.refetch,
-    canRead: hasPermission(permissions, MESSAGING_READ),
-    canManage: hasPermission(permissions, MESSAGING_MANAGE),
+    canRead: hasPermission(
+      permissions,
+      MESSAGING_READ,
+    ),
+    canManage: hasPermission(
+      permissions,
+      MESSAGING_MANAGE,
+    ),
   };
 }

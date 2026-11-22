@@ -1,10 +1,5 @@
 import type { SystemSupportTicketMessage } from "@truckmoov/api/auth";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getSupportTicketMessagesQueryOptions,
-  useCreateSupportTicketMessage,
-} from "@truckmoov/api/auth";
-import { useAuthStore } from "@truckmoov/api/lib/auth-store";
+import type { useTicketConversation } from "./useTicketConversation";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   Loader2,
@@ -16,9 +11,7 @@ import {
 import {
   useEffect,
   useRef,
-  useState,
 } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Label } from "@/components/shadcn/label";
@@ -26,93 +19,6 @@ import { Textarea } from "@/components/shadcn/textarea";
 
 // The thread page and the conversation dialog are the same fleetflow markup
 // (PlatformTicketThread / TicketConversationDialog) — shared here.
-
-export const statusStyles: Record<string, { label: string; className: string }> = {
-  open: {
-    label: "Open", className: "bg-primary/10 text-primary",
-  },
-  in_progress: {
-    label: "In Progress", className: "bg-chart-2/10 text-chart-2",
-  },
-  waiting_on_tenant: {
-    label: "Waiting on Tenant", className: "bg-chart-5/10 text-chart-5",
-  },
-  escalated: {
-    label: "Escalated", className: "bg-destructive/10 text-destructive",
-  },
-  resolved: {
-    label: "Resolved", className: "bg-accent/10 text-accent",
-  },
-  closed: {
-    label: "Closed", className: "bg-muted text-muted-foreground",
-  },
-};
-
-export const priorityStyles: Record<string, { label: string; className: string }> = {
-  low: {
-    label: "Low", className: "bg-muted text-muted-foreground",
-  },
-  medium: {
-    label: "Medium", className: "bg-primary/10 text-primary",
-  },
-  high: {
-    label: "High", className: "bg-chart-5/10 text-chart-5",
-  },
-  critical: {
-    label: "Critical", className: "bg-destructive/10 text-destructive",
-  },
-};
-
-/** Messages + composer state for one ticket (fleetflow's `useSupportMessages`). */
-export function useTicketConversation(ticketId: string | null) {
-  const myId = useAuthStore(state => state.user?.id);
-  const messagesQuery = useQuery({
-    ...getSupportTicketMessagesQueryOptions(ticketId ?? ""),
-    enabled: !!ticketId,
-  });
-  const sendMutation = useCreateSupportTicketMessage();
-  const [
-    newMessage,
-    setNewMessage,
-  ] = useState("");
-  const [
-    isInternal,
-    setIsInternal,
-  ] = useState(false);
-
-  const handleSend = () => {
-    if (!ticketId || !newMessage.trim())
-      return;
-    sendMutation.mutate(
-      {
-        id: ticketId,
-        data: {
-          message: newMessage.trim(),
-          isInternal,
-        },
-      },
-      {
-        onSuccess: () => {
-          setNewMessage("");
-          setIsInternal(false);
-        },
-        onError: error => toast.error(error.message),
-      },
-    );
-  };
-
-  return {
-    myId,
-    messages: messagesQuery.data?.data?.messages ?? [],
-    isLoading: messagesQuery.isLoading,
-    newMessage,
-    setNewMessage,
-    isInternal,
-    setIsInternal,
-    isSending: sendMutation.isPending,
-    handleSend,
-  };
-}
 
 export function TicketMessages({
   messages,

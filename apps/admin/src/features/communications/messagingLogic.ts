@@ -4,6 +4,8 @@ import type {
   MessagingMessage,
   MessagingMessageStatus,
 } from "@truckmoov/api/notification";
+import type { ConversationFilters } from "./messagingQueries";
+import type { MessagingConnection } from "./useMessagingSocket";
 
 const STATUS_RANK: Record<MessagingMessageStatus, number> = {
   received: 0,
@@ -67,7 +69,10 @@ function sameMessage(a: MessagingMessage, b: MessagingMessage) {
 }
 
 function mergeMessage(existing: MessagingMessage, incoming: MessagingMessage): MessagingMessage {
-  const status = pickStatus(existing.status, incoming.status);
+  const status = pickStatus(
+    existing.status,
+    incoming.status,
+  );
   return {
     ...existing,
     ...incoming,
@@ -86,11 +91,19 @@ export function upsertMessages(
 ): MessagingMessage[] {
   const next = [...list];
   for (const message of incoming) {
-    const index = next.findIndex(m => sameMessage(m, message));
-    if (index === -1)
+    const index = next.findIndex(m => sameMessage(
+      m,
+      message,
+    ));
+    if (index === -1) {
       next.push(message);
-    else
-      next[index] = mergeMessage(next[index], message);
+    }
+    else {
+      next[index] = mergeMessage(
+        next[index],
+        message,
+      );
+    }
   }
   return next.sort(byCreatedAt);
 }
@@ -106,7 +119,10 @@ export function applyStatusEvent(
     if (!matches)
       return m;
     changed = true;
-    const status = pickStatus(m.status, event.status);
+    const status = pickStatus(
+      m.status,
+      event.status,
+    );
     return {
       ...m,
       status,
@@ -120,8 +136,14 @@ export function visibleThread(
   server: MessagingMessage[],
   pending: MessagingMessage[],
 ): MessagingMessage[] {
-  const open = pending.filter(p => !server.some(s => sameMessage(s, p)));
-  return [...server, ...open].sort(byCreatedAt);
+  const open = pending.filter(p => !server.some(s => sameMessage(
+    s,
+    p,
+  )));
+  return [
+    ...server,
+    ...open,
+  ].sort(byCreatedAt);
 }
 
 export function mergeConversation(
@@ -141,10 +163,17 @@ export function updateConversations(
   options: { insert: boolean },
 ): MessagingConversation[] {
   const index = list.findIndex(c => c.id === incoming.id);
-  if (index === -1)
-    return options.insert ? [incoming, ...list].sort(byLastMessage) : list;
+  if (index === -1) {
+    return options.insert ? [
+      incoming,
+      ...list,
+    ].sort(byLastMessage) : list;
+  }
   const next = [...list];
-  next[index] = mergeConversation(list[index], incoming);
+  next[index] = mergeConversation(
+    list[index],
+    incoming,
+  );
   return next.sort(byLastMessage);
 }
 
@@ -153,8 +182,13 @@ export function mergeConversationPage(
   fresh: MessagingConversation[],
 ): MessagingConversation[] {
   let next = existing;
-  for (const conversation of fresh)
-    next = updateConversations(next, conversation, { insert: true });
+  for (const conversation of fresh) {
+    next = updateConversations(
+      next,
+      conversation,
+      { insert: true },
+    );
+  }
   return next;
 }
 
@@ -162,7 +196,9 @@ export function conversationTitle(c: Pick<MessagingConversation, "driver_name" |
   return c.driver_name || c.driver_phone || "Unknown";
 }
 
-export type DayGroup = { key: string; label: string; messages: MessagingMessage[] };
+export type DayGroup = {
+  key: string; label: string; messages: MessagingMessage[];
+};
 
 function dayKey(iso: string) {
   const d = new Date(iso);
@@ -172,17 +208,28 @@ function dayKey(iso: string) {
 export function dayLabel(iso: string, now: Date = new Date()): string {
   const day = new Date(iso);
   const diffDays = Math.round(
-    (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-      - new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime())
+    (new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    ).getTime()
+    - new Date(
+      day.getFullYear(),
+      day.getMonth(),
+      day.getDate(),
+    ).getTime())
     / 86_400_000,
   );
   if (diffDays === 0)
     return "Today";
   if (diffDays === 1)
     return "Yesterday";
-  return day.toLocaleDateString(undefined, {
-    day: "numeric", month: "long", year: day.getFullYear() === now.getFullYear() ? undefined : "numeric",
-  });
+  return day.toLocaleDateString(
+    undefined,
+    {
+      day: "numeric", month: "long", year: day.getFullYear() === now.getFullYear() ? undefined : "numeric",
+    },
+  );
 }
 
 export function groupByDay(messages: MessagingMessage[], now: Date = new Date()): DayGroup[] {
@@ -190,10 +237,17 @@ export function groupByDay(messages: MessagingMessage[], now: Date = new Date())
   for (const message of messages) {
     const key = dayKey(message.created_at);
     const last = groups[groups.length - 1];
-    if (last?.key === key)
+    if (last?.key === key) {
       last.messages.push(message);
-    else
-      groups.push({ key, label: dayLabel(message.created_at, now), messages: [message] });
+    }
+    else {
+      groups.push({
+        key, label: dayLabel(
+          message.created_at,
+          now,
+        ), messages: [message],
+      });
+    }
   }
   return groups;
 }
@@ -203,7 +257,10 @@ export function windowText(c: Pick<MessagingConversation, "is_locked" | "window_
     return "Reply window closed";
   if (c.window_remaining_hours === null)
     return "";
-  const hours = Math.max(1, Math.ceil(c.window_remaining_hours));
+  const hours = Math.max(
+    1,
+    Math.ceil(c.window_remaining_hours),
+  );
   return `${hours}h left to reply`;
 }
 
@@ -233,7 +290,10 @@ export function windowSecondsLeft(
   if (conversation.is_locked || conversation.window_remaining_hours === null)
     return 0;
   const left = conversation.window_remaining_hours * 3600 - (now - reportedAt) / 1000;
-  return Math.max(0, Math.floor(left));
+  return Math.max(
+    0,
+    Math.floor(left),
+  );
 }
 
 export type ListFilters = {
@@ -264,12 +324,15 @@ export function removeConversation(list: MessagingConversation[], id: string): M
   return next.length === list.length ? list : next;
 }
 
-
 export function windowLabel(locked: boolean, secondsLeft: number): string {
   if (locked)
     return "Reply window closed";
-  if (secondsLeft < 3600)
-    return `${Math.max(1, Math.ceil(secondsLeft / 60))}m left to reply`;
+  if (secondsLeft < 3600) {
+    return `${Math.max(
+      1,
+      Math.ceil(secondsLeft / 60),
+    )}m left to reply`;
+  }
   return `${Math.ceil(secondsLeft / 3600)}h left to reply`;
 }
 
@@ -285,3 +348,21 @@ export const PRIORITY_LABEL: Record<MessagingConversation["priority"], string> =
   high: "High",
   urgent: "Urgent",
 };
+
+export function connectionHint(state: MessagingConnection): string | null {
+  switch (state) {
+    case "connected": return null;
+    case "unauthenticated": return "Your session has ended. Sign in again to get live updates.";
+    case "forbidden": return "You do not have access to live messaging.";
+    case "offline": return "Live updates are off. You can read what has loaded, but you cannot reply.";
+    default: return "Live updates are paused while we reconnect. You cannot reply until then.";
+  }
+}
+
+export function activeFilterCount(value: ConversationFilters) {
+  return [
+    value.status,
+    value.assignee,
+    value.tag,
+  ].filter(Boolean).length;
+}

@@ -2,10 +2,12 @@ import type {
   MessagingConnectionFailure,
   PlatformMessagingSocket,
 } from "@truckmoov/api/notification";
-import { createPlatformMessagingSocket } from "@truckmoov/api/notification";
-import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
+import { createPlatformMessagingSocket } from "@truckmoov/api/notification";
+import {
+  useCallback, useEffect, useRef, useState,
+} from "react";
 import {
   patchConversation,
   patchMessageCreated,
@@ -14,13 +16,13 @@ import {
   resyncMessaging,
 } from "./messagingCache";
 
-export type MessagingConnection =
-  | "connecting"
-  | "connected"
-  | "reconnecting"
-  | "offline"
-  | "unauthenticated"
-  | "forbidden";
+export type MessagingConnection
+  = | "connecting"
+    | "connected"
+    | "reconnecting"
+    | "offline"
+    | "unauthenticated"
+    | "forbidden";
 
 function failureState(reason: MessagingConnectionFailure, wasConnected: boolean): MessagingConnection {
   if (reason === "unauthenticated" || reason === "forbidden")
@@ -30,8 +32,14 @@ function failureState(reason: MessagingConnectionFailure, wasConnected: boolean)
 
 export function useMessagingSocket(enabled: boolean, openConversationId: string | null) {
   const client = useQueryClient();
-  const [state, setState] = useState<MessagingConnection>("connecting");
-  const [socket, setSocket] = useState<PlatformMessagingSocket | null>(null);
+  const [
+    state,
+    setState,
+  ] = useState<MessagingConnection>("connecting");
+  const [
+    socket,
+    setSocket,
+  ] = useState<PlatformMessagingSocket | null>(null);
   const openRef = useRef(openConversationId);
   openRef.current = openConversationId;
 
@@ -49,15 +57,46 @@ export function useMessagingSocket(enabled: boolean, openConversationId: string 
           const isReconnect = wasConnected;
           wasConnected = true;
           setState("connected");
-          if (isReconnect)
-            void resyncMessaging(client, openRef.current);
+          if (isReconnect) {
+            void resyncMessaging(
+              client,
+              openRef.current,
+            );
+          }
         }),
         instance.onDisconnect(() => setState("reconnecting")),
-        instance.onFailure(reason => setState(failureState(reason, wasConnected))),
-        instance.on("message.created", event => patchMessageCreated(client, event)),
-        instance.on("message.status", event => patchMessageStatus(client, event)),
-        instance.on("conversation.updated", event => patchConversation(client, event)),
-        instance.on("message.deleted", event => patchMessageDeleted(client, event)),
+        instance.onFailure(reason => setState(failureState(
+          reason,
+          wasConnected,
+        ))),
+        instance.on(
+          "message.created",
+          event => patchMessageCreated(
+            client,
+            event,
+          ),
+        ),
+        instance.on(
+          "message.status",
+          event => patchMessageStatus(
+            client,
+            event,
+          ),
+        ),
+        instance.on(
+          "conversation.updated",
+          event => patchConversation(
+            client,
+            event,
+          ),
+        ),
+        instance.on(
+          "message.deleted",
+          event => patchMessageDeleted(
+            client,
+            event,
+          ),
+        ),
         // The server refuses an expired sign-in without retrying; a fresh token means try again.
         useApiAuthStore.subscribe((auth, previous) => {
           if (auth.accessToken && auth.accessToken !== previous.accessToken)
@@ -78,10 +117,15 @@ export function useMessagingSocket(enabled: boolean, openConversationId: string 
     ],
   );
 
-  const reconnect = useCallback(() => {
-    setState("connecting");
-    socket?.connect();
-  }, [socket]);
+  const reconnect = useCallback(
+    () => {
+      setState("connecting");
+      socket?.connect();
+    },
+    [socket],
+  );
 
-  return { state, socket, reconnect };
+  return {
+    state, socket, reconnect,
+  };
 }

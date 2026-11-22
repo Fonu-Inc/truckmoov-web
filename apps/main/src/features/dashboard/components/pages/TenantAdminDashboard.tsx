@@ -68,12 +68,12 @@ export default function TenantAdminDashboard() {
   // Vehicle status breakdown for pie chart
   const vehicleStatusData = useMemo(
     () => {
-      const statusCounts = vehicles.reduce(
+      const statusCounts = vehicles.reduce<Record<string, number>>(
         (acc, v) => {
           acc[v.status] = (acc[v.status] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>,
+        {},
       );
 
       const statusConfig: Record<string, {

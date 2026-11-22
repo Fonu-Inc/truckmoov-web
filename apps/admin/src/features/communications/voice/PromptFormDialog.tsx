@@ -1,4 +1,6 @@
-import type { IvrPrompt, IvrPromptCategory, VoiceLanguage } from "@truckmoov/api/notification";
+import type {
+  IvrPrompt, IvrPromptCategory, VoiceLanguage,
+} from "@truckmoov/api/notification";
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -18,26 +20,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
-import { CATEGORY_LABEL, LANGUAGES } from "./voiceDisplay";
 import { useVoiceActions } from "./useVoiceActions";
+import {
+  CATEGORY_LABEL, LANGUAGES,
+} from "./voiceDisplay";
 
 type Props = {
   prompt: IvrPrompt | null;
   onClose: () => void;
 };
 
-export function PromptFormDialog({ prompt, onClose }: Props) {
-  const [name, setName] = useState(prompt?.name ?? "");
-  const [category, setCategory] = useState<IvrPromptCategory>(prompt?.category ?? "greeting");
-  const [keyPress, setKeyPress] = useState(prompt?.key_press ?? "");
-  const [translations, setTranslations] = useState<Partial<Record<VoiceLanguage, string>>>(prompt?.translations ?? {});
+export function PromptFormDialog({
+  prompt, onClose,
+}: Props) {
+  const [
+    name,
+    setName,
+  ] = useState(prompt?.name ?? "");
+  const [
+    category,
+    setCategory,
+  ] = useState<IvrPromptCategory>(prompt?.category ?? "greeting");
+  const [
+    keyPress,
+    setKeyPress,
+  ] = useState(prompt?.key_press ?? "");
+  const [
+    translations,
+    setTranslations,
+  ] = useState<Partial<Record<VoiceLanguage, string>>>(prompt?.translations ?? {});
   const { savePrompt } = useVoiceActions(onClose);
   const ready = name.trim() && translations.en?.trim();
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
+    <Dialog
+      open
+      onOpenChange={open => !open && onClose()}
+    >
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{prompt ? "Edit prompt" : "New prompt"}</DialogTitle>
@@ -47,45 +70,87 @@ export function PromptFormDialog({ prompt, onClose }: Props) {
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1 sm:col-span-2">
               <Label htmlFor="prompt-name">Name</Label>
-              <Input id="prompt-name" maxLength={80} value={name} onChange={e => setName(e.target.value)} />
+              <Input
+                id="prompt-name"
+                maxLength={80}
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="prompt-key">Key to press</Label>
-              <Input id="prompt-key" maxLength={1} placeholder="1" value={keyPress} onChange={e => setKeyPress(e.target.value)} />
+              <Input
+                id="prompt-key"
+                maxLength={1}
+                placeholder="1"
+                value={keyPress}
+                onChange={e => setKeyPress(e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-1">
             <Label>Category</Label>
-            <Select value={category} onValueChange={next => setCategory(next as IvrPromptCategory)}>
+            <Select
+              value={category}
+              onValueChange={next => setCategory(next as IvrPromptCategory)}
+            >
               <SelectTrigger aria-label="Category"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(Object.keys(CATEGORY_LABEL) as IvrPromptCategory[]).map(key => <SelectItem key={key} value={key}>{CATEGORY_LABEL[key]}</SelectItem>)}
+                {(Object.keys(CATEGORY_LABEL) as IvrPromptCategory[]).map(key => (
+                  <SelectItem
+                    key={key}
+                    value={key}
+                  >
+                    {CATEGORY_LABEL[key]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <Tabs defaultValue="en">
             <TabsList className="flex h-auto flex-wrap">
-              {LANGUAGES.map(language => <TabsTrigger key={language.code} value={language.code}>{language.name}</TabsTrigger>)}
+              {LANGUAGES.map(language => (
+                <TabsTrigger
+                  key={language.code}
+                  value={language.code}
+                >
+                  {language.name}
+                </TabsTrigger>
+              ))}
             </TabsList>
             {LANGUAGES.map(language => (
-              <TabsContent key={language.code} value={language.code}>
+              <TabsContent
+                key={language.code}
+                value={language.code}
+              >
                 <Textarea
                   aria-label={`${language.name} text`}
                   rows={4}
                   maxLength={500}
                   value={translations[language.code] ?? ""}
-                  onChange={e => setTranslations(current => ({ ...current, [language.code]: e.target.value }))}
+                  onChange={e => setTranslations(current => ({
+                    ...current, [language.code]: e.target.value,
+                  }))}
                 />
               </TabsContent>
             ))}
           </Tabs>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="outline"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
           <Button
             disabled={!ready}
             loading={savePrompt.isPending}
-            onClick={() => savePrompt.mutate({ id: prompt?.id, input: { name, category, key_press: keyPress, translations, is_active: prompt?.is_active ?? true } })}
+            onClick={() => savePrompt.mutate({
+              id: prompt?.id, input: {
+                name, category, key_press: keyPress, translations, is_active: prompt?.is_active ?? true,
+              },
+            })}
           >
             Save
           </Button>

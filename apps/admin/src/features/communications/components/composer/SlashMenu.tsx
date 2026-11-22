@@ -5,11 +5,17 @@ type Props = {
   onPick: (reply: MessagingCannedReply) => void;
 };
 
-export function SlashMenu({ replies, onPick }: Props) {
+export function SlashMenu({
+  replies, onPick,
+}: Props) {
   if (replies.length === 0)
     return null;
   return (
-    <div role="listbox" aria-label="Quick replies" className="mb-2 max-h-44 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-md">
+    <div
+      role="listbox"
+      aria-label="Quick replies"
+      className="mb-2 max-h-44 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-md"
+    >
       {replies.map(reply => (
         <button
           key={reply.id}

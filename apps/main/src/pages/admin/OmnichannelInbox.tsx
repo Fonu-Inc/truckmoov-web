@@ -310,7 +310,7 @@ export default function OmnichannelInbox() {
           selectedConversation.driverName || "Driver",
           selectedConversation.driverPhone,
           replyMessage,
-          user?.name,
+          user?.email,
         );
         if (result.success) {
           setReplyMessage("");
@@ -328,7 +328,7 @@ export default function OmnichannelInbox() {
           selectedConversation.driverName || "Driver",
           selectedConversation.driverPhone,
           replyMessage,
-          user?.name,
+          user?.email,
         );
         setReplyMessage("");
       }
@@ -347,7 +347,7 @@ export default function OmnichannelInbox() {
         selectedConversation.driverId,
         selectedConversation.driverName || "Driver",
         selectedConversation.driverPhone,
-        user?.name,
+        user?.email,
       );
     }
     catch {

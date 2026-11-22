@@ -1,5 +1,7 @@
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { TableCell, TableRow } from "@/components/shadcn/table";
+import {
+  TableCell, TableRow,
+} from "@/components/shadcn/table";
 import { cn } from "@/lib/utils";
 
 // Varied widths so a block of cells does not read as one flat bar.
@@ -48,7 +50,11 @@ export function TableSkeleton({
 }
 
 /** Placeholder for a list of rows with a leading avatar or icon and two lines of text. */
-export function ListSkeleton({ rows = 4, className }: { rows?: number; className?: string }) {
+export function ListSkeleton({
+  rows = 4, className,
+}: {
+  rows?: number; className?: string;
+}) {
   return (
     <div
       className={cn(
@@ -77,7 +83,11 @@ export function ListSkeleton({ rows = 4, className }: { rows?: number; className
 }
 
 /** Placeholder for a label and value grid, such as an overview tab. */
-export function DetailSkeleton({ items = 6, className }: { items?: number; className?: string }) {
+export function DetailSkeleton({
+  items = 6, className,
+}: {
+  items?: number; className?: string;
+}) {
   return (
     <div
       className={cn(

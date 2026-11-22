@@ -65,7 +65,10 @@ function statusBadge(status: string) {
       return (
         <Badge className="bg-info/10 text-info border-info/30">
           <CheckCircle className="h-3 w-3 mr-1" />
-          {` Approved · ${status.replace(/_/g, " ")}`}
+          {` Approved · ${status.replace(
+            /_/g,
+            " ",
+          )}`}
         </Badge>
       );
     case "active":
@@ -184,7 +187,13 @@ export function DeviceRequestDetailsDialog({
             Device Request Details
           </DialogTitle>
           <DialogDescription>
-            {`Request #${request.id.slice(0, 8)} • Submitted ${formatWithPattern(request.createdAt, "MMM d, yyyy 'at' HH:mm")}`}
+            {`Request #${request.id.slice(
+              0,
+              8,
+            )} • Submitted ${formatWithPattern(
+              request.createdAt,
+              "MMM d, yyyy 'at' HH:mm",
+            )}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -232,7 +241,10 @@ export function DeviceRequestDetailsDialog({
               </p>
               <p className="font-medium capitalize">
                 {request.useCase
-                  ? request.useCase.replace(/_/g, " ")
+                  ? request.useCase.replace(
+                      /_/g,
+                      " ",
+                    )
                   : request.needsSim
                     ? "Telemetry + SIM provisioning"
                     : "Telemetry only"}
@@ -245,7 +257,10 @@ export function DeviceRequestDetailsDialog({
                 Date Submitted
               </p>
               <p className="font-medium">
-                {formatWithPattern(request.createdAt, "MMM d, yyyy HH:mm")}
+                {formatWithPattern(
+                  request.createdAt,
+                  "MMM d, yyyy HH:mm",
+                )}
               </p>
             </div>
           </div>

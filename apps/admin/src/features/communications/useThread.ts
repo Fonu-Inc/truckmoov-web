@@ -2,7 +2,9 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { visibleThread } from "./messagingLogic";
 import { threadOptions } from "./messagingQueries";
-import { selectPending, usePendingMessages } from "./pendingMessages";
+import {
+  selectPending, usePendingMessages,
+} from "./pendingMessages";
 
 export function useThread(conversationId: string | null) {
   const query = useInfiniteQuery({
@@ -15,7 +17,10 @@ export function useThread(conversationId: string | null) {
     () => {
       const pages = query.data?.pages ?? [];
       const server = [...pages].reverse().flatMap(page => page.items);
-      return visibleThread(server, pending);
+      return visibleThread(
+        server,
+        pending,
+      );
     },
     [
       query.data,

@@ -2,7 +2,7 @@ import type { InstallationPrice } from "@truckmoov/api/billing";
 import type {
   PriceChangeErrors,
   PriceChangeValues,
-} from "@/components/platform/billing/PriceChangeFields";
+} from "@/components/platform/billing/priceChange";
 import {
   useInstallationPrice, useUpdateInstallationPrice,
 } from "@truckmoov/api/billing";
@@ -12,12 +12,15 @@ import {
 } from "react";
 import { toast } from "sonner";
 import {
-  formatIsoDate, formatNgn, PriceCardFrame, todayInLagos,
-} from "@/components/platform/billing/billingUi";
+  formatIsoDate,
+  formatNgn,
+  todayInLagos,
+} from "@/components/platform/billing/billingFormat";
+import { PriceCardFrame } from "@/components/platform/billing/billingUi";
+import { validatePriceChange } from "@/components/platform/billing/priceChange";
 import {
   FieldError,
   PriceChangeFields,
-  validatePriceChange,
 } from "@/components/platform/billing/PriceChangeFields";
 import { Button } from "@/components/shadcn/button";
 import {

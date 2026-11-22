@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchMessagingMedia } from "@truckmoov/api/notification";
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 
 /**
  * Media sits behind the bearer token, so a plain src cannot load it. The file
@@ -8,14 +10,21 @@ import { useEffect, useState } from "react";
  */
 export function useMediaUrl(path: string | undefined, enabled = true) {
   const query = useQuery({
-    queryKey: ["platform-messaging", "media", path],
+    queryKey: [
+      "platform-messaging",
+      "media",
+      path,
+    ],
     queryFn: () => fetchMessagingMedia(path as string),
     enabled: enabled && Boolean(path),
     staleTime: Infinity,
     gcTime: 10 * 60_000,
     retry: false,
   });
-  const [url, setUrl] = useState<string | null>(null);
+  const [
+    url,
+    setUrl,
+  ] = useState<string | null>(null);
 
   useEffect(
     () => {
@@ -30,5 +39,7 @@ export function useMediaUrl(path: string | undefined, enabled = true) {
     [query.data],
   );
 
-  return { url, isLoading: query.isLoading, isError: query.isError, refetch: query.refetch };
+  return {
+    url, isLoading: query.isLoading, isError: query.isError, refetch: query.refetch,
+  };
 }

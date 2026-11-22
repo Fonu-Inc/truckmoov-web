@@ -1,13 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/shadcn/card";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { StateNotice } from "../components/StateNotice";
-import { barShare, formatDuration, languageName } from "./voiceDisplay";
+import {
+  barShare, formatDuration, languageName,
+} from "./voiceDisplay";
 import { voiceStatsOptions } from "./voiceQueries";
 
 const DAYS = 14;
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({
+  label, value,
+}: {
+  label: string; value: string;
+}) {
   return (
     <Card className="border-border/50 bg-card/50">
       <CardContent className="p-4">
@@ -23,28 +31,67 @@ export function DashboardTab() {
 
   if (stats.isPending)
     return <Skeleton className="h-48 w-full" />;
-  if (stats.isError || !stats.data)
-    return <StateNotice title="Could not load the dashboard." body="Check your connection and try again." actionLabel="Retry" onAction={() => void stats.refetch()} />;
+  if (stats.isError || !stats.data) {
+    return (
+      <StateNotice
+        title="Could not load the dashboard."
+        body="Check your connection and try again."
+        actionLabel="Retry"
+        onAction={() => void stats.refetch()}
+      />
+    );
+  }
 
   const { data } = stats;
-  const busiest = Math.max(...data.days.map(day => day.total), 0);
+  const busiest = Math.max(
+    ...data.days.map(day => day.total),
+    0,
+  );
   const languages = Object.entries(data.by_language).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label={`Calls, last ${DAYS} days`} value={String(data.total)} />
-        <Kpi label="Answer rate" value={`${data.answer_rate}%`} />
-        <Kpi label="Missed or failed" value={String(data.missed + data.failed)} />
-        <Kpi label="Average talk time" value={formatDuration(data.average_duration_seconds)} />
+        <Kpi
+          label={`Calls, last ${DAYS} days`}
+          value={String(data.total)}
+        />
+        <Kpi
+          label="Answer rate"
+          value={`${data.answer_rate}%`}
+        />
+        <Kpi
+          label="Missed or failed"
+          value={String(data.missed + data.failed)}
+        />
+        <Kpi
+          label="Average talk time"
+          value={formatDuration(data.average_duration_seconds)}
+        />
       </div>
       <Card className="border-border/50 bg-card/50">
         <CardContent className="space-y-3 p-4">
           <p className="text-sm font-medium">Calls per day</p>
-          <div className="flex h-40 items-end gap-1" role="img" aria-label="Calls per day">
+          <div
+            className="flex h-40 items-end gap-1"
+            role="img"
+            aria-label="Calls per day"
+          >
             {data.days.map(day => (
-              <div key={day.day} className="flex h-full flex-1 flex-col justify-end" title={`${day.day}: ${day.total} calls`}>
-                <div className="rounded-t bg-primary" style={{ height: `${barShare(day.total, busiest)}%` }} />
+              <div
+                key={day.day}
+                className="flex h-full flex-1 flex-col justify-end"
+                title={`${day.day}: ${day.total} calls`}
+              >
+                <div
+                  className="rounded-t bg-primary"
+                  style={{
+                    height: `${barShare(
+                      day.total,
+                      busiest,
+                    )}%`,
+                  }}
+                />
               </div>
             ))}
           </div>
@@ -58,8 +105,14 @@ export function DashboardTab() {
         <Card className="border-border/50 bg-card/50">
           <CardContent className="space-y-2 p-4">
             <p className="text-sm font-medium">By language</p>
-            {languages.map(([code, count]) => (
-              <div key={code} className="flex items-center justify-between text-sm">
+            {languages.map(([
+              code,
+              count,
+            ]) => (
+              <div
+                key={code}
+                className="flex items-center justify-between text-sm"
+              >
                 <span>{languageName(code)}</span>
                 <span className="text-muted-foreground">{count}</span>
               </div>

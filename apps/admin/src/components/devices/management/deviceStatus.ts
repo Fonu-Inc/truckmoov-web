@@ -48,9 +48,7 @@ const OUT_OF_SERVICE = [
 ];
 
 /** Platform-side view of a device: the live record plus any local Edit Details / Record Assignment overrides. */
-export type PlatformDevice = SystemDeviceInventoryItem & {
-  statusOverride?: DeviceBucket;
-};
+export type PlatformDevice = SystemDeviceInventoryItem & { statusOverride?: DeviceBucket };
 
 export function normalizeDeviceStatus(device: PlatformDevice): DeviceBucket {
   if (device.statusOverride)
@@ -69,7 +67,10 @@ export function normalizeDeviceStatus(device: PlatformDevice): DeviceBucket {
 export function formatLastSeen(lastSeen: string | null) {
   if (!lastSeen)
     return "Never";
-  const diffMins = minutesBetween(lastSeen, new Date()) ?? 0;
+  const diffMins = minutesBetween(
+    lastSeen,
+    new Date(),
+  ) ?? 0;
   if (diffMins < 1)
     return "Just now";
   if (diffMins < 60)
@@ -88,6 +89,9 @@ export const LAST_SEEN_DAYS: Record<string, number> = {
 export function seenWithinDays(lastSeen: string | null, days: number) {
   if (!lastSeen)
     return false;
-  const mins = minutesBetween(lastSeen, new Date());
+  const mins = minutesBetween(
+    lastSeen,
+    new Date(),
+  );
   return mins !== null && mins <= days * 1440;
 }

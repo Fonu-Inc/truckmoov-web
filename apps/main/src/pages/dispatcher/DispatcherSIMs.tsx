@@ -1,3 +1,4 @@
+import { exportSims } from "@truckmoov/api/auth";
 import {
   Plus, Upload,
 } from "lucide-react";
@@ -87,6 +88,20 @@ export default function DispatcherSIMs() {
 
   const operators = [...new Set(sims.map(s => s.networkOperator))];
 
+  const handleExport = async () => {
+    try {
+      const url = URL.createObjectURL(await exportSims());
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sim-cards.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    catch {
+      toast.error("Failed to export SIM cards");
+    }
+  };
+
   const getDeviceInfo = (deviceId?: string): any => {
     if (!deviceId)
       return null;
@@ -153,6 +168,10 @@ export default function DispatcherSIMs() {
 
         <SIMInventoryTable
           sims={filteredSIMs}
+          total={filteredSIMs.length}
+          page={1}
+          onPageChange={() => {}}
+          onExport={handleExport}
           getDeviceInfo={getDeviceInfo}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}

@@ -8,18 +8,20 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import {
+  formatDateOnly,
+  formatIsoDateTime,
+  formatNgn,
+  INVOICE_STATUS_LABEL,
+  NONE,
+} from "@/components/platform/billing/billingFormat";
+import {
   BillingCard,
   BillingCardBody,
   BillingCardHeader,
   BillingPager,
   FILTER_TRIGGER,
-  formatDateOnly,
-  formatIsoDateTime,
-  formatNgn,
-  INVOICE_STATUS_LABEL,
   InvoiceStatusBadge,
   ListErrorBanner,
-  NONE,
   ProductChip,
   TableStateRows,
 } from "@/components/platform/billing/billingUi";

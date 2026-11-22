@@ -1,4 +1,6 @@
-import { Moon, Sun } from "lucide-react";
+import {
+  Moon, Sun,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/shadcn/button";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";

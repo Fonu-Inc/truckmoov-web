@@ -1,4 +1,6 @@
-import type { SystemInstallationJob, SystemInstaller } from "@truckmoov/api/auth";
+import type {
+  SystemInstallationJob, SystemInstaller,
+} from "@truckmoov/api/auth";
 import type { InstallationRecord } from "./platformInstallations";
 import {
   describe, expect, it,
@@ -283,12 +285,22 @@ describe(
     it(
       "treats FCT and Abuja (FCT) as the same recorded service area without enabling suspended installers",
       () => {
-        const [record] = records([{ location: { city: "Garki", state: "FCT" } }]);
+        const [record] = records([
+          {
+            location: {
+              city: "Garki", state: "FCT",
+            },
+          },
+        ]);
         expect(eligibleInstallers(
           record,
           [
-            { ...account, state: "Abuja (FCT)", serviceAreas: [] },
-            { ...account, id: "suspended", state: "FCT", status: "suspended" },
+            {
+              ...account, state: "Abuja (FCT)", serviceAreas: [],
+            },
+            {
+              ...account, id: "suspended", state: "FCT", status: "suspended",
+            },
           ],
         ).map(i => i.id)).toEqual([account.id]);
       },
@@ -296,38 +308,90 @@ describe(
     it(
       "orders installers from the same city before same-state and unknown locations",
       () => {
-        const [record] = records([{ location: { city: "Ikeja", state: "Lagos" } }]);
+        const [record] = records([
+          {
+            location: {
+              city: "Ikeja", state: "Lagos",
+            },
+          },
+        ]);
         const ranked = rankInstallationInstallers(
           record,
           [
-            { ...account, id: "unknown", city: "", state: "" },
-            { ...account, id: "state", city: "Surulere", state: "Lagos" },
-            { ...account, id: "city", city: "Ikeja", state: "Lagos" },
+            {
+              ...account, id: "unknown", city: "", state: "",
+            },
+            {
+              ...account, id: "state", city: "Surulere", state: "Lagos",
+            },
+            {
+              ...account, id: "city", city: "Ikeja", state: "Lagos",
+            },
           ],
         );
-        expect(ranked.map(row => row.installer.id)).toEqual(["city", "state", "unknown"]);
-        expect(ranked.map(row => row.match)).toEqual(["Same city", "Same state", "Location not recorded"]);
+        expect(ranked.map(row => row.installer.id)).toEqual([
+          "city",
+          "state",
+          "unknown",
+        ]);
+        expect(ranked.map(row => row.match)).toEqual([
+          "Same city",
+          "Same state",
+          "Location not recorded",
+        ]);
       },
     );
     it(
       "does not infer distance from missing installation locations",
       () => {
-        const [record] = records([{ location: { city: "", state: "" } }]);
-        expect(rankInstallationInstallers(record, [account])[0].match).toBe("Location not recorded");
+        const [record] = records([
+          {
+            location: {
+              city: "", state: "",
+            },
+          },
+        ]);
+        expect(rankInstallationInstallers(
+          record,
+          [account],
+        )[0].match).toBe("Location not recorded");
       },
     );
     it(
       "identifies other installer bookings on the selected date without counting completed work",
       () => {
         const rows = records([
-          { installer: installer("inst-1"), status: "scheduled" },
-          { installer: installer("inst-1"), status: "scheduled" },
+          {
+            installer: installer("inst-1"), status: "scheduled",
+          },
+          {
+            installer: installer("inst-1"), status: "scheduled",
+          },
         ]);
-        expect(installerScheduleConflict(rows[0], "inst-1", rows)).toBe(true);
-        expect(installerScheduleConflict(rows[0], "inst-1", [rows[0], { ...rows[1], status: "completed" }])).toBe(false);
+        expect(installerScheduleConflict(
+          rows[0],
+          "inst-1",
+          rows,
+        )).toBe(true);
+        expect(installerScheduleConflict(
+          rows[0],
+          "inst-1",
+          [
+            rows[0],
+            {
+              ...rows[1], status: "completed",
+            },
+          ],
+        )).toBe(false);
       },
     );
-    it("locks completed assignments", () => expect(canChangeInstallationAssignment("completed")).toBe(false));
-    it("locks in-progress assignments", () => expect(canChangeInstallationAssignment("in_progress")).toBe(false));
+    it(
+      "locks completed assignments",
+      () => expect(canChangeInstallationAssignment("completed")).toBe(false),
+    );
+    it(
+      "locks in-progress assignments",
+      () => expect(canChangeInstallationAssignment("in_progress")).toBe(false),
+    );
   },
 );

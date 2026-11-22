@@ -1,7 +1,7 @@
+import type { MessagingLinkedDriver } from "@truckmoov/api/notification";
 import { useQuery } from "@tanstack/react-query";
 import { getSystemTenantQueryOptions } from "@truckmoov/api/auth";
 import { getMessagingContactLinks } from "@truckmoov/api/notification";
-import type { MessagingLinkedDriver } from "@truckmoov/api/notification";
 import { Link } from "react-router";
 import { Skeleton } from "@/components/shadcn/skeleton";
 
@@ -14,7 +14,10 @@ function DriverLink({ driver }: { driver: MessagingLinkedDriver }) {
       <p className="text-xs text-muted-foreground">
         {driver.status ? `${driver.status} driver` : "Driver"}
         {" at "}
-        <Link className="text-primary underline-offset-2 hover:underline" to={`/tenants/${driver.tenant_id}`}>
+        <Link
+          className="text-primary underline-offset-2 hover:underline"
+          to={`/tenants/${driver.tenant_id}`}
+        >
           {tenantName ?? "their organization"}
         </Link>
       </p>
@@ -25,7 +28,11 @@ function DriverLink({ driver }: { driver: MessagingLinkedDriver }) {
 /** Drivers, in any tenant, who list this conversation's number. */
 export function LinkedAccounts({ conversationId }: { conversationId: string }) {
   const links = useQuery({
-    queryKey: ["platform-messaging", "links", conversationId],
+    queryKey: [
+      "platform-messaging",
+      "links",
+      conversationId,
+    ],
     queryFn: () => getMessagingContactLinks(conversationId),
     staleTime: 5 * 60_000,
     retry: false,
@@ -41,7 +48,12 @@ export function LinkedAccounts({ conversationId }: { conversationId: string }) {
       )}
       {links.data && links.data.drivers.length > 0 && (
         <ul className="space-y-2">
-          {links.data.drivers.map(driver => <DriverLink key={`${driver.tenant_id}:${driver.driver_id}`} driver={driver} />)}
+          {links.data.drivers.map(driver => (
+            <DriverLink
+              key={`${driver.tenant_id}:${driver.driver_id}`}
+              driver={driver}
+            />
+          ))}
         </ul>
       )}
     </div>

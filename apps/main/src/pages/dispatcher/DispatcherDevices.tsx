@@ -1,6 +1,8 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
 import type { IoTDevice } from "@/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { getValidateDeviceAssignmentQueryOptions } from "@truckmoov/api/fleet";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   Cpu,
@@ -69,6 +71,7 @@ import { cn } from "@/lib/utils";
 type DeviceLifecycleStatus = any;
 
 export default function DispatcherDevices() {
+  const queryClient = useQueryClient();
   const { requireSubscription } = useRequireSubscription();
   const {
     canView, canManage, canEdit, canDelete, role,
@@ -732,6 +735,10 @@ export default function DispatcherDevices() {
           status: v.status,
         }))}
         onAssign={handleAssignDevice}
+        onValidate={(id, vehicleId) => queryClient.fetchQuery(getValidateDeviceAssignmentQueryOptions({
+          id,
+          params: { vehicleId },
+        })).then(r => r.data)}
       />
 
       {selectedDevice && (() => {

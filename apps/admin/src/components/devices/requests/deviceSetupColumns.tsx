@@ -1,6 +1,8 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { SystemDeviceSetupRequest } from "@truckmoov/api/auth";
-import { formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
+import {
+  formatRelative, formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
 import {
   Eye,
   Loader2,
@@ -58,7 +60,12 @@ export function getDeviceSetupColumns(actions: Actions): ColumnDef<SystemDeviceS
       header: "Date Requested",
       cell: ({ row }) => (
         <div className="whitespace-nowrap text-sm text-muted-foreground">
-          <div>{formatWithPattern(row.original.createdAt, "MMM d, yyyy")}</div>
+          <div>
+            {formatWithPattern(
+              row.original.createdAt,
+              "MMM d, yyyy",
+            )}
+          </div>
           <div className="text-xs opacity-70">{formatRelative(row.original.createdAt)}</div>
         </div>
       ),

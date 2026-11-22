@@ -1,4 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation, useQueryClient,
+} from "@tanstack/react-query";
 import {
   cancelPlatformCampaign,
   createPlatformCampaign,
@@ -22,7 +24,14 @@ export function useCampaignActions() {
   });
 
   const send = useMutation({
-    mutationFn: ({ id, retryFailedOnly }: { id: string; retryFailedOnly?: boolean }) => sendPlatformCampaign(id, retryFailedOnly),
+    mutationFn: ({
+      id, retryFailedOnly,
+    }: {
+      id: string; retryFailedOnly?: boolean;
+    }) => sendPlatformCampaign(
+      id,
+      retryFailedOnly,
+    ),
     onSuccess: async (result) => {
       await refresh();
       toast.success(result.attempted === 0 ? "Nobody left to send to." : `Sent to ${result.attempted} recipient${result.attempted === 1 ? "" : "s"}.`);
@@ -39,5 +48,7 @@ export function useCampaignActions() {
     onError: failed,
   });
 
-  return { create, send, cancel };
+  return {
+    create, send, cancel,
+  };
 }

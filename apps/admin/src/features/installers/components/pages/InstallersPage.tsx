@@ -398,7 +398,10 @@ export default function InstallersPage() {
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                       <TableRow className="hover:bg-transparent">
-                        <TableCell colSpan={12} className="px-4 py-2 text-xs font-normal text-muted-foreground">
+                        <TableCell
+                          colSpan={12}
+                          className="px-4 py-2 text-xs font-normal text-muted-foreground"
+                        >
                           Details and current information for installer pool.
                         </TableCell>
                       </TableRow>
@@ -412,13 +415,23 @@ export default function InstallersPage() {
                           <TableCell>{i.serviceAreas.map(fromApiState).join(", ")}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {i.capabilities.slice(0, 2).map(c => (
-                                <Badge key={c} variant="secondary" className="rounded-full">
+                              {i.capabilities.slice(
+                                0,
+                                2,
+                              ).map(c => (
+                                <Badge
+                                  key={c}
+                                  variant="secondary"
+                                  className="rounded-full"
+                                >
                                   {capabilityLabel(c)}
                                 </Badge>
                               ))}
                               {i.capabilities.length > 2 && (
-                                <Badge variant="secondary" className="rounded-full">
+                                <Badge
+                                  variant="secondary"
+                                  className="rounded-full"
+                                >
                                   +
                                   {i.capabilities.length - 2}
                                 </Badge>
@@ -447,7 +460,10 @@ export default function InstallersPage() {
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -477,7 +493,11 @@ export default function InstallersPage() {
                                             description: `${installerName(i)} will be able to sign in and receive new installation jobs again.`,
                                             confirmLabel: "Reactivate Installer",
                                             destructive: false,
-                                            onConfirm: () => act(reactivate, i, "reactivated"),
+                                            onConfirm: () => act(
+                                              reactivate,
+                                              i,
+                                              "reactivated",
+                                            ),
                                           })}
                                       >
                                         <RotateCcw className="mr-2 h-4 w-4" />
@@ -493,7 +513,11 @@ export default function InstallersPage() {
                                             title: "Suspend this installer?",
                                             description: `${installerName(i)} will no longer be able to sign in or be assigned new installation jobs.`,
                                             confirmLabel: "Suspend Installer",
-                                            onConfirm: () => act(suspend, i, "suspended"),
+                                            onConfirm: () => act(
+                                              suspend,
+                                              i,
+                                              "suspended",
+                                            ),
                                           })}
                                       >
                                         <Ban className="mr-2 h-4 w-4" />
@@ -508,14 +532,26 @@ export default function InstallersPage() {
                       ))}
                       {current.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={10} className="py-12 text-center">
+                          <TableCell
+                            colSpan={10}
+                            className="py-12 text-center"
+                          >
                             {isLoading
                               ? <p className="text-sm text-muted-foreground">Loading installers…</p>
                               : isError
                                 ? (
-                                    <div role="alert" className="flex flex-col items-center gap-2 text-sm text-destructive">
+                                    <div
+                                      role="alert"
+                                      className="flex flex-col items-center gap-2 text-sm text-destructive"
+                                    >
                                       {error ? `Couldn't load installers: ${error.message}` : "Couldn't load installers"}
-                                      <Button variant="outline" size="sm" onClick={() => void refetch()}>Try again</Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => void refetch()}
+                                      >
+                                        Try again
+                                      </Button>
                                     </div>
                                   )
                                 : (

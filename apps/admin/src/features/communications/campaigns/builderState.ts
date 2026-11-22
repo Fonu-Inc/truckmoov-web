@@ -1,7 +1,14 @@
-import type { CampaignChannel, CreatePlatformCampaignInput } from "@truckmoov/api/notification";
+import type {
+  CampaignChannel, CreatePlatformCampaignInput,
+} from "@truckmoov/api/notification";
 import type { Reach } from "./audience";
 
-export const STEPS = ["Details", "Message", "Audience", "Review"] as const;
+export const STEPS = [
+  "Details",
+  "Message",
+  "Audience",
+  "Review",
+] as const;
 
 export type BuilderDraft = {
   name: string;

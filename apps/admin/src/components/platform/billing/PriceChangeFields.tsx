@@ -1,21 +1,11 @@
+import type {
+  PriceChangeErrors,
+  PriceChangeValues,
+} from "./priceChange";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
-import { todayInLagos } from "@/components/platform/billing/billingUi";
-
-export type PriceChangeValues = { reason: string; effectiveDate: string };
-
-export type PriceChangeErrors = Partial<Record<keyof PriceChangeValues, string>>;
-
-export function validatePriceChange(values: PriceChangeValues): PriceChangeErrors {
-  const errors: PriceChangeErrors = {};
-  if (!values.reason.trim()) errors.reason = "A reason is required for a price change.";
-  if (!values.effectiveDate) errors.effectiveDate = "Pick an effective date.";
-  else if (values.effectiveDate > todayInLagos()) {
-    errors.effectiveDate = "Effective date cannot be in the future.";
-  }
-  return errors;
-}
+import { todayInLagos } from "./billingFormat";
 
 export function FieldError({ message }: { message?: string }) {
   return message ? <p className="text-xs text-destructive">{message}</p> : null;
@@ -37,7 +27,9 @@ export function PriceChangeFields({
         <Textarea
           id="price-reason"
           value={values.reason}
-          onChange={(e) => onChange({ ...values, reason: e.target.value })}
+          onChange={e => onChange({
+            ...values, reason: e.target.value,
+          })}
           placeholder="e.g. Annual pricing review"
           maxLength={500}
           className="rounded-xl"
@@ -51,7 +43,9 @@ export function PriceChangeFields({
           type="date"
           max={todayInLagos()}
           value={values.effectiveDate}
-          onChange={(e) => onChange({ ...values, effectiveDate: e.target.value })}
+          onChange={e => onChange({
+            ...values, effectiveDate: e.target.value,
+          })}
           className="rounded-xl"
         />
         <FieldError message={errors.effectiveDate} />

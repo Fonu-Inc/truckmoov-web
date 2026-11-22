@@ -10,14 +10,10 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import {
+  EMPTY_SIM_FILTERS,
   SIM_STATUSES,
   STATUS_LABELS,
 } from "./simInventoryShared";
-
-export const EMPTY_SIM_FILTERS: FilterDraft = {
-  carrier: { enabled: false },
-  tenant: { enabled: false },
-};
 
 type SimInventoryFiltersProps = {
   search: string;

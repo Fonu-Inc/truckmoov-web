@@ -1,10 +1,17 @@
 import type { WhatsAppConnectionStep } from "@truckmoov/api/notification";
-import { CheckCircle2, Loader2, MinusCircle, XCircle } from "lucide-react";
+import {
+  CheckCircle2, Loader2, MinusCircle, XCircle,
+} from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { cn } from "@/lib/utils";
 import { stepLabel } from "./accountHealth";
 
-const PENDING_STEPS: WhatsAppConnectionStep["name"][] = ["token", "profile", "subscribed", "registered"];
+const PENDING_STEPS: WhatsAppConnectionStep["name"][] = [
+  "token",
+  "profile",
+  "subscribed",
+  "registered",
+];
 
 function StepIcon({ status }: { status: WhatsAppConnectionStep["status"] | "pending" }) {
   if (status === "pending")
@@ -29,9 +36,13 @@ type ConnectionStepsProps = {
   retry?: Partial<Record<WhatsAppConnectionStep["name"], RetryAction>>;
 };
 
-export function ConnectionSteps({ steps, pending, retry }: ConnectionStepsProps) {
+export function ConnectionSteps({
+  steps, pending, retry,
+}: ConnectionStepsProps) {
   const rows = pending
-    ? PENDING_STEPS.map(name => ({ name, status: "pending" as const, error: undefined }))
+    ? PENDING_STEPS.map(name => ({
+        name, status: "pending" as const, error: undefined,
+      }))
     : (steps ?? []);
   return (
     <ul className="space-y-3">
@@ -44,7 +55,11 @@ export function ConnectionSteps({ steps, pending, retry }: ConnectionStepsProps)
           >
             <span className="mt-0.5"><StepIcon status={step.status} /></span>
             <div className="min-w-0 flex-1">
-              <p className={cn("text-sm font-medium", step.status === "failed" && "text-destructive")}>
+              <p className={cn(
+                "text-sm font-medium",
+                step.status === "failed" && "text-destructive",
+              )}
+              >
                 {stepLabel(step.name)}
                 {step.status === "skipped" && " (not needed)"}
               </p>

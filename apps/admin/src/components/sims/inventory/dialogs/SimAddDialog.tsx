@@ -1,3 +1,4 @@
+import type { SimIdentityValues } from "./simIdentity";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateSystemSim } from "@truckmoov/api/auth";
 import { useForm } from "react-hook-form";
@@ -14,9 +15,8 @@ import {
 } from "@/components/shadcn/dialog";
 import { Form } from "@/components/shadcn/form";
 import { SIM_CARRIERS } from "../simInventoryShared";
-import { SimIdentityFields } from "./SimIdentityFields";
-import type { SimIdentityValues } from "./simIdentity";
 import { buildIdentityShape } from "./simIdentity";
+import { SimIdentityFields } from "./SimIdentityFields";
 
 export const ADD_SIM_FORM_ID = "add-sim-form";
 

@@ -1,4 +1,6 @@
-import type { CampaignProgress, CampaignRecipientState, CampaignStatus } from "@truckmoov/api/notification";
+import type {
+  CampaignProgress, CampaignRecipientState, CampaignStatus,
+} from "@truckmoov/api/notification";
 
 export const STATUS_LABEL: Record<CampaignStatus, string> = {
   draft: "Draft",
@@ -24,12 +26,18 @@ export function percent(part: number, whole: number): number {
 
 /** Share of what was sent that arrived. */
 export function deliveryRate(progress: CampaignProgress): number {
-  return percent(progress.delivered, progress.sent);
+  return percent(
+    progress.delivered,
+    progress.sent,
+  );
 }
 
 /** Reads only exist on WhatsApp, so the share is of what was delivered. */
 export function readRate(progress: CampaignProgress): number {
-  return percent(progress.read, progress.delivered);
+  return percent(
+    progress.read,
+    progress.delivered,
+  );
 }
 
 export function statusTone(status: CampaignStatus): "default" | "secondary" | "destructive" | "outline" {

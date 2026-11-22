@@ -31,7 +31,7 @@ import {
 import { cn } from "@/shared/utils";
 
 /** The provider redirects back to the page with `?payment=return`; confirmation itself arrives by webhook. */
-export const PAYMENT_RETURN_PARAM = "payment";
+const PAYMENT_RETURN_PARAM = "payment";
 const POLL_MS = 5000;
 const POLL_LIMIT_MS = 2 * 60 * 1000;
 const VERIFY_MS = 30_000;

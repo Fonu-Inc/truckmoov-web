@@ -1,6 +1,8 @@
 import { Shield } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
-import { humaniseRoleKey, roleIndicatorClasses } from "@/features/settings/utils/roleBadge";
+import {
+  humaniseRoleKey, roleIndicatorClasses,
+} from "@/features/settings/utils/roleBadge";
 import { cn } from "@/lib/utils";
 
 type RoleBadgeProps = {

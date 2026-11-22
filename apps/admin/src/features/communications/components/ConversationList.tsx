@@ -1,15 +1,22 @@
+import type { ConversationFilters as Filters } from "../messagingQueries";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { ListChecks, MessageSquare, Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  ListChecks, MessageSquare, Plus, Search,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { NO_FILTERS, conversationsOptions } from "../messagingQueries";
-import type { ConversationFilters as Filters } from "../messagingQueries";
+import { activeFilterCount } from "../messagingLogic";
+import {
+  conversationsOptions, NO_FILTERS,
+} from "../messagingQueries";
 import { useDebouncedValue } from "../useDebouncedValue";
 import { useStaffDirectory } from "../useStaffDirectory";
 import { BulkBar } from "./BulkBar";
-import { ConversationFilters, activeFilterCount } from "./ConversationFilters";
+import { ConversationFilters } from "./ConversationFilters";
 import { ConversationRow } from "./ConversationRow";
 import { StateNotice } from "./StateNotice";
 import { StartConversationDialog } from "./whatsapp/StartConversationDialog";
@@ -22,9 +29,21 @@ type Props = {
 
 function ListSkeleton() {
   return (
-    <div className="space-y-3 p-3" aria-label="Loading conversations">
-      {[0, 1, 2, 3, 4].map(i => (
-        <div key={i} className="flex items-center gap-3">
+    <div
+      className="space-y-3 p-3"
+      aria-label="Loading conversations"
+    >
+      {[
+        0,
+        1,
+        2,
+        3,
+        4,
+      ].map(i => (
+        <div
+          key={i}
+          className="flex items-center gap-3"
+        >
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-3 w-1/2" />
@@ -36,20 +55,54 @@ function ListSkeleton() {
   );
 }
 
-export function ConversationList({ activeId, canManage, onSelect }: Props) {
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const [selecting, setSelecting] = useState(false);
-  const [chosen, setChosen] = useState<string[]>([]);
-  const [newChatOpen, setNewChatOpen] = useState(false);
+export function ConversationList({
+  activeId, canManage, onSelect,
+}: Props) {
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    filters,
+    setFilters,
+  ] = useState<Filters>(NO_FILTERS);
+  const [
+    selecting,
+    setSelecting,
+  ] = useState(false);
+  const [
+    chosen,
+    setChosen,
+  ] = useState<string[]>([]);
+  const [
+    newChatOpen,
+    setNewChatOpen,
+  ] = useState(false);
   const { nameOf } = useStaffDirectory();
-  const query = useDebouncedValue(search.trim(), 300);
-  const applied = useMemo(() => ({ ...filters, query }), [filters, query]);
+  const query = useDebouncedValue(
+    search.trim(),
+    300,
+  );
+  const applied = useMemo(
+    () => ({
+      ...filters, query,
+    }),
+    [
+      filters,
+      query,
+    ],
+  );
   const list = useInfiniteQuery(conversationsOptions(applied));
-  const items = useMemo(() => list.data?.pages.flatMap(p => p.items) ?? [], [list.data]);
+  const items = useMemo(
+    () => list.data?.pages.flatMap(p => p.items) ?? [],
+    [list.data],
+  );
   const filtered = Boolean(query) || filters.state === "unread" || activeFilterCount(filters) > 0;
 
-  const toggle = (id: string) => setChosen(current => (current.includes(id) ? current.filter(x => x !== id) : [...current, id]));
+  const toggle = (id: string) => setChosen(current => (current.includes(id) ? current.filter(x => x !== id) : [
+    ...current,
+    id,
+  ]));
   const stopSelecting = () => {
     setSelecting(false);
     setChosen([]);
@@ -70,27 +123,60 @@ export function ConversationList({ activeId, canManage, onSelect }: Props) {
             />
           </div>
           {canManage && (
-            <Button size="icon" aria-label="Start a conversation" onClick={() => setNewChatOpen(true)}>
+            <Button
+              size="icon"
+              aria-label="Start a conversation"
+              onClick={() => setNewChatOpen(true)}
+            >
               <Plus className="h-4 w-4" />
             </Button>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant={filters.state === "all" ? "default" : "outline"} onClick={() => setFilters(f => ({ ...f, state: "all" }))}>
+          <Button
+            size="sm"
+            variant={filters.state === "all" ? "default" : "outline"}
+            onClick={() => setFilters(f => ({
+              ...f, state: "all",
+            }))}
+          >
             All
           </Button>
-          <Button size="sm" variant={filters.state === "unread" ? "default" : "outline"} onClick={() => setFilters(f => ({ ...f, state: "unread" }))}>
+          <Button
+            size="sm"
+            variant={filters.state === "unread" ? "default" : "outline"}
+            onClick={() => setFilters(f => ({
+              ...f, state: "unread",
+            }))}
+          >
             Unread
           </Button>
-          <ConversationFilters value={filters} onChange={next => setFilters(f => ({ ...f, ...next }))} />
+          <ConversationFilters
+            value={filters}
+            onChange={next => setFilters(f => ({
+              ...f, ...next,
+            }))}
+          />
           {canManage && (
-            <Button size="icon-sm" variant={selecting ? "secondary" : "ghost"} className="ml-auto" aria-label="Select conversations" aria-pressed={selecting} onClick={() => (selecting ? stopSelecting() : setSelecting(true))}>
+            <Button
+              size="icon-sm"
+              variant={selecting ? "secondary" : "ghost"}
+              className="ml-auto"
+              aria-label="Select conversations"
+              aria-pressed={selecting}
+              onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+            >
               <ListChecks className="h-4 w-4" />
             </Button>
           )}
         </div>
       </div>
-      {selecting && chosen.length > 0 && <BulkBar ids={chosen} onClear={stopSelecting} />}
+      {selecting && chosen.length > 0 && (
+        <BulkBar
+          ids={chosen}
+          onClear={stopSelecting}
+        />
+      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {list.isPending && <ListSkeleton />}

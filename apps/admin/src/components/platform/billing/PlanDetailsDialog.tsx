@@ -11,8 +11,8 @@ import {
   formatIsoDate,
   formatIsoDateTime,
   formatNgn,
-  PlanStatusBadge,
-} from "@/components/platform/billing/billingUi";
+} from "@/components/platform/billing/billingFormat";
+import { PlanStatusBadge } from "@/components/platform/billing/billingUi";
 import { Button } from "@/components/shadcn/button";
 import { DataTable } from "@/components/shadcn/data-table";
 import {

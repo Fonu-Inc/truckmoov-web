@@ -1,5 +1,6 @@
-import { useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
+import type { SimIdentityValues } from "./simIdentity";
+import { useState } from "react";
 import {
   FormControl,
   FormField,
@@ -15,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import type { SimIdentityValues } from "./simIdentity";
 import { OTHER_CARRIER } from "./simIdentity";
 
 type SimIdentityFieldsProps = {

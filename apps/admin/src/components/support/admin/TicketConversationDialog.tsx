@@ -8,12 +8,14 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import {
-  priorityStyles,
-  statusStyles,
   TicketMessages,
   TicketReplyComposer,
-  useTicketConversation,
 } from "./ticketConversation";
+import {
+  priorityStyles,
+  statusStyles,
+} from "./ticketStyles";
+import { useTicketConversation } from "./useTicketConversation";
 
 type TicketConversationDialogProps = {
   ticket: SupportTicket | null;

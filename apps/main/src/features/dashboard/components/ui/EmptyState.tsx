@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/shadcn/button";
 import { cn } from "@/lib/utils";
 
-interface EmptyStateProps {
+type EmptyStateProps = {
   icon: LucideIcon;
   title: string;
   description: string;
@@ -11,7 +11,7 @@ interface EmptyStateProps {
   onAction?: () => void;
   actionHref?: string;
   className?: string;
-}
+};
 
 export function EmptyState({
   icon: Icon,

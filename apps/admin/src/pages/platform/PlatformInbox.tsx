@@ -1,17 +1,20 @@
-import { Bell, BellOff, MessageSquare } from "lucide-react";
+import {
+  Bell, BellOff, MessageSquare,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { cn } from "@/lib/utils";
-import { ConnectionStatus, connectionHint } from "@/features/communications/components/ConnectionStatus";
-import { MessagingAccessGate } from "@/features/communications/components/MessagingAccessGate";
+import { ConnectionStatus } from "@/features/communications/components/ConnectionStatus";
 import { ConversationList } from "@/features/communications/components/ConversationList";
+import { MessagingAccessGate } from "@/features/communications/components/MessagingAccessGate";
 import { StateNotice } from "@/features/communications/components/StateNotice";
 import { ThreadPanel } from "@/features/communications/components/ThreadPanel";
+import { connectionHint } from "@/features/communications/messagingLogic";
 import { useInboxAlerts } from "@/features/communications/useInboxAlerts";
 import { useMessagingSocket } from "@/features/communications/useMessagingSocket";
 import { useOpenConversation } from "@/features/communications/useOpenConversation";
+import { cn } from "@/lib/utils";
 
 type HeaderProps = {
   hint: string | null;
@@ -22,7 +25,9 @@ type HeaderProps = {
   onReconnect: () => void;
 };
 
-function Header({ hint, status, sound, canRetry, onToggleSound, onReconnect }: HeaderProps) {
+function Header({
+  hint, status, sound, canRetry, onToggleSound, onReconnect,
+}: HeaderProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h1 className="text-lg font-semibold text-foreground">Messaging Center</h1>
@@ -41,7 +46,16 @@ function Header({ hint, status, sound, canRetry, onToggleSound, onReconnect }: H
       {hint && (
         <p className="flex w-full items-center gap-2 text-xs text-muted-foreground">
           {hint}
-          {canRetry && <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onReconnect}>Reconnect</Button>}
+          {canRetry && (
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={onReconnect}
+            >
+              Reconnect
+            </Button>
+          )}
         </p>
       )}
     </div>
@@ -49,10 +63,21 @@ function Header({ hint, status, sound, canRetry, onToggleSound, onReconnect }: H
 }
 
 function Inbox({ canManage }: { canManage: boolean }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { state, socket, reconnect } = useMessagingSocket(true, selectedId);
+  const [
+    selectedId,
+    setSelectedId,
+  ] = useState<string | null>(null);
+  const {
+    state, socket, reconnect,
+  } = useMessagingSocket(
+    true,
+    selectedId,
+  );
   const open = useOpenConversation(selectedId);
-  const alerts = useInboxAlerts(socket, selectedId);
+  const alerts = useInboxAlerts(
+    socket,
+    selectedId,
+  );
 
   return (
     <div className="flex h-[calc(100vh-9rem)] flex-col gap-3">
@@ -65,17 +90,34 @@ function Inbox({ canManage }: { canManage: boolean }) {
         onReconnect={reconnect}
       />
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-3">
-        <Card className={cn("flex min-h-0 flex-col overflow-hidden border-border/50 bg-card/50", selectedId && "hidden lg:flex")}>
-          <ConversationList activeId={selectedId} canManage={canManage} onSelect={setSelectedId} />
+        <Card className={cn(
+          "flex min-h-0 flex-col overflow-hidden border-border/50 bg-card/50",
+          selectedId && "hidden lg:flex",
+        )}
+        >
+          <ConversationList
+            activeId={selectedId}
+            canManage={canManage}
+            onSelect={setSelectedId}
+          />
         </Card>
-        <Card className={cn("flex min-h-0 flex-col overflow-hidden border-border/50 bg-card/50 lg:col-span-2", !selectedId && "hidden lg:flex")}>
+        <Card className={cn(
+          "flex min-h-0 flex-col overflow-hidden border-border/50 bg-card/50 lg:col-span-2",
+          !selectedId && "hidden lg:flex",
+        )}
+        >
           {!selectedId && (
             <StateNotice
               icon={<MessageSquare className="h-10 w-10 text-muted-foreground/50" />}
               title="Select a conversation to read it."
             />
           )}
-          {selectedId && open.isLoading && <Skeleton className="m-4 h-12" aria-label="Loading conversation" />}
+          {selectedId && open.isLoading && (
+            <Skeleton
+              className="m-4 h-12"
+              aria-label="Loading conversation"
+            />
+          )}
           {selectedId && open.isError && (
             <StateNotice
               title="Could not open this conversation."

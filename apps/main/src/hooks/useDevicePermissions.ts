@@ -4,11 +4,9 @@ export function useDevicePermissions() {
   const { user } = useAuthStore();
   const hasOrgRole = (_key: string) => false;
 
-  const isPlatformAdmin = user?.role === "platform_admin";
   const canManage = hasOrgRole("ADMIN") || hasOrgRole("OPERATIONS_MANAGER");
   const canView
-    = isPlatformAdmin
-      || canManage
+    = canManage
       || hasOrgRole("DISPATCHER")
       || hasOrgRole("SUPERVISOR")
       || hasOrgRole("VIEWER")

@@ -1,5 +1,9 @@
-import type { SystemDeviceSetupKycStatus, SystemDeviceSetupStatus } from "@truckmoov/api/auth";
-import { CheckCircle, Clock, ShieldAlert, ShieldCheck, ShieldQuestion, XCircle } from "lucide-react";
+import type {
+  SystemDeviceSetupKycStatus, SystemDeviceSetupStatus,
+} from "@truckmoov/api/auth";
+import {
+  CheckCircle, Clock, ShieldAlert, ShieldCheck, ShieldQuestion, XCircle,
+} from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import {
   formatStatusLabel,
@@ -14,7 +18,11 @@ const STATUS_ICONS = {
   rejected: XCircle,
 } as const;
 
-export function DeviceSetupStatusBadge({ status, withIcon }: { status: string; withIcon?: boolean }) {
+export function DeviceSetupStatusBadge({
+  status, withIcon,
+}: {
+  status: string; withIcon?: boolean;
+}) {
   const bucket = getStatusBucket(status as SystemDeviceSetupStatus);
   const Icon = withIcon ? STATUS_ICONS[bucket as keyof typeof STATUS_ICONS] : undefined;
   const config = STATUS_CONFIG[getStatusBucket(status as SystemDeviceSetupStatus) as keyof typeof STATUS_CONFIG] ?? {

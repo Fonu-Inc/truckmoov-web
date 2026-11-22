@@ -11,7 +11,10 @@ export function readSoundPreference(): boolean {
 
 export function writeSoundPreference(on: boolean) {
   try {
-    localStorage.setItem(SOUND_KEY, on ? "on" : "off");
+    localStorage.setItem(
+      SOUND_KEY,
+      on ? "on" : "off",
+    );
   }
   catch {
     // The preference is a convenience; losing it is harmless.
@@ -29,7 +32,10 @@ export function playInboundSound() {
     gain.connect(context.destination);
     oscillator.start();
     oscillator.stop(context.currentTime + 0.15);
-    window.setTimeout(() => void context.close(), 400);
+    window.setTimeout(
+      () => void context.close(),
+      400,
+    );
   }
   catch {
     // Browsers refuse audio before the first click; the badge still tells staff.

@@ -1,5 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { IvrPromptInput } from "@truckmoov/api/notification";
+import {
+  useMutation, useQueryClient,
+} from "@tanstack/react-query";
 import {
   deleteVoicePrompt,
   initiateVoiceCall,
@@ -18,7 +20,14 @@ export function useVoiceActions(onDone?: () => void) {
   const refresh = () => client.invalidateQueries({ queryKey: voiceKeys.root });
 
   const savePrompt = useMutation({
-    mutationFn: ({ id, input }: { id?: string; input: IvrPromptInput }) => saveVoicePrompt(input, id),
+    mutationFn: ({
+      id, input,
+    }: {
+      id?: string; input: IvrPromptInput;
+    }) => saveVoicePrompt(
+      input,
+      id,
+    ),
     onSuccess: async () => {
       await refresh();
       onDone?.();
@@ -26,7 +35,9 @@ export function useVoiceActions(onDone?: () => void) {
     onError: failed,
   });
 
-  const deletePrompt = useMutation({ mutationFn: deleteVoicePrompt, onSuccess: refresh, onError: failed });
+  const deletePrompt = useMutation({
+    mutationFn: deleteVoicePrompt, onSuccess: refresh, onError: failed,
+  });
 
   const call = useMutation({
     mutationFn: initiateVoiceCall,
@@ -39,7 +50,14 @@ export function useVoiceActions(onDone?: () => void) {
   });
 
   const saveNotes = useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) => updateVoiceCallNotes(id, notes),
+    mutationFn: ({
+      id, notes,
+    }: {
+      id: string; notes: string;
+    }) => updateVoiceCallNotes(
+      id,
+      notes,
+    ),
     onSuccess: async () => {
       await refresh();
       onDone?.();
@@ -47,5 +65,7 @@ export function useVoiceActions(onDone?: () => void) {
     onError: failed,
   });
 
-  return { savePrompt, deletePrompt, call, saveNotes };
+  return {
+    savePrompt, deletePrompt, call, saveNotes,
+  };
 }

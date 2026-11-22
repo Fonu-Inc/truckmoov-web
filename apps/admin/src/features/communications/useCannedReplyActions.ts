@@ -1,5 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MessagingCannedReplyInput } from "@truckmoov/api/notification";
+import {
+  useMutation, useQueryClient,
+} from "@tanstack/react-query";
 import {
   createMessagingCannedReply,
   deleteMessagingCannedReply,
@@ -15,7 +17,10 @@ export function useCannedReplyActions(onDone?: () => void) {
 
   const save = useMutation({
     mutationFn: (input: MessagingCannedReplyInput & { id?: string }) =>
-      input.id ? updateMessagingCannedReply(input.id, input) : createMessagingCannedReply(input),
+      input.id ? updateMessagingCannedReply(
+        input.id,
+        input,
+      ) : createMessagingCannedReply(input),
     onSuccess: async () => {
       await refresh();
       toast.success("Quick reply saved.");
@@ -30,5 +35,7 @@ export function useCannedReplyActions(onDone?: () => void) {
     onError: failed,
   });
 
-  return { save, remove };
+  return {
+    save, remove,
+  };
 }

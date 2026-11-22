@@ -23,8 +23,10 @@ import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
+import {
+  DeviceSetupKycBadge, DeviceSetupStatusBadge,
+} from "./DeviceSetupBadges";
 import { TRACKER_TYPE_LABELS } from "./deviceSetupConfig";
-import { DeviceSetupKycBadge, DeviceSetupStatusBadge } from "./DeviceSetupBadges";
 
 type Props = {
   request: SystemDeviceSetupRequest | null;
@@ -59,9 +61,13 @@ function Field({
   );
 }
 
-function useCaseLabel(request: SystemDeviceSetupRequest) {
-  if (request.useCase)
-    return request.useCase.replace(/_/g, " ");
+function getUseCaseLabel(request: SystemDeviceSetupRequest) {
+  if (request.useCase) {
+    return request.useCase.replace(
+      /_/g,
+      " ",
+    );
+  }
   return request.simRequired ? "Telemetry + SIM provisioning" : "Telemetry only";
 }
 
@@ -75,7 +81,10 @@ export function DeviceSetupRequestDetailsDialog({
   onApprove,
   onReject,
 }: Props) {
-  const [note, setNote] = useState("");
+  const [
+    note,
+    setNote,
+  ] = useState("");
 
   function close() {
     setNote("");
@@ -83,7 +92,10 @@ export function DeviceSetupRequestDetailsDialog({
   }
 
   const isPending = request?.status === "pending_review";
-  const location = [request?.city, request?.state].filter(Boolean).join(", ");
+  const location = [
+    request?.city,
+    request?.state,
+  ].filter(Boolean).join(", ");
 
   return (
     <Dialog
@@ -102,7 +114,13 @@ export function DeviceSetupRequestDetailsDialog({
                 Device Request Details
               </DialogTitle>
               <DialogDescription>
-                {`Request #${request.id.slice(0, 8)} • Submitted ${formatWithPattern(request.createdAt, "MMM d, yyyy 'at' HH:mm")}`}
+                {`Request #${request.id.slice(
+                  0,
+                  8,
+                )} • Submitted ${formatWithPattern(
+                  request.createdAt,
+                  "MMM d, yyyy 'at' HH:mm",
+                )}`}
               </DialogDescription>
             </DialogHeader>
 
@@ -163,14 +181,17 @@ export function DeviceSetupRequestDetailsDialog({
                   label="Use Case"
                   icon={Wifi}
                 >
-                  <span className="capitalize">{useCaseLabel(request)}</span>
+                  <span className="capitalize">{getUseCaseLabel(request)}</span>
                 </Field>
                 <Field
                   label="Date Submitted"
                   icon={Calendar}
                   className="col-span-2"
                 >
-                  {formatWithPattern(request.createdAt, "MMM d, yyyy HH:mm")}
+                  {formatWithPattern(
+                    request.createdAt,
+                    "MMM d, yyyy HH:mm",
+                  )}
                 </Field>
               </div>
 
@@ -185,12 +206,18 @@ export function DeviceSetupRequestDetailsDialog({
                 <Field label="Installation Location">{location || "—"}</Field>
                 <Field label="Preferred Date">
                   {request.preferredInstallDate
-                    ? formatWithPattern(request.preferredInstallDate, "dd MMMM yyyy")
+                    ? formatWithPattern(
+                        request.preferredInstallDate,
+                        "dd MMMM yyyy",
+                      )
                     : "—"}
                 </Field>
                 <Field label="Decided By">{request.decidedBy ?? "—"}</Field>
                 <Field label="Decided">
-                  {request.decidedAt ? formatWithPattern(request.decidedAt, "dd MMM yyyy HH:mm") : "—"}
+                  {request.decidedAt ? formatWithPattern(
+                    request.decidedAt,
+                    "dd MMM yyyy HH:mm",
+                  ) : "—"}
                 </Field>
                 <Field label="Assigned To">{request.assignedTo ?? "—"}</Field>
               </div>
@@ -239,11 +266,19 @@ export function DeviceSetupRequestDetailsDialog({
                         >
                           <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
                           <div className="flex-1">
-                            <p className="font-medium capitalize">{entry.status.replace(/_/g, " ")}</p>
+                            <p className="font-medium capitalize">
+                              {entry.status.replace(
+                                /_/g,
+                                " ",
+                              )}
+                            </p>
                             {entry.note && <p className="text-muted-foreground">{entry.note}</p>}
                           </div>
                           <span className="text-muted-foreground">
-                            {formatWithPattern(entry.at, "dd MMM yyyy HH:mm")}
+                            {formatWithPattern(
+                              entry.at,
+                              "dd MMM yyyy HH:mm",
+                            )}
                           </span>
                         </li>
                       ))}
@@ -284,7 +319,10 @@ export function DeviceSetupRequestDetailsDialog({
                   <Button
                     disabled={isBusy}
                     onClick={() => {
-                      onApprove(request, note);
+                      onApprove(
+                        request,
+                        note,
+                      );
                       setNote("");
                     }}
                   >

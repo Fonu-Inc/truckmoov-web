@@ -370,7 +370,7 @@ export async function generatePowerPoint(
             x: 0.5,
             y: 1,
             w: 9,
-            colW: Array.from({ length: tableData.headers.length }).fill(9 / tableData.headers.length),
+            colW: Array.from<number>({ length: tableData.headers.length }).fill(9 / tableData.headers.length),
             border: {
               type: "solid",
               color: COLORS.border,

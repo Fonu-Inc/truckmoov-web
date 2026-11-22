@@ -1,9 +1,11 @@
+import type {
+  SendSystemWhatsAppTemplateResponse, WhatsAppTemplate,
+} from "@truckmoov/api/notification";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemWhatsAppTemplatesQueryOptions,
   useSendSystemWhatsAppTemplate,
 } from "@truckmoov/api/notification";
-import type { SendSystemWhatsAppTemplateResponse, WhatsAppTemplate } from "@truckmoov/api/notification";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
@@ -55,10 +57,22 @@ export function StartConversationDialog({
   conversationId,
   onSent,
 }: StartConversationDialogProps) {
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [templateKey, setTemplateKey] = useState("");
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [
+    phone,
+    setPhone,
+  ] = useState("");
+  const [
+    name,
+    setName,
+  ] = useState("");
+  const [
+    templateKey,
+    setTemplateKey,
+  ] = useState("");
+  const [
+    values,
+    setValues,
+  ] = useState<Record<string, string>>({});
   const send = useSendSystemWhatsAppTemplate();
   const templatesQuery = useQuery({
     ...getSystemWhatsAppTemplatesQueryOptions({ limit: TEMPLATE_PAGE }),
@@ -70,9 +84,15 @@ export function StartConversationDialog({
   const skipped = approved.length - sendable.length;
   const template = sendable.find(item => `${item.name}|${item.language}` === templateKey);
   const variables = variableNumbersOf(template?.components);
-  const preview = template ? fillPlaceholders(bodyTextOf(template.components), values) : "";
+  const preview = template ? fillPlaceholders(
+    bodyTextOf(template.components),
+    values,
+  ) : "";
   const missingValue = variables.some(number => !values[String(number)]?.trim());
-  const missingPhone = !conversationId && phone.replace(/\D/g, "").length < 8;
+  const missingPhone = !conversationId && phone.replace(
+    /\D/g,
+    "",
+  ).length < 8;
 
   const close = (next: boolean) => {
     if (!next) {
@@ -179,14 +199,22 @@ export function StartConversationDialog({
               </SelectContent>
             </Select>
             {templatesQuery.isError && (
-              <p className="text-xs text-destructive">Couldn&apos;t load templates: {templatesQuery.error.message}</p>
+              <p className="text-xs text-destructive">
+                Couldn&apos;t load templates:
+                {templatesQuery.error.message}
+              </p>
             )}
             {!templatesQuery.isLoading && !templatesQuery.isError && sendable.length === 0 && (
               <p className="text-xs text-muted-foreground">No approved templates yet. Create one on the WhatsApp Setup page.</p>
             )}
             {skipped > 0 && (
               <p className="text-xs text-muted-foreground">
-                {skipped} approved template{skipped === 1 ? " needs" : "s need"} a media header or button link, which can&apos;t be sent from here yet.
+                {skipped}
+                {" "}
+                approved template
+                {skipped === 1 ? " needs" : "s need"}
+                {" "}
+                a media header or button link, which can&apos;t be sent from here yet.
               </p>
             )}
           </div>
@@ -200,7 +228,9 @@ export function StartConversationDialog({
               <Input
                 id={`outreach-var-${number}`}
                 value={values[String(number)] ?? ""}
-                onChange={event => setValues(current => ({ ...current, [String(number)]: event.target.value }))}
+                onChange={event => setValues(current => ({
+                  ...current, [String(number)]: event.target.value,
+                }))}
               />
             </div>
           ))}

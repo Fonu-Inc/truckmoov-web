@@ -1,5 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { SmsTemplateInput, SmsTemplateTestInput } from "@truckmoov/api/notification";
+import type {
+  SmsTemplateInput, SmsTemplateTestInput,
+} from "@truckmoov/api/notification";
+import {
+  useMutation, useQueryClient,
+} from "@tanstack/react-query";
 import {
   createSmsTemplate,
   deleteSmsTemplate,
@@ -18,7 +22,14 @@ export function useSmsTemplateActions(onSaved?: () => void) {
   const refresh = () => client.invalidateQueries({ queryKey: smsTemplateKeys.all });
 
   const save = useMutation({
-    mutationFn: ({ id, input }: { id?: string; input: SmsTemplateInput }) => (id ? updateSmsTemplate(id, input) : createSmsTemplate(input)),
+    mutationFn: ({
+      id, input,
+    }: {
+      id?: string; input: SmsTemplateInput;
+    }) => (id ? updateSmsTemplate(
+      id,
+      input,
+    ) : createSmsTemplate(input)),
     onSuccess: async () => {
       await refresh();
       onSaved?.();
@@ -36,10 +47,19 @@ export function useSmsTemplateActions(onSaved?: () => void) {
   });
 
   const test = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: SmsTemplateTestInput }) => testSmsTemplate(id, input),
+    mutationFn: ({
+      id, input,
+    }: {
+      id: string; input: SmsTemplateTestInput;
+    }) => testSmsTemplate(
+      id,
+      input,
+    ),
     onSuccess: () => toast.success("Test message sent."),
     onError: failed,
   });
 
-  return { save, remove, test };
+  return {
+    save, remove, test,
+  };
 }

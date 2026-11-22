@@ -1,6 +1,10 @@
-import type { InstallerJobStatus, SystemInstallerStatus } from "@truckmoov/api/auth";
+import type {
+  InstallerJobStatus, SystemInstallerStatus,
+} from "@truckmoov/api/auth";
 import { Badge } from "@/components/shadcn/badge";
-import { JOB_STATUS_LABEL, STATUS_LABEL } from "@/features/installers/installerOptions";
+import {
+  JOB_STATUS_LABEL, STATUS_LABEL,
+} from "@/features/installers/installerOptions";
 import { cn } from "@/lib/utils";
 
 const installerTone: Record<SystemInstallerStatus, string> = {

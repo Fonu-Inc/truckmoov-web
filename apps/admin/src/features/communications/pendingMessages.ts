@@ -1,6 +1,10 @@
-import type { MessageStatusEvent, MessagingMessage } from "@truckmoov/api/notification";
+import type {
+  MessageStatusEvent, MessagingMessage,
+} from "@truckmoov/api/notification";
 import { create } from "zustand";
-import { applyStatusEvent, errorText } from "./messagingLogic";
+import {
+  applyStatusEvent, errorText,
+} from "./messagingLogic";
 
 type PendingState = {
   byConversation: Record<string, MessagingMessage[]>;
@@ -19,7 +23,10 @@ export const usePendingMessages = create<PendingState>(set => ({
   add: (conversationId, message) => set(s => ({
     byConversation: {
       ...s.byConversation,
-      [conversationId]: [...(s.byConversation[conversationId] ?? NONE), message],
+      [conversationId]: [
+        ...(s.byConversation[conversationId] ?? NONE),
+        message,
+      ],
     },
   })),
   fail: (conversationId, clientMessageId, code) => set(s => ({
@@ -27,7 +34,11 @@ export const usePendingMessages = create<PendingState>(set => ({
       ...s.byConversation,
       [conversationId]: (s.byConversation[conversationId] ?? NONE).map(m =>
         m.client_message_id === clientMessageId
-          ? { ...m, status: "failed", error: { code, message: errorText(code) } }
+          ? {
+              ...m, status: "failed", error: {
+                code, message: errorText(code),
+              },
+            }
           : m),
     },
   })),
@@ -36,7 +47,11 @@ export const usePendingMessages = create<PendingState>(set => ({
       ...s.byConversation,
       [conversationId]: (s.byConversation[conversationId] ?? NONE).map(m =>
         m.client_message_id === clientMessageId && m.status === "queued"
-          ? { ...m, status: "failed", error: { code: "unavailable", message: errorText("unavailable") } }
+          ? {
+              ...m, status: "failed", error: {
+                code: "unavailable", message: errorText("unavailable"),
+              },
+            }
           : m),
     },
   })),
@@ -44,13 +59,18 @@ export const usePendingMessages = create<PendingState>(set => ({
     byConversation: {
       ...s.byConversation,
       [conversationId]: (s.byConversation[conversationId] ?? NONE).map(m =>
-        m.client_message_id === clientMessageId ? { ...m, status: "queued", error: undefined } : m),
+        m.client_message_id === clientMessageId ? {
+          ...m, status: "queued", error: undefined,
+        } : m),
     },
   })),
   applyStatus: event => set(s => ({
     byConversation: {
       ...s.byConversation,
-      [event.conversation_id]: applyStatusEvent(s.byConversation[event.conversation_id] ?? NONE, event),
+      [event.conversation_id]: applyStatusEvent(
+        s.byConversation[event.conversation_id] ?? NONE,
+        event,
+      ),
     },
   })),
   drop: (conversationId, clientMessageId) => set(s => ({
@@ -63,5 +83,7 @@ export const usePendingMessages = create<PendingState>(set => ({
   })),
 }));
 
-export const selectPending = (conversationId: string | null) => (s: PendingState) =>
-  (conversationId ? s.byConversation[conversationId] : undefined) ?? NONE;
+export function selectPending(conversationId: string | null) {
+  return (s: PendingState) =>
+    (conversationId ? s.byConversation[conversationId] : undefined) ?? NONE;
+}

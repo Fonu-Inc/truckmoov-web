@@ -1,5 +1,5 @@
 import {
-  AlertCircle, AlertTriangle, CheckCircle2, Gauge, Mail, RotateCcw,
+  AlertCircle, AlertTriangle, CheckCircle2, Gauge, Mail,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,7 +12,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/shadcn/alert-dialog";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -33,7 +32,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useAuthStore } from "@/features/auth/stores/authStore";
 
 type SpendingLimitSettingsProps = {
   tenantId: string;
@@ -44,8 +42,6 @@ export function SpendingLimitSettings({
   tenantId: _tenantId, onUpdate: _onUpdate,
 }: SpendingLimitSettingsProps) {
   const { format } = useCurrency();
-  const { user } = useAuthStore();
-  const isPlatformAdmin = user?.role === "platform_admin";
 
   const isLoading = false;
 
@@ -70,7 +66,6 @@ export function SpendingLimitSettings({
     setAlertEmail,
   ] = useState("");
   const [isPersisting] = useState(false);
-  const [isResetting] = useState(false);
 
   const handleSave = () => {
     if (!monthlyLimit || Number.parseFloat(monthlyLimit) <= 0) {
@@ -81,10 +76,6 @@ export function SpendingLimitSettings({
   };
 
   const handleDisable = () => {
-    toast.info("Coming soon");
-  };
-
-  const handleReset = () => {
     toast.info("Coming soon");
   };
 
@@ -121,41 +112,6 @@ export function SpendingLimitSettings({
                 Control your monthly communication spending
               </CardDescription>
             </div>
-            {isPlatformAdmin && currentSpending > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                  >
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Reset Counter
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Reset Monthly Spending Counter?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will reset the current month spending counter from
-                      {" "}
-                      {format(currentSpending)}
-                      {" "}
-                      to ₦0.
-                      This action cannot be undone. Use this for billing adjustments or corrections.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleReset}
-                      disabled={isResetting}
-                    >
-                      {isResetting ? "Resetting..." : "Reset Counter"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-3 pb-4 flex-1 flex flex-col">
@@ -220,15 +176,6 @@ export function SpendingLimitSettings({
               <p className="text-sm text-muted-foreground">
                 Spending Limits are currently disabled. Enable them to cap your monthly communication costs and get alerts before you hit the cap.
               </p>
-            </div>
-          )}
-
-          {isPlatformAdmin && !enabled && currentSpending > 0 && (
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Current Month Spending</span>
-                <span className="font-medium">{format(currentSpending)}</span>
-              </div>
             </div>
           )}
 

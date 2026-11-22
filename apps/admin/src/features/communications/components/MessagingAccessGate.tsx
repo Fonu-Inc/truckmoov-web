@@ -1,5 +1,5 @@
-import { ShieldAlert } from "lucide-react";
 import type { ReactNode } from "react";
+import { ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { useMessagingAccess } from "../useMessagingAccess";
 import { StateNotice } from "./StateNotice";
@@ -10,11 +10,19 @@ type Props = {
 };
 
 /** Shows `children` only to staff who hold the messaging read permission. */
-export function MessagingAccessGate({ what, children }: Props) {
+export function MessagingAccessGate({
+  what, children,
+}: Props) {
   const access = useMessagingAccess();
 
-  if (access.isLoading)
-    return <Skeleton className="h-64 w-full" aria-label="Loading" />;
+  if (access.isLoading) {
+    return (
+      <Skeleton
+        className="h-64 w-full"
+        aria-label="Loading"
+      />
+    );
+  }
   if (access.isError) {
     return (
       <StateNotice

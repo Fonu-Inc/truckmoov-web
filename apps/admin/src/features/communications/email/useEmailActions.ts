@@ -1,4 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation, useQueryClient,
+} from "@tanstack/react-query";
 import {
   deletePlatformMailCredentials,
   getPlatformMailAttachmentLink,
@@ -46,16 +48,36 @@ export function useEmailActions(onSent?: () => void) {
   });
 
   const star = useMutation({
-    mutationFn: ({ id, starred }: { id: string; starred: boolean }) => setPlatformMailStarred(id, starred),
+    mutationFn: ({
+      id, starred,
+    }: {
+      id: string; starred: boolean;
+    }) => setPlatformMailStarred(
+      id,
+      starred,
+    ),
     onSuccess: () => client.invalidateQueries({ queryKey: emailKeys.root }),
     onError: failed,
   });
 
   const openAttachment = useMutation({
-    mutationFn: ({ messageId, index }: { messageId: string; index: number }) => getPlatformMailAttachmentLink(messageId, index),
-    onSuccess: url => window.open(url, "_blank", "noopener,noreferrer"),
+    mutationFn: ({
+      messageId, index,
+    }: {
+      messageId: string; index: number;
+    }) => getPlatformMailAttachmentLink(
+      messageId,
+      index,
+    ),
+    onSuccess: url => window.open(
+      url,
+      "_blank",
+      "noopener,noreferrer",
+    ),
     onError: failed,
   });
 
-  return { saveCredentials, disconnect, send, star, openAttachment };
+  return {
+    saveCredentials, disconnect, send, star, openAttachment,
+  };
 }

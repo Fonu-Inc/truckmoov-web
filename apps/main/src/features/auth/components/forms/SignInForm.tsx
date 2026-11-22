@@ -43,7 +43,10 @@ export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: stri
   const navigate = useNavigate();
   const login = useLogin();
   // The mutation settles before resolvePostLoginPath (GET /auth/two-factor) returns, so track that gap too.
-  const [isResolving, setIsResolving] = useState(false);
+  const [
+    isResolving,
+    setIsResolving,
+  ] = useState(false);
 
   const form = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),

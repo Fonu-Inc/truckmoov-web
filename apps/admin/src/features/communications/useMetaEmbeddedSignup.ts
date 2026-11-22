@@ -1,4 +1,6 @@
-import { useCallback, useState } from "react";
+import {
+  useCallback, useState,
+} from "react";
 
 const APP_ID = import.meta.env.VITE_META_APP_ID as string | undefined;
 const CONFIG_ID = import.meta.env.VITE_META_CONFIG_ID as string | undefined;
@@ -19,6 +21,7 @@ type FacebookSdk = {
 };
 
 declare global {
+  // eslint-disable-next-line ts/consistent-type-definitions -- global augmentation needs interface merging
   interface Window {
     FB?: FacebookSdk;
     fbAsyncInit?: () => void;
@@ -102,18 +105,31 @@ function parseSignupMessage(event: MessageEvent): SignupMessage | null {
 }
 
 function sessionFrom(message: SignupMessage): SignupSession | null {
-  const { event, data } = message;
-  if (event === "FINISH" && data?.waba_id)
-    return { phoneNumberId: data.phone_number_id, businessAccountId: data.waba_id, coexistence: false };
-  if (event === "FINISH_ONLY_WABA" && data?.waba_id)
-    return { businessAccountId: data.waba_id, coexistence: false };
-  if (event === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING" && data?.waba_id)
-    return { phoneNumberId: data.phone_number_id, businessAccountId: data.waba_id, coexistence: true };
+  const {
+    event, data,
+  } = message;
+  if (event === "FINISH" && data?.waba_id) {
+    return {
+      phoneNumberId: data.phone_number_id, businessAccountId: data.waba_id, coexistence: false,
+    };
+  }
+  if (event === "FINISH_ONLY_WABA" && data?.waba_id) {
+    return {
+      businessAccountId: data.waba_id, coexistence: false,
+    };
+  }
+  if (event === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING" && data?.waba_id) {
+    return {
+      phoneNumberId: data.phone_number_id, businessAccountId: data.waba_id, coexistence: true,
+    };
+  }
   return null;
 }
 
 function failureFrom(message: SignupMessage): Error | null {
-  const { event, data } = message;
+  const {
+    event, data,
+  } = message;
   if (event === "ERROR" || (event === "CANCEL" && data?.error_message))
     return new EmbeddedSignupFailed(data?.error_message || "Meta reported an error during signup.");
   if (event === "CANCEL")
@@ -135,7 +151,10 @@ function runSignup(sdk: FacebookSdk, configId: string): Promise<EmbeddedSignupRe
     let waiting: ReturnType<typeof setTimeout> | null = null;
 
     const finish = (outcome: () => void) => {
-      window.removeEventListener("message", onMessage);
+      window.removeEventListener(
+        "message",
+        onMessage,
+      );
       if (waiting)
         clearTimeout(waiting);
       outcome();
@@ -145,12 +164,16 @@ function runSignup(sdk: FacebookSdk, configId: string): Promise<EmbeddedSignupRe
       if (!code)
         return;
       if (session) {
-        const done: EmbeddedSignupResult = { code, ...session };
+        const done: EmbeddedSignupResult = {
+          code, ...session,
+        };
         finish(() => resolve(done));
       }
       else if (!waiting) {
         waiting = setTimeout(
-          () => finish(() => resolve({ code: code!, coexistence: false })),
+          () => finish(() => resolve({
+            code: code!, coexistence: false,
+          })),
           SESSION_WAIT_MS,
         );
       }
@@ -171,7 +194,10 @@ function runSignup(sdk: FacebookSdk, configId: string): Promise<EmbeddedSignupRe
         finish(() => reject(failure));
     }
 
-    window.addEventListener("message", onMessage);
+    window.addEventListener(
+      "message",
+      onMessage,
+    );
     sdk.login(
       (response) => {
         code = response.authResponse?.code ?? null;

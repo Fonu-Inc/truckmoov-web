@@ -1,14 +1,19 @@
+import type { WhatsAppAccount } from "@truckmoov/api/notification";
+import type { Tone } from "./accountHealth";
 import {
   useRefreshSystemWhatsAppAccount,
   useRegisterSystemWhatsAppNumber,
   useResubscribeSystemWhatsAppAccount,
 } from "@truckmoov/api/notification";
-import type { WhatsAppAccount } from "@truckmoov/api/notification";
 import { formatDateTime } from "@truckmoov/app-core/utils/time-utils";
-import { AlertTriangle, CheckCircle2, Link2Off, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle, CheckCircle2, Link2Off, RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import {
+  Alert, AlertDescription,
+} from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -18,13 +23,16 @@ import {
   needsReconnect,
   numberStatusTone,
   qualityTone,
-  TONE_CLASS,
   tierLabel,
+  TONE_CLASS,
 } from "./accountHealth";
-import type { Tone } from "./accountHealth";
 import { ConnectionSteps } from "./ConnectionSteps";
 
-function ConnectionDetail({ label, value }: { label: string; value: string | undefined }) {
+function ConnectionDetail({
+  label, value,
+}: {
+  label: string; value: string | undefined;
+}) {
   return (
     <div className="space-y-1">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
@@ -33,7 +41,11 @@ function ConnectionDetail({ label, value }: { label: string; value: string | und
   );
 }
 
-function ToneDetail({ label, value, tone }: { label: string; value: string; tone: Tone }) {
+function ToneDetail({
+  label, value, tone,
+}: {
+  label: string; value: string; tone: Tone;
+}) {
   return (
     <div className="space-y-1">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
@@ -64,7 +76,9 @@ type ConnectionCardProps = {
   onDisconnect: () => void;
 };
 
-export function ConnectionCard({ account, connecting, onReconnect, onDisconnect }: ConnectionCardProps) {
+export function ConnectionCard({
+  account, connecting, onReconnect, onDisconnect,
+}: ConnectionCardProps) {
   const refresh = useRefreshSystemWhatsAppAccount();
   const resubscribe = useResubscribeSystemWhatsAppAccount();
   const register = useRegisterSystemWhatsAppNumber();
@@ -72,10 +86,13 @@ export function ConnectionCard({ account, connecting, onReconnect, onDisconnect 
   const reconnectNeeded = needsReconnect(account);
 
   const run = (action: typeof refresh | typeof resubscribe | typeof register, done: string) => {
-    action.mutate(undefined, {
-      onSuccess: () => toast.success(done),
-      onError: error => toast.error(error.message),
-    });
+    action.mutate(
+      undefined,
+      {
+        onSuccess: () => toast.success(done),
+        onError: error => toast.error(error.message),
+      },
+    );
   };
 
   return (
@@ -109,7 +126,10 @@ export function ConnectionCard({ account, connecting, onReconnect, onDisconnect 
           size="sm"
           variant="outline"
           loading={refresh.isPending}
-          onClick={() => run(refresh, "Status refreshed.")}
+          onClick={() => run(
+            refresh,
+            "Status refreshed.",
+          )}
         >
           <RefreshCw className="mr-2 h-3 w-3" />
           Refresh status
@@ -196,12 +216,18 @@ export function ConnectionCard({ account, connecting, onReconnect, onDisconnect 
             subscribed: {
               label: "Retry",
               loading: resubscribe.isPending,
-              onClick: () => run(resubscribe, "Webhooks subscribed."),
+              onClick: () => run(
+                resubscribe,
+                "Webhooks subscribed.",
+              ),
             },
             registered: {
               label: "Register",
               loading: register.isPending,
-              onClick: () => run(register, "Number registered."),
+              onClick: () => run(
+                register,
+                "Number registered.",
+              ),
             },
           }}
         />

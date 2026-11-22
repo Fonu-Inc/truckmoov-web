@@ -2,7 +2,10 @@ import type {
   SystemDeviceSetupRequest,
   SystemDeviceSetupRequestsQuery,
 } from "@truckmoov/api/auth";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { DeviceSetupFilters } from "./requests/deviceSetupConfig";
+import {
+  useQuery, useQueryClient,
+} from "@tanstack/react-query";
 import {
   getSystemDeviceSetupRequestQueryOptions,
   getSystemDeviceSetupRequestsExportQueryOptions,
@@ -21,7 +24,9 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/shadcn/button";
@@ -41,16 +46,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { getDeviceSetupColumns } from "./requests/deviceSetupColumns";
 import {
   cloneFilters,
   countActiveFilters,
+
   downloadBlob,
   EMPTY_FILTERS,
   getStatusBucket,
   STATUS_OPTIONS,
-  type DeviceSetupFilters,
 } from "./requests/deviceSetupConfig";
-import { getDeviceSetupColumns } from "./requests/deviceSetupColumns";
 import { DeviceSetupFilterPopover } from "./requests/DeviceSetupFilterPopover";
 import { DeviceSetupRequestDetailsDialog } from "./requests/DeviceSetupRequestDetailsDialog";
 import { RejectDeviceSetupRequestDialog } from "./requests/RejectDeviceSetupRequestDialog";
@@ -58,12 +63,25 @@ import { RejectDeviceSetupRequestDialog } from "./requests/RejectDeviceSetupRequ
 const ALL_STATUSES = "all";
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
-  const [debounced, setDebounced] = useState(value);
+  const [
+    debounced,
+    setDebounced,
+  ] = useState(value);
 
-  useEffect(() => {
-    const timeout = window.setTimeout(setDebounced, delayMs, value);
-    return () => window.clearTimeout(timeout);
-  }, [delayMs, value]);
+  useEffect(
+    () => {
+      const timeout = window.setTimeout(
+        setDebounced,
+        delayMs,
+        value,
+      );
+      return () => window.clearTimeout(timeout);
+    },
+    [
+      delayMs,
+      value,
+    ],
+  );
 
   return debounced;
 }
@@ -74,15 +92,42 @@ function buildQueryPayload(search: string): SystemDeviceSetupRequestsQuery {
 
 export function DeviceSetupRequestsQueue() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
-  const [filters, setFilters] = useState<DeviceSetupFilters>(() => cloneFilters(EMPTY_FILTERS));
-  const [selectedRequest, setSelectedRequest] = useState<SystemDeviceSetupRequest | null>(null);
-  const [rejectTarget, setRejectTarget] = useState<SystemDeviceSetupRequest | null>(null);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [assigningId, setAssigningId] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const debouncedSearch = useDebouncedValue(search.trim(), 350);
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState(ALL_STATUSES);
+  const [
+    filters,
+    setFilters,
+  ] = useState<DeviceSetupFilters>(() => cloneFilters(EMPTY_FILTERS));
+  const [
+    selectedRequest,
+    setSelectedRequest,
+  ] = useState<SystemDeviceSetupRequest | null>(null);
+  const [
+    rejectTarget,
+    setRejectTarget,
+  ] = useState<SystemDeviceSetupRequest | null>(null);
+  const [
+    approvingId,
+    setApprovingId,
+  ] = useState<string | null>(null);
+  const [
+    assigningId,
+    setAssigningId,
+  ] = useState<string | null>(null);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
+  const debouncedSearch = useDebouncedValue(
+    search.trim(),
+    350,
+  );
 
   const approveRequest = useApproveSystemDeviceSetupRequest();
   const assignRequest = useAssignSystemDeviceSetupRequest();
@@ -109,16 +154,25 @@ export function DeviceSetupRequestsQueue() {
     () => [...new Set((allRequests ?? []).map(r => r.manufacturer).filter(Boolean))].sort(),
     [allRequests],
   );
-  const requests = useMemo(() => {
-    const { organisation, manufacturer } = filters;
-    return (allRequests ?? []).filter((r) => {
-      if (statusFilter !== ALL_STATUSES && getStatusBucket(r.status) !== statusFilter)
-        return false;
-      if (organisation.enabled && organisation.value && r.organisationName !== organisation.value)
-        return false;
-      return !(manufacturer.enabled && manufacturer.value && r.manufacturer !== manufacturer.value);
-    });
-  }, [allRequests, filters, statusFilter]);
+  const requests = useMemo(
+    () => {
+      const {
+        organisation, manufacturer,
+      } = filters;
+      return (allRequests ?? []).filter((r) => {
+        if (statusFilter !== ALL_STATUSES && getStatusBucket(r.status) !== statusFilter)
+          return false;
+        if (organisation.enabled && organisation.value && r.organisationName !== organisation.value)
+          return false;
+        return !(manufacturer.enabled && manufacturer.value && r.manufacturer !== manufacturer.value);
+      });
+    },
+    [
+      allRequests,
+      filters,
+      statusFilter,
+    ],
+  );
   const detailRequest = detailQuery.data?.data ?? selectedRequest;
   const hasActiveFilters = Boolean(debouncedSearch)
     || statusFilter !== ALL_STATUSES
@@ -128,7 +182,9 @@ export function DeviceSetupRequestsQueue() {
   function handleApprove(request: SystemDeviceSetupRequest, note?: string) {
     setApprovingId(request.id);
     approveRequest.mutate(
-      { id: request.id, data: note?.trim() ? { note: note.trim() } : undefined },
+      {
+        id: request.id, data: note?.trim() ? { note: note.trim() } : undefined,
+      },
       {
         onSuccess: () => {
           toast.success("Request approved");
@@ -156,7 +212,9 @@ export function DeviceSetupRequestsQueue() {
     if (!rejectTarget)
       return;
     rejectRequest.mutate(
-      { id: rejectTarget.id, data: { reason } },
+      {
+        id: rejectTarget.id, data: { reason },
+      },
       {
         onSuccess: () => {
           toast.success("Request rejected");
@@ -176,7 +234,10 @@ export function DeviceSetupRequestsQueue() {
     setIsExporting(true);
     try {
       const blob = await queryClient.fetchQuery(getSystemDeviceSetupRequestsExportQueryOptions(queryPayload));
-      downloadBlob(blob, "device-setup-requests.csv");
+      downloadBlob(
+        blob,
+        "device-setup-requests.csv",
+      );
       toast.success("Device setup requests exported");
     }
     catch {

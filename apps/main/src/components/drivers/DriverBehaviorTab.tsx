@@ -274,7 +274,11 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
 export function DriverBehaviorTab() {
   // TRU-FE-3 § 9 — real queries. All 404 today, so the tab shows the empty state.
   const summaryQuery = useDriverBehaviorSummary(30);
-  const eventsQuery = useDriverBehaviorEvents({ params: { period_days: 30, limit: 50 } });
+  const eventsQuery = useDriverBehaviorEvents({
+    params: {
+      period_days: 30, limit: 50,
+    },
+  });
   const geofenceQuery = useDriverGeofenceAlerts(7);
   const markReadMutation = useMarkGeofenceAlertsRead();
 
@@ -288,7 +292,10 @@ export function DriverBehaviorTab() {
   };
   const behaviorLoading = summaryQuery.isLoading || eventsQuery.isLoading;
   const behaviorConnected = !summaryQuery.isError;
-  const refreshBehavior = () => { summaryQuery.refetch(); eventsQuery.refetch(); };
+  const refreshBehavior = () => {
+    summaryQuery.refetch();
+    eventsQuery.refetch();
+  };
 
   const realAlerts: GeofenceAlert[] = geofenceQuery.data?.data?.items ?? [];
   const realGeofenceStats = {

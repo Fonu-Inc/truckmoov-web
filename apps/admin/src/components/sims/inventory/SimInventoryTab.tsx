@@ -34,14 +34,12 @@ import { SimBulkBar } from "./SimBulkBar";
 import { SimDetailsSheet } from "./SimDetailsSheet";
 import { SimEditDialog } from "./SimEditDialog";
 import { getSimColumns } from "./simInventoryColumns";
-import {
-  EMPTY_SIM_FILTERS,
-  SimInventoryFilters,
-} from "./SimInventoryFilters";
+import { SimInventoryFilters } from "./SimInventoryFilters";
 import {
   canActivate,
   canReinstate,
   canSuspend,
+  EMPTY_SIM_FILTERS,
   getCarrierOptions,
 } from "./simInventoryShared";
 import { SimInventoryStats } from "./SimInventoryStats";

@@ -1,4 +1,5 @@
 import type { SystemSimItem } from "@truckmoov/api/auth";
+import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
 
 export const SIM_STATUSES = [
   "active",
@@ -105,14 +106,19 @@ export function mapSimToRow(sim: SystemSimItem, lookups: SimLookups): SimRow {
 }
 
 export function getCarrierOptions(byCarrier: Record<string, number> = {}) {
-  return [...new Set([
-    ...SIM_CARRIERS,
-    ...Object.keys(byCarrier),
-  ])];
+  return [
+    ...new Set([
+      ...SIM_CARRIERS,
+      ...Object.keys(byCarrier),
+    ]),
+  ];
 }
 
 export function getUsagePercentage(usage: number, limit: number) {
-  return limit > 0 ? Math.min((usage / limit) * 100, 100) : 0;
+  return limit > 0 ? Math.min(
+    (usage / limit) * 100,
+    100,
+  ) : 0;
 }
 
 export function canSuspend(sim: SimRow) {
@@ -134,3 +140,8 @@ export function canActivate(sim: SimRow) {
 export function canDelete(sim: SimRow) {
   return !sim.tenantId && !sim.deviceId;
 }
+
+export const EMPTY_SIM_FILTERS: FilterDraft = {
+  carrier: { enabled: false },
+  tenant: { enabled: false },
+};

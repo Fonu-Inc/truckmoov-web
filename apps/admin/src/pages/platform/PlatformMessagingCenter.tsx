@@ -1,5 +1,5 @@
-import { EmailPanel } from "@/features/communications/email/EmailPanel";
 import { MessagingAccessGate } from "@/features/communications/components/MessagingAccessGate";
+import { EmailPanel } from "@/features/communications/email/EmailPanel";
 
 export default function PlatformMessagingCenter() {
   return (

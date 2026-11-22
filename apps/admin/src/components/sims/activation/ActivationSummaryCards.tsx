@@ -44,7 +44,15 @@ function StatCard({
       <CardContent>
         {isLoading
           ? <Skeleton className="h-8 w-16" />
-          : <div className={cn("text-2xl font-bold", valueClassName)}>{value ?? "—"}</div>}
+          : (
+              <div className={cn(
+                "text-2xl font-bold",
+                valueClassName,
+              )}
+              >
+                {value ?? "—"}
+              </div>
+            )}
         <p className="text-xs text-muted-foreground">{note}</p>
       </CardContent>
     </Card>
@@ -96,7 +104,13 @@ export function ActivationSummaryCards({
       />
       <StatCard
         title="Needs Attention"
-        icon={<AlertCircle className={cn("h-4 w-4", needsAttention > 0 ? "text-warning" : "text-muted-foreground")} />}
+        icon={(
+          <AlertCircle className={cn(
+            "h-4 w-4",
+            needsAttention > 0 ? "text-warning" : "text-muted-foreground",
+          )}
+          />
+        )}
         value={summary?.needsAttention}
         note={needsAttention > 0 ? "Failed or partial batches" : "No batches need attention"}
         isLoading={isLoading}

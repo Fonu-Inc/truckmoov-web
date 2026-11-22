@@ -23,20 +23,39 @@ export function placeholdersAreSequential(text: string) {
 }
 
 export function fillPlaceholders(text: string, values: Record<string, string>) {
-  return text.replace(PLACEHOLDER, (match, index: string) => values[index]?.trim() || match);
+  return text.replace(
+    PLACEHOLDER,
+    (match, index: string) => values[index]?.trim() || match,
+  );
 }
 
 export function buildTemplateComponents(draft: TemplateDraft): Record<string, unknown>[] {
   const components: Record<string, unknown>[] = [];
-  if (draft.header.trim())
-    components.push({ type: "HEADER", format: "TEXT", text: draft.header.trim() });
-  const body: Record<string, unknown> = { type: "BODY", text: draft.body.trim() };
+  if (draft.header.trim()) {
+    components.push({
+      type: "HEADER", format: "TEXT", text: draft.header.trim(),
+    });
+  }
+  const body: Record<string, unknown> = {
+    type: "BODY", text: draft.body.trim(),
+  };
   const count = placeholderNumbers(draft.body).length;
-  if (count > 0)
-    body.example = { body_text: [draft.examples.slice(0, count).map(value => value.trim())] };
+  if (count > 0) {
+    body.example = {
+      body_text: [
+        draft.examples.slice(
+          0,
+          count,
+        ).map(value => value.trim()),
+      ],
+    };
+  }
   components.push(body);
-  if (draft.footer.trim())
-    components.push({ type: "FOOTER", text: draft.footer.trim() });
+  if (draft.footer.trim()) {
+    components.push({
+      type: "FOOTER", text: draft.footer.trim(),
+    });
+  }
   return components;
 }
 
@@ -47,7 +66,10 @@ function componentOf(components: Component[] | undefined, type: string) {
 }
 
 export function bodyTextOf(components: Component[] | undefined) {
-  return String(componentOf(components, "BODY")?.text ?? "");
+  return String(componentOf(
+    components,
+    "BODY",
+  )?.text ?? "");
 }
 
 /**
@@ -56,16 +78,25 @@ export function bodyTextOf(components: Component[] | undefined) {
  * input the inbox does not collect.
  */
 export function isSendableFromInbox(components: Component[] | undefined) {
-  const header = componentOf(components, "HEADER");
+  const header = componentOf(
+    components,
+    "HEADER",
+  );
   if (header && header.format && String(header.format).toUpperCase() !== "TEXT")
     return false;
-  const buttons = componentOf(components, "BUTTONS")?.buttons;
+  const buttons = componentOf(
+    components,
+    "BUTTONS",
+  )?.buttons;
   if (!Array.isArray(buttons))
     return true;
   return !buttons.some(button => String((button as Component).url ?? "").includes("{{"));
 }
 
 export function variableNumbersOf(components: Component[] | undefined) {
-  const header = String(componentOf(components, "HEADER")?.text ?? "");
+  const header = String(componentOf(
+    components,
+    "HEADER",
+  )?.text ?? "");
   return placeholderNumbers(`${header} ${bodyTextOf(components)}`);
 }

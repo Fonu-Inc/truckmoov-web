@@ -12,12 +12,14 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import {
+  formatIsoDate,
+  formatNgn,
+} from "@/components/platform/billing/billingFormat";
+import {
   BillingCard,
   BillingCardBody,
   BillingCardHeader,
   FILTER_TRIGGER,
-  formatIsoDate,
-  formatNgn,
   ListErrorBanner,
   PlanStatusBadge,
   TableStateRows,

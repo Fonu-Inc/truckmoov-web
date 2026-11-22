@@ -1,3 +1,4 @@
+import type { SimRow } from "./simInventoryShared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useReassignSystemSim } from "@truckmoov/api/auth";
 import { useEffect } from "react";
@@ -28,13 +29,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import type { SimRow } from "./simInventoryShared";
 
 export const ASSIGN_SIM_FORM_ID = "assign-sim-form";
 
 const assignSimSchema = z.object({
-  tenantId: z.string().min(1, "Tenant is required."),
-  deviceId: z.string().min(1, "Device is required."),
+  tenantId: z.string().min(
+    1,
+    "Tenant is required.",
+  ),
+  deviceId: z.string().min(
+    1,
+    "Device is required.",
+  ),
 });
 
 type AssignSimFormValues = Required<z.infer<typeof assignSimSchema>>;
@@ -205,7 +211,11 @@ export function SimAssignDialog({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={devicePlaceholder(tenantId, loadingOptions)} />
+                        <SelectValue placeholder={devicePlaceholder(
+                          tenantId,
+                          loadingOptions,
+                        )}
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

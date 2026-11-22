@@ -1,7 +1,6 @@
 import { Truck } from "lucide-react";
-import {
-  NO_ENDPOINT, PriceCardFrame,
-} from "@/components/platform/billing/billingUi";
+import { NO_ENDPOINT } from "@/components/platform/billing/billingFormat";
+import { PriceCardFrame } from "@/components/platform/billing/billingUi";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";

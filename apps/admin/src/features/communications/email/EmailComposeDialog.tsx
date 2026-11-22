@@ -1,6 +1,10 @@
 import type { MailAddress } from "@truckmoov/api/auth";
-import { Paperclip, X } from "lucide-react";
-import { useRef, useState } from "react";
+import {
+  Paperclip, X,
+} from "lucide-react";
+import {
+  useRef, useState,
+} from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -14,7 +18,9 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
-import { MAX_ATTACHMENT_BYTES, formatBytes, parseAddresses } from "./emailLogic";
+import {
+  formatBytes, MAX_ATTACHMENT_BYTES, parseAddresses,
+} from "./emailLogic";
 import { useEmailActions } from "./useEmailActions";
 
 type Props = {
@@ -33,25 +39,53 @@ function toBase64(file: File): Promise<string> {
   });
 }
 
-export function EmailComposeDialog({ to = [], subject = "", replyToThreadId, onClose }: Props) {
-  const [recipients, setRecipients] = useState(to.map(a => a.address).join(", "));
-  const [cc, setCc] = useState("");
-  const [title, setTitle] = useState(subject);
-  const [body, setBody] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
+export function EmailComposeDialog({
+  to = [], subject = "", replyToThreadId, onClose,
+}: Props) {
+  const [
+    recipients,
+    setRecipients,
+  ] = useState(to.map(a => a.address).join(", "));
+  const [
+    cc,
+    setCc,
+  ] = useState("");
+  const [
+    title,
+    setTitle,
+  ] = useState(subject);
+  const [
+    body,
+    setBody,
+  ] = useState("");
+  const [
+    files,
+    setFiles,
+  ] = useState<File[]>([]);
   const picker = useRef<HTMLInputElement>(null);
   const { send } = useEmailActions(onClose);
   const toList = parseAddresses(recipients);
   const ccList = parseAddresses(cc);
-  const invalid = [...toList.invalid, ...ccList.invalid];
+  const invalid = [
+    ...toList.invalid,
+    ...ccList.invalid,
+  ];
   const ready = toList.valid.length > 0 && invalid.length === 0 && title.trim() && body.trim();
 
   const attach = (picked: FileList | null) => {
-    const next = [...files, ...Array.from(picked ?? [])];
-    if (next.reduce((total, file) => total + file.size, 0) > MAX_ATTACHMENT_BYTES)
+    const next = [
+      ...files,
+      ...Array.from(picked ?? []),
+    ];
+    if (next.reduce(
+      (total, file) => total + file.size,
+      0,
+    ) > MAX_ATTACHMENT_BYTES) {
       toast.error(`Attachments can total at most ${formatBytes(MAX_ATTACHMENT_BYTES)}.`);
-    else
+    }
+    else {
       setFiles(next);
+    }
   };
 
   const submit = async () => {
@@ -75,7 +109,10 @@ export function EmailComposeDialog({ to = [], subject = "", replyToThreadId, onC
   };
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
+    <Dialog
+      open
+      onOpenChange={open => !open && onClose()}
+    >
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{replyToThreadId ? "Reply" : "New email"}</DialogTitle>
@@ -84,38 +121,91 @@ export function EmailComposeDialog({ to = [], subject = "", replyToThreadId, onC
         <div className="space-y-3">
           <div className="space-y-1">
             <Label htmlFor="mail-to">To</Label>
-            <Input id="mail-to" placeholder="name@example.com, other@example.com" value={recipients} onChange={e => setRecipients(e.target.value)} />
+            <Input
+              id="mail-to"
+              placeholder="name@example.com, other@example.com"
+              value={recipients}
+              onChange={e => setRecipients(e.target.value)}
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="mail-cc">Cc</Label>
-            <Input id="mail-cc" value={cc} onChange={e => setCc(e.target.value)} />
+            <Input
+              id="mail-cc"
+              value={cc}
+              onChange={e => setCc(e.target.value)}
+            />
           </div>
           {invalid.length > 0 && <p className="text-xs text-destructive">{`Not an email address: ${invalid.join(", ")}`}</p>}
           <div className="space-y-1">
             <Label htmlFor="mail-subject">Subject</Label>
-            <Input id="mail-subject" maxLength={998} value={title} onChange={e => setTitle(e.target.value)} />
+            <Input
+              id="mail-subject"
+              maxLength={998}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="mail-body">Message</Label>
-            <Textarea id="mail-body" rows={10} value={body} onChange={e => setBody(e.target.value)} />
+            <Textarea
+              id="mail-body"
+              rows={10}
+              value={body}
+              onChange={e => setBody(e.target.value)}
+            />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => picker.current?.click()}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => picker.current?.click()}
+            >
               <Paperclip className="h-3.5 w-3.5" />
               Attach
             </Button>
-            <input ref={picker} type="file" multiple hidden onChange={(e) => { attach(e.target.files); e.target.value = ""; }} />
+            <input
+              ref={picker}
+              type="file"
+              multiple
+              hidden
+              onChange={(e) => {
+                attach(e.target.files);
+                e.target.value = "";
+              }}
+            />
             {files.map(file => (
-              <span key={`${file.name}:${file.size}`} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs">
+              <span
+                key={`${file.name}:${file.size}`}
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs"
+              >
                 {`${file.name} (${formatBytes(file.size)})`}
-                <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setFiles(files.filter(f => f !== file))}><X className="h-3 w-3" /></button>
+                <button
+                  type="button"
+                  aria-label={`Remove ${file.name}`}
+                  onClick={() => setFiles(files.filter(f => f !== file))}
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </span>
             ))}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button disabled={!ready} loading={send.isPending} onClick={() => void submit()}>Send</Button>
+          <Button
+            variant="outline"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            disabled={!ready}
+            loading={send.isPending}
+            onClick={() => void submit()}
+          >
+            Send
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

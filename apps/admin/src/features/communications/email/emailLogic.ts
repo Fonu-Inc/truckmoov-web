@@ -1,6 +1,8 @@
 import type { MailAddress } from "@truckmoov/api/auth";
 
-type Person = { address: string; name: string | null };
+type Person = {
+  address: string; name: string | null;
+};
 
 export function personLabel(person: Person): string {
   return person.name?.trim() || person.address;
@@ -8,21 +10,28 @@ export function personLabel(person: Person): string {
 
 export function participantsLabel(participants: Person[], ownAddress: string | null): string {
   const others = participants.filter(p => p.address.toLowerCase() !== ownAddress?.toLowerCase());
-  const shown = (others.length > 0 ? others : participants).slice(0, 3).map(personLabel);
+  const shown = (others.length > 0 ? others : participants).slice(
+    0,
+    3,
+  ).map(personLabel);
   return shown.join(", ") || "No participants";
 }
 
 /** Comma, semicolon or whitespace separated addresses; anything that is not an address is returned as invalid. */
-export function parseAddresses(raw: string): { valid: MailAddress[]; invalid: string[] } {
+export function parseAddresses(raw: string): {
+  valid: MailAddress[]; invalid: string[];
+} {
   const valid: MailAddress[] = [];
   const invalid: string[] = [];
   for (const part of raw.split(/[,;\s]+/).map(p => p.trim()).filter(Boolean)) {
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(part))
+    if (/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(part))
       valid.push({ address: part.toLowerCase() });
     else
       invalid.push(part);
   }
-  return { valid, invalid };
+  return {
+    valid, invalid,
+  };
 }
 
 export function replySubject(subject: string): string {

@@ -10,16 +10,21 @@ type DeviceProvisionBadgeProps = {
   className?: string;
 };
 
-export function provisionMessage(device: DeviceProvisionBadgeProps["device"]): string | null {
+function provisionMessage(device: DeviceProvisionBadgeProps["device"]): string | null {
   if (device.provisionStatus !== "failed")
     return null;
   if (!device.provisionNextAttemptAt)
     return "Gave up: contact support";
-  const attempt = Math.min(device.provisionAttempts ?? 1, MAX_ATTEMPTS);
+  const attempt = Math.min(
+    device.provisionAttempts ?? 1,
+    MAX_ATTEMPTS,
+  );
   return `Could not register with the tracking network, retrying at ${formatDayMonthTime(device.provisionNextAttemptAt)} (attempt ${attempt} of ${MAX_ATTEMPTS})`;
 }
 
-export function DeviceProvisionBadge({ device, className }: DeviceProvisionBadgeProps) {
+export function DeviceProvisionBadge({
+  device, className,
+}: DeviceProvisionBadgeProps) {
   const message = provisionMessage(device);
   if (!message)
     return null;

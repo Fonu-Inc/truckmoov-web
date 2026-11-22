@@ -1,5 +1,7 @@
 import type { MessagingConversation } from "@truckmoov/api/notification";
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 import { windowSecondsLeft } from "./messagingLogic";
 
 /**
@@ -8,29 +10,47 @@ import { windowSecondsLeft } from "./messagingLogic";
  * conversation to locked at the moment it expires.
  */
 export function useWindowLock(conversation: MessagingConversation) {
-  const [reportedAt, setReportedAt] = useState(() => Date.now());
-  const [now, setNow] = useState(() => Date.now());
+  const [
+    reportedAt,
+    setReportedAt,
+  ] = useState(() => Date.now());
+  const [
+    now,
+    setNow,
+  ] = useState(() => Date.now());
 
   useEffect(
     () => {
       setReportedAt(Date.now());
       setNow(Date.now());
     },
-    [conversation.is_locked, conversation.window_remaining_hours],
+    [
+      conversation.is_locked,
+      conversation.window_remaining_hours,
+    ],
   );
 
-  const secondsLeft = windowSecondsLeft(conversation, reportedAt, now);
+  const secondsLeft = windowSecondsLeft(
+    conversation,
+    reportedAt,
+    now,
+  );
   const locked = conversation.is_locked || secondsLeft === 0;
 
   useEffect(
     () => {
       if (locked)
         return;
-      const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+      const timer = window.setInterval(
+        () => setNow(Date.now()),
+        30_000,
+      );
       return () => window.clearInterval(timer);
     },
     [locked],
   );
 
-  return { locked, secondsLeft };
+  return {
+    locked, secondsLeft,
+  };
 }

@@ -3,12 +3,13 @@ import type { SystemSimBatch } from "@truckmoov/api/auth";
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { Progress } from "@/components/shadcn/progress";
 import {
   ActivationStatusBadge,
+  ProgressCell,
+} from "./ActivationBadges";
+import {
   canRetryBatch,
   emptyValue,
-  getProgressPercentage,
 } from "./activationShared";
 
 type ColumnOptions = {
@@ -17,20 +18,6 @@ type ColumnOptions = {
   onRetry: (batch: SystemSimBatch) => void;
   onDetails: (batch: SystemSimBatch) => void;
 };
-
-function ProgressCell({ batch }: { batch: SystemSimBatch }) {
-  return (
-    <div className="w-32 space-y-1">
-      <Progress value={getProgressPercentage(batch)} className="h-2" />
-      <p className="text-xs text-muted-foreground">
-        {`${batch.simsActivated} / ${batch.quantity}`}
-        {batch.simsFailed > 0 && (
-          <span className="ml-1 text-destructive">{`(${batch.simsFailed} failed)`}</span>
-        )}
-      </p>
-    </div>
-  );
-}
 
 export function getActivationColumns({
   canRetry,
@@ -43,7 +30,14 @@ export function getActivationColumns({
       id: "tenant",
       header: "Tenant",
       meta: { className: "min-w-[220px]" },
-      cell: ({ row }) => <span className="font-medium">{row.original.tenantName || row.original.tenantId.slice(0, 8)}</span>,
+      cell: ({ row }) => (
+        <span className="font-medium">
+          {row.original.tenantName || row.original.tenantId.slice(
+            0,
+            8,
+          )}
+        </span>
+      ),
     },
     {
       id: "quantity",
@@ -75,7 +69,10 @@ export function getActivationColumns({
       meta: { className: "min-w-[150px]" },
       cell: ({ row }) => (
         <span className="text-xs text-muted-foreground">
-          {formatDayMonthTime(row.original.createdAt, emptyValue)}
+          {formatDayMonthTime(
+            row.original.createdAt,
+            emptyValue,
+          )}
         </span>
       ),
     },
@@ -97,7 +94,11 @@ export function getActivationColumns({
               Retry
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={() => onDetails(row.original)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onDetails(row.original)}
+          >
             Details
           </Button>
         </div>

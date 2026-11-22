@@ -1,4 +1,6 @@
-import type { SystemInstallationJob, SystemInstaller } from "@truckmoov/api/auth";
+import type {
+  SystemInstallationJob, SystemInstaller,
+} from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import type { FilterValues } from "@/components/shadcn/table-toolbar";
 import { useQuery } from "@tanstack/react-query";
@@ -329,7 +331,10 @@ export function InstallerProfileSheet({
                   status={status}
                   onStatusChange={setStatus}
                   statusOptions={Array.from(new Set(myJobs.map(j => j.status))).map(value => ({
-                    value, label: value.replace(/_/g, " "),
+                    value, label: value.replace(
+                      /_/g,
+                      " ",
+                    ),
                   }))}
                   filterEntity="jobs"
                   filterValues={filters}

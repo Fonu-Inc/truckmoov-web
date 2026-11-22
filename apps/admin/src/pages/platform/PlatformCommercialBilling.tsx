@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { formatNgn } from "@/components/platform/billing/billingUi";
+import { formatNgn } from "@/components/platform/billing/billingFormat";
 import { InvoicesTab } from "@/components/platform/billing/InvoicesTab";
 import { LicensePlansTab } from "@/components/platform/billing/LicensePlansTab";
 import { PaymentsTab } from "@/components/platform/billing/PaymentsTab";

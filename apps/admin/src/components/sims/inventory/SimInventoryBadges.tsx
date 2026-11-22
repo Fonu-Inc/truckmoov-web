@@ -4,7 +4,10 @@ import {
   SignalZero,
 } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
-import { STATUS_LABELS } from "./simInventoryShared";
+import {
+  EMPTY_VALUE,
+  STATUS_LABELS,
+} from "./simInventoryShared";
 
 export function SimStatusBadge({ status }: { status: string }) {
   const label = STATUS_LABELS[status] ?? status;
@@ -36,4 +39,8 @@ export function SimSignalIcon({
   if (strength >= 30)
     return <SignalLow className="h-4 w-4 text-warning" />;
   return <SignalZero className="h-4 w-4 text-destructive" />;
+}
+
+export function EmptyCell() {
+  return <span className="text-muted-foreground">{EMPTY_VALUE}</span>;
 }

@@ -88,7 +88,7 @@ export function CallRecordingsManager() {
   ] = useState<string | null>(null);
 
   const isTranscribing = false;
-  const transcribeCall = async (_url: string, _callId: string, _lang: string): Promise<null> => null;
+  const transcribeCall = async (_url: string, _callId: string, _lang: string): Promise<TranscriptionData | null> => null;
 
   // Fetch real recordings from driver_call_logs
   const fetchRecordings = useCallback(
@@ -169,14 +169,7 @@ export function CallRecordingsManager() {
           r.id === recording.id
             ? {
                 ...r,
-                transcription: {
-                  text: result.transcription,
-                  summary: result.summary,
-                  qualityScore: result.qualityScore,
-                  sentiment: result.sentiment,
-                  keyTopics: result.keyTopics,
-                  issues: result.issues,
-                },
+                transcription: result,
               }
             : r));
     }

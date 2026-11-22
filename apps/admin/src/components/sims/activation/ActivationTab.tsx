@@ -1,6 +1,10 @@
-import type { SystemSimBatch, SystemSimBatchesQuery } from "@truckmoov/api/auth";
+import type {
+  SystemSimBatch, SystemSimBatchesQuery,
+} from "@truckmoov/api/auth";
 import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery, useQueryClient,
+} from "@tanstack/react-query";
 import {
   getSystemSimBatchQueryOptions,
   getSystemSimsBatchesExportQueryOptions,
@@ -14,7 +18,9 @@ import {
   Search,
   Zap,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -46,9 +52,7 @@ import {
 } from "./activationShared";
 import { ActivationSummaryCards } from "./ActivationSummaryCards";
 
-const emptyDraft: FilterDraft = {
-  operator: { enabled: false },
-};
+const emptyDraft: FilterDraft = { operator: { enabled: false } };
 
 function uniqueOptions(values: string[]) {
   return Array.from(new Set(values.filter(Boolean))).map(value => ({
@@ -76,16 +80,42 @@ export function ActivationTab() {
     confirm,
     confirmDialog,
   } = useConfirmAction();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [filterDraft, setFilterDraft] = useState<FilterDraft>(emptyDraft);
-  const [detailBatchId, setDetailBatchId] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const debouncedSearch = useDebouncedValue(searchQuery.trim(), 400);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
+    filterDraft,
+    setFilterDraft,
+  ] = useState<FilterDraft>(emptyDraft);
+  const [
+    detailBatchId,
+    setDetailBatchId,
+  ] = useState<string | null>(null);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
+  const debouncedSearch = useDebouncedValue(
+    searchQuery.trim(),
+    400,
+  );
 
   const queryPayload = useMemo(
-    () => buildQuery(debouncedSearch, statusFilter, filterDraft),
-    [debouncedSearch, statusFilter, filterDraft],
+    () => buildQuery(
+      debouncedSearch,
+      statusFilter,
+      filterDraft,
+    ),
+    [
+      debouncedSearch,
+      statusFilter,
+      filterDraft,
+    ],
   );
 
   const allQuery = useQuery(getSystemSimsBatchesQueryOptions());
@@ -129,15 +159,21 @@ export function ActivationTab() {
       onRetry: requestRetry,
       onDetails: batch => setDetailBatchId(batch.id),
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canRetry, retryBatch.isPending],
+    // eslint-disable-next-line react/exhaustive-deps
+    [
+      canRetry,
+      retryBatch.isPending,
+    ],
   );
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
       const blob = await queryClient.fetchQuery(getSystemSimsBatchesExportQueryOptions(queryPayload));
-      downloadBlob(blob as Blob, "sim-activations.csv");
+      downloadBlob(
+        blob as Blob,
+        "sim-activations.csv",
+      );
       toast.success("Activations exported");
     }
     catch {
@@ -191,13 +227,21 @@ export function ActivationTab() {
                 className="h-9 pl-9"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger className="h-9 w-[170px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
                 {statusOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -1,3 +1,4 @@
+import type { SimRow } from "./simInventoryShared";
 import {
   ArrowUpDown,
   CheckCircle,
@@ -15,7 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import type { SimRow } from "./simInventoryShared";
 import {
   canDelete,
   canReinstate,
@@ -101,4 +101,3 @@ export function SimRowMenu({
     </DropdownMenu>
   );
 }
-

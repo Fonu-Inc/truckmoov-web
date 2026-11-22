@@ -8,9 +8,15 @@ type DraftState = {
 
 export const useDrafts = create<DraftState>(set => ({
   byConversation: {},
-  set: (conversationId, text) => set(s => ({ byConversation: { ...s.byConversation, [conversationId]: text } })),
+  set: (conversationId, text) => set(s => ({
+    byConversation: {
+      ...s.byConversation, [conversationId]: text,
+    },
+  })),
   clear: conversationId => set((s) => {
-    const { [conversationId]: _removed, ...rest } = s.byConversation;
+    const {
+      [conversationId]: _removed, ...rest
+    } = s.byConversation;
     return { byConversation: rest };
   }),
 }));

@@ -7,18 +7,20 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import {
+  formatIsoDateTime,
+  formatNgn,
+  METHOD_LABEL,
+  methodLabel,
+  NONE,
+  PAYMENT_STATUS_LABEL,
+} from "@/components/platform/billing/billingFormat";
+import {
   BillingCard,
   BillingCardBody,
   BillingCardHeader,
   BillingPager,
   FILTER_TRIGGER,
-  formatIsoDateTime,
-  formatNgn,
   ListErrorBanner,
-  METHOD_LABEL,
-  methodLabel,
-  NONE,
-  PAYMENT_STATUS_LABEL,
   PaymentStatusBadge,
   ProductChip,
   TableStateRows,

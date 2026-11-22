@@ -40,34 +40,86 @@ import {
 export const TEMPLATE_FORM_ID = "whatsapp-template-form";
 
 const LANGUAGES = [
-  { value: "en_US", label: "English (US)" },
-  { value: "en_GB", label: "English (UK)" },
-  { value: "en", label: "English" },
-  { value: "fr", label: "French" },
-  { value: "es", label: "Spanish" },
-  { value: "pt_BR", label: "Portuguese (Brazil)" },
-  { value: "ar", label: "Arabic" },
-  { value: "sw", label: "Swahili" },
+  {
+    value: "en_US", label: "English (US)",
+  },
+  {
+    value: "en_GB", label: "English (UK)",
+  },
+  {
+    value: "en", label: "English",
+  },
+  {
+    value: "fr", label: "French",
+  },
+  {
+    value: "es", label: "Spanish",
+  },
+  {
+    value: "pt_BR", label: "Portuguese (Brazil)",
+  },
+  {
+    value: "ar", label: "Arabic",
+  },
+  {
+    value: "sw", label: "Swahili",
+  },
 ];
 
 const CATEGORIES = [
-  { value: "UTILITY", label: "Utility", hint: "Order, job and account updates a customer expects." },
-  { value: "MARKETING", label: "Marketing", hint: "Promotions and announcements. Billed at a higher rate." },
+  {
+    value: "UTILITY", label: "Utility", hint: "Order, job and account updates a customer expects.",
+  },
+  {
+    value: "MARKETING", label: "Marketing", hint: "Promotions and announcements. Billed at a higher rate.",
+  },
 ];
 
 const templateSchema = z.object({
-  name: z.string().min(1, "Name is required.").max(512).regex(TEMPLATE_NAME_PATTERN, "Use lowercase letters, numbers and underscores."),
+  name: z.string().min(
+    1,
+    "Name is required.",
+  ).max(512).regex(
+    TEMPLATE_NAME_PATTERN,
+    "Use lowercase letters, numbers and underscores.",
+  ),
   language: z.string().min(1),
-  category: z.enum(["UTILITY", "MARKETING"]),
-  header: z.string().max(60, "Header is at most 60 characters.").refine(value => !value.includes("{{"), "Header variables are not supported here."),
-  body: z.string().trim().min(1, "Body is required.").max(1024, "Body is at most 1024 characters.")
-    .refine(placeholdersAreSequential, "Number variables {{1}}, {{2}}... in order with no gaps."),
-  footer: z.string().max(60, "Footer is at most 60 characters."),
+  category: z.enum([
+    "UTILITY",
+    "MARKETING",
+  ]),
+  header: z.string().max(
+    60,
+    "Header is at most 60 characters.",
+  ).refine(
+    value => !value.includes("{{"),
+    "Header variables are not supported here.",
+  ),
+  body: z.string().trim().min(
+    1,
+    "Body is required.",
+  ).max(
+    1024,
+    "Body is at most 1024 characters.",
+  ).refine(
+    placeholdersAreSequential,
+    "Number variables {{1}}, {{2}}... in order with no gaps.",
+  ),
+  footer: z.string().max(
+    60,
+    "Footer is at most 60 characters.",
+  ),
   examples: z.array(z.string()),
 }).superRefine((value, context) => {
   placeholderNumbers(value.body).forEach((_, index) => {
-    if (!value.examples[index]?.trim())
-      context.addIssue({ code: "custom", path: ["examples", index], message: "Give an example value." });
+    if (!value.examples[index]?.trim()) {
+      context.addIssue({
+        code: "custom", path: [
+          "examples",
+          index,
+        ], message: "Give an example value.",
+      });
+    }
   });
 });
 
@@ -78,7 +130,9 @@ type TemplateFormDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export function TemplateFormDialog({ open, onOpenChange }: TemplateFormDialogProps) {
+export function TemplateFormDialog({
+  open, onOpenChange,
+}: TemplateFormDialogProps) {
   const create = useCreateSystemWhatsAppTemplate();
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(templateSchema),
@@ -240,32 +294,43 @@ export function TemplateFormDialog({ open, onOpenChange }: TemplateFormDialogPro
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>Use {"{{1}}"}, {"{{2}}"}... for values filled in when sending.</FormDescription>
+                  <FormDescription>
+                    Use
+                    {"{{1}}"}
+                    ,
+                    {"{{2}}"}
+                    ... for values filled in when sending.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {Array.from({ length: variableCount }, (_, index) => (
-              <FormField
-                key={index}
-                control={form.control}
-                name={`examples.${index}`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Example for {`{{${index + 1}}}`}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ))}
+            {Array.from(
+              { length: variableCount },
+              (_, index) => (
+                <FormField
+                  key={index}
+                  control={form.control}
+                  name={`examples.${index}`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Example for
+                        {" "}
+                        {`{{${index + 1}}}`}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ),
+            )}
             <FormField
               control={form.control}
               name="footer"

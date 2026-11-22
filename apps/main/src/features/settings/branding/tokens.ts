@@ -58,7 +58,9 @@ export function parseColorPair(v: unknown): {
 } {
   // API has returned non-strings here (e.g. { dark, light } objects); never crash the app shell.
   if (v && typeof v === "object") {
-    const o = v as { dark?: unknown; light?: unknown };
+    const o = v as {
+      dark?: unknown; light?: unknown;
+    };
     const dark = typeof o.dark === "string" ? o.dark : "";
     const light = typeof o.light === "string" ? o.light : dark;
     return {

@@ -7,7 +7,9 @@ export const TRACKER_TYPE_LABELS: Record<string, string> = {
   asset: "Battery / Portable",
 };
 
-export const KYC_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+export const KYC_STATUS_CONFIG: Record<string, {
+  label: string; className: string;
+}> = {
   verified: {
     label: "Verified",
     className: "bg-success/10 text-success border-success/30",
@@ -22,7 +24,9 @@ export const KYC_STATUS_CONFIG: Record<string, { label: string; className: strin
   },
 };
 
-export const STATUS_CONFIG: Record<SystemDeviceSetupStatus, { label: string; className: string }> = {
+export const STATUS_CONFIG: Record<SystemDeviceSetupStatus, {
+  label: string; className: string;
+}> = {
   pending_review: {
     label: "Pending Review",
     className: "bg-warning/10 text-warning border-warning/30",
@@ -55,26 +59,47 @@ export const STATUS_CONFIG: Record<SystemDeviceSetupStatus, { label: string; cla
 
 export type StatusBucket = "pending_review" | "approved" | "rejected";
 
-export const STATUS_OPTIONS: { value: StatusBucket; label: string }[] = [
-  { value: "pending_review", label: "Pending Review" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
+export const STATUS_OPTIONS: {
+  value: StatusBucket; label: string;
+}[] = [
+  {
+    value: "pending_review", label: "Pending Review",
+  },
+  {
+    value: "approved", label: "Approved",
+  },
+  {
+    value: "rejected", label: "Rejected",
+  },
 ];
 
-const APPROVED_STATUSES: SystemDeviceSetupStatus[] = ["approved", "in_progress", "provisioned", "assigned"];
+const APPROVED_STATUSES: SystemDeviceSetupStatus[] = [
+  "approved",
+  "in_progress",
+  "provisioned",
+  "assigned",
+];
 
 export function getStatusBucket(status: SystemDeviceSetupStatus): string {
   return APPROVED_STATUSES.includes(status) ? "approved" : status;
 }
 
 export type DeviceSetupFilters = {
-  manufacturer: { enabled: boolean; value: string };
-  organisation: { enabled: boolean; value: string };
+  manufacturer: {
+    enabled: boolean; value: string;
+  };
+  organisation: {
+    enabled: boolean; value: string;
+  };
 };
 
 export const EMPTY_FILTERS: DeviceSetupFilters = {
-  manufacturer: { enabled: false, value: "" },
-  organisation: { enabled: false, value: "" },
+  manufacturer: {
+    enabled: false, value: "",
+  },
+  organisation: {
+    enabled: false, value: "",
+  },
 };
 
 export function cloneFilters(filters: DeviceSetupFilters): DeviceSetupFilters {

@@ -6,8 +6,8 @@ import {
   formatNgn,
   formatTaxRate,
   methodLabel,
-  PaymentStatusBadge,
-} from "@/components/platform/billing/billingUi";
+} from "@/components/platform/billing/billingFormat";
+import { PaymentStatusBadge } from "@/components/platform/billing/billingUi";
 import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
@@ -18,7 +18,11 @@ import {
 } from "@/components/shadcn/dialog";
 import { Skeleton } from "@/components/shadcn/skeleton";
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({
+  label, value,
+}: {
+  label: string; value: string;
+}) {
   return (
     <div className="rounded-xl border p-3">
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -27,7 +31,11 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Line({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Line({
+  label, value, strong,
+}: {
+  label: string; value: string; strong?: boolean;
+}) {
   return (
     <div className={`flex justify-between gap-4 text-sm ${strong ? "font-semibold" : ""}`}>
       <span className={strong ? "" : "text-muted-foreground"}>{label}</span>
@@ -40,17 +48,42 @@ function Breakdown({ b }: { b: PaymentBreakdown }) {
   return (
     <div className="space-y-2 rounded-xl border p-4">
       <p className="text-sm font-semibold">{b.planName}</p>
-      <Line label="Devices" value={String(b.deviceCount)} />
-      <Line label="Price per device" value={formatNgn(b.perDeviceNgn)} />
-      <Line label="Devices total" value={formatNgn(b.devicesNgn)} />
-      <Line label="Installation per device" value={formatNgn(b.installationPerDeviceNgn)} />
-      <Line label="Installation total" value={formatNgn(b.installationNgn)} />
+      <Line
+        label="Devices"
+        value={String(b.deviceCount)}
+      />
+      <Line
+        label="Price per device"
+        value={formatNgn(b.perDeviceNgn)}
+      />
+      <Line
+        label="Devices total"
+        value={formatNgn(b.devicesNgn)}
+      />
+      <Line
+        label="Installation per device"
+        value={formatNgn(b.installationPerDeviceNgn)}
+      />
+      <Line
+        label="Installation total"
+        value={formatNgn(b.installationNgn)}
+      />
       <div className="border-t pt-2">
-        <Line label="Subtotal" value={formatNgn(b.subtotalNgn)} />
-        <Line label={`Tax (${formatTaxRate(b.taxRateBp)})`} value={formatNgn(b.taxNgn)} />
+        <Line
+          label="Subtotal"
+          value={formatNgn(b.subtotalNgn)}
+        />
+        <Line
+          label={`Tax (${formatTaxRate(b.taxRateBp)})`}
+          value={formatNgn(b.taxNgn)}
+        />
       </div>
       <div className="border-t pt-2">
-        <Line label="Total" value={formatNgn(b.totalNgn)} strong />
+        <Line
+          label="Total"
+          value={formatNgn(b.totalNgn)}
+          strong
+        />
       </div>
     </div>
   );
@@ -75,7 +108,9 @@ function PaymentHeader() {
 }
 
 function Body({ id }: { id: string }) {
-  const { data, isLoading, isError, error, refetch } = useBillingPayment(id);
+  const {
+    data, isLoading, isError, error, refetch,
+  } = useBillingPayment(id);
   const p = data?.data;
 
   if (isLoading) {
@@ -94,7 +129,12 @@ function Body({ id }: { id: string }) {
         <div className="py-8 text-center">
           <p className="text-sm font-medium">Couldn't load payment</p>
           <p className="text-xs text-muted-foreground">{error?.message}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => void refetch()}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void refetch()}
+          >
             Try again
           </Button>
         </div>
@@ -113,16 +153,45 @@ function Body({ id }: { id: string }) {
       </DialogHeader>
       {p.status === "requires_review" && <ReviewCallout />}
       <div className="grid gap-3 sm:grid-cols-2">
-        <Detail label="Amount paid" value={formatNgn(p.amountNgn)} />
-        <Detail label="Payment date" value={formatIsoDateTime(p.paidAt)} />
-        <Detail label="Method" value={methodLabel(p.method)} />
-        <Detail label="Provider" value={p.provider || "-"} />
-        <Detail label="Billing email" value={p.billingEmail || "-"} />
-        <Detail label="Auto-reconciled" value={p.autoReconciled ? "Yes" : "No"} />
-        <Detail label="Linked quotation" value={p.quotationNumber ?? "-"} />
-        <Detail label="Linked invoice" value={p.invoiceNumber ?? "-"} />
+        <Detail
+          label="Amount paid"
+          value={formatNgn(p.amountNgn)}
+        />
+        <Detail
+          label="Payment date"
+          value={formatIsoDateTime(p.paidAt)}
+        />
+        <Detail
+          label="Method"
+          value={methodLabel(p.method)}
+        />
+        <Detail
+          label="Provider"
+          value={p.provider || "-"}
+        />
+        <Detail
+          label="Billing email"
+          value={p.billingEmail || "-"}
+        />
+        <Detail
+          label="Auto-reconciled"
+          value={p.autoReconciled ? "Yes" : "No"}
+        />
+        <Detail
+          label="Linked quotation"
+          value={p.quotationNumber ?? "-"}
+        />
+        <Detail
+          label="Linked invoice"
+          value={p.invoiceNumber ?? "-"}
+        />
       </div>
-      {p.note && <Detail label="Note" value={p.note} />}
+      {p.note && (
+        <Detail
+          label="Note"
+          value={p.note}
+        />
+      )}
       {p.breakdown && <Breakdown b={p.breakdown} />}
     </div>
   );
@@ -136,7 +205,10 @@ export function PaymentDetailsDialog({
   onClose: () => void;
 }) {
   return (
-    <Dialog open={!!paymentId} onOpenChange={o => !o && onClose()}>
+    <Dialog
+      open={!!paymentId}
+      onOpenChange={o => !o && onClose()}
+    >
       <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto">
         {paymentId && <Body id={paymentId} />}
       </DialogContent>

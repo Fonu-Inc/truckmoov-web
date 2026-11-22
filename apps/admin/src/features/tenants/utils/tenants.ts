@@ -45,9 +45,7 @@ export function tenantTypeOf(tenant: Pick<SystemTenant, "organizationTypes" | "o
  * Prepaid vs postpaid, from the tenant's plan entitlements. Returns null when
  * the plan has no payment model rather than inventing one.
  */
-export function getBillingModel(tenant: {
-  billingModel?: string | null;
-}): "prepaid" | "postpaid" | null {
+export function getBillingModel(tenant: { billingModel?: string | null }): "prepaid" | "postpaid" | null {
   const raw = (tenant.billingModel || "").toLowerCase();
   if (raw === "postpaid")
     return "postpaid";

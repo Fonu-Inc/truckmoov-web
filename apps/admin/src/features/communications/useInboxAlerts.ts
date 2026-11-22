@@ -1,7 +1,11 @@
 import type { PlatformMessagingSocket } from "@truckmoov/api/notification";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { playInboundSound, readSoundPreference, writeSoundPreference } from "./inboxAlerts";
+import {
+  useEffect, useRef, useState,
+} from "react";
+import {
+  playInboundSound, readSoundPreference, writeSoundPreference,
+} from "./inboxAlerts";
 import { unreadSummaryOptions } from "./useUnreadSummary";
 
 /**
@@ -10,7 +14,10 @@ import { unreadSummaryOptions } from "./useUnreadSummary";
  * title.
  */
 export function useInboxAlerts(socket: PlatformMessagingSocket | null, openConversationId: string | null) {
-  const [sound, setSound] = useState(readSoundPreference);
+  const [
+    sound,
+    setSound,
+  ] = useState(readSoundPreference);
   const soundRef = useRef(sound);
   soundRef.current = sound;
   const openRef = useRef(openConversationId);
@@ -21,13 +28,16 @@ export function useInboxAlerts(socket: PlatformMessagingSocket | null, openConve
     () => {
       if (!socket)
         return;
-      return socket.on("message.created", (event) => {
-        if (event.message.direction !== "inbound" || !soundRef.current)
-          return;
-        const watching = document.visibilityState === "visible" && document.hasFocus() && openRef.current === event.conversation_id;
-        if (!watching)
-          playInboundSound();
-      });
+      return socket.on(
+        "message.created",
+        (event) => {
+          if (event.message.direction !== "inbound" || !soundRef.current)
+            return;
+          const watching = document.visibilityState === "visible" && document.hasFocus() && openRef.current === event.conversation_id;
+          if (!watching)
+            playInboundSound();
+        },
+      );
     },
     [socket],
   );
@@ -35,18 +45,26 @@ export function useInboxAlerts(socket: PlatformMessagingSocket | null, openConve
   const count = summary?.conversations ?? 0;
   useEffect(
     () => {
-      const base = document.title.replace(/^\(\d+\+?\)\s/, "");
+      const base = document.title.replace(
+        /^\(\d+\+?\)\s/,
+        "",
+      );
       document.title = count > 0 ? `(${count}${summary?.at_least ? "+" : ""}) ${base}` : base;
       return () => {
         document.title = base;
       };
     },
-    [count, summary?.at_least],
+    [
+      count,
+      summary?.at_least,
+    ],
   );
 
   const toggleSound = () => {
     writeSoundPreference(!sound);
     setSound(!sound);
   };
-  return { sound, toggleSound };
+  return {
+    sound, toggleSound,
+  };
 }

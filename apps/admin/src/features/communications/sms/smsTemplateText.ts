@@ -13,7 +13,7 @@ export const CATEGORY_LABEL: Record<SmsTemplateCategory, string> = {
   payment: "Payments",
 };
 
-const PLACEHOLDER = /\{\{\s*([A-Za-z][A-Za-z0-9_]*)\s*\}\}/g;
+const PLACEHOLDER = /\{\{\s*([A-Z]\w*)\s*\}\}/gi;
 
 export function variablesOf(content: string): string[] {
   const found: string[] = [];
@@ -25,7 +25,10 @@ export function variablesOf(content: string): string[] {
 }
 
 export function renderSms(content: string, values: Record<string, string>): string {
-  return content.replace(PLACEHOLDER, (whole, name: string) => values[name]?.trim() || whole);
+  return content.replace(
+    PLACEHOLDER,
+    (whole, name: string) => values[name]?.trim() || whole,
+  );
 }
 
 export function segmentCount(text: string): number {

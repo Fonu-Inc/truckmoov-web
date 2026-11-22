@@ -217,7 +217,7 @@ export default function WelcomeDashboard() {
   return (
     <OnboardingLayout
       step={4}
-      title={`Welcome Aboard${user?.name ? `, ${user.name.split(" ")[0]}` : ""} 🎉`}
+      title="Welcome Aboard 🎉"
       subtitle="Jump straight to what matters most. These shortcuts are tailored to your role — you can always reach them from the sidebar later."
     >
       <div className="grid gap-3 sm:grid-cols-2">

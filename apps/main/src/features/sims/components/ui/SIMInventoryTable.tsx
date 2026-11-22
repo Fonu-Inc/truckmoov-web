@@ -1,4 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import type { SIMCard } from "@/types";
 import {
   Download,
   Edit,
@@ -39,25 +40,13 @@ import {
 } from "@/components/shadcn/select";
 import { cn } from "@/lib/utils";
 
-// Local type alias (hook deleted)
-type SIMCardExtended = {
-  id: string;
-  iccid: string;
-  mobileNumber: string;
-  networkOperator: string;
-  status: string;
-  deviceId?: string;
-  dataUsage: number;
-  dataLimit: number;
-};
-
 type DeviceInfo = {
   id: string;
   imei: string;
 };
 
 type Props = {
-  sims: SIMCardExtended[];
+  sims: SIMCard[];
   total: number;
   loading?: boolean;
   isFetching?: boolean;
@@ -74,12 +63,12 @@ type Props = {
   operatorFilters: string[];
   onOperatorFiltersChange: (o: string[]) => void;
   operators: string[];
-  onViewDetails: (sim: SIMCardExtended) => void;
-  onEdit: (sim: SIMCardExtended) => void;
+  onViewDetails: (sim: SIMCard) => void;
+  onEdit: (sim: SIMCard) => void;
   onActivate: (simId: string) => void;
   onSuspend: (simId: string) => void;
   onResume: (simId: string) => void;
-  onAssign: (sim: SIMCardExtended) => void;
+  onAssign: (sim: SIMCard) => void;
   onUnassign: (simId: string) => void;
   onDelete: (simId: string) => void;
 };
@@ -110,7 +99,7 @@ export function SIMInventoryTable({
   onUnassign,
   onDelete,
 }: Props) {
-  const columns: ColumnDef<SIMCardExtended>[] = [
+  const columns: ColumnDef<SIMCard>[] = [
     {
       id: "simId",
       header: "SIM ID",

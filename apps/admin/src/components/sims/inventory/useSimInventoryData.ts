@@ -1,4 +1,5 @@
 import type { SystemSimsQuery } from "@truckmoov/api/auth";
+import type { SimLookups } from "./simInventoryShared";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemDevicesQueryOptions,
@@ -7,7 +8,6 @@ import {
   getSystemTenantsQueryOptions,
 } from "@truckmoov/api/auth";
 import { useMemo } from "react";
-import type { SimLookups } from "./simInventoryShared";
 import { mapSimToRow } from "./simInventoryShared";
 
 export function useSimInventoryData(query: SystemSimsQuery) {

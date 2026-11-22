@@ -26,7 +26,10 @@ export function splitCsv(content: string) {
   let row: string[] = [];
   let cell = "";
   let quoted = false;
-  const text = content.replace(/^﻿/, "");
+  const text = content.replace(
+    /^\uFEFF/,
+    "",
+  );
 
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
@@ -97,7 +100,11 @@ export function parseSimCsv(content: string): ParsedSimRow[] {
     const iccid = rawIccid.trim();
     const msisdn = rawMsisdn.trim();
     const carrier = normalizeCarrier(rawCarrier.trim());
-    const errors = validateRow(iccid, msisdn, carrier);
+    const errors = validateRow(
+      iccid,
+      msisdn,
+      carrier,
+    );
     return {
       iccid,
       msisdn,

@@ -1,3 +1,4 @@
+import type { SimRow } from "../simInventoryShared";
 import { useDeleteSystemSim } from "@truckmoov/api/auth";
 import { toast } from "sonner";
 import {
@@ -10,7 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
-import type { SimRow } from "../simInventoryShared";
 
 export type SimDeleteDialogProps = {
   sim: SimRow | null;

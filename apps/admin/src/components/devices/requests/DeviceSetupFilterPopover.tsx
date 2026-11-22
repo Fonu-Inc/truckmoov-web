@@ -1,9 +1,15 @@
+import type { DeviceSetupFilters } from "./deviceSetupConfig";
 import { SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Label } from "@/components/shadcn/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/shadcn/popover";
 import {
   Select,
   SelectContent,
@@ -12,15 +18,10 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/shadcn/popover";
-import {
   cloneFilters,
   countActiveFilters,
+
   EMPTY_FILTERS,
-  type DeviceSetupFilters,
 } from "./deviceSetupConfig";
 
 type Props = {
@@ -30,17 +31,33 @@ type Props = {
   manufacturers: string[];
 };
 
-export function DeviceSetupFilterPopover({ applied, onApply, organisations, manufacturers }: Props) {
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<DeviceSetupFilters>(() => cloneFilters(applied));
+export function DeviceSetupFilterPopover({
+  applied, onApply, organisations, manufacturers,
+}: Props) {
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+  const [
+    draft,
+    setDraft,
+  ] = useState<DeviceSetupFilters>(() => cloneFilters(applied));
   const activeCount = countActiveFilters(applied);
 
   function patchManufacturer(patch: Partial<DeviceSetupFilters["manufacturer"]>) {
-    setDraft(current => ({ ...current, manufacturer: { ...current.manufacturer, ...patch } }));
+    setDraft(current => ({
+      ...current, manufacturer: {
+        ...current.manufacturer, ...patch,
+      },
+    }));
   }
 
   function patchOrganisation(patch: Partial<DeviceSetupFilters["organisation"]>) {
-    setDraft(current => ({ ...current, organisation: { ...current.organisation, ...patch } }));
+    setDraft(current => ({
+      ...current, organisation: {
+        ...current.organisation, ...patch,
+      },
+    }));
   }
 
   function commit(next: DeviceSetupFilters) {

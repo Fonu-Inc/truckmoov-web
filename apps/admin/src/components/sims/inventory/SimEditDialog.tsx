@@ -1,10 +1,12 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import type { UpdateSystemSimPayload } from "@truckmoov/api/auth";
-import { useUpdateSystemSim } from "@truckmoov/api/auth";
 import type {
   Resolver,
   UseFormReturn,
 } from "react-hook-form";
+import type { SimIdentityValues } from "./dialogs/simIdentity";
+import type { SimRow } from "./simInventoryShared";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useUpdateSystemSim } from "@truckmoov/api/auth";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -33,14 +35,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { SimIdentityFields } from "./dialogs/SimIdentityFields";
-import type { SimIdentityValues } from "./dialogs/simIdentity";
 import {
   buildIdentityShape,
   mergeCarrierOptions,
 } from "./dialogs/simIdentity";
+import { SimIdentityFields } from "./dialogs/SimIdentityFields";
 import { SimStatusBadge } from "./SimInventoryBadges";
-import type { SimRow } from "./simInventoryShared";
 import {
   PLAN_LABELS,
   SIM_CARRIERS,
@@ -57,8 +57,14 @@ function buildEditSchema(sim: SimRow) {
       imsi: sim.imsi ?? "",
     }),
     plan: z.enum(SIM_PLANS),
-    dataLimitMb: z.coerce.number().int("Data limit must be a whole number.").min(0, "Data limit must be 0 or higher."),
-    smsLimit: z.coerce.number().int("SMS limit must be a whole number.").min(0, "SMS limit must be 0 or higher."),
+    dataLimitMb: z.coerce.number().int("Data limit must be a whole number.").min(
+      0,
+      "Data limit must be 0 or higher.",
+    ),
+    smsLimit: z.coerce.number().int("SMS limit must be a whole number.").min(
+      0,
+      "SMS limit must be 0 or higher.",
+    ),
   });
 }
 
@@ -122,7 +128,10 @@ function EditSimForm({
     updateMutation.mutate(
       {
         id: sim.id,
-        data: buildChanges(sim, values),
+        data: buildChanges(
+          sim,
+          values,
+        ),
       },
       {
         onSuccess: () => {
@@ -245,7 +254,10 @@ export function SimEditDialog({
   onOpenChange,
   carrierOptions = SIM_CARRIERS,
 }: SimEditDialogProps) {
-  const options = mergeCarrierOptions(carrierOptions, sim ? [sim.carrier] : []);
+  const options = mergeCarrierOptions(
+    carrierOptions,
+    sim ? [sim.carrier] : [],
+  );
 
   return (
     <Dialog

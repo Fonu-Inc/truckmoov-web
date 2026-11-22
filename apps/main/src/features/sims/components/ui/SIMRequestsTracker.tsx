@@ -77,10 +77,17 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
     pageSize,
     setPageSize,
   ] = useState(PAGE_SIZES[1]);
-  const requestsQuery = useQuery(getSimRequestsQueryOptions({ params: { page, limit: pageSize } }));
+  const requestsQuery = useQuery(getSimRequestsQueryOptions({
+    params: {
+      page, limit: pageSize,
+    },
+  }));
   const requests = requestsQuery.data?.data.items ?? [];
   const total = requestsQuery.data?.data.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(total / pageSize),
+  );
   const loading = requestsQuery.isLoading;
   const [
     expandedId,

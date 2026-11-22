@@ -1,5 +1,9 @@
-import type { MessagingConversation, PlatformMessagingSocket } from "@truckmoov/api/notification";
-import { useEffect, useRef, useState } from "react";
+import type {
+  MessagingConversation, PlatformMessagingSocket,
+} from "@truckmoov/api/notification";
+import {
+  useEffect, useRef, useState,
+} from "react";
 import { usePageAttention } from "./usePageAttention";
 
 const RETRY_DELAY_MS = 3000;
@@ -11,7 +15,10 @@ export function useMarkRead(
   canManage: boolean,
 ) {
   const lastSent = useRef("");
-  const [attempt, setAttempt] = useState(0);
+  const [
+    attempt,
+    setAttempt,
+  ] = useState(0);
   const attending = usePageAttention();
   const unread = conversation?.unread_count ?? 0;
   const id = conversation?.id;
@@ -29,7 +36,10 @@ export function useMarkRead(
         if (ack.ok || lastSent.current !== key)
           return;
         lastSent.current = "";
-        timer = window.setTimeout(() => setAttempt(n => n + 1), RETRY_DELAY_MS);
+        timer = window.setTimeout(
+          () => setAttempt(n => n + 1),
+          RETRY_DELAY_MS,
+        );
       });
       return () => window.clearTimeout(timer);
     },

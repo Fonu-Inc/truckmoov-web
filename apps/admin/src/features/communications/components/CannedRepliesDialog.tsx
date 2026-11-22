@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
 import type { MessagingCannedReply } from "@truckmoov/api/notification";
-import { Pencil, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Pencil, Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -23,33 +25,77 @@ type Props = {
   onOpenChange: (open: boolean) => void;
 };
 
-const EMPTY = { shortcut: "", title: "", body: "" };
+const EMPTY = {
+  shortcut: "", title: "", body: "",
+};
 
-function ReplyForm({ editing, onDone }: { editing: MessagingCannedReply | null; onDone: () => void }) {
-  const [form, setForm] = useState(editing ? { shortcut: editing.shortcut, title: editing.title, body: editing.body } : EMPTY);
+function ReplyForm({
+  editing, onDone,
+}: {
+  editing: MessagingCannedReply | null; onDone: () => void;
+}) {
+  const [
+    form,
+    setForm,
+  ] = useState(editing ? {
+    shortcut: editing.shortcut, title: editing.title, body: editing.body,
+  } : EMPTY);
   const { save } = useCannedReplyActions(onDone);
   const complete = form.shortcut.trim() && form.title.trim() && form.body.trim();
-  const field = (key: keyof typeof EMPTY) => (value: string) => setForm(current => ({ ...current, [key]: value }));
+  const field = (key: keyof typeof EMPTY) => (value: string) => setForm(current => ({
+    ...current, [key]: value,
+  }));
 
   return (
     <div className="space-y-3 rounded-lg border border-border/60 p-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor="canned-shortcut">Shortcut</Label>
-          <Input id="canned-shortcut" placeholder="eta" maxLength={32} value={form.shortcut} onChange={e => field("shortcut")(e.target.value)} />
+          <Input
+            id="canned-shortcut"
+            placeholder="eta"
+            maxLength={32}
+            value={form.shortcut}
+            onChange={e => field("shortcut")(e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <Label htmlFor="canned-title">Title</Label>
-          <Input id="canned-title" placeholder="Asking for an ETA" maxLength={80} value={form.title} onChange={e => field("title")(e.target.value)} />
+          <Input
+            id="canned-title"
+            placeholder="Asking for an ETA"
+            maxLength={80}
+            value={form.title}
+            onChange={e => field("title")(e.target.value)}
+          />
         </div>
       </div>
       <div className="space-y-1">
         <Label htmlFor="canned-body">Reply</Label>
-        <Textarea id="canned-body" rows={3} maxLength={4096} value={form.body} onChange={e => field("body")(e.target.value)} />
+        <Textarea
+          id="canned-body"
+          rows={3}
+          maxLength={4096}
+          value={form.body}
+          onChange={e => field("body")(e.target.value)}
+        />
       </div>
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={onDone}>Cancel</Button>
-        <Button size="sm" disabled={!complete} loading={save.isPending} onClick={() => save.mutate({ ...form, id: editing?.id })}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onDone}
+        >
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          disabled={!complete}
+          loading={save.isPending}
+          onClick={() => save.mutate({
+            ...form, id: editing?.id,
+          })}
+        >
           Save
         </Button>
       </div>
@@ -57,9 +103,16 @@ function ReplyForm({ editing, onDone }: { editing: MessagingCannedReply | null; 
   );
 }
 
-export function CannedRepliesDialog({ open, canManage, onOpenChange }: Props) {
-  const replies = useQuery({ ...cannedRepliesOptions(), enabled: open });
-  const [editing, setEditing] = useState<MessagingCannedReply | "new" | null>(null);
+export function CannedRepliesDialog({
+  open, canManage, onOpenChange,
+}: Props) {
+  const replies = useQuery({
+    ...cannedRepliesOptions(), enabled: open,
+  });
+  const [
+    editing,
+    setEditing,
+  ] = useState<MessagingCannedReply | "new" | null>(null);
   const { remove } = useCannedReplyActions();
 
   const close = (next: boolean) => {
@@ -69,7 +122,10 @@ export function CannedRepliesDialog({ open, canManage, onOpenChange }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={close}>
+    <Dialog
+      open={open}
+      onOpenChange={close}
+    >
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Quick replies</DialogTitle>
@@ -82,7 +138,10 @@ export function CannedRepliesDialog({ open, canManage, onOpenChange }: Props) {
         )}
         <ul className="space-y-2">
           {replies.data?.map(reply => (
-            <li key={reply.id} className="flex items-start gap-2 rounded-lg border border-border/60 p-2">
+            <li
+              key={reply.id}
+              className="flex items-start gap-2 rounded-lg border border-border/60 p-2"
+            >
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">
                   /
@@ -93,10 +152,21 @@ export function CannedRepliesDialog({ open, canManage, onOpenChange }: Props) {
               </div>
               {canManage && (
                 <>
-                  <Button variant="ghost" size="icon-sm" aria-label={`Edit ${reply.title}`} onClick={() => setEditing(reply)}>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Edit ${reply.title}`}
+                    onClick={() => setEditing(reply)}
+                  >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label={`Delete ${reply.title}`} loading={remove.isPending && remove.variables === reply.id} onClick={() => remove.mutate(reply.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Delete ${reply.title}`}
+                    loading={remove.isPending && remove.variables === reply.id}
+                    onClick={() => remove.mutate(reply.id)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </>
@@ -105,10 +175,20 @@ export function CannedRepliesDialog({ open, canManage, onOpenChange }: Props) {
           ))}
         </ul>
         {editing !== null && (
-          <ReplyForm key={editing === "new" ? "new" : editing.id} editing={editing === "new" ? null : editing} onDone={() => setEditing(null)} />
+          <ReplyForm
+            key={editing === "new" ? "new" : editing.id}
+            editing={editing === "new" ? null : editing}
+            onDone={() => setEditing(null)}
+          />
         )}
         {canManage && editing === null && (
-          <Button variant="outline" size="sm" onClick={() => setEditing("new")}>New quick reply</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditing("new")}
+          >
+            New quick reply
+          </Button>
         )}
       </DialogContent>
     </Dialog>

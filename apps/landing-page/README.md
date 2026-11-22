@@ -14,8 +14,8 @@ pnpm dev:landing          # from the repo root; http://localhost:3000
 | Script                                          | What it does                                                                  |
 | ----------------------------------------------- | ----------------------------------------------------------------------------- |
 | `pnpm dev`                                      | `next dev` on port 3000, all interfaces                                       |
-| `pnpm build`                                    | static export to `out/`                                                        |
-| `pnpm start`                                    | serves `out/` on port 3000 with `npx serve`                                    |
+| `pnpm build`                                    | static export to `out/`                                                       |
+| `pnpm start`                                    | serves `out/` on port 3000 with `npx serve`                                   |
 | `pnpm lint`                                     | shared ESLint config (`@truckmoov/app-core/eslint-config`)                    |
 | `pnpm env:generate` / `env:check` / `env:watch` | regenerate / verify / watch `src/shared/env/env.ts` from `.env` (type-envgen) |
 

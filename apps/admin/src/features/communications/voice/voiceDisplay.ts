@@ -1,11 +1,25 @@
-import type { IvrPromptCategory, VoiceCallStatus, VoiceLanguage } from "@truckmoov/api/notification";
+import type {
+  IvrPromptCategory, VoiceCallStatus, VoiceLanguage,
+} from "@truckmoov/api/notification";
 
-export const LANGUAGES: { code: VoiceLanguage; name: string }[] = [
-  { code: "en", name: "English" },
-  { code: "ha", name: "Hausa" },
-  { code: "yo", name: "Yoruba" },
-  { code: "ig", name: "Igbo" },
-  { code: "pcm", name: "Nigerian Pidgin" },
+export const LANGUAGES: {
+  code: VoiceLanguage; name: string;
+}[] = [
+  {
+    code: "en", name: "English",
+  },
+  {
+    code: "ha", name: "Hausa",
+  },
+  {
+    code: "yo", name: "Yoruba",
+  },
+  {
+    code: "ig", name: "Igbo",
+  },
+  {
+    code: "pcm", name: "Nigerian Pidgin",
+  },
 ];
 
 export const CATEGORY_LABEL: Record<IvrPromptCategory, string> = {
@@ -53,5 +67,8 @@ export function statusTone(status: VoiceCallStatus): "default" | "secondary" | "
 export function barShare(value: number, max: number): number {
   if (max <= 0 || value <= 0)
     return 0;
-  return Math.max(4, Math.round((value / max) * 100));
+  return Math.max(
+    4,
+    Math.round((value / max) * 100),
+  );
 }
