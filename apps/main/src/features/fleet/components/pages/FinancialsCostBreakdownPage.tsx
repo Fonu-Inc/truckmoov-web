@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type { FleetFinancialsLayoutContext } from "@/features/fleet/components/layout/FleetFinancialsLayout";
 import type { PeriodValue } from "@/features/fleet/components/ui/PeriodFilter";
 import type { ProfitabilityAnalysisRow } from "@/features/fleet/utils/fleetFinancials";
@@ -16,24 +15,25 @@ import { useOutletContext } from "react-router";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
-import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
 import {
   downloadBlob,
   getFilenameFromDisposition,
   normalizeProfitabilityRow,
   periodToMonths,
 } from "@/features/fleet/utils/fleetFinancials";
+import { useClientPage } from "@/features/fleet/utils/useClientPage";
 
 export default function FinancialsCostBreakdownPage() {
   const { getVehicleName } = useOutletContext<FleetFinancialsLayoutContext>();
@@ -189,16 +189,18 @@ export default function FinancialsCostBreakdownPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="space-y-4">
+    <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <div className="rounded-2xl surface-sleek text-card-foreground">
+        <div className="flex flex-col p-6 pb-4 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <CardTitle>Detailed Cost Analysis</CardTitle>
-              <CardDescription>Per-vehicle cost breakdown</CardDescription>
+              <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display">Detailed Cost Analysis</h3>
+              <p className="text-sm text-muted-foreground">Per-vehicle cost breakdown</p>
             </div>
             <Button
               variant="outline"
+              size="sm"
+              className="bg-transparent border-input"
               onClick={handleExportCostBreakdown}
               disabled={isExportingCostBreakdown}
             >
@@ -374,8 +376,8 @@ export default function FinancialsCostBreakdownPage() {
               </PopoverContent>
             </Popover>
           </div>
-        </CardHeader>
-        <CardContent className="overflow-x-auto p-0">
+        </div>
+        <div className="p-6 pt-0">
           {(() => {
             const rows = displayData.filter((item) => {
               const name = getVehicleName(item.vehicle_id).toLowerCase();
@@ -411,43 +413,83 @@ export default function FinancialsCostBreakdownPage() {
               }
               return true;
             });
-            const columns: ColumnDef<ProfitabilityAnalysisRow>[] = [
-              {
-                id: "vehicle",
-                header: "Vehicle",
-                meta: { className: "font-medium" },
-                cell: ({ row }) => getVehicleName(row.original.vehicle_id),
-              },
-              {
-                id: "fuel", header: "Fuel", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.fuel || 0),
-              },
-              {
-                id: "maintenance", header: "Maintenance", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.maintenance || 0),
-              },
-              {
-                id: "wages", header: "Wages", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.wages || 0),
-              },
-              {
-                id: "insurance", header: "Insurance", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.insurance || 0),
-              },
-              {
-                id: "depreciation", header: "Depreciation", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.depreciation || 0),
-              },
-              {
-                id: "total", header: "Total", meta: { className: "text-right font-semibold" }, cell: ({ row }) => format(row.original.costs?.total || 0),
-              },
-            ];
             return (
-              <DataTable
-                columns={columns}
-                data={rows}
-                emptyState="No cost data yet."
-                filteredEmptyState="No vehicles match your filters."
+              <CostBreakdownTable
+                rows={rows}
+                emptyText={displayData.length === 0 ? "No cost data yet." : "No vehicles match your filters."}
+                getVehicleName={getVehicleName}
+                format={format}
               />
             );
           })()}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
+  );
+}
+
+type CostRow = ProfitabilityAnalysisRow;
+
+/** The "Detailed Cost Analysis" table, paged so a large fleet doesn't render every vehicle at once. */
+function CostBreakdownTable({
+  rows, emptyText, getVehicleName, format,
+}: {
+  rows: CostRow[];
+  emptyText: string;
+  getVehicleName: (vehicleId: string) => string;
+  format: (amount: number) => string;
+}) {
+  const costPage = useClientPage(rows);
+  return (
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Vehicle</TableHead>
+            <TableHead className="text-right">Fuel</TableHead>
+            <TableHead className="text-right">Maintenance</TableHead>
+            <TableHead className="text-right">Wages</TableHead>
+            <TableHead className="text-right">Insurance</TableHead>
+            <TableHead className="text-right">Depreciation</TableHead>
+            <TableHead className="text-right">Total</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0
+            ? (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    {emptyText}
+                  </TableCell>
+                </TableRow>
+              )
+            : costPage.pageRows.map(item => (
+                <TableRow key={item.vehicle_id}>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{getVehicleName(item.vehicle_id)}</span>
+                      <span className="text-xs text-muted-foreground">{item.plateNumber || "—"}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">{format(item.costs?.fuel || 0)}</TableCell>
+                  <TableCell className="text-right">{format(item.costs?.maintenance || 0)}</TableCell>
+                  <TableCell className="text-right">{format(item.costs?.wages || 0)}</TableCell>
+                  <TableCell className="text-right">{format(item.costs?.insurance || 0)}</TableCell>
+                  <TableCell className="text-right">{format(item.costs?.depreciation || 0)}</TableCell>
+                  <TableCell className="text-right font-semibold">{format(item.costs?.total || 0)}</TableCell>
+                </TableRow>
+              ))}
+        </TableBody>
+      </Table>
+      <FleetTablePager
+        page={costPage.page}
+        pageSize={costPage.pageSize}
+        total={costPage.total}
+        onPageChange={costPage.setPage}
+      />
+    </>
   );
 }

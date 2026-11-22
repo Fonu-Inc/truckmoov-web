@@ -66,6 +66,7 @@ import {
 } from "@/components/shadcn/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { PeriodFilter } from "./PeriodFilter";
 
 const CHART_TOOLTIP_STYLE = {
@@ -585,6 +586,7 @@ export function FleetAnalyticsTab() {
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Analytics" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <LiveIndicator connected={connected} />

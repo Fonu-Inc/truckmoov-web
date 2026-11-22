@@ -55,8 +55,9 @@ Two consequences worth knowing:
 - `manualTitle: true` blanks the top-bar title for pages that render the design app's
   in-page heading (`h1` + description, actions on the right) themselves. The `label`
   still names the sidebar link. Admin pages render `<PageTitle>`; main pages render
-  `<PageHeader>` (`apps/main/src/shared/components/layout/PageHeader.tsx`) — today `/`
-  and `/jobs`.
+  `<PageHeader>` (`apps/main/src/shared/components/layout/PageHeader.tsx`) — today `/`,
+  `/jobs` and every `/fleet` tab (the fleet layout keeps only the tab bar; each tab page
+  renders its own heading and actions under it).
 
 Visibility is `hasPermission`: a role sees an entry iff its key is listed, and
 `getEntriesForRole` drops groups whose children are all filtered out.

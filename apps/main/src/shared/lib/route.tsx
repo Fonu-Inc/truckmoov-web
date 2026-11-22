@@ -404,6 +404,20 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "fleets",
+                lazy: guardedBy(
+                  fleetTabRoles("/fleet/fleets"),
+                  () => import("@/features/fleet/components/pages/FleetsPage"),
+                ),
+              },
+              {
+                path: "violations",
+                lazy: guardedBy(
+                  fleetTabRoles("/fleet/violations"),
+                  () => import("@/features/fleet/components/pages/VehicleViolationsPage"),
+                ),
+              },
+              {
                 path: "schedules",
                 // ponytail: the design's 2nd tab is Trips. MaintenanceProfilesTab is unmounted (the reference doesn't mount it either) — re-add a route here to bring it back.
                 lazy: guardedByNamed(
