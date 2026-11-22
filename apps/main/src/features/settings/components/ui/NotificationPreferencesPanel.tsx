@@ -40,9 +40,6 @@ const ALERT_PREFERENCES: PreferenceRow[] = [
     key: "maintenanceReminders", label: "Maintenance Reminders", description: "Upcoming vehicle maintenance schedules",
   },
   {
-    key: "fuelAlerts", label: "Fuel Alerts", description: "Low fuel warnings and refueling events",
-  },
-  {
     key: "geofenceAlerts", label: "Geofence Alerts", description: "When vehicles enter or exit zones",
   },
 ];
@@ -73,8 +70,8 @@ function LoadingPanel() {
       aria-label="Loading notification preferences"
     >
       {[
-        6,
-        3,
+        ALERT_PREFERENCES.length,
+        DELIVERY_CHANNELS.length,
       ].map(rowCount => (
         <div
           key={rowCount}

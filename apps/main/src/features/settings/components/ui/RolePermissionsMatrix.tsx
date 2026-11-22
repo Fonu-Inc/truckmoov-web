@@ -43,12 +43,6 @@ const PERMISSION_GROUPS: {
       {
         key: "maintenance.manage", label: "Manage maintenance", description: "Schedule and close service jobs",
       },
-      {
-        key: "fuel.read", label: "View fuel records", description: "See fuel usage and theft alerts",
-      },
-      {
-        key: "fuel.manage", label: "Manage fuel records", description: "Record refuels and resolve alerts",
-      },
     ],
   },
   {
@@ -175,8 +169,6 @@ const MATRIX_ROLES: {
       "vehicles.manage",
       "maintenance.read",
       "maintenance.manage",
-      "fuel.read",
-      "fuel.manage",
       "drivers.read",
       "drivers.manage",
       "behaviour.read",
@@ -220,8 +212,6 @@ const MATRIX_ROLES: {
       "vehicles.read",
       "maintenance.read",
       "maintenance.manage",
-      "fuel.read",
-      "fuel.manage",
       "devices.read",
       "devices.manage",
       "drivers.read",

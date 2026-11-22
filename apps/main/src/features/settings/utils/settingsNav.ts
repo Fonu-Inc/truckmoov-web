@@ -64,7 +64,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
     to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: ORG_SETTINGS_ROLES, description: "Configure invoice details, payment terms and billing preferences.",
   },
   {
-    to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ORG_SETTINGS_ROLES, description: "Configure vehicle maintenance, fuel alerts and fleet monitoring preferences.",
+    to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ORG_SETTINGS_ROLES, description: "Configure vehicle maintenance and fleet monitoring preferences.",
   },
   {
     to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ORG_SETTINGS_ROLES, description: "Manage notification channels and the events you receive alerts for.",
