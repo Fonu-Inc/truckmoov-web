@@ -304,6 +304,8 @@ import type {
   SystemTenantOnboardingResponse,
   SystemTenantsListResponse,
   SystemTenantsSummaryResponse,
+  SystemTelecomMasterDetailResponse,
+  SystemTelecomMasterListResponse,
   SystemTenantsQuery,
   DeleteOnboardingKycDocumentPayload,
   UpdateAdminStatusPayload,
@@ -392,6 +394,7 @@ import type {
   SystemOnboardingApplicationDocumentResponse,
   SystemOnboardingApplicationsListResponse,
   SystemOnboardingApplicationResponse,
+  SystemOnboardingDocumentLinkResponse,
   SystemApproveOnboardingApplicationResponse,
   SystemOnboardingDecisionResponse,
   SystemOnboardingChangesLinkResendResponse,
@@ -899,6 +902,25 @@ export async function getSystemTenants(payload?: SystemTenantsQuery) {
 
 export async function getSystemTenantsSummary() {
   const { data } = await axiosInstance.get<SystemTenantsSummaryResponse>('/auth/system/tenants/summary')
+  return data
+}
+
+export async function getSystemTelecomMasterRequests() {
+  const { data } = await axiosInstance.get<SystemTelecomMasterListResponse>('/auth/system/telecom-master')
+  return data
+}
+
+export async function getSystemTelecomMasterRequest({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemTelecomMasterDetailResponse>(
+    `/auth/system/telecom-master/${id}`,
+  )
+  return data
+}
+
+export async function retrySystemTelecomMasterRequest({ id }: { id: string }) {
+  const { data } = await axiosInstance.post<SystemTelecomMasterDetailResponse>(
+    `/auth/system/telecom-master/${id}/retry`,
+  )
   return data
 }
 
@@ -2373,6 +2395,19 @@ export async function getSystemOnboardingApplications(payload?: SystemOnboarding
 export async function getSystemOnboardingApplication({ id }: { id: string }) {
   const { data } = await axiosInstance.get<SystemOnboardingApplicationResponse>(
     `/auth/system/onboarding/applications/${id}`,
+  )
+  return data
+}
+
+export async function getSystemOnboardingApplicationDocumentLink({
+  id,
+  documentId,
+}: {
+  id: string
+  documentId: string
+}) {
+  const { data } = await axiosInstance.get<SystemOnboardingDocumentLinkResponse>(
+    `/auth/system/onboarding/applications/${id}/documents/${documentId}/link`,
   )
   return data
 }

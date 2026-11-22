@@ -47,19 +47,19 @@ describe(
       () => {
         expect(matchesTmFilter(
           {
-            number_type: "new", status: "allocation_failed",
+            numberType: "new", status: "allocation_failed",
           },
           "failed",
         )).toBe(true);
         expect(matchesTmFilter(
           {
-            number_type: "existing", status: "verification_failed",
+            numberType: "existing", status: "verification_failed",
           },
           "failed",
         )).toBe(true);
         expect(matchesTmFilter(
           {
-            number_type: "new", status: "allocated",
+            numberType: "new", status: "allocated",
           },
           "failed",
         )).toBe(false);

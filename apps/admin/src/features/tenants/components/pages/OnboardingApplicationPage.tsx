@@ -8,6 +8,7 @@ import type {
 } from "@/features/tenants/utils/onboarding";
 import { useQuery } from "@tanstack/react-query";
 import {
+  getSystemOnboardingApplicationDocumentLinkQueryOptions,
   getSystemOnboardingApplicationQueryOptions,
   useApproveSystemOnboardingApplicationDocument,
   useRejectSystemOnboardingApplicationDocument,
@@ -20,10 +21,14 @@ import {
   AlertTriangle,
   ArrowLeft,
   Check,
+  Download,
+  ExternalLink,
   Eye,
+  FileText,
   MessageSquareWarning,
   MoreHorizontal,
   PackageCheck,
+  RotateCw,
   Send,
   X,
 } from "lucide-react";
@@ -78,6 +83,7 @@ import {
   isReturningApplication,
   organizationTypeOf,
   prettyDocumentType,
+  prettyFileSize,
   SECTION_LABEL,
   toDecision,
 } from "@/features/tenants/utils/onboarding";
@@ -191,9 +197,9 @@ export default function OnboardingApplicationPage() {
     setSaving,
   ] = useState(false);
   const [
-    openingId,
-    setOpeningId,
-  ] = useState<string | null>(null);
+    viewingDocument,
+    setViewingDocument,
+  ] = useState<SystemOnboardingDocument | null>(null);
 
   const back = () => navigate("/tenants?tab=kyc-review");
 
@@ -275,26 +281,9 @@ export default function OnboardingApplicationPage() {
     }
   };
 
-  // Links expire after five minutes: fetch a fresh one on every click.
-  const viewDocument = async (doc: SystemOnboardingDocument) => {
-    setOpeningId(doc.id);
-    try {
-      const fresh = await detailQuery.refetch();
-      const url = fresh.data?.data?.documents.find(d => d.id === doc.id)?.downloadUrl;
-      if (url) {
-        window.open(
-          url,
-          "_blank",
-          "noopener",
-        );
-      }
-      else {
-        toast.error("No file is available for this document");
-      }
-    }
-    finally {
-      setOpeningId(null);
-    }
+  // The viewer asks for a fresh short-lived link when it opens; nothing is cached.
+  const viewDocument = (doc: SystemOnboardingDocument) => {
+    setViewingDocument(doc);
   };
 
   const showProvision = app.stage === "provisioning";
@@ -314,19 +303,20 @@ export default function OnboardingApplicationPage() {
   return (
     <>
       <div className="space-y-5">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={back}
+          className="-ml-2"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to applications
+        </Button>
         <PageTitle
           title={app.organizationName}
           description={organizationTypeOf(app.applicantType)}
           primaryActions={(
             <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={back}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to applications
-              </Button>
               {hasMore && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -478,7 +468,6 @@ export default function OnboardingApplicationPage() {
         </section>
         <SubmittedDocumentsCard
           app={app}
-          openingId={openingId}
           onView={viewDocument}
         />
         {app.decisionReason && decision !== "pending" && (
@@ -569,6 +558,12 @@ export default function OnboardingApplicationPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <DocumentViewerDialog
+        applicationId={app.id}
+        document={viewingDocument}
+        open={!!viewingDocument}
+        onOpenChange={open => !open && setViewingDocument(null)}
+      />
       {actions.reasonDialog}
     </>
   );
@@ -579,13 +574,162 @@ export default function OnboardingApplicationPage() {
  * document review (approval is refused while any document is rejected or missing), shown
  * only while the application is in review.
  */
+function DocumentViewerDialog({
+  applicationId,
+  document,
+  open,
+  onOpenChange,
+}: {
+  applicationId: string;
+  document: SystemOnboardingDocument | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const linkQuery = useQuery({
+    ...getSystemOnboardingApplicationDocumentLinkQueryOptions(
+      applicationId,
+      document?.id ?? "",
+    ),
+    enabled: open && Boolean(document),
+  });
+  const link = linkQuery.data?.data;
+  const mimeType = (link?.mimeType ?? document?.mimeType ?? "").toLowerCase();
+  const documentName = link?.documentName ?? document?.documentName ?? "";
+  const isPdf = mimeType.includes("pdf") || /\.pdf$/i.test(documentName);
+  const isImage = mimeType.startsWith("image/");
+  const error = linkQuery.isError
+    ? errorMessage(
+        linkQuery.error,
+        "Could not load this document.",
+      )
+    : null;
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
+      <DialogContent className="max-w-5xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            {document ? prettyDocumentType(document.documentType) : "Document"}
+          </DialogTitle>
+          <DialogDescription>
+            {documentName}
+            {document ? ` · ${prettyFileSize(document.fileSize)}` : ""}
+            {link ? ` · Link valid for ${Math.max(
+              1,
+              Math.round(link.expiresInSeconds / 60),
+            )} min` : ""}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            loading={linkQuery.isFetching}
+            onClick={() => linkQuery.refetch()}
+          >
+            <RotateCw className="mr-2 h-4 w-4" />
+            Refresh link
+          </Button>
+          {link && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+              >
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open in new tab
+                </a>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+              >
+                <a href={link.downloadUrl}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
+                </a>
+              </Button>
+            </>
+          )}
+        </div>
+
+        <div className="min-h-[60vh] overflow-hidden rounded-lg border bg-muted/20">
+          {linkQuery.isLoading
+            ? <Skeleton className="h-[60vh] w-full" />
+            : error || !link
+              ? (
+                  <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+                    <FileText className="h-8 w-8 opacity-50" />
+                    <p>{error ?? "No file is available for this document."}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => linkQuery.refetch()}
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                )
+              : isPdf
+                ? (
+                    <iframe
+                      title={documentName}
+                      src={link.url}
+                      className="h-[70vh] w-full"
+                    />
+                  )
+                : isImage
+                  ? (
+                      <div className="flex h-[70vh] items-center justify-center overflow-auto p-4">
+                        <img
+                          src={link.url}
+                          alt={documentName}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
+                    )
+                  : (
+                      <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+                        <FileText className="h-8 w-8 opacity-50" />
+                        <p>This file type can't be previewed here.</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                        >
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open in new tab
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function SubmittedDocumentsCard({
   app,
-  openingId,
   onView,
 }: {
   app: SystemOnboardingApplicationDetail;
-  openingId: string | null;
   onView: (doc: SystemOnboardingDocument) => void;
 }) {
   const approveDoc = useApproveSystemOnboardingApplicationDocument();
@@ -683,7 +827,6 @@ function SubmittedDocumentsCard({
                   <Button
                     variant="outline"
                     size="sm"
-                    loading={openingId === doc.id}
                     onClick={() => onView(doc)}
                   >
                     <Eye className="mr-2 h-4 w-4" />

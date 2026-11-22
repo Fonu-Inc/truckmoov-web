@@ -105,12 +105,12 @@ export function tmSimQuotationLine(choice: TmNumberChoice, configuredCharge: num
 /** Admin filter groups. */
 export type TmFilter = "all" | "existing" | "new" | "pending_verification" | "allocation_pending" | "allocated" | "failed";
 export function matchesTmFilter(row: {
-  number_type: string; status: string;
+  numberType: string; status: string;
 }, f: TmFilter) {
   switch (f) {
     case "all": return true;
-    case "existing": return row.number_type === "existing";
-    case "new": return row.number_type === "new";
+    case "existing": return row.numberType === "existing";
+    case "new": return row.numberType === "new";
     case "failed": return row.status === "verification_failed" || row.status === "allocation_failed";
     default: return row.status === f;
   }

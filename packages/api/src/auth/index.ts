@@ -161,6 +161,9 @@ import {
   downloadSystemTenantExport,
   getSystemTenants,
   getSystemTenantsSummary,
+  getSystemTelecomMasterRequest,
+  getSystemTelecomMasterRequests,
+  retrySystemTelecomMasterRequest,
   inviteUser,
   installerLogin,
   installerLoginTwoFactor,
@@ -327,6 +330,7 @@ import {
   getOnboardingApplicationStatus,
   getPlatformIntegrations,
   getSystemOnboardingApplication,
+  getSystemOnboardingApplicationDocumentLink,
   getSystemOnboardingApplicationTimeline,
   markSystemOnboardingApplicationProvisioned,
   reviewSystemOnboardingPayment,
@@ -466,6 +470,8 @@ export const AUTH_QUERY_KEY = {
   systemTenants: (payload?: SystemTenantsQuery) =>
     payload ? ['systemTenants', payload] : ['systemTenants'],
   systemTenant: (id: string) => ['systemTenant', id],
+  systemTelecomMasterRequests: ['systemTelecomMasterRequests'],
+  systemTelecomMasterRequest: (id: string) => ['systemTelecomMasterRequest', id],
   systemTenantBilling: (id: string) => ['systemTenantBilling', id],
   systemTenantExports: (id: string) => ['systemTenantExports', id],
   systemTenantsSummary: ['systemTenantsSummary'],
@@ -602,6 +608,8 @@ export const AUTH_QUERY_KEY = {
   systemOnboardingApplications: (payload?: SystemOnboardingApplicationsQuery) =>
     payload ? ['systemOnboardingApplications', payload] : ['systemOnboardingApplications'],
   systemOnboardingApplication: (id: string) => ['systemOnboardingApplication', id],
+  systemOnboardingApplicationDocumentLink: (applicationId: string, documentId: string) =>
+    ['systemOnboardingApplicationDocumentLink', applicationId, documentId],
   systemOnboardingApplicationTimeline: (id: string) => ['systemOnboardingApplicationTimeline', id],
 
   platformIntegrations: ['platformIntegrations'],
@@ -2959,6 +2967,21 @@ export function getSystemOnboardingApplicationQueryOptions(id: string) {
   })
 }
 
+export function getSystemOnboardingApplicationDocumentLinkQueryOptions(
+  applicationId: string,
+  documentId: string,
+) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemOnboardingApplicationDocumentLink(applicationId, documentId),
+    queryFn: () =>
+      getSystemOnboardingApplicationDocumentLink({ id: applicationId, documentId }),
+    enabled: Boolean(applicationId && documentId),
+    // The URL expires after five minutes; fetch a fresh one every time the viewer opens.
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
 export function getSystemOnboardingApplicationTimelineQueryOptions(id: string) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemOnboardingApplicationTimeline(id),
@@ -3245,6 +3268,33 @@ export function getSystemOnboardingApplicationsSummaryQueryOptions() {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemOnboardingApplicationsSummary,
     queryFn: getSystemOnboardingApplicationsSummary,
+  })
+}
+
+// ─── System — Telecom Master ─────────────────────────────────────────────────
+
+export function getSystemTelecomMasterRequestsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTelecomMasterRequests,
+    queryFn: getSystemTelecomMasterRequests,
+  })
+}
+
+export function getSystemTelecomMasterRequestQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTelecomMasterRequest(id),
+    queryFn: () => getSystemTelecomMasterRequest({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function useRetrySystemTelecomMasterRequest() {
+  return useMutation({
+    mutationFn: retrySystemTelecomMasterRequest,
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTelecomMasterRequests })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTelecomMasterRequest(res.data.request.id) })
+    },
   })
 }
 

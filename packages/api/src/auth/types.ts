@@ -2082,6 +2082,53 @@ export type SystemTenantsSummary = {
   generatedAt: string
 }
 
+export type SystemTelecomMasterNumberType = 'existing' | 'new'
+
+export type SystemTelecomMasterStatus =
+  | 'not_selected'
+  | 'pending_verification'
+  | 'verified'
+  | 'allocation_pending'
+  | 'allocated'
+  | 'verification_failed'
+  | 'allocation_failed'
+
+export type SystemTelecomMasterRequest = {
+  id: string
+  tenantId: string | null
+  organizationName: string
+  contactEmail: string
+  applicationId: string | null
+  applicationReference: string
+  msisdn: string | null
+  simSerial: string | null
+  numberType: SystemTelecomMasterNumberType
+  status: SystemTelecomMasterStatus
+  mtnReference: string | null
+  failureReason: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemTelecomMasterEvent = {
+  id: string
+  requestId: string
+  action: string
+  detail: string | null
+  createdAt: string
+}
+
+export type SystemTelecomMasterListResponse = ServerResponse<{
+  requests: SystemTelecomMasterRequest[]
+  total: number
+  generatedAt: string
+}>
+
+export type SystemTelecomMasterDetailResponse = ServerResponse<{
+  request: SystemTelecomMasterRequest
+  events: SystemTelecomMasterEvent[]
+}>
+
 export type SystemDevicesSummary = {
   totalDevices: number
   registeredDevices: number
@@ -4227,6 +4274,17 @@ export type SystemOnboardingApplicationDetail = Omit<SystemOnboardingApplication
   documents: SystemOnboardingDocument[]
 }
 export type SystemOnboardingApplicationResponse = ServerResponse<SystemOnboardingApplicationDetail>
+
+export type SystemOnboardingDocumentLink = {
+  id: string
+  documentName: string
+  mimeType: string
+  fileSize: number
+  url: string
+  downloadUrl: string
+  expiresInSeconds: number
+}
+export type SystemOnboardingDocumentLinkResponse = ServerResponse<SystemOnboardingDocumentLink>
 
 export type SystemOnboardingTimelineEntry = {
   action: string
