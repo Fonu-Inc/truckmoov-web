@@ -4340,7 +4340,7 @@ export type OnboardingM2mPlan = {
   perDeviceYear1Ngn: number
   perDeviceRenewalNgn: number
 }
-export type OnboardingM2mPlansResponse = ServerResponse<{ plans: OnboardingM2mPlan[] }>
+export type OnboardingM2mPlansResponse = ServerResponse<{ plans: OnboardingM2mPlan[], telecomMasterSimNgn?: number }>
 export type OnboardingEmailAvailabilityResponse = ServerResponse<{ available: boolean }>
 export type OnboardingTelecomMasterNumberType = 'existing' | 'new'
 /** MTN prefix, not a live Telecom Master, not a device SIM. msisdn is 234XXXXXXXXXX. */
@@ -4415,6 +4415,8 @@ export type OnboardingOrder = {
   perDeviceNgn: number
   devicesNgn: number
   installationNgn: number
+  /** 0 unless a new Telecom Master number was requested; absent on older paid orders. */
+  telecomMasterSimNgn?: number
   totalNgn: number
   renewalPerDeviceNgn: number
   // TODO(api): quotation lines the design shows; the order endpoint doesn't send them yet.

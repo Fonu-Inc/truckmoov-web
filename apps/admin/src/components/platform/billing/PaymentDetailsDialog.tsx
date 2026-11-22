@@ -68,6 +68,12 @@ function Breakdown({ b }: { b: PaymentBreakdown }) {
         label="Installation total"
         value={formatNgn(b.installationNgn)}
       />
+      {b.telecomMasterSimNgn > 0 && (
+        <Line
+          label="Telecom Master SIM"
+          value={formatNgn(b.telecomMasterSimNgn)}
+        />
+      )}
       <div className="border-t pt-2">
         <Line
           label="Subtotal"

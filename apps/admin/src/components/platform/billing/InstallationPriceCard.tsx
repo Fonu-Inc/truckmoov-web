@@ -41,10 +41,11 @@ function isPositiveInt(value: string) {
 }
 
 function priceSentence(price: InstallationPrice) {
+  const sim = ` A new Telecom Master number adds one SIM at ${formatNgn(price.telecomMasterSimNgn)}.`;
   if (price.enterpriseNgn === price.ownerOperatorNgn) {
-    return `Current price: ${formatNgn(price.enterpriseNgn)} per installation.`;
+    return `Current price: ${formatNgn(price.enterpriseNgn)} per installation.${sim}`;
   }
-  return `Current price: ${formatNgn(price.enterpriseNgn)} per installation for enterprise customers and ${formatNgn(price.ownerOperatorNgn)} for owner-operators.`;
+  return `Current price: ${formatNgn(price.enterpriseNgn)} per installation for enterprise customers and ${formatNgn(price.ownerOperatorNgn)} for owner-operators.${sim}`;
 }
 
 function ReasonDialog({
@@ -184,6 +185,10 @@ function PriceEditor({ price }: { price: InstallationPrice }) {
     setOwnerOperator,
   ] = useState(String(price.ownerOperatorNgn));
   const [
+    sim,
+    setSim,
+  ] = useState(String(price.telecomMasterSimNgn));
+  const [
     confirmOpen,
     setConfirmOpen,
   ] = useState(false);
@@ -191,27 +196,32 @@ function PriceEditor({ price }: { price: InstallationPrice }) {
     errors,
     setErrors,
   ] = useState<{
-    enterprise?: string; ownerOperator?: string;
+    enterprise?: string; ownerOperator?: string; sim?: string;
   }>({});
 
   useEffect(
     () => {
       setEnterprise(String(price.enterpriseNgn));
       setOwnerOperator(String(price.ownerOperatorNgn));
+      setSim(String(price.telecomMasterSimNgn));
     },
     [
       price.enterpriseNgn,
       price.ownerOperatorNgn,
+      price.telecomMasterSimNgn,
     ],
   );
 
   const dirty
-    = Number(enterprise) !== price.enterpriseNgn || Number(ownerOperator) !== price.ownerOperatorNgn;
+    = Number(enterprise) !== price.enterpriseNgn
+      || Number(ownerOperator) !== price.ownerOperatorNgn
+      || Number(sim) !== price.telecomMasterSimNgn;
 
   const requestSave = () => {
     const found = {
       ...(isPositiveInt(enterprise) ? {} : { enterprise: "Enter a whole number greater than zero." }),
       ...(isPositiveInt(ownerOperator) ? {} : { ownerOperator: "Enter a whole number greater than zero." }),
+      ...(isPositiveInt(sim) ? {} : { sim: "Enter a whole number greater than zero." }),
     };
     setErrors(found);
     if (Object.keys(found).length === 0)
@@ -226,6 +236,7 @@ function PriceEditor({ price }: { price: InstallationPrice }) {
         data: {
           enterpriseNgn: Number(enterprise),
           ownerOperatorNgn: Number(ownerOperator),
+          telecomMasterSimNgn: Number(sim),
           reason: reason.trim(),
           effectiveDate,
         },
@@ -255,6 +266,13 @@ function PriceEditor({ price }: { price: InstallationPrice }) {
           value={ownerOperator}
           error={errors.ownerOperator}
           onChange={setOwnerOperator}
+        />
+        <PriceInput
+          id="install-tm-sim"
+          label="Telecom Master SIM Price (NGN)"
+          value={sim}
+          error={errors.sim}
+          onChange={setSim}
         />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">

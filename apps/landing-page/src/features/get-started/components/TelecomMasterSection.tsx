@@ -5,10 +5,14 @@ import type { BusinessDetailsValues } from "@/features/get-started/schemas/apply
 import {
   CheckCircle, Clock, Info, Question,
 } from "@phosphor-icons/react/dist/ssr";
-import { useVerifyOnboardingTelecomMasterNumber } from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getOnboardingM2mPlansQueryOptions, useVerifyOnboardingTelecomMasterNumber,
+} from "@truckmoov/api/auth";
 import { useState } from "react";
 import { SectionHeading } from "@/features/get-started/components/StepParts";
 import { toMtnMsisdn } from "@/features/get-started/schemas/applySchemas";
+import { formatCurrency } from "@/features/get-started/utils/formatCurrency";
 import {
   FIELD_CLASS,
   LABEL_CLASS,
@@ -36,6 +40,7 @@ const OPTIONS = [
 /** Enterprise only, as in Settings → Telecom Master (main app: TelecomMasterSection). */
 export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDetailsValues> }) {
   const verify = useVerifyOnboardingTelecomMasterNumber();
+  const simNgn = useQuery(getOnboardingM2mPlansQueryOptions()).data?.data.telecomMasterSimNgn;
   const [
     explainerOpen,
     setExplainerOpen,
@@ -191,7 +196,7 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
         <div className="mt-[19px] space-y-3">
           <p className="flex items-start gap-2 rounded-[15px] bg-warning-soft p-3 text-xs leading-[17px] text-warning">
             <Info className="mt-px size-4 shrink-0" />
-            A new MTN SIM will be requested for your Telecom Master.
+            {`A new MTN SIM will be requested for your Telecom Master.${simNgn ? ` The ${formatCurrency(simNgn)} SIM charge will be included in your quotation.` : ""}`}
           </p>
           <p className="flex items-start gap-2 text-xs leading-[17px] text-muted-foreground">
             <Clock className="mt-px size-4 shrink-0" />

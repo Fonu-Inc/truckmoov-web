@@ -4,8 +4,8 @@ export type BillingPage<T> = { items: T[], total: number, page: number, limit: n
 export type BillingPagedResponse<T> = ServerResponse<BillingPage<T>>
 
 export type BillingPlanStatusFilter = 'all' | 'active' | 'inactive'
-export type PriceItemType = 'm2m_plan' | 'installation_fee'
-export type PriceField = 'year1' | 'renewal' | 'enterprise' | 'owner_operator'
+export type PriceItemType = 'm2m_plan' | 'installation_fee' | 'telecom_master_sim'
+export type PriceField = 'year1' | 'renewal' | 'enterprise' | 'owner_operator' | 'unit_price'
 export type QuotationStatus = 'draft' | 'pending_review' | 'sent' | 'accepted' | 'expired' | 'cancelled'
 export type QuotationPaymentStatusFilter = 'complete' | 'incomplete'
 export type InvoiceKind = 'renewal' | 'first'
@@ -13,7 +13,7 @@ export type InvoiceStatus = 'draft' | 'issued' | 'partially_paid' | 'paid' | 'ov
 export type PaymentStatus = 'pending' | 'successful' | 'failed' | 'requires_review' | 'refunded'
 export type QuotationPaymentStatus = PaymentStatus
 export type PaymentMethod = 'card' | 'bank_transfer' | 'mtn_momo' | 'other'
-export type BillingLineKind = 'plan' | 'installation'
+export type BillingLineKind = 'plan' | 'installation' | 'telecom_master_sim'
 
 // ─── Plans ────────────────────────────────────────────────────────────────────
 
@@ -92,12 +92,17 @@ export type InstallationPrice = {
   ownerOperatorNgn: number
   lastChangedAt: string | null
   priceHistory: PriceChangeView[]
+  telecomMasterSimNgn: number
+  telecomMasterSimLastChangedAt: string | null
+  telecomMasterSimPriceHistory: PriceChangeView[]
 }
 export type InstallationPriceResponse = ServerResponse<InstallationPrice>
 
 export type UpdateInstallationPriceBody = {
   enterpriseNgn: number
   ownerOperatorNgn: number
+  /** Omitted keeps the current SIM price. */
+  telecomMasterSimNgn?: number
   reason?: string
   effectiveDate?: string
 }
@@ -250,6 +255,7 @@ export type PaymentBreakdown = {
   devicesNgn: number
   installationPerDeviceNgn: number
   installationNgn: number
+  telecomMasterSimNgn: number
   subtotalNgn: number
   taxRateBp: number
   taxNgn: number

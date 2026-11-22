@@ -302,6 +302,12 @@ export function PaymentStep({
               label="Installation"
               value={formatCurrency(order.installationNgn)}
             />
+            {(order.telecomMasterSimNgn ?? 0) > 0 && (
+              <Line
+                label="Telecom Master SIM"
+                value={formatCurrency(order.telecomMasterSimNgn ?? 0)}
+              />
+            )}
             {/* No delivery fee is priced today (the admin Delivery Price is hidden), so this stays hidden. */}
             {(order.deliveryFeeNgn ?? 0) > 0 && (
               <Line

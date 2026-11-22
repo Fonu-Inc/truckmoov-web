@@ -31,6 +31,7 @@ const FIELD_LABEL: Record<PriceField, string> = {
   renewal: "Renewal price",
   enterprise: "Enterprise installation",
   owner_operator: "Owner-operator installation",
+  unit_price: "Telecom Master SIM",
 };
 
 function Tile({

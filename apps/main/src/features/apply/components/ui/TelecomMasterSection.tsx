@@ -1,6 +1,9 @@
 import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas";
-import { useVerifyOnboardingTelecomMasterNumber } from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getOnboardingM2mPlansQueryOptions, useVerifyOnboardingTelecomMasterNumber,
+} from "@truckmoov/api/auth";
 import {
   CheckCircle2, Clock, HelpCircle, Info,
 } from "lucide-react";
@@ -15,6 +18,7 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { toMtnMsisdn } from "@/features/apply/utils/applySchemas";
+import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 const OPTIONS = [
@@ -29,6 +33,7 @@ const OPTIONS = [
 /** Enterprise only, as in Settings → Telecom Master (landing: TelecomMasterSection). */
 export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDetailsValues> }) {
   const verify = useVerifyOnboardingTelecomMasterNumber();
+  const simNgn = useQuery(getOnboardingM2mPlansQueryOptions()).data?.data.telecomMasterSimNgn;
   const [
     explainerOpen,
     setExplainerOpen,
@@ -183,7 +188,7 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
         <div className="space-y-3">
           <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/15 p-3 text-sm text-warning">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            A new MTN SIM will be requested for your Telecom Master.
+            {`A new MTN SIM will be requested for your Telecom Master.${simNgn ? ` The ${formatCurrency(simNgn)} SIM charge will be included in your quotation.` : ""}`}
           </p>
           <p className="flex items-start gap-2 text-xs text-muted-foreground">
             <Clock className="mt-0.5 h-4 w-4 shrink-0" />

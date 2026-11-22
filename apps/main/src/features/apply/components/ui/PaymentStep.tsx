@@ -320,6 +320,12 @@ export function PaymentStep({
             label="Installation"
             value={formatCurrency(order.installationNgn)}
           />
+          {(order.telecomMasterSimNgn ?? 0) > 0 && (
+            <Line
+              label="Telecom Master SIM"
+              value={formatCurrency(order.telecomMasterSimNgn ?? 0)}
+            />
+          )}
           {/* TODO(api): shown once the order endpoint sends these quotation lines. */}
           {(order.deliveryFeeNgn ?? 0) > 0 && (
             <Line
