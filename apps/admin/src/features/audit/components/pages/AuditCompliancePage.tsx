@@ -114,6 +114,7 @@ export default function AuditCompliancePage() {
   const liveQuery = useQuery(getSystemAuditLogQueryOptions({ params: { limit: AUDIT_LOG_LIMIT } }));
   const isLoading = liveQuery.isLoading;
   const live = liveQuery.data?.data?.items;
+  const total = liveQuery.data?.data?.total ?? live?.length ?? 0;
 
   const viewParam = params.get("view") as AuditView | null;
   const view: AuditView = viewParam && VIEWS.includes(viewParam) ? viewParam : "all";
@@ -299,7 +300,7 @@ export default function AuditCompliancePage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard
           title="Total Entries"
-          value={entries.length.toLocaleString()}
+          value={total.toLocaleString()}
           icon={Archive}
           loading={isLoading}
         />
@@ -348,7 +349,14 @@ export default function AuditCompliancePage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle>Audit Log</CardTitle>
-                  <CardDescription>Immutable cross-tenant audit trail retained for 7 years per NCC requirements</CardDescription>
+                  <CardDescription>
+                    Immutable cross-tenant audit trail retained for 7 years per NCC requirements
+                    {total > entries.length && (
+                      <span className="mt-1 block text-xs">
+                        {`Showing the latest ${entries.length.toLocaleString()} of ${total.toLocaleString()} entries.`}
+                      </span>
+                    )}
+                  </CardDescription>
                 </div>
                 <ExportButton
                   rows={rows}
@@ -408,93 +416,112 @@ export default function AuditCompliancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {isLoading && entries.length === 0
+                      {liveQuery.isError
                         ? (
                             <TableRow>
                               <TableCell
                                 colSpan={9}
                                 className="py-8 text-center text-muted-foreground"
                               >
-                                Loading…
+                                Could not load the audit log.
+                                {" "}
+                                <Button
+                                  variant="link"
+                                  className="h-auto p-0"
+                                  onClick={() => liveQuery.refetch()}
+                                >
+                                  Try again
+                                </Button>
                               </TableCell>
                             </TableRow>
                           )
-                        : rows.length === 0
+                        : isLoading && entries.length === 0
                           ? (
                               <TableRow>
                                 <TableCell
                                   colSpan={9}
                                   className="py-8 text-center text-muted-foreground"
                                 >
-                                  No audit entries match these filters.
+                                  Loading…
                                 </TableCell>
                               </TableRow>
                             )
-                          : rows.map(e => (
-                              <TableRow
-                                key={e.id}
-                                className="cursor-pointer align-top"
-                                onClick={() => setPicked(e)}
-                              >
-                                <TableCell className="whitespace-nowrap text-sm">{fmt(e.timestamp)}</TableCell>
-                                <TableCell>
-                                  <div className="text-sm font-medium">{e.actorName}</div>
-                                  {e.actorEmail && <div className="text-xs text-muted-foreground">{e.actorEmail}</div>}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-sm">{e.action}</div>
-                                  <div className="text-xs text-muted-foreground">{CATEGORY_LABELS[e.category]}</div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex flex-wrap gap-1">
-                                    <Badge
-                                      variant="outline"
-                                      className={cn(
-                                        "rounded-full whitespace-nowrap",
-                                        outClass[e.outcome],
-                                      )}
-                                    >
-                                      {OUTCOME_LABELS[e.outcome]}
-                                    </Badge>
-                                    <Badge
-                                      variant="outline"
-                                      className={cn(
-                                        "rounded-full whitespace-nowrap",
-                                        sevClass[e.severity],
-                                      )}
-                                    >
-                                      {SEVERITY_LABELS[e.severity]}
-                                    </Badge>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-sm">{e.resource}</TableCell>
-                                <TableCell className="text-sm">{e.tenantName}</TableCell>
-                                <TableCell>
-                                  <div className="font-mono text-xs">{e.ipAddress ?? "—"}</div>
-                                  <div className="text-xs text-muted-foreground">{e.location ?? "—"}</div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant="secondary"
-                                    className="rounded-full"
+                          : rows.length === 0
+                            ? (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={9}
+                                    className="py-8 text-center text-muted-foreground"
                                   >
-                                    {SOURCE_LABELS[e.source]}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={(ev) => {
-                                      ev.stopPropagation();
-                                      setPicked(e);
-                                    }}
-                                  >
-                                    View
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                                    No audit entries match these filters.
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            : rows.map(e => (
+                                <TableRow
+                                  key={e.id}
+                                  className="cursor-pointer align-top"
+                                  onClick={() => setPicked(e)}
+                                >
+                                  <TableCell className="whitespace-nowrap text-sm">{fmt(e.timestamp)}</TableCell>
+                                  <TableCell>
+                                    <div className="text-sm font-medium">{e.actorName}</div>
+                                    {e.actorEmail && <div className="text-xs text-muted-foreground">{e.actorEmail}</div>}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-sm">{e.action}</div>
+                                    <div className="text-xs text-muted-foreground">{CATEGORY_LABELS[e.category]}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "rounded-full whitespace-nowrap",
+                                          outClass[e.outcome],
+                                        )}
+                                      >
+                                        {OUTCOME_LABELS[e.outcome]}
+                                      </Badge>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "rounded-full whitespace-nowrap",
+                                          sevClass[e.severity],
+                                        )}
+                                      >
+                                        {SEVERITY_LABELS[e.severity]}
+                                      </Badge>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-sm">{e.resource}</TableCell>
+                                  <TableCell className="text-sm">{e.tenantName}</TableCell>
+                                  <TableCell>
+                                    <div className="font-mono text-xs">{e.ipAddress ?? "—"}</div>
+                                    <div className="text-xs text-muted-foreground">{e.location ?? "—"}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant="secondary"
+                                      className="rounded-full"
+                                    >
+                                      {SOURCE_LABELS[e.source]}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        setPicked(e);
+                                      }}
+                                    >
+                                      View
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
                     </TableBody>
                   </Table>
                 </div>
@@ -512,11 +539,12 @@ export default function AuditCompliancePage() {
                   {" "}
                   of
                   {" "}
-                  {entries.length}
+                  {total.toLocaleString()}
                   {" "}
                   entries ·
                   {" "}
                   {VIEW_LABELS[view]}
+                  {total > entries.length && ` · latest ${entries.length.toLocaleString()} loaded`}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Lock className="h-3 w-3" />

@@ -20,13 +20,13 @@ Reference: `PlatformAuditCompliance.tsx`, `LegacyAuditRedirect.tsx`, `lib/audit/
 - [x] No Overview tab — cards go straight into the audit log card
 - [x] Saved views in `?view=`: All activity · Security Events (`security` + `api_key`) · SIM Audit (`sim`) — now Radix `Tabs` (`TabsList aria-label="Audit views"`) around the audit card, per the fork (§8); were pills
 - [x] Combined entry type covering sign-ins, security events, SIM, KYC, invoices, webhooks, API keys, tenants, users, devices (category derived from `action` / `resourceType`)
-- [x] **⚠ decision / 🔌** — data source: `SystemAuditLogEntry` has no severity, outcome, location or device. Merge `getSystemAuthEvents` / `getSystemFailedLogins` / `getSystemSecurityEvents`, derive the rest client-side. Live rows from `getSystemAuditLogQueryOptions` (limit 500) via `fromSystemAuditEntry`; an empty or failed log renders the page's own empty/error state. Severity is always "info" for live rows until the API carries it
+- [x] **⚠ decision / 🔌** — data source: `SystemAuditLogEntry` has no severity, location or device. Live rows come from `getSystemAuditLogQueryOptions` (limit 500) via `fromSystemAuditEntry`; an empty or failed log renders the page's own empty/error state. Outcome, severity and source are derived from the action, category and actor: failures are **medium**, refused security actions **high**, blocked/compromised **critical**, person-led actions **Integration**, automated ones **System**. Location and device stay "—" because the endpoint carries neither
 - [x] Columns: Timestamp · Actor · Event (+category) · Outcome / Severity · Resource · Tenant · IP & Location · Source · Actions (View)
 - [x] Row click / View opens a detail `Dialog` (device, failure reason, attempts, all details); `?event=<id>` deep-links to it, cleared on close
 - [x] Search ("Search actor, event, resource, tenant, IP or location...") + filters: tenant, user, event type, category, outcome, severity, source, date range; `?tenant=` pre-applies
 - [x] Only the table scrolls horizontally on mobile/tablet (`min-w-0` card, `overflow-x-auto` wrapper, `min-w-[1180px]` table)
 - [x] Scroll hint shown whenever the table overflows — **including wide desktop** (fleetflow's outstanding item; it only shows below `xl`) — `useHorizontalOverflow` (ResizeObserver), plus a right-edge fade while columns remain
-- [x] Footer: "{n} of {total} entries · {view}" + "Entries are immutable. Retained for 7 years per NCC regulatory requirement."
+- [x] Footer: "{n} of {total} entries · {view}" + "Entries are immutable. Retained for 7 years per NCC regulatory requirement." The summary card and footer use the API's real `total`; the table loads the latest 500 and says so when the log is larger
 - [x] Dashboard Quick Actions "Security" card → Audit & Compliance ("Open audit log") — `features/dashboard/components/overview/QuickActions.tsx`
 - [x] `auditEventHref(id)` links the bell's security entries to the audit page
 - [x] Security alert preferences live under Settings → Notifications (see §2.6)

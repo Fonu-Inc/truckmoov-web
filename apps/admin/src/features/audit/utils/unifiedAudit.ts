@@ -86,15 +86,33 @@ export function categoryOf(eventType: string, resource = ""): AuditCategory {
     return "api_key";
   if (s.includes("device") || s.includes("geofence"))
     return "device";
-  if (/login|logout|session|lock|password|mfa|permission|role|unusual|suspicious|ip_|export/.test(s))
+  if (/login|logout|logged[_ -]?(?:in|out)|sign[_ -]?(?:in|out)|signed[_ -]?(?:in|out)|session|lock|password|mfa|2fa|permission|role|unusual|suspicious|blocked|ip_|export/.test(s))
     return "security";
   if (s.includes("tenant") || s.includes("user"))
     return "tenant";
   return "other";
 }
 
+/**
+ * What the screen calls a failure is a medium-severity entry; a refused
+ * security action is high, and a blocked or compromised account is critical.
+ * The API carries no severity column, so this is the only place it is decided.
+ */
+function severityOf(eventType: string, category: AuditCategory): AuditSeverity {
+  const s = eventType.toLowerCase();
+  if (/blocked|breach|compromis|hijack|malware/.test(s))
+    return "critical";
+  if (category === "security" && /fail|reject|error|denied|unauthori[sz]ed/.test(s))
+    return "high";
+  if (/unusual|suspicious|flagged/.test(s))
+    return "high";
+  if (/fail|reject|error|denied|unauthori[sz]ed|suspend|terminate|deactivat|delete/.test(s))
+    return "medium";
+  return "info";
+}
+
 function outcomeOf(eventType: string, sev: AuditSeverity): AuditOutcome {
-  return /fail|reject|error|denied/.test(eventType.toLowerCase()) ? "failure" : sev === "high" || sev === "critical" ? "flagged" : "success";
+  return /fail|reject|error|denied|unauthori[sz]ed/.test(eventType.toLowerCase()) ? "failure" : sev === "high" || sev === "critical" ? "flagged" : "success";
 }
 function humanize(t: string) {
   return t.replace(
@@ -105,16 +123,38 @@ function humanize(t: string) {
     c => c.toUpperCase(),
   );
 }
-const sourceOf = (s: string): AuditSource => (s === "security" || s === "integration" ? s : "system");
+/**
+ * The Source column says who acted, not which service stored the row: a
+ * person acting through a screen is an integration, an automated sweep or
+ * webhook is the system, and anything security-owned is security.
+ */
+function sourceOf(e: SystemAuditLogEntry, category: AuditCategory): AuditSource {
+  if (category === "security")
+    return "security";
+  const actor = `${e.actorName ?? ""} ${e.actorEmail ?? ""}`.toLowerCase();
+  const action = e.action.toLowerCase();
+  if (!actor.trim() || actor.includes("system") || action.startsWith("system.") || e.source === "scheduler" || e.source === "worker")
+    return "system";
+  if (e.source === "notification" && /webhook|delivery/.test(action))
+    return "system";
+  return "integration";
+}
 
 /**
  * Maps a row of GET /auth/system/audit-log onto the unified shape — the admin
  * counterpart of fleetflow's `fromPlatformEntry`. The endpoint carries no
- * severity, location or device, so severity is always "info" and the outcome
- * comes from the action name alone.
+ * severity, location or device, so severity and outcome are derived from the
+ * action name and its category; location and device stay unset.
  */
 export function fromSystemAuditEntry(e: SystemAuditLogEntry): UnifiedAuditEntry {
-  const severity: AuditSeverity = "info";
+  const category = categoryOf(
+    e.action,
+    e.resourceType,
+  );
+  const severity = severityOf(
+    e.action,
+    category,
+  );
   const details: Record<string, string> = {};
   if (e.actorRole)
     details["Actor role"] = e.actorRole;
@@ -129,10 +169,7 @@ export function fromSystemAuditEntry(e: SystemAuditLogEntry): UnifiedAuditEntry 
     actorEmail: e.actorEmail || undefined,
     eventType: e.action,
     action: humanize(e.action),
-    category: categoryOf(
-      e.action,
-      e.resourceType,
-    ),
+    category,
     outcome: outcomeOf(
       e.action,
       severity,
@@ -142,7 +179,10 @@ export function fromSystemAuditEntry(e: SystemAuditLogEntry): UnifiedAuditEntry 
     tenantId: e.tenantId || "none",
     tenantName: e.tenantName || (e.tenantId ? "Unknown tenant" : "Platform"),
     ipAddress: e.ipAddress || undefined,
-    source: sourceOf(e.source),
+    source: sourceOf(
+      e,
+      category,
+    ),
     description: e.summary || humanize(e.action),
     details,
   };
@@ -213,6 +253,7 @@ export function filterUnifiedAudit(rows: UnifiedAuditEntry[], f: UnifiedAuditFil
       r.ipAddress,
       r.location,
       r.description,
+      r.details["Resource ID"],
     ].some(v => v?.toLowerCase().includes(q))) {
       return false;
     }

@@ -128,7 +128,61 @@ describe("unified audit log", () => {
   it("classifies live event types", () => {
     expect(categoryOf("sim.activated", "sim")).toBe("sim");
     expect(categoryOf("user.login", "user")).toBe("security");
+    expect(categoryOf("superadmin.logged_in", "user")).toBe("security");
+    expect(categoryOf("user.logged_out", "user")).toBe("security");
     expect(categoryOf("invoice.voided", "invoice")).toBe("billing");
+  });
+
+  it("maps a refused security action to a failure with high severity", () => {
+    const mapped = fromSystemAuditEntry({
+      id: "a2",
+      occurredAt: "2026-11-20T10:00:00Z",
+      actorId: null,
+      actorName: "Platform Admin",
+      actorEmail: "platform@truckmoov.com",
+      actorRole: null,
+      action: "login.failed",
+      resourceType: "user",
+      resourceId: null,
+      tenantId: null,
+      tenantName: null,
+      ipAddress: "102.89.34.12",
+      source: "auth",
+      summary: null,
+    });
+    expect(mapped).toMatchObject({
+      category: "security",
+      outcome: "failure",
+      severity: "high",
+      source: "security",
+    });
+  });
+
+  it("treats an automated batch as system and a person's action as integration", () => {
+    const base: SystemAuditLogEntry = {
+      id: "a3",
+      occurredAt: "2026-11-20T10:00:00Z",
+      actorId: null,
+      actorName: "System Auto",
+      actorEmail: "system@truckmoov.com",
+      actorRole: null,
+      action: "sim.activated",
+      resourceType: "sim_batch",
+      resourceId: null,
+      tenantId: "t1",
+      tenantName: "Lagos Express Logistics",
+      ipAddress: null,
+      source: "auth",
+      summary: null,
+    };
+    expect(fromSystemAuditEntry(base).source).toBe("system");
+    expect(fromSystemAuditEntry({
+      ...base,
+      actorName: "Platform Admin",
+      actorEmail: "platform@truckmoov.com",
+      action: "sim.request.approved",
+      resourceType: "sim_request",
+    }).source).toBe("integration");
   });
 
   it("maps a system audit-log row", () => {
@@ -154,7 +208,7 @@ describe("unified audit log", () => {
       actorName: "System",
       category: "kyc",
       outcome: "failure",
-      severity: "info",
+      severity: "medium",
       tenantName: "Platform",
       source: "system",
       action: "Kyc rejected",
