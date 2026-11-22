@@ -1,7 +1,7 @@
 import type { UserRole } from "@truckmoov/api/auth";
 import type { ElementType } from "react";
 import {
-  DollarSign, Fuel, Shield, Truck,
+  Activity, DollarSign, Fuel, Shield, Truck,
 } from "lucide-react";
 
 export type AnalyticsTab = {
@@ -41,13 +41,15 @@ export const ANALYTICS_TABS: AnalyticsTab[] = [
     to: "/analytics/compliance-audit", label: "Compliance Audit", icon: Shield, hasPermissions: FLEET_OPERATORS,
   },
   {
-    to: "/analytics/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: [
-      ...FLEET_OPERATORS,
-      "FINANCE_VIEWER",
-    ],
+    to: "/analytics/fleet-utilization", label: "Fleet Utilization", icon: Truck, hasPermissions: FLEET_OPERATORS,
   },
   {
-    to: "/analytics/fleet-utilization", label: "Fleet Utilization", icon: Truck, hasPermissions: FLEET_OPERATORS,
+    to: "/analytics/operations", label: "Operations & Safety", icon: Activity, hasPermissions: FLEET_OPERATORS,
+  },
+  {
+    // The design app has no Fuel Consumption tab; kept for FINANCE_VIEWER only,
+    // who would otherwise be left with a single analytics tab.
+    to: "/analytics/fuel-consumption", label: "Fuel Consumption", icon: Fuel, hasPermissions: ["FINANCE_VIEWER"],
   },
 ];
 

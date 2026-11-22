@@ -37,33 +37,39 @@ export function AnalyticsLayout() {
     );
   }
 
+  // The design app's markup: space-y-4 > space-y-4 > [tab bar, mt-3 content].
+  // Each tab page renders its own heading inside the content (they differ per tab).
   return (
-    <div className="space-y-6">
-      {visibleTabs.length > 1 && (
-        <nav
-          aria-label="Analytics sections"
-          className="bg-muted/50 text-muted-foreground flex flex-wrap gap-1 h-auto rounded-md p-1 justify-center"
-        >
-          {visibleTabs.map(tab => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              end
-              className={({ isActive }) => cn(
-                "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-150",
-                "hover:text-foreground/80",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                isActive && "bg-background text-foreground shadow-sm border-b-2 border-primary",
-              )}
+    <div className="space-y-4">
+      <div className="space-y-4">
+        {visibleTabs.length > 1 && (
+          <div className="flex justify-center">
+            <nav
+              aria-label="Analytics sections"
+              className="inline-flex items-center justify-center rounded-xl text-muted-foreground bg-muted/50 p-1 flex-wrap h-auto gap-1"
             >
-              <tab.icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      )}
+              {visibleTabs.map(tab => (
+                <NavLink
+                  key={tab.to}
+                  to={tab.to}
+                  end
+                  className={({ isActive }) => cn(
+                    "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium ring-offset-background transition-all duration-150 hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 gap-2",
+                    isActive && "bg-background text-foreground shadow-sm border-b-2 border-primary",
+                  )}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+        )}
 
-      <Outlet />
+        <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          <Outlet />
+        </div>
+      </div>
     </div>
   );
 }

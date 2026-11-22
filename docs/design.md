@@ -56,8 +56,10 @@ Two consequences worth knowing:
   in-page heading (`h1` + description, actions on the right) themselves. The `label`
   still names the sidebar link. Admin pages render `<PageTitle>`; main pages render
   `<PageHeader>` (`apps/main/src/shared/components/layout/PageHeader.tsx`) — today `/`,
-  `/jobs`, and every `/fleet` and `/drivers` tab (those layouts keep only the tab bar;
-  each tab page renders its own heading and actions under it).
+  `/jobs`, and every `/fleet`, `/drivers` and `/reports` tab (those layouts keep only
+  the tab bar; each tab page renders its own heading and actions under it).
+  `/analytics` is `manualTitle` too, but its tabs copy the design app's per-tab
+  headings as-is (a small `h3`, an `h2`, a `PageHeader`, or a status bar).
 
 Visibility is `hasPermission`: a role sees an entry iff its key is listed, and
 `getEntriesForRole` drops groups whose children are all filtered out.

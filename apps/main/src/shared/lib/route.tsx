@@ -562,6 +562,10 @@ export const router = createBrowserRouter([
                 path: "fleet-utilization",
                 lazy: async () => ({ Component: (await import("@/features/analytics/components/pages/FleetUtilizationPage")).default }),
               },
+              {
+                path: "operations",
+                lazy: async () => ({ Component: (await import("@/features/analytics/components/pages/OperationsSafetyPage")).default }),
+              },
             ],
           },
           {
