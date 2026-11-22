@@ -616,6 +616,11 @@ export type SystemInstallationJobDetail = {
     scheduledAt: string
     scheduledUntil: string
   }
+  installer: {
+    id: string
+    code: string
+    fullName: string
+  } | null
   units: SystemInstallationJobUnit[]
   checklist: {
     groups: Array<{
