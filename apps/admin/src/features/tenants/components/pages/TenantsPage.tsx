@@ -456,9 +456,7 @@ export default function TenantsPage() {
               title="Total Tenants"
               value={totalTenants}
               icon={Building2}
-              // ponytail: mock data from fleetflow parity port — wire to packages/api
-              // (the reference hard-codes +12%; live growth replaces it once there is a previous month to compare).
-              change={tenantGrowthPercent ?? 12}
+              change={tenantGrowthPercent}
               changeLabel="this month"
               loading={summaryQuery.isPending}
             />

@@ -1775,6 +1775,14 @@ export type AuthSystemSettings = {
   updatedByUserId?: string | null
 }
 
+export type SystemDashboardChanges = {
+  totalTenants: number | null
+  activeTenants: number | null
+  totalVehicles: number | null
+  totalDrivers: number | null
+  totalDevices: number | null
+}
+
 export type SystemDashboard = {
   totalTenants: number
   totalVehicles: number
@@ -1783,6 +1791,8 @@ export type SystemDashboard = {
   totalSimCards: number | null
   dataUsageTodayMb: number | null
   sensorGpsMessagesPerHour: number | null
+  /** Month-over-month percentage change; null when there is no previous-month base. */
+  changes?: SystemDashboardChanges
   unavailableMetrics: string[]
   generatedAt: string
 }

@@ -58,6 +58,13 @@ export function useDashboardTotals(period: DashboardPeriod) {
         drivers: sum("driverCount"),
         devices: sum("deviceCount"),
       },
+      changes: {
+        tenants: undefined,
+        activeTenants: undefined,
+        vehicles: undefined,
+        drivers: undefined,
+        devices: undefined,
+      },
       loading: {
         tenants: tenantList.isLoading,
         activeTenants: tenantList.isLoading,
@@ -79,6 +86,13 @@ export function useDashboardTotals(period: DashboardPeriod) {
       vehicles: dashboard.data?.data.totalVehicles,
       drivers: dashboard.data?.data.totalDrivers,
       devices: devices.data?.data.totalDevices,
+    },
+    changes: {
+      tenants: dashboard.data?.data.changes?.totalTenants,
+      activeTenants: dashboard.data?.data.changes?.activeTenants,
+      vehicles: dashboard.data?.data.changes?.totalVehicles,
+      drivers: dashboard.data?.data.changes?.totalDrivers,
+      devices: dashboard.data?.data.changes?.totalDevices,
     },
     loading: {
       tenants: dashboard.isLoading,

@@ -10,21 +10,11 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { useDashboardTotals } from "@/features/dashboard/hooks/useDashboardTotals";
 import { formatCount } from "./overviewFormat";
 
-// ponytail: mock data from fleetflow parity port — wire to packages/api
-const TOTAL_TENANTS_CHANGE = 10;
-// ponytail: mock data from fleetflow parity port — wire to packages/api
-const ACTIVE_TENANTS_CHANGE = 12;
-// ponytail: mock data from fleetflow parity port — wire to packages/api
-const VEHICLES_CHANGE = 8;
-// ponytail: mock data from fleetflow parity port — wire to packages/api
-const DRIVERS_CHANGE = 15;
-// ponytail: mock data from fleetflow parity port — wire to packages/api
-const DEVICES_CHANGE = 9;
-
 /** Primary Stats Grid — the only KPIs on this dashboard (fleetflow PlatformDashboard). */
 export function OverviewStats({ period }: { period: DashboardPeriod }) {
   const {
     totals,
+    changes,
     loading,
   } = useDashboardTotals(period);
 
@@ -33,7 +23,7 @@ export function OverviewStats({ period }: { period: DashboardPeriod }) {
       <StatCard
         title="Total Tenants"
         value={formatCount(totals.tenants)}
-        change={TOTAL_TENANTS_CHANGE}
+        change={changes.tenants}
         changeLabel="vs last month"
         icon={Building2}
         loading={loading.tenants}
@@ -41,7 +31,7 @@ export function OverviewStats({ period }: { period: DashboardPeriod }) {
       <StatCard
         title="Active Tenants"
         value={formatCount(totals.activeTenants)}
-        change={ACTIVE_TENANTS_CHANGE}
+        change={changes.activeTenants}
         changeLabel="vs last month"
         icon={ShieldCheck}
         variant="success"
@@ -50,7 +40,7 @@ export function OverviewStats({ period }: { period: DashboardPeriod }) {
       <StatCard
         title="Total Vehicles by Tenant"
         value={formatCount(totals.vehicles)}
-        change={VEHICLES_CHANGE}
+        change={changes.vehicles}
         changeLabel="vs last month"
         icon={Truck}
         loading={loading.vehicles}
@@ -58,7 +48,7 @@ export function OverviewStats({ period }: { period: DashboardPeriod }) {
       <StatCard
         title="Total Drivers by Tenant"
         value={formatCount(totals.drivers)}
-        change={DRIVERS_CHANGE}
+        change={changes.drivers}
         changeLabel="vs last month"
         icon={Users}
         loading={loading.drivers}
@@ -66,7 +56,7 @@ export function OverviewStats({ period }: { period: DashboardPeriod }) {
       <StatCard
         title="Total Devices by Tenant"
         value={formatCount(totals.devices)}
-        change={DEVICES_CHANGE}
+        change={changes.devices}
         changeLabel="vs last month"
         icon={Cpu}
         loading={loading.devices}
