@@ -138,17 +138,13 @@ function subscriptionRow(licence: TenantLicence | null | undefined): Row {
       ...base, count: "—", detail: "No active licence",
     };
   }
-  const periodEnd = formatWithPattern(
-    licence.periodEnd,
-    "dd MMM yyyy",
-  );
   if (licence.status === "ended") {
     return {
-      ...base, count: 0, detail: `${licence.planName} — ended ${periodEnd}`,
+      ...base, count: 0, detail: `${licence.planName} — ended`,
     };
   }
   return {
-    ...base, count: licence.daysLeft, detail: `${licence.planName} — ${licence.daysLeft} days to renewal (${periodEnd})`,
+    ...base, count: 1, detail: "Active plan — no changes in this period",
   };
 }
 
