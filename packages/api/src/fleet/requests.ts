@@ -136,6 +136,8 @@ import type {
   LegacyGpsDevicesQuery,
   MaintenanceRecordActionPayload,
   MaintenanceReminderScheduleResponse,
+  MaintenanceSettings,
+  MaintenanceSettingsResponse,
   UpsertMaintenanceReminderScheduleResponse,
   MaintenanceRecordListResponse,
   MaintenanceRecordResponse,
@@ -216,6 +218,7 @@ import type {
   ComplianceDocumentHistoryQuery,
   ComplianceDocumentListResponse,
   ComplianceDocumentSummaryResponse,
+  FleetStorageUsageResponse,
   ComplianceDocumentResponse,
   CreateComplianceDocumentPayload,
   CreateMaintenanceProfilePayload,
@@ -1192,6 +1195,16 @@ export async function upsertMaintenanceReminderSchedule({ data }: UpsertMaintena
   return res
 }
 
+export async function getMaintenanceSettings() {
+  const { data } = await axiosInstance.get<MaintenanceSettingsResponse>('/fleet/settings/maintenance')
+  return data
+}
+
+export async function updateMaintenanceSettings(settings: MaintenanceSettings) {
+  const { data } = await axiosInstance.put<MaintenanceSettingsResponse>('/fleet/settings/maintenance', settings)
+  return data
+}
+
 export async function deleteMaintenanceReminderSchedule() {
   const { data } = await axiosInstance.delete<MaintenanceReminderScheduleResponse>('/fleet/maintenance/reminders/schedule')
   return data
@@ -1276,6 +1289,11 @@ export async function getComplianceDocumentHistory({ params }: ComplianceDocumen
     '/fleet/compliance/documents/history',
     { params },
   )
+  return data
+}
+
+export async function getFleetStorageUsage() {
+  const { data } = await axiosInstance.get<FleetStorageUsageResponse>('/fleet/storage/usage')
   return data
 }
 

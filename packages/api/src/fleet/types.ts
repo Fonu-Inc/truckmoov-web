@@ -1953,6 +1953,17 @@ export type UpsertMaintenanceReminderScheduleResponse = ServerResponse<{
   dueInWindow?: number
 }>
 
+export type MaintenanceDispatchAction = 'allow' | 'warn' | 'block'
+
+export type MaintenanceSettings = {
+  dispatchOverdueAction: MaintenanceDispatchAction
+  dispatchDueAction: MaintenanceDispatchAction
+  /** 1–30 */
+  warnDaysBefore: number
+}
+
+export type MaintenanceSettingsResponse = ServerResponse<MaintenanceSettings>
+
 export type UpsertMaintenanceReminderSchedulePayload = {
   data: {
     recipientEmail: string
@@ -2258,6 +2269,17 @@ export type RenewComplianceDocumentPayload = {
 export type ComplianceDocumentResponse = ServerResponse<ComplianceDocument>
 export type ComplianceDocumentListResponse = ServerResponse<ComplianceDocument[]>
 export type ComplianceDocumentSummaryResponse = ServerResponse<ComplianceDocumentSummary>
+
+export type FleetStorageCategory = 'pod' | 'waybill' | 'compliance'
+export interface StorageCategoryUsage {
+  key: FleetStorageCategory
+  files: number
+  /** null when none of the files has a recorded size */
+  bytes: number | null
+  /** files stored before sizes were recorded; not included in bytes */
+  unsizedFiles: number
+}
+export type FleetStorageUsageResponse = ServerResponse<{ categories: StorageCategoryUsage[] }>
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 

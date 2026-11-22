@@ -184,6 +184,7 @@ import type {
   OnboardingBusinessInfoResponse,
   OnboardingExchangeRateResponse,
   OnboardingKycDocumentsResponse,
+  TenantStorageUsageResponse,
   OnboardingPlansResponse,
   OnboardingStatusResponse,
   OnboardingSubscriptionCapsResponse,
@@ -325,6 +326,9 @@ import type {
   SystemTenantsSummaryResponse,
   SystemTelecomMasterDetailResponse,
   SystemTelecomMasterListResponse,
+  ResolveSystemTelecomMasterPayload,
+  SubmitTenantTelecomMasterPayload,
+  TenantTelecomMasterResponse,
   SystemTenantsQuery,
   DeleteOnboardingKycDocumentPayload,
   UpdateAdminStatusPayload,
@@ -1002,6 +1006,24 @@ export async function retrySystemTelecomMasterRequest({ id }: { id: string }) {
   return data
 }
 
+export async function resolveSystemTelecomMasterRequest({ id, data: body }: ResolveSystemTelecomMasterPayload) {
+  const { data } = await axiosInstance.post<SystemTelecomMasterDetailResponse>(
+    `/auth/system/telecom-master/${id}/resolve`,
+    body,
+  )
+  return data
+}
+
+export async function getTenantTelecomMaster() {
+  const { data } = await axiosInstance.get<TenantTelecomMasterResponse>('/auth/telecom-master')
+  return data
+}
+
+export async function submitTenantTelecomMaster({ data: body }: SubmitTenantTelecomMasterPayload) {
+  const { data } = await axiosInstance.post<TenantTelecomMasterResponse>('/auth/telecom-master', body)
+  return data
+}
+
 export async function exportSystemTenants(payload?: SystemTenantsQuery) {
   const { data } = await axiosInstance.get<Blob>('/auth/system/tenants/export', {
     responseType: 'blob',
@@ -1485,6 +1507,11 @@ export async function getOnboardingBusinessInfo() {
 
 export async function updateOnboardingBusinessInfo({ data: body }: UpdateOnboardingBusinessInfoPayload) {
   const { data } = await axiosInstance.put<OnboardingBusinessInfoResponse>('/auth/onboarding/business-info', body)
+  return data
+}
+
+export async function getTenantStorageUsage() {
+  const { data } = await axiosInstance.get<TenantStorageUsageResponse>('/auth/storage/usage')
   return data
 }
 

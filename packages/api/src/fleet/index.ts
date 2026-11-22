@@ -115,6 +115,8 @@ import {
   getMaintenanceRecords,
   getMaintenanceRecordsSummary,
   getMaintenanceReminderSchedule,
+  getMaintenanceSettings,
+  updateMaintenanceSettings,
   getMaintenanceServiceCategories,
   getNearestVehicles,
   getReportsDashboard,
@@ -162,6 +164,7 @@ import {
   getVehicleImportColumns,
   getComplianceDocs,
   getComplianceSummary,
+  getFleetStorageUsage,
   createComplianceDoc,
   updateComplianceDoc,
   deleteComplianceDoc,
@@ -336,6 +339,7 @@ export const FLEET_QUERY_KEY = {
   maintenanceRecord: (id: string) => ['fleet', 'maintenanceRecord', id],
   maintenanceRecordsSummary: ['fleet', 'maintenanceRecordsSummary'],
   maintenanceReminderSchedule: ['fleet', 'maintenanceReminderSchedule'],
+  maintenanceSettings: ['fleet', 'maintenanceSettings'],
   documents: (payload: DocumentsQuery) => ['fleet', 'documents', payload],
   documentDownloadUrl: (id: string) => ['fleet', 'documentDownloadUrl', id],
   documentAccessLog: (id: string) => ['fleet', 'documentAccessLog', id],
@@ -353,6 +357,7 @@ export const FLEET_QUERY_KEY = {
     params,
   ],
   complianceSummary: ['fleet', 'complianceSummary'],
+  storageUsage: ['fleet', 'storageUsage'],
   capacityUnits: ['fleet', 'capacityUnits'],
   vehicleImportColumns: ['fleet', 'vehicleImportColumns'],
   // TRU-FE-4 pre-wire — endpoints in flight on backend, queries render loading / empty until they land.
@@ -1339,6 +1344,19 @@ export function useMaintenanceReminderSchedule() {
   return useQuery(getMaintenanceReminderScheduleQueryOptions())
 }
 
+export function useMaintenanceSettings() {
+  return useQuery({ queryKey: FLEET_QUERY_KEY.maintenanceSettings, queryFn: getMaintenanceSettings })
+}
+
+export function useUpdateMaintenanceSettings() {
+  return useMutation({
+    mutationFn: updateMaintenanceSettings,
+    onSuccess: (res) => {
+      queryClient.setQueryData(FLEET_QUERY_KEY.maintenanceSettings, res)
+    },
+  })
+}
+
 export function useCapacityUnits() {
   return useQuery(getCapacityUnitsQueryOptions())
 }
@@ -1886,6 +1904,13 @@ export function useComplianceDocs(params?: ComplianceDocumentsQuery['params']) {
     queryKey: FLEET_QUERY_KEY.complianceDocs(params),
     queryFn: () => getComplianceDocs({ params }),
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useFleetStorageUsage() {
+  return useQuery({
+    queryKey: FLEET_QUERY_KEY.storageUsage,
+    queryFn: () => getFleetStorageUsage(),
   })
 }
 

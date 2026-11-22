@@ -98,6 +98,7 @@ import {
   getOnboardingBusinessInfo,
   getOnboardingExchangeRate,
   getOnboardingKycDocuments,
+  getTenantStorageUsage,
   getOnboardingPlans,
   getOnboardingStatus,
   getOnboardingSubscriptionCaps,
@@ -172,6 +173,9 @@ import {
   getSystemTelecomMasterRequest,
   getSystemTelecomMasterRequests,
   retrySystemTelecomMasterRequest,
+  resolveSystemTelecomMasterRequest,
+  getTenantTelecomMaster,
+  submitTenantTelecomMaster,
   inviteUser,
   installerLogin,
   installerLoginTwoFactor,
@@ -508,6 +512,7 @@ export const AUTH_QUERY_KEY = {
   systemTenant: (id: string) => ['systemTenant', id],
   systemTelecomMasterRequests: ['systemTelecomMasterRequests'],
   systemTelecomMasterRequest: (id: string) => ['systemTelecomMasterRequest', id],
+  tenantTelecomMaster: ['tenantTelecomMaster'],
   systemTenantBilling: (id: string) => ['systemTenantBilling', id],
   systemTenantExports: (id: string) => ['systemTenantExports', id],
   systemTenantsSummary: ['systemTenantsSummary'],
@@ -568,6 +573,7 @@ export const AUTH_QUERY_KEY = {
   subscriptionPlans: ['subscriptionPlans'],
   onboardingBusinessInfo: ['onboardingBusinessInfo'],
   onboardingKycDocuments: ['onboardingKycDocuments'],
+  tenantStorageUsage: ['tenantStorageUsage'],
   onboardingStatus: ['onboardingStatus'],
   onboardingPlans: ['onboardingPlans'],
   onboardingExchangeRate: ['onboardingExchangeRate'],
@@ -1967,6 +1973,13 @@ export function getOnboardingBusinessInfoQueryOptions() {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.onboardingBusinessInfo,
     queryFn: getOnboardingBusinessInfo,
+  })
+}
+
+export function useTenantStorageUsage() {
+  return useQuery({
+    queryKey: AUTH_QUERY_KEY.tenantStorageUsage,
+    queryFn: getTenantStorageUsage,
   })
 }
 
@@ -3545,6 +3558,34 @@ export function useRetrySystemTelecomMasterRequest() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTelecomMasterRequests })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTelecomMasterRequest(res.data.request.id) })
+    },
+  })
+}
+
+export function useResolveSystemTelecomMasterRequest() {
+  return useMutation({
+    mutationFn: resolveSystemTelecomMasterRequest,
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTelecomMasterRequests })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTelecomMasterRequest(res.data.request.id) })
+    },
+  })
+}
+
+// ─── Tenant — Telecom Master ─────────────────────────────────────────────────
+
+export function getTenantTelecomMasterQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.tenantTelecomMaster,
+    queryFn: getTenantTelecomMaster,
+  })
+}
+
+export function useSubmitTenantTelecomMaster() {
+  return useMutation({
+    mutationFn: submitTenantTelecomMaster,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.tenantTelecomMaster })
     },
   })
 }

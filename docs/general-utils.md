@@ -63,6 +63,14 @@ file) to the user's downloads. Browser-only; a no-op without `document`.
 downloadBlob(await exportInstallerJobs(params), "installation-history.csv")
 ```
 
+**`formatBytes(bytes)`** — a file or storage size as `B` / `KB` / `MB` / `GB`
+(1024-based). Returns `"-"` for `null`/`undefined`, so an unknown size never
+reads as zero.
+
+```tsx
+formatBytes(1536) // "1.5 KB"
+```
+
 ## Adding a function
 
 1. Write it in `general-utils.ts`, with a comment saying **when to reach for it**.

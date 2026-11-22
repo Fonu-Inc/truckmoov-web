@@ -72,3 +72,21 @@ export function downloadBlob(blob: Blob, filename: string): void {
   link.click()
   URL.revokeObjectURL(url)
 }
+
+/**
+ * A byte count as B / KB / MB / GB (1024-based) for file and storage sizes.
+ * Returns `"-"` for null/undefined, so an unknown size reads as unknown, not 0.
+ */
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes == null || !Number.isFinite(bytes))
+    return '-'
+  if (bytes < 1024)
+    return `${bytes} B`
+  const kb = bytes / 1024
+  if (kb < 1024)
+    return `${kb.toFixed(1)} KB`
+  const mb = kb / 1024
+  if (mb < 1024)
+    return `${mb.toFixed(1)} MB`
+  return `${(mb / 1024).toFixed(2)} GB`
+}

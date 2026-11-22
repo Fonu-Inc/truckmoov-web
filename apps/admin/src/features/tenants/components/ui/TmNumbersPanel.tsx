@@ -52,6 +52,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { TmResolveForm } from "@/features/tenants/components/ui/TmResolveForm";
 import { errorMessage } from "@/features/tenants/utils/onboarding";
 import {
   formatTmNumber,
@@ -354,6 +355,10 @@ export function TmNumbersPanel() {
                         </div>
                       )}
                     </dl>
+                    <TmResolveForm
+                      key={`${open.id}-${open.status}`}
+                      request={open}
+                    />
                     <div>
                       <p className="mb-2 font-medium">Audit History</p>
                       <ul className="max-h-56 space-y-2 overflow-y-auto">

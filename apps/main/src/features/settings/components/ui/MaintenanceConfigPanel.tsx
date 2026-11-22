@@ -1,7 +1,17 @@
+import type {
+  MaintenanceDispatchAction, MaintenanceSettings,
+} from "@truckmoov/api/fleet";
 import {
-  Save, Settings, Wrench,
+  useMaintenanceSettings, useUpdateMaintenanceSettings,
+} from "@truckmoov/api/fleet";
+import {
+  AlertCircle, Save, Settings, Wrench,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
+import {
+  Alert, AlertDescription, AlertTitle,
+} from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -16,6 +26,8 @@ import { Separator } from "@/components/shadcn/separator";
 
 /** The design app's select trigger is taller and rounder than the shared one. */
 const SELECT_TRIGGER_CLASS = "h-10 rounded-xl px-3.5";
+const WARN_DAYS_MIN = 1;
+const WARN_DAYS_MAX = 30;
 
 function DispatchActionOptions() {
   return (
@@ -27,15 +39,53 @@ function DispatchActionOptions() {
   );
 }
 
-/**
- * The Fleet tab (`/settings/fleet`). No endpoint stores the tenant's
- * maintenance dispatch rules yet, so every control shows "-" and is locked,
- * and saving says so instead of pretending.
- */
+/** The Fleet tab (`/settings/fleet`): the tenant's maintenance dispatch rules. */
 export function MaintenanceConfigPanel() {
+  const settingsQuery = useMaintenanceSettings();
+  const updateMutation = useUpdateMaintenanceSettings();
+  const [
+    draft,
+    setDraft,
+  ] = useState<Partial<MaintenanceSettings>>({});
+  const [
+    warnDaysInput,
+    setWarnDaysInput,
+  ] = useState<string | null>(null);
+
+  const saved = settingsQuery.data?.data;
+  const loading = settingsQuery.isPending;
+  const form = saved ? {
+    ...saved, ...draft,
+  } : undefined;
+  const warnDays = warnDaysInput ?? (form ? String(form.warnDaysBefore) : "");
+
   const handleSave = () => {
-    toast.info("Fleet settings are not available yet.");
+    if (!form)
+      return;
+    const days = Number(warnDays);
+    if (!Number.isInteger(days) || days < WARN_DAYS_MIN || days > WARN_DAYS_MAX) {
+      toast.error(`Warning period must be a whole number from ${WARN_DAYS_MIN} to ${WARN_DAYS_MAX} days`);
+      return;
+    }
+    updateMutation.mutate(
+      {
+        ...form, warnDaysBefore: days,
+      },
+      {
+        onSuccess: () => {
+          setDraft({});
+          setWarnDaysInput(null);
+          toast.success("Settings saved");
+        },
+        onError: error => toast.error(error.message || "Failed to save settings"),
+      },
+    );
   };
+
+  const setAction = (key: "dispatchOverdueAction" | "dispatchDueAction") => (value: string) =>
+    setDraft(current => ({
+      ...current, [key]: value as MaintenanceDispatchAction,
+    }));
 
   return (
     <div className="rounded-2xl surface-sleek text-card-foreground bg-card/50 border-border/50">
@@ -47,6 +97,14 @@ export function MaintenanceConfigPanel() {
         <p className="text-sm text-muted-foreground">Configure vehicle maintenance and dispatch rules for your fleet.</p>
       </div>
       <div className="p-6 pt-0 space-y-6">
+        {settingsQuery.isError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Unable to load fleet settings</AlertTitle>
+            <AlertDescription>{settingsQuery.error.message}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Wrench className="h-4 w-4 text-muted-foreground" />
@@ -56,12 +114,16 @@ export function MaintenanceConfigPanel() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="dispatchOverdueAction">When maintenance is OVERDUE</Label>
-              <Select disabled>
+              <Select
+                disabled={!form}
+                value={form?.dispatchOverdueAction}
+                onValueChange={setAction("dispatchOverdueAction")}
+              >
                 <SelectTrigger
                   id="dispatchOverdueAction"
                   className={SELECT_TRIGGER_CLASS}
                 >
-                  <SelectValue placeholder="-" />
+                  <SelectValue placeholder={loading ? "Loading…" : "-"} />
                 </SelectTrigger>
                 <DispatchActionOptions />
               </Select>
@@ -70,12 +132,16 @@ export function MaintenanceConfigPanel() {
 
             <div className="space-y-2">
               <Label htmlFor="dispatchDueAction">When maintenance is DUE</Label>
-              <Select disabled>
+              <Select
+                disabled={!form}
+                value={form?.dispatchDueAction}
+                onValueChange={setAction("dispatchDueAction")}
+              >
                 <SelectTrigger
                   id="dispatchDueAction"
                   className={SELECT_TRIGGER_CLASS}
                 >
-                  <SelectValue placeholder="-" />
+                  <SelectValue placeholder={loading ? "Loading…" : "-"} />
                 </SelectTrigger>
                 <DispatchActionOptions />
               </Select>
@@ -87,9 +153,12 @@ export function MaintenanceConfigPanel() {
             <Label htmlFor="maintenanceWarnDays">Warning Period (days)</Label>
             <Input
               id="maintenanceWarnDays"
-              value="-"
-              readOnly
-              disabled
+              type="number"
+              min={WARN_DAYS_MIN}
+              max={WARN_DAYS_MAX}
+              value={warnDays}
+              onChange={e => setWarnDaysInput(e.target.value)}
+              disabled={!form}
               className="max-w-32"
             />
             <p className="text-xs text-muted-foreground">Days before due date to start showing warnings</p>
@@ -99,9 +168,12 @@ export function MaintenanceConfigPanel() {
         <Separator />
 
         <div className="flex justify-end">
-          <Button onClick={handleSave}>
+          <Button
+            onClick={handleSave}
+            disabled={!form || updateMutation.isPending}
+          >
             <Save className="h-4 w-4 mr-2" />
-            Save Settings
+            {updateMutation.isPending ? "Saving..." : "Save Settings"}
           </Button>
         </div>
       </div>

@@ -2327,7 +2327,29 @@ export type SystemTelecomMasterEvent = {
   requestId: string
   action: string
   detail: string | null
+  fromStatus: SystemTelecomMasterStatus | null
+  toStatus: SystemTelecomMasterStatus | null
+  actorId: string | null
   createdAt: string
+}
+
+export type TelecomMasterOutcome = 'verified' | 'verification_failed' | 'allocated' | 'allocation_failed'
+
+export type ResolveSystemTelecomMasterPayload = {
+  id: string
+  data: {
+    outcome: TelecomMasterOutcome
+    msisdn?: string
+    simSerial?: string
+    mtnReference?: string
+    failureReason?: string
+  }
+}
+
+export type TenantTelecomMasterResponse = ServerResponse<{ request: SystemTelecomMasterRequest | null }>
+
+export type SubmitTenantTelecomMasterPayload = {
+  data: { numberType: SystemTelecomMasterNumberType, msisdn?: string }
 }
 
 export type SystemTelecomMasterListResponse = ServerResponse<{
@@ -3275,6 +3297,16 @@ export type OnboardingSubscriptionCapsResponse = ServerResponse<OnboardingSubscr
 export type OnboardingStatusResponse = ServerResponse<OnboardingStatus>
 export type OnboardingBusinessInfoResponse = ServerResponse<OnboardingBusinessInfo>
 export type OnboardingKycDocumentsResponse = ServerResponse<OnboardingKycDocumentsData>
+
+export interface TenantStorageUsage {
+  /** bytes counted against the plan, across every source of tenant files */
+  usedBytes: number
+  planName: string | null
+  /** null when the plan sets no storage limit */
+  limitBytes: number | null
+  kyc: { files: number, bytes: number }
+}
+export type TenantStorageUsageResponse = ServerResponse<TenantStorageUsage>
 
 export type PaymentIntentPayload = {
   data: {
