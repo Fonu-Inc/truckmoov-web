@@ -14,8 +14,8 @@ pnpm dev:landing          # from the repo root; http://localhost:3000
 | Script                                          | What it does                                                                  |
 | ----------------------------------------------- | ----------------------------------------------------------------------------- |
 | `pnpm dev`                                      | `next dev` on port 3000, all interfaces                                       |
-| `pnpm build`                                    | production build to `.next/` (standalone server in `.next/standalone/`)       |
-| `pnpm start`                                    | serves the production build on port 3000                                      |
+| `pnpm build`                                    | static export to `out/`                                                        |
+| `pnpm start`                                    | serves `out/` on port 3000 with `npx serve`                                    |
 | `pnpm lint`                                     | shared ESLint config (`@truckmoov/app-core/eslint-config`)                    |
 | `pnpm env:generate` / `env:check` / `env:watch` | regenerate / verify / watch `src/shared/env/env.ts` from `.env` (type-envgen) |
 
@@ -23,6 +23,6 @@ pnpm dev:landing          # from the repo root; http://localhost:3000
 
 - [docs/landing-page.md](../../docs/landing-page.md): structure, rendering and caching rules,
   env, design tokens, and how to verify against Figma.
-- [docs/landing-deploy.md](../../docs/landing-deploy.md): how CI packages the standalone
-  server and what the server runs.
+- [docs/landing-deploy.md](../../docs/landing-deploy.md): how CI packages the static export
+  and what nginx serves.
 - [docs/file-structure.md](../../docs/file-structure.md): where files go.

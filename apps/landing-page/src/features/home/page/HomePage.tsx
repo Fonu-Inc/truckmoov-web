@@ -1,4 +1,3 @@
-import { cacheLife } from "next/cache";
 import { CustomersSection } from "@/features/home/components/CustomersSection";
 import { FaqSection } from "@/features/home/components/FaqSection";
 import { HomeHero } from "@/features/home/components/HomeHero";
@@ -43,9 +42,6 @@ const FAQ_JSON_LD = {
 
 /** Home page: dark hero, then the white sheet (Figma "Frame 9") of stacked sections, 10px apart. */
 export async function HomePage() {
-  "use cache";
-  cacheLife("max");
-
   return (
     <>
       <HomeHero />

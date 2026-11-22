@@ -12,7 +12,7 @@ import { CtaButtons } from "@/shared/components/sections/CtaButtons";
 export function HomeHero() {
   return (
     <section className="relative flex min-h-[calc(100dvh-5rem)] flex-col justify-center overflow-hidden bg-ink-gradient pt-16 pb-[124px] lg:pt-[89px] lg:pb-[131px]">
-      {/* LCP image: preloaded, served as AVIF/WebP by next/image. */}
+      {/* LCP image: preloaded; the static export serves the original file. */}
       <div className="pointer-events-none absolute inset-0 lg:top-[-152px] lg:left-[3px] lg:h-[max(840px,calc(100%+152px))] lg:w-[calc(100%-3px)]">
         <Image
           src={hero.image}

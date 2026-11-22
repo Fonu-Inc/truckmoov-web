@@ -17,9 +17,10 @@ const SLUGS: Record<string, ReadonlySet<string>> = {
 const NOT_FOUND_PATH = "/__not-found";
 
 /**
- * Returns a real 404 for unknown `[slug]` URLs. With cacheComponents, `dynamicParams = false`
- * isn't allowed, and the pages read `params` inside <Suspense> (for partialPrefetching), so a
- * `notFound()` there runs after the shell is sent and the response would be 200 + noindex.
+ * Dev-only 404 guard. In the static export, unknown slugs have no file under
+ * `out/` and nginx answers 404 before this code would run. `next dev` still
+ * renders dynamic params on demand, so rewrite unknown slugs to a path no
+ * route matches.
  */
 export function proxy(request: NextRequest) {
   const [

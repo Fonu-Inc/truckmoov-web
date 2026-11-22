@@ -163,11 +163,10 @@ them immediately:
   The landing page validates them at build time, so a missing one fails the build. Next
   inlines them into the build, so changing the secret takes effect only on the next deploy.
 - The Vite apps ship their `dist/` folder. The landing page ships
-  `apps/landing-page/.next/standalone`, a Node server (`server.js`) with `.next/static` and
-  `public/` copied in, which the server runs behind nginx. A landing change that touches
-  `next.config.ts` `output`, the standalone layout or the port also needs the server-side
-  `deploy truckmoov-landing` wrapper updated. Call it out in the body. See
-  [landing-deploy.md](landing-deploy.md).
+  `apps/landing-page/out`, a static export served by nginx. A landing change that touches
+  `next.config.ts` `output`/`trailingSlash`, the export layout, or the metadata routes also
+  needs the server-side nginx root and `deploy truckmoov-landing` wrapper checked. Call it out
+  in the body. See [landing-deploy.md](landing-deploy.md).
 
 ## Example
 

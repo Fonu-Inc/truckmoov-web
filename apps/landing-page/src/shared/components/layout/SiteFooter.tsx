@@ -1,4 +1,3 @@
-import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { GmailIcon } from "@/shared/components/icons/GmailIcon";
 import { InstagramIcon } from "@/shared/components/icons/InstagramIcon";
@@ -34,9 +33,6 @@ const SOCIALS = [
 ];
 
 export async function SiteFooter() {
-  "use cache";
-  cacheLife("max");
-
   return (
     <footer className="relative rounded-t-[50px] bg-background pt-[60px] pb-[78px]">
       <div className="mx-auto w-full max-w-[1324px] px-4">

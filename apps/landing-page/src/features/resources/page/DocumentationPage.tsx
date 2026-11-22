@@ -1,5 +1,4 @@
 import type { ResourceCategoryView } from "@/features/resources/utils/resourceTypes";
-import { cacheLife } from "next/cache";
 import { DocumentationBrowser } from "@/features/resources/components/DocumentationBrowser";
 import { ResourcePage } from "@/features/resources/components/ResourcePage";
 import {
@@ -10,9 +9,6 @@ import { IconChip } from "@/shared/components/IconChip";
 
 /** Figma "Landing Page (EDocumentation)". */
 export async function DocumentationPage() {
-  "use cache";
-  cacheLife("max");
-
   // Icons are components (not serialisable): render each chip here and hand the browser the element.
   const categories: ResourceCategoryView[] = DOC_CATEGORIES.map(({
     icon,

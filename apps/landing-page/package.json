@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev -p 3000 -H ::",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "npx --yes serve@latest out -l 3000",
     "lint": "eslint .",
     "env:generate": "type-envgen .env -o src/shared/env/env.ts --target nextjs",
     "env:check": "type-envgen .env -o src/shared/env/env.ts --target nextjs --check",

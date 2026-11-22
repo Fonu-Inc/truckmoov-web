@@ -2,7 +2,6 @@ import {
   ArrowRight,
   ChevronDown,
 } from "lucide-react";
-import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { DialogTrigger } from "@/shared/components/DialogTrigger";
 import { MegaMenu } from "@/shared/components/layout/MegaMenu";
@@ -19,9 +18,6 @@ import {
  * focus with CSS only (no state, no re-renders); only the mobile menu toggle is a client island.
  */
 export async function SiteHeader() {
-  "use cache";
-  cacheLife("max");
-
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background shadow-nav">
       <div className="page-container flex h-20 items-center justify-between gap-4">

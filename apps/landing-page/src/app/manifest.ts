@@ -3,6 +3,9 @@ import {
   DEFAULT_DESCRIPTION, SITE_NAME, THEME_COLOR,
 } from "@/shared/seo/site";
 
+// Static export has no server to render this metadata route on demand.
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: SITE_NAME,

@@ -36,7 +36,7 @@ export function DarkBackdrop({
       )}
     >
       {grid && (
-        // An <img> (not a CSS background) so it is in the HTML from the start and served as AVIF/WebP.
+        // An <img> (not a CSS background) so it is in the HTML from the start.
         <Image
           src="/images/grid-bg.png"
           alt=""

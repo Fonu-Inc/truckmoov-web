@@ -1,6 +1,9 @@
 import { ImageResponse } from "next/og";
 import { BrandMark } from "@/shared/seo/BrandMark";
 
+// Static export has no server to render this icon on demand.
+export const dynamic = "force-static";
+
 export const size = {
   width: 180, height: 180,
 };

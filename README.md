@@ -21,14 +21,14 @@ docs/
   commit-messages.md   How to write and make a commit in this repo.
   api.md               API package conventions and service patterns.
   landing-page.md      The Next.js landing page: structure, rendering rules, env, design matching.
-  landing-deploy.md    What the server must do to run the landing page's standalone build.
+  landing-deploy.md    What the server must do to serve the landing page's static export.
 ```
 
 The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*`.
 
 ## Apps
 
-- `apps/landing-page` - Next.js 16 public landing page (App Router, statically prerendered, deployed as a standalone Node server). Runs on `http://localhost:3000`.
+- `apps/landing-page` - Next.js 16 public landing page (App Router, static export in `out/`, served by nginx). Runs on `http://localhost:3000`.
 - `apps/main` - Vite React tenant app for Truckmoov product workflows. Runs on `http://localhost:3001`.
 - `apps/admin` - Vite React admin/platform app for operational and platform management workflows. Runs on `http://localhost:3002`.
 - `apps/installer` - Vite React installer portal. Runs on `http://localhost:3003`.
@@ -48,7 +48,7 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 - [docs/commit-messages.md](docs/commit-messages.md) documents how to write and make a commit here — scopes, body structure, and the deploy consequences of a push.
 - [docs/tsconfig.md](docs/tsconfig.md) documents the shared TypeScript base config and app/package override conventions.
 - [docs/landing-page.md](docs/landing-page.md) documents the Next.js landing page: Figma source, structure, rendering and caching rules, env, tokens and how to verify against the design.
-- [docs/landing-deploy.md](docs/landing-deploy.md) documents how the landing page is deployed: the standalone Node server, its systemd/pm2 service and the nginx reverse proxy.
+- [docs/landing-deploy.md](docs/landing-deploy.md) documents how the landing page is deployed: the static export, the deploy wrapper and the nginx site.
 - [docs/browser-tests.md](docs/browser-tests.md) documents the Grafana k6 browser, payment and load tests in `tests/k6/` — install k6, start an app, then run `pnpm test:k6:main` (or `admin`, `installer`, `landing`, `writes`, `payments`, `cleanup`, `load`).
 
 When adding backend calls, put the service in `packages/api` and import it from the app through `@truckmoov/api`. Apps should not call backend endpoints directly.
@@ -97,12 +97,12 @@ Default local ports:
 pnpm build
 ```
 
-The Vite apps build to `dist/`. The landing page builds to `.next/` (with a standalone server
-in `.next/standalone/`). To serve its production build locally on `:3000`:
+The Vite apps build to `dist/`. The landing page builds to `out/` as a static site. To serve
+its production build locally on `:3000`:
 
 ```sh
 pnpm --filter landing-page build
-pnpm --filter landing-page start
+pnpm --filter landing-page start   # npx serve out -l 3000
 ```
 
 ## Lint

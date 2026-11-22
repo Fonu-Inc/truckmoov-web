@@ -1,4 +1,3 @@
-import { cacheLife } from "next/cache";
 import { FaqCategorySection } from "@/features/resources/components/FaqCategorySection";
 import { ResourcePage } from "@/features/resources/components/ResourcePage";
 import {
@@ -23,9 +22,6 @@ const FAQ_JSON_LD = {
 
 /** Figma "Landing Page (FAQs)": grouped accordions, no search. */
 export async function FaqsPage() {
-  "use cache";
-  cacheLife("max");
-
   return (
     <>
       <ResourcePage

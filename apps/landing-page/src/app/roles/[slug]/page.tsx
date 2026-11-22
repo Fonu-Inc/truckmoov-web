@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps<"/roles/[slug]">) {
   });
 }
 
-// params are read inside <Suspense> so the route's shared App Shell stays URL-independent.
+// Each slug is exported to its own HTML file; unknown slugs fall through to nginx's 404.
 export default function Page({ params }: PageProps<"/roles/[slug]">) {
   return (
     <Suspense fallback={<div className="min-h-dvh" />}>

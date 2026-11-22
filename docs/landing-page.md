@@ -4,13 +4,14 @@ The public marketing site, built to match the Figma file **"Fleet Pro (Landing P
 (`JakSWfBz5JgHM4NKaGMvfL`, page "Landing page") at 1440px wide, and responsive below that.
 Brand copy follows the design ("FleetPro" / "Fleet Pro Enterprise").
 
-It is a **Next.js 16** app (App Router) with `cacheComponents`, `partialPrefetching`,
-`reactCompiler` and `output: "standalone"` (see `next.config.ts`). React 19, Tailwind v4 via
-PostCSS, zod 4. Every page prerenders at build time; nothing renders per request.
+It is a **Next.js 16** app (App Router) with `reactCompiler` and `output: "export"` (see
+`next.config.ts`). React 19, Tailwind v4 via PostCSS, zod 4. Every page prerenders at build
+time into `out/`, which nginx serves as static files; nothing renders per request. Cache
+Components and Partial Prefetching are off because export mode rejects their PPR runtime.
 
 Runs on `http://localhost:3000` (`pnpm dev:landing`, which is `next dev -p 3000 -H ::`).
 `pnpm --filter landing-page build` then `pnpm --filter landing-page start` serves the
-production build on the same port. Deploying is covered in
+static export on the same port. Deploying is covered in
 [landing-deploy.md](landing-deploy.md).
 
 Next 16 differs from older Next versions. Its docs ship in the package at
@@ -29,7 +30,7 @@ src/
     not-found.tsx
     product/[slug]/  solutions/[slug]/  stalkholder/[slug]/  roles/[slug]/  resources/*/
     sitemap.ts  robots.ts  manifest.ts  opengraph-image.tsx  apple-icon.tsx  icon.jpg
-  proxy.ts                404s unknown [slug] URLs (see "Dynamic routes")
+  proxy.ts                dev-only 404 guard for unknown [slug] URLs
   features/<feature>/
     page/<X>Page.tsx      the page body (one per page type)
     components/           pieces used only by this feature
@@ -84,19 +85,14 @@ to the "no data files" rule in [file-structure.md](file-structure.md).
 A dynamic route must:
 
 - return every slug from `generateStaticParams`
-- read `params` only inside a `<Suspense>` child, never in `Page` itself. With
-  `partialPrefetching`, awaiting `params` in `Page` ties the route's shared App Shell to one URL,
-  and `next dev` logs *"Next.js encountered URL data during prerendering"*. `Page` renders
-  `<Suspense><XRoute params={params} /></Suspense>`, and the non-exported `XRoute` in the same
-  file awaits `params` and renders the cached page component. Each slug still prerenders to full
-  HTML. `generateMetadata` may await `params`.
 - call `notFound()` for an unknown slug
-- have its prefix and slug list in `src/proxy.ts`
+- read `params` only inside a `<Suspense>` child, never in `Page` itself. `Page` renders
+  `<Suspense><XRoute params={params} /></Suspense>`, and the non-exported `XRoute` in the same
+  file awaits `params` and renders the page component. `generateMetadata` may await `params`.
+  Each slug is emitted as its own HTML file.
 
-`dynamicParams` isn't allowed with cacheComponents. A `notFound()` inside the Suspense child
-runs after the shell has streamed, so it would answer **200** + `noindex`. `src/proxy.ts` rewrites
-unknown slugs to an unmatched path first, so they get a real **404**. That is why the slug lists
-live in dependency-free `<x>Slugs.ts` files the proxy can import.
+Unknown slugs produce no file under `out/`, so nginx answers a real **404**. `src/proxy.ts`
+rewrites unknown slugs to an unmatched path for `next dev`; the static export never runs it.
 
 `app/product/[slug]/page.tsx` is the worked example.
 
@@ -110,18 +106,9 @@ The site should not render anything it doesn't need to:
    Pass strings, numbers and plain objects, or render the icon on the server and pass it as
    `children`.
 2. **Icons** come from `@phosphor-icons/react/dist/ssr` and `lucide-react`.
-3. **Component cache.** `SiteHeader`, `SiteFooter`, `CtaBand`, `HomePage` and every page
-   component that renders a slug start with:
-
-   ```ts
-   "use cache";
-   cacheLife("max"); // import { cacheLife } from "next/cache"
-   ```
-
-   A slug page component takes **only** `slug: string` and looks its content up synchronously
-   inside. Content objects hold icon components, which are not serialisable. So never
-   `"use cache"` a function that *returns* content, and never pass content objects into a
-   cached component.
+3. **Page components.** A slug page component takes **only** `slug: string` and looks its
+   content up synchronously inside. Content objects hold icon components, which are not
+   serialisable, so never pass a content object through a Client Component boundary.
 4. **React Compiler** is on and memoises every client component. Don't write `useMemo`,
    `useCallback` or `memo` by hand. Effects list their real dependencies. Never disable
    `exhaustive-deps`.
@@ -140,7 +127,8 @@ The site should not render anything it doesn't need to:
    island.
 7. **Images** use `next/image` with an explicit `width`/`height`, or `fill` + `sizes`. The
    above-the-fold LCP image gets `preload`. Public assets live in `public/brand/*` and
-   `public/images/*`.
+   `public/images/*`. The static export sets `images.unoptimized`, so the original file is
+   served — size it for the rendered box instead of relying on Next's image optimiser.
 
 ## Apply wizard (Get Started)
 

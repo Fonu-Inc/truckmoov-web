@@ -21,8 +21,7 @@ export async function generateMetadata({ params }: PageProps<"/product/[slug]">)
   });
 }
 
-// params are read inside <Suspense> so the route's shared App Shell stays URL-independent
-// (partialPrefetching). Each slug still prerenders in full via generateStaticParams.
+// Each slug is exported to its own HTML file; unknown slugs fall through to nginx's 404.
 export default function Page({ params }: PageProps<"/product/[slug]">) {
   return (
     <Suspense fallback={<div className="min-h-dvh" />}>

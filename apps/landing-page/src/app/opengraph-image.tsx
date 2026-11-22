@@ -2,6 +2,9 @@ import { ImageResponse } from "next/og";
 import { BrandMark } from "@/shared/seo/BrandMark";
 import { SITE_NAME } from "@/shared/seo/site";
 
+// Static export has no server to render this card on demand.
+export const dynamic = "force-static";
+
 export const alt = `${SITE_NAME}: modern fleet management built for Africa`;
 export const size = {
   width: 1200, height: 630,

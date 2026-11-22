@@ -1,4 +1,3 @@
-import { cacheLife } from "next/cache";
 import { HelpArticleBrowser } from "@/features/resources/components/HelpArticleBrowser";
 import { ResourcePage } from "@/features/resources/components/ResourcePage";
 import {
@@ -8,9 +7,6 @@ import {
 
 /** Figma "Landing Page (Help Articles)". */
 export async function HelpArticlesPage() {
-  "use cache";
-  cacheLife("max");
-
   return (
     <ResourcePage
       hero={HELP_ARTICLES_HERO}

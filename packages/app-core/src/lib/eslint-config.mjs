@@ -109,6 +109,7 @@ export default function truckmoov(options = {}, ...userConfigs) {
               "generateMetadata",
               "generateStaticParams",
               "viewport",
+              "dynamic",
               "dynamicParams",
               // opengraph-image / apple-icon / icon image routes
               "alt",

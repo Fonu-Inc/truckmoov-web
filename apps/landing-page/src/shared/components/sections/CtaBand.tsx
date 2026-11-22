@@ -1,13 +1,9 @@
-import { cacheLife } from "next/cache";
 import Image from "next/image";
 import { DarkBackdrop } from "@/shared/components/DarkBackdrop";
 import { CtaButtons } from "@/shared/components/sections/CtaButtons";
 
 /** "Ready to Optimize your fleet management?" dark band with the truck image, shown above the footer on every page. */
 export async function CtaBand() {
-  "use cache";
-  cacheLife("max");
-
   return (
     <section className="relative mt-[119px]">
       <div className="relative h-auto overflow-hidden bg-ink lg:h-[460px]">

@@ -2,6 +2,9 @@ import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/shared/seo/site";
 import { routes } from "@/shared/utils/routes";
 
+// Static export has no server to render this metadata route on demand.
+export const dynamic = "force-static";
+
 type Entry = MetadataRoute.Sitemap[number];
 
 /** One sitemap entry per path in a `routes` group, so new pages are listed automatically. */
