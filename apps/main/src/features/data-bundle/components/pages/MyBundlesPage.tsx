@@ -5,7 +5,7 @@ import {
   keepPreviousData, useQuery,
 } from "@tanstack/react-query";
 import {
-  exportDataBundleAllocations, getDataBundleAllocationsQueryOptions, getSimsQueryOptions,
+  exportDataBundleAllocations, getDataBundleAllocationsQueryOptions, getDataBundleCarriersQueryOptions, getSimsQueryOptions,
 } from "@truckmoov/api/auth";
 import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
 import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
@@ -38,6 +38,7 @@ import {
 import {
   formatBundleSize,
   formatMobile,
+  useCarrierName,
   useDebouncedValue,
 } from "@/features/data-bundle/utils/dataBundle";
 
@@ -47,6 +48,8 @@ export function MyBundlesPage() {
   } = useOutletContext<DataBundlesLayoutContext>();
   // Allocations carry only the mobile number — carrier and fitted device come from the SIM list.
   const simsQuery = useQuery(getSimsQueryOptions({ params: { limit: 200 } }));
+  const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
+  const carrierName = useCarrierName(carriersQuery.data?.data.carriers);
   const simByNumber = useMemo(
     () => new Map((simsQuery.data?.data?.items ?? []).map(sim => [
       formatMobile(sim.mobileNumber),
@@ -155,7 +158,7 @@ export function MyBundlesPage() {
         return (
           <>
             <p className="text-sm">{formatMobile(a.msisdn)}</p>
-            <p className="text-xs text-muted-foreground">{sim?.operator ?? a.bundle?.carrier ?? "—"}</p>
+            <p className="text-xs text-muted-foreground">{sim?.operator ?? (a.bundle?.carrier ? carrierName(a.bundle.carrier) : "—")}</p>
           </>
         );
       },
@@ -220,10 +223,10 @@ export function MyBundlesPage() {
     {
       id: "status",
       header: "Status",
-      accessorFn: a => String(a.status).toUpperCase(),
+      accessorFn: a => a.days_left <= 0 && String(a.status).toLowerCase() === "active" ? "EXPIRED" : String(a.status).toUpperCase(),
       cell: ({ getValue }) => {
         const status = getValue<string>();
-        return <Badge variant={status === "ACTIVE" ? "default" : "secondary"}>{status}</Badge>;
+        return <Badge variant={status === "ACTIVE" ? "default" : status === "EXPIRED" ? "destructive" : "secondary"}>{status}</Badge>;
       },
     },
     {

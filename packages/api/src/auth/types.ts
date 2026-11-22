@@ -2370,6 +2370,7 @@ export type DataBundleDashboardSummary = {
   activeAllocations: number
   expiredAllocations: number
   expiringWithinSevenDays: number
+  expiringWithinThirtyDays: number
   monthlySpend: number
   topUpsThisMonth: number
   totalDataUsedGb: number

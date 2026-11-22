@@ -1,4 +1,6 @@
-import type { TrackingAlert, TrackingAlertFrame, TrackingGeofenceEvent } from "@truckmoov/api/fleet";
+import type {
+  TrackingAlert, TrackingAlertFrame,
+} from "@truckmoov/api/fleet";
 
 const FALLBACK_VEHICLE = "A vehicle";
 const FALLBACK_ZONE = "a zone";
@@ -23,14 +25,21 @@ export function zoneNameOf(details: Record<string, unknown> | null | undefined):
 }
 
 function humanise(type: string): string {
-  const words = type.replace(/[_.]+/g, " ").trim();
+  const words = type.replace(
+    /[_.]+/g,
+    " ",
+  ).trim();
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : "New alert";
 }
 
 /** Reads an alert.triggered frame as it actually arrives, not as the list endpoint shapes it. */
 export function alertFromFrame(frame: TrackingAlertFrame, now = new Date()): TrackingAlert {
-  const { alert_id, alert_type, severity, vehicle_id, job_id, details, ...flat } = frame;
-  const merged = { ...flat, ...(details ?? {}) };
+  const {
+    alert_id, alert_type, severity, vehicle_id, job_id, details, ...flat
+  } = frame;
+  const merged = {
+    ...flat, ...(details ?? {}),
+  };
   const triggeredAt = text(merged.at) ?? now.toISOString();
   return {
     id: text(alert_id) ?? `${alert_type ?? "alert"}-${vehicle_id ?? "fleet"}-${triggeredAt}`,
@@ -38,17 +47,25 @@ export function alertFromFrame(frame: TrackingAlertFrame, now = new Date()): Tra
     severity: text(severity) ?? "medium",
     vehicleId: text(vehicle_id),
     geofenceId: text(merged.zoneId) ?? text(merged.zone_id) ?? text(merged.geofence_id),
-    details: { ...merged, ...(job_id ? { jobId: job_id } : {}) },
+    details: {
+      ...merged, ...(job_id ? { jobId: job_id } : {}),
+    },
     triggeredAt,
   };
 }
 
 export function alertHeadline(alert: TrackingAlert, vehicleName?: string | null): string {
   const explicit = text(alert.title) ?? text(alert.message);
-  if (explicit) return explicit;
+  if (explicit)
+    return explicit;
   const vehicle = vehicleName || FALLBACK_VEHICLE;
   const zoneSentence = ZONE_SENTENCES[alert.type];
-  if (zoneSentence) return zoneSentence(vehicle, zoneNameOf(alert.details) ?? FALLBACK_ZONE);
+  if (zoneSentence) {
+    return zoneSentence(
+      vehicle,
+      zoneNameOf(alert.details) ?? FALLBACK_ZONE,
+    );
+  }
   const plain = PLAIN_SENTENCES[alert.type];
   return plain ? plain(vehicle) : humanise(alert.type);
 }
@@ -57,10 +74,26 @@ export function alertTime(alert: TrackingAlert): string | undefined {
   return alert.triggeredAt ?? alert.createdAt;
 }
 
-export function geofenceEventVehicleId(event: TrackingGeofenceEvent): string | undefined {
-  return event.vehicle_id ?? event.vehicleId;
+export const ZONE_ALERT_TYPES = new Set(Object.keys(ZONE_SENTENCES));
+
+function coordinate(value: unknown, limit: number): number | null {
+  const n = typeof value === "string" && value.trim() ? Number(value) : value;
+  return typeof n === "number" && Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
 }
 
-export function geofenceEventName(event: TrackingGeofenceEvent): string | null {
-  return text(event.geofence_name) ?? text(event.geofenceName) ?? text(event.zoneName);
+/** Where the alert fired: the list sends latitude/longitude, socket frames only carry details. */
+export function alertPosition(alert: TrackingAlert): [number, number] | null {
+  const d = alert.details;
+  const lat = coordinate(
+    alert.latitude ?? d?.lat ?? d?.latitude,
+    90,
+  );
+  const lng = coordinate(
+    alert.longitude ?? d?.lng ?? d?.longitude,
+    180,
+  );
+  return lat === null || lng === null ? null : [
+    lat,
+    lng,
+  ];
 }

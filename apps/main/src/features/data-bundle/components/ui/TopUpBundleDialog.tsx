@@ -1,25 +1,31 @@
+import type { SimItem } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
+  getAllDataBundleRatesQueryOptions,
   getDataBundleCarriersQueryOptions,
+  getDataBundleDashboardSummaryQueryOptions,
   getSimsQueryOptions,
   useAllocateDataBundle,
 } from "@truckmoov/api/auth";
 import {
-  CreditCard, Smartphone, Zap,
+  CreditCard, Search, Smartphone, Wallet, Zap,
 } from "lucide-react";
 import {
   useEffect, useRef, useState,
 } from "react";
+import {
+  Link, useNavigate,
+} from "react-router";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import {
-  formatBundleSize, formatMobile, useDataBundleCatalog,
+  formatBundleSize, formatMobile, formatNgn, isSimBlocked, useDebouncedValue,
 } from "@/features/data-bundle/utils/dataBundle";
 import { cn } from "@/lib/utils";
 
@@ -30,32 +36,48 @@ type TopUpBundleDialogProps = {
   initialMobileNumber?: string;
 };
 
+const WALLET_HREF = "/wallet";
+
 function digits(value: string) {
   return value.replace(
     /\D/g,
     "",
   ).slice(-10);
 }
-const sameCarrier = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const sameCarrier = (a: string | undefined, b: string) => (a ?? "").trim().toLowerCase() === b.trim().toLowerCase();
 
 /**
  * The design's "Top Up Bundle": pick a SIM, then a plan for that SIM's carrier, and
- * credit it via POST /auth/data-bundles/allocations. SIMs come from GET /auth/sims —
- * /allocations/sims requires a carrierId up front, which the SIM-first flow doesn't have.
+ * credit it via POST /auth/data-bundles/allocations. SIMs are searched on GET /auth/sims;
+ * plans are every rate of the SIM's carrier from GET /auth/data-bundles/rates.
  */
 export function TopUpBundleDialog({
   open, onOpenChange, initialMobileNumber,
 }: TopUpBundleDialogProps) {
-  const { format: fmtCurrency } = useCurrency();
-  const {
-    catalog, catalogQuery,
-  } = useDataBundleCatalog();
+  const navigate = useNavigate();
+  const [
+    simSearch,
+    setSimSearch,
+  ] = useState("");
+  const [
+    planSearch,
+    setPlanSearch,
+  ] = useState("");
+  const debouncedSimSearch = useDebouncedValue(simSearch.trim());
   const simsQuery = useQuery({
-    ...getSimsQueryOptions({ params: { limit: 200 } }),
+    ...getSimsQueryOptions({
+      params: {
+        search: debouncedSimSearch || undefined, limit: 50,
+      },
+    }),
     enabled: open,
   });
   const carriersQuery = useQuery({
     ...getDataBundleCarriersQueryOptions(),
+    enabled: open,
+  });
+  const summaryQuery = useQuery({
+    ...getDataBundleDashboardSummaryQueryOptions(),
     enabled: open,
   });
   const allocate = useAllocateDataBundle();
@@ -63,12 +85,12 @@ export function TopUpBundleDialog({
     selection: "", key: "",
   });
   const [
-    msisdn,
-    setMsisdn,
-  ] = useState("");
+    sim,
+    setSim,
+  ] = useState<SimItem | null>(null);
   const [
-    bundleCode,
-    setBundleCode,
+    bundleId,
+    setBundleId,
   ] = useState("");
 
   const sims = simsQuery.data?.data?.items ?? [];
@@ -80,35 +102,54 @@ export function TopUpBundleDialog({
       purchaseRef.current = {
         selection: "", key: "",
       };
-      const match = initialMobileNumber
-        ? sims.find(s => digits(s.mobileNumber) === digits(initialMobileNumber))
-        : undefined;
-      setMsisdn(match?.mobileNumber ?? initialMobileNumber ?? "");
-      setBundleCode("");
+      setSim(null);
+      setSimSearch(initialMobileNumber ? digits(initialMobileNumber) : "");
+      setPlanSearch("");
+      setBundleId("");
     },
-    // Reset only when the dialog opens; SIMs loading later shouldn't clear a pick.
-    // eslint-disable-next-line react/exhaustive-deps
     [
       open,
       initialMobileNumber,
     ],
   );
 
-  const sim = sims.find(s => digits(s.mobileNumber) === digits(msisdn));
-  const plans = catalog.filter(b => b.is_active && (!sim || sameCarrier(
-    b.carrier,
+  // Preselect the requested SIM once the search for its number returns it.
+  useEffect(
+    () => {
+      if (!open || sim || !initialMobileNumber)
+        return;
+      const match = sims.find(s => digits(s.mobileNumber) === digits(initialMobileNumber));
+      if (match && !isSimBlocked(match.status))
+        setSim(match);
+    },
+    [
+      open,
+      sim,
+      sims,
+      initialMobileNumber,
+    ],
+  );
+
+  const carrier = sim ? (carriersQuery.data?.data?.carriers ?? []).find(c => sameCarrier(
+    c.name,
     sim.operator,
-  )));
-  const plan = plans.find(b => b.code === bundleCode);
-  const carrier = (carriersQuery.data?.data?.carriers ?? []).find(c => plan && c.id === plan.carrierId);
+  ) || sameCarrier(
+    c.displayName,
+    sim.operator,
+  )) : undefined;
+  const plansQuery = useQuery({
+    ...getAllDataBundleRatesQueryOptions({ carriers: carrier ? [carrier.id] : [] }),
+    enabled: open && Boolean(carrier),
+  });
+  const planQuery = planSearch.trim().toLowerCase();
+  const plans = (plansQuery.data ?? []).filter(b => b.active && (!planQuery || b.name.toLowerCase().includes(planQuery) || b.code.toLowerCase().includes(planQuery)));
+  const plan = (plansQuery.data ?? []).find(b => b.id === bundleId);
+  const balance = summaryQuery.data?.data.walletBalance;
+  const short = plan && balance !== undefined && plan.price > balance;
 
   const submit = () => {
-    if (!plan || !sim || allocate.isPending)
+    if (!plan || !sim || !carrier || allocate.isPending)
       return;
-    if (!carrier) {
-      toast.error(`No carrier found for ${plan.carrier}`);
-      return;
-    }
     const selection = `${sim.id}:${plan.id}`;
     if (purchaseRef.current.selection !== selection) {
       purchaseRef.current = {
@@ -119,7 +160,7 @@ export function TopUpBundleDialog({
       {
         data: {
           carrierId: carrier.id,
-          planType: plan.billing_cycle,
+          planType: plan.billingCycle,
           bundleId: plan.id,
           mobileNumbers: [sim.mobileNumber],
           idempotencyKey: purchaseRef.current.key,
@@ -131,10 +172,30 @@ export function TopUpBundleDialog({
             toast.error(res.data.failures?.[0]?.reason ?? "Top-up failed");
             return;
           }
-          toast.success(`${plan.name} credited to ${formatMobile(msisdn)}`);
+          toast.success(`${plan.name} credited to ${formatMobile(sim.mobileNumber)}`);
           onOpenChange(false);
         },
-        onError: error => toast.error(error.message),
+        onError: (error) => {
+          // The server answered, so nothing stays charged under this key: a retry needs a fresh one.
+          // A lost response (no status) keeps the key so a retry cannot charge twice.
+          if ((error as { statusCode?: number }).statusCode) {
+            purchaseRef.current = {
+              selection: "", key: "",
+            };
+          }
+          if (error.message.startsWith("Wallet balance")) {
+            toast.error(
+              error.message,
+              {
+                action: {
+                  label: "Fund wallet", onClick: () => navigate(WALLET_HREF),
+                },
+              },
+            );
+            return;
+          }
+          toast.error(error.message);
+        },
       },
     );
   };
@@ -165,6 +226,20 @@ export function TopUpBundleDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-muted/40 px-3 py-2 text-sm">
+          <span className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+            Wallet balance
+            <span className="font-semibold">{balance === undefined ? "—" : formatNgn(balance)}</span>
+          </span>
+          <Link
+            to={WALLET_HREF}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Fund wallet
+          </Link>
+        </div>
+
         <div className="space-y-5 py-2">
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
@@ -172,20 +247,36 @@ export function TopUpBundleDialog({
               <p className="text-xs text-muted-foreground">
                 Pick the SIM you want to top up — each one shows its carrier and the device it's fitted to.
               </p>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Search mobile number or ICCID..."
+                  aria-label="Search SIM cards"
+                  value={simSearch}
+                  onChange={e => setSimSearch(e.target.value)}
+                />
+              </div>
               <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
                 {sims.map((s) => {
                   const selected = sim?.id === s.id;
+                  const blocked = isSimBlocked(s.status);
                   return (
                     <button
                       key={s.id}
                       type="button"
-                      disabled={allocate.isPending}
+                      disabled={allocate.isPending || blocked}
                       aria-pressed={selected}
+                      title={blocked ? `This SIM is ${s.status} and cannot be topped up` : undefined}
                       onClick={() => {
-                        setMsisdn(s.mobileNumber);
-                        setBundleCode("");
+                        setSim(s);
+                        setBundleId("");
+                        setPlanSearch("");
                       }}
-                      className={cardClass(selected)}
+                      className={cn(
+                        cardClass(selected),
+                        blocked && "cursor-not-allowed opacity-50 hover:border-border/70 hover:bg-transparent",
+                      )}
                     >
                       <span className={iconClass(selected)}>
                         <Smartphone className="h-4 w-4" />
@@ -193,9 +284,11 @@ export function TopUpBundleDialog({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{formatMobile(s.mobileNumber)}</span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {s.assignedDevice
-                            ? `${s.assignedDevice.name || s.assignedDevice.imei} · ${s.assignedDevice.type}`
-                            : "Not fitted to a device"}
+                          {blocked
+                            ? `SIM ${s.status.toLowerCase()} — cannot be topped up`
+                            : s.assignedDevice
+                              ? `${s.assignedDevice.name || s.assignedDevice.imei} · ${s.assignedDevice.type}`
+                              : "Not fitted to a device"}
                         </span>
                       </span>
                       <Badge
@@ -234,20 +327,32 @@ export function TopUpBundleDialog({
                   ? "Pick the bundle to credit to this SIM — size, validity and price are shown."
                   : "Pick a SIM card first."}
               </p>
+              {sim && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    placeholder="Search plans..."
+                    aria-label="Search data plans"
+                    value={planSearch}
+                    onChange={e => setPlanSearch(e.target.value)}
+                  />
+                </div>
+              )}
               <div className={cn(
                 "max-h-64 space-y-2 overflow-y-auto pr-1",
                 !sim && "pointer-events-none opacity-50",
               )}
               >
-                {plans.map((b) => {
-                  const selected = bundleCode === b.code;
+                {sim && plans.map((b) => {
+                  const selected = bundleId === b.id;
                   return (
                     <button
-                      key={b.code}
+                      key={b.id}
                       type="button"
-                      disabled={!sim || allocate.isPending}
+                      disabled={allocate.isPending}
                       aria-pressed={selected}
-                      onClick={() => setBundleCode(b.code)}
+                      onClick={() => setBundleId(b.id)}
                       className={cardClass(selected)}
                     >
                       <span className={iconClass(selected)}>
@@ -256,32 +361,32 @@ export function TopUpBundleDialog({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{b.name}</span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {formatBundleSize(b.data_mb)}
+                          {formatBundleSize(b.dataAmountGb * 1024)}
                           {" · "}
-                          {b.validity_days}
+                          {b.validityDays}
                           {" days validity · "}
-                          {b.billing_cycle}
+                          {b.billingCycle}
                         </span>
                       </span>
                       <span className="shrink-0 text-right">
-                        <span className="block text-sm font-semibold">{fmtCurrency(Number(b.price_ngn))}</span>
+                        <span className="block text-sm font-semibold">{formatNgn(b.price)}</span>
                         <Badge
                           variant="outline"
                           className="mt-0.5 text-[10px]"
                         >
-                          {b.carrier}
+                          {carrier?.displayName || carrier?.name}
                         </Badge>
                       </span>
                     </button>
                   );
                 })}
-                {catalogQuery.isLoading && <p role="status">Loading bundle plans...</p>}
-                {catalogQuery.isError && (
+                {sim && (plansQuery.isLoading || carriersQuery.isLoading) && <p role="status">Loading bundle plans...</p>}
+                {plansQuery.isError && (
                   <p role="alert">
-                    {catalogQuery.error.message}
+                    {plansQuery.error.message}
                     <Button
                       variant="link"
-                      onClick={() => catalogQuery.refetch()}
+                      onClick={() => plansQuery.refetch()}
                     >
                       Try again
                     </Button>
@@ -298,10 +403,10 @@ export function TopUpBundleDialog({
                     </Button>
                   </p>
                 )}
-                {catalogQuery.isSuccess && plans.length === 0 && (
+                {sim && ((carriersQuery.isSuccess && !carrier) || (plansQuery.isSuccess && plans.length === 0)) && (
                   <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
                     No bundle plans available
-                    {sim ? ` for ${sim.operator}` : ""}
+                    {` for ${sim.operator}`}
                     .
                   </p>
                 )}
@@ -309,21 +414,36 @@ export function TopUpBundleDialog({
             </div>
           </div>
 
-          {plan && msisdn && (
+          {plan && sim && (
             <div className="rounded-md border bg-muted/40 p-3 flex items-center justify-between">
               <div className="text-sm">
                 <p className="font-medium">{plan.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatMobile(msisdn)}
+                  {formatMobile(sim.mobileNumber)}
                   {" · "}
-                  {formatBundleSize(plan.data_mb)}
+                  {formatBundleSize(plan.dataAmountGb * 1024)}
                   {" · "}
-                  {plan.validity_days}
+                  {plan.validityDays}
                   {" days"}
                 </p>
               </div>
-              <p className="text-base font-semibold">{fmtCurrency(Number(plan.price_ngn))}</p>
+              <p className="text-base font-semibold">{formatNgn(plan.price)}</p>
             </div>
+          )}
+          {short && (
+            <p
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {`Your wallet balance (${formatNgn(balance)}) does not cover this plan (${formatNgn(plan.price)}). `}
+              <Link
+                to={WALLET_HREF}
+                className="font-medium underline"
+              >
+                Fund the wallet
+              </Link>
+              {" to continue."}
+            </p>
           )}
         </div>
 
@@ -337,7 +457,7 @@ export function TopUpBundleDialog({
           <Button
             variant="gradient"
             onClick={submit}
-            disabled={!sim || !plan || !carrier || allocate.isPending}
+            disabled={!sim || !plan || !carrier || short || allocate.isPending}
           >
             <CreditCard className="h-4 w-4 mr-2" />
             {allocate.isPending ? "Processing..." : "Top Up Bundle"}

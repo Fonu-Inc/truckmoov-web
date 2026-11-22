@@ -2,12 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getDataBundleCarrierDistributionQueryOptions,
   getDataBundleCarriersQueryOptions,
+  getDataBundleDashboardSummaryQueryOptions,
   getDataBundleSpendBreakdownQueryOptions,
   getDataBundleSpendTrendQueryOptions,
   getDataBundleSubscriptionUsageQueryOptions,
 } from "@truckmoov/api/auth";
 import {
-  Activity, TrendingUp, Zap,
+  Activity, Clock, TrendingUp, Zap,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -22,7 +23,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import {
+  bundleRenewalOutlook,
   CHART_COLORS,
+  formatNgn,
   RANGE_OPTIONS,
   spendingTrend,
   toAnalyticsRange,
@@ -51,6 +54,8 @@ export function AnalyticsPage() {
   const carrierDistributionQuery = useQuery(getDataBundleCarrierDistributionQueryOptions(toAnalyticsRange(channelRange)));
   const subscriptionUsageQuery = useQuery(getDataBundleSubscriptionUsageQueryOptions(toAnalyticsRange(usageRange)));
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
+  const summaryQuery = useQuery(getDataBundleDashboardSummaryQueryOptions());
+  const renewalOutlook = bundleRenewalOutlook(summaryQuery.data?.data);
 
   const dailySpend = spendTrendQuery.data
     ? spendingTrend(
@@ -76,6 +81,7 @@ export function AnalyticsPage() {
     spendBreakdownQuery,
     carrierDistributionQuery,
     subscriptionUsageQuery,
+    summaryQuery,
   ];
   const failedQuery = queries.find(query => query.isError);
   if (failedQuery) {
@@ -165,9 +171,11 @@ export function AnalyticsPage() {
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={11}
               />
-              <Tooltip contentStyle={{
-                background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
-              }}
+              <Tooltip
+                formatter={value => formatNgn(Number(value))}
+                contentStyle={{
+                  background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
+                }}
               />
               <Area
                 type="monotone"
@@ -238,9 +246,11 @@ export function AnalyticsPage() {
                           />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{
-                        background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
-                      }}
+                      <Tooltip
+                        formatter={value => formatNgn(Number(value))}
+                        contentStyle={{
+                          background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
+                        }}
                       />
                       <Legend />
                     </PieChart>
@@ -304,9 +314,11 @@ export function AnalyticsPage() {
                           />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{
-                        background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
-                      }}
+                      <Tooltip
+                        formatter={value => formatNgn(Number(value))}
+                        contentStyle={{
+                          background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
+                        }}
                       />
                       <Legend />
                     </PieChart>
@@ -315,6 +327,91 @@ export function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
+        <CardHeader className="space-y-1.5 p-6 pb-4">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                {" "}
+                Bundle Renewal Outlook
+              </CardTitle>
+              <CardDescription>Current allocations by expiry window</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-0 h-[280px]">
+          {renewalOutlook.every(bucket => bucket.count === 0)
+            ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No allocations yet</div>
+              )
+            : (
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
+                  <BarChart
+                    data={renewalOutlook}
+                    layout="vertical"
+                    margin={{
+                      left: 0, right: 24, top: 8, bottom: 8,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      horizontal={false}
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      type="number"
+                      allowDecimals={false}
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={112}
+                      tickLine={false}
+                      axisLine={false}
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "hsl(var(--muted))" }}
+                      contentStyle={{
+                        background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
+                      }}
+                    />
+                    <Bar
+                      dataKey="count"
+                      name="Bundles"
+                      radius={[
+                        0,
+                        4,
+                        4,
+                        0,
+                      ]}
+                      maxBarSize={28}
+                    >
+                      {renewalOutlook.map((bucket, index) => (
+                        <Cell
+                          key={bucket.name}
+                          fill={[
+                            "hsl(var(--destructive))",
+                            "hsl(var(--warning))",
+                            "hsl(var(--primary))",
+                            "hsl(var(--success))",
+                          ][index]}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+        </CardContent>
+      </Card>
 
       <Card className="rounded-2xl surface-sleek bg-card/50 border-border/50">
         <CardHeader className="space-y-1.5 p-6 pb-4">

@@ -28,16 +28,15 @@ import { Input } from "@/components/shadcn/input";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   formatBundleSize,
+  formatNgn,
   useCarrierName,
   useDataBundleCatalog,
   useDebouncedValue,
 } from "@/features/data-bundle/utils/dataBundle";
 
 export function CurrentRatesPage() {
-  const { format: fmtCurrency } = useCurrency();
   const { catalog } = useDataBundleCatalog();
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
 
@@ -137,7 +136,7 @@ export function CurrentRatesPage() {
       accessorFn: b => Number(b.price_ngn),
       header: "Price",
       meta: { className: "font-semibold" },
-      cell: ({ row }) => fmtCurrency(Number(row.original.price_ngn)),
+      cell: ({ row }) => formatNgn(Number(row.original.price_ngn)),
     },
   ];
 

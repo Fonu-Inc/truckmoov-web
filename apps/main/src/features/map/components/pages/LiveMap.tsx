@@ -2,23 +2,28 @@ import type {
   TrackingAlert,
   TrackingAlertFrame,
   TrackingCounts,
-  TrackingGeofenceEvent,
   TrackingPositionsFrame,
   TrackingSnapshotResponse,
   TrackingStatus,
   TrackingVehicle,
 } from "@truckmoov/api/fleet";
 import type L from "leaflet";
-import { alertFromFrame, alertHeadline, alertTime, geofenceEventName, geofenceEventVehicleId } from "../../lib/alertText";
-import { useQueryClient } from "@tanstack/react-query";
+import type {
+  MapAlertPin, MapRoute,
+} from "@/features/map/components/ui/LiveTrackingMap";
+import {
+  useQueries, useQueryClient,
+} from "@tanstack/react-query";
 import {
   FLEET_QUERY_KEY,
+  useFleetGroups,
   useGeofences,
   useShareVehicleLocation,
   useTrackingAlerts,
   useTrackingLive,
   useTrackingVehicles,
 } from "@truckmoov/api/fleet";
+import { getVehicleLocationHistoryQueryOptions } from "@truckmoov/api/tracking";
 import { debounce } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDateTime,
@@ -27,7 +32,7 @@ import {
 import {
   AlertTriangle, Clock, Crosshair, ExternalLink, Eye, Fuel, LayoutGrid,
   Loader2, Map as MapIcon, MapPin, Maximize2, Minimize2, Minus, Navigation,
-  Package, Plus, Route, Search, Settings, Shield, Truck, Wifi, WifiOff, X,
+  Package, Plus, Route, Satellite, Search, Settings, Shield, Truck, Wifi, WifiOff, X,
 } from "lucide-react";
 import {
   useEffect, useMemo, useRef, useState,
@@ -41,17 +46,25 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/shadcn/tooltip";
 import { EmptyState } from "@/features/dashboard/components/ui/EmptyState";
 import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
-import { zoneTypeColors } from "@/features/fleet/utils/geofenceZones";
+import {
+  zoneTypeColors, zoneTypeLabels,
+} from "@/features/fleet/utils/geofenceZones";
 import { LiveTrackingMap } from "@/features/map/components/ui/LiveTrackingMap";
 import {
   useRealtimeEvent, useRealtimeStatus,
 } from "@/features/map/hooks/useRealtime";
+import {
+  alertFromFrame, alertHeadline, alertPosition, alertTime, ZONE_ALERT_TYPES,
+} from "../../lib/alertText";
 
 type PanelKey = "settings" | "vehicles" | "alerts" | null;
 
@@ -73,25 +86,9 @@ const STATUS_META: Record<TrackingStatus, {
 };
 
 const ALERT_LIMIT = 50;
-
-const LEGEND_ZONES = [
-  [
-    "depot",
-    "Depot zone",
-  ],
-  [
-    "delivery",
-    "Delivery zone",
-  ],
-  [
-    "restricted",
-    "Restricted zone",
-  ],
-  [
-    "custom",
-    "Custom zone",
-  ],
-] as const;
+const ROUTE_POINTS = 100;
+// shortcut: one history request per vehicle, so routes are drawn for at most this many; upgrade to a batch history endpoint for big fleets.
+const ROUTE_VEHICLE_LIMIT = 25;
 
 function WhatsAppIcon() {
   return (
@@ -116,6 +113,9 @@ const REFUSED_COPY: Record<string, string> = {
   origin_not_allowed: "Live updates blocked for this origin",
   capacity_reached: "Live updates are at capacity — try again shortly",
   unauthenticated: "Live updates need you to sign in again",
+  scope_unavailable: "Live updates are unavailable right now — try again shortly",
+  tenant_suspended: "Live updates are paused while this account is suspended",
+  app_check_failed: "Live updates couldn't verify this app",
 };
 
 function vehicleLabel(v: TrackingVehicle) {
@@ -173,7 +173,6 @@ export default function LiveMap() {
     showGeofences,
     setShowGeofences,
   ] = useState(true);
-  // ponytail: parity switches from fleetflow — no route or alert map layer consumes these yet.
   const [
     showRoutes,
     setShowRoutes,
@@ -186,6 +185,14 @@ export default function LiveMap() {
     showLegend,
     setShowLegend,
   ] = useState(true);
+  const [
+    mapStyle,
+    setMapStyle,
+  ] = useState<"map" | "satellite">("map");
+  const [
+    fleetFilter,
+    setFleetFilter,
+  ] = useState("all");
   const [
     searchInput,
     setSearchInput,
@@ -240,16 +247,91 @@ export default function LiveMap() {
       searchQuery.data,
     ],
   );
-  // List the live rows (current positions) for whichever ids the search matched.
-  const listedVehicles = searchIds ? vehicles.filter(v => searchIds.has(v.vehicleId)) : vehicles;
+  const fleets = useFleetGroups().data?.data ?? [];
+  const fleetIds = fleetFilter === "all" ? null : new Set(fleets.find(f => f.id === fleetFilter)?.vehicleIds ?? []);
+  // List the live rows (current positions) for whichever ids the search and fleet matched.
+  const listedVehicles = vehicles.filter(v => (!searchIds || searchIds.has(v.vehicleId)) && (!fleetIds || fleetIds.has(v.vehicleId)));
 
   const alertsQuery = useTrackingAlerts(
     { params: { limit: ALERT_LIMIT } },
-    panel === "alerts",
+    panel === "alerts" || showAlerts,
   );
-  const alerts = alertsQuery.data?.data?.items ?? [];
+  const alerts = useMemo(
+    () => alertsQuery.data?.data?.items ?? [],
+    [alertsQuery.data],
+  );
   const geofencesQuery = useGeofences({ params: { status: "ACTIVE" } });
   const geofences = geofencesQuery.data?.data ?? [];
+
+  const alertPins = useMemo<MapAlertPin[]>(
+    () => (showAlerts
+      ? alerts.flatMap((a) => {
+          const position = alertPosition(a);
+          const found = vehicles.find(v => v.vehicleId === a.vehicleId);
+          const time = alertTime(a);
+          return position
+            ? [
+                {
+                  id: a.id,
+                  position,
+                  title: alertHeadline(
+                    a,
+                    found ? vehicleLabel(found) : null,
+                  ),
+                  vehicle: found ? vehicleLabel(found) : "",
+                  time: time ? formatRelative(time) : "",
+                },
+              ]
+            : [];
+        })
+      : []),
+    [
+      showAlerts,
+      alerts,
+      vehicles,
+    ],
+  );
+
+  // Selected vehicle's trail, else every moving vehicle in the list (fleetflow draws one per vehicle).
+  const routeVehicles = (selectedVehicle
+    ? vehicles.filter(v => v.vehicleId === selectedVehicle)
+    : listedVehicles.filter(v => v.status !== "offline")).filter(v => v.position).slice(
+    0,
+    ROUTE_VEHICLE_LIMIT,
+  );
+  const historyQueries = useQueries({
+    queries: routeVehicles.map(v => ({
+      ...getVehicleLocationHistoryQueryOptions(
+        v.vehicleId,
+        ROUTE_POINTS,
+      ),
+      enabled: showRoutes,
+      staleTime: 60_000,
+    })),
+  });
+  const routes: MapRoute[] = showRoutes
+    ? routeVehicles.map((v, i) => {
+        const history = [...(historyQueries[i]?.data?.history ?? [])]
+          .filter(p => p.latitude != null && p.longitude != null)
+          .sort((a, b) => Date.parse(a.observed_at ?? a.fix_time ?? "") - Date.parse(b.observed_at ?? b.fix_time ?? ""))
+          .map(p => [
+            p.latitude!,
+            p.longitude!,
+          ] as [number, number]);
+        // History lags the socket; end the line where the marker is now.
+        if (v.position) {
+          history.push([
+            v.position.lat,
+            v.position.lng,
+          ]);
+        }
+        return {
+          vehicleId: v.vehicleId,
+          points: history,
+          moving: v.status === "active" || v.status === "in_progress",
+        };
+      })
+    : [];
 
   const share = useShareVehicleLocation();
   const [
@@ -287,6 +369,8 @@ export default function LiveMap() {
         } : old,
     );
 
+  // Ids already refetched for, so an unknown vehicle costs one snapshot request, not one per frame.
+  const refetchedForRef = useRef(new Set<string>());
   useRealtimeEvent<TrackingPositionsFrame>(
     "tracking.positions",
     (frame) => {
@@ -295,8 +379,13 @@ export default function LiveMap() {
         p,
       ]));
       // A vehicle we've never seen (added since first paint) needs the snapshot's row, not just a fix.
-      if (snapshot && frame.positions.some(p => !snapshot.vehicles.some(v => v.vehicleId === p.vehicleId)))
+      const unknown = snapshot
+        ? frame.positions.filter(p => !refetchedForRef.current.has(p.vehicleId) && !snapshot.vehicles.some(v => v.vehicleId === p.vehicleId))
+        : [];
+      if (unknown.length) {
+        unknown.forEach(p => refetchedForRef.current.add(p.vehicleId));
         queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.trackingLive });
+      }
       // A vehicle absent from the frame had no new fix — leave it exactly where it is.
       // fixedAt is authoritative, so an older fix never overwrites a newer one.
       patchSnapshot(s => ({
@@ -398,26 +487,14 @@ export default function LiveMap() {
           },
         } : old),
       );
-      toast.warning(alertHeadline(alert, vehicleNameFor(alert.vehicleId)));
+      toast.warning(alertHeadline(
+        alert,
+        vehicleNameFor(alert.vehicleId),
+      ));
+      // Zone alerts mean vehiclesInside changed — refresh that one list, on the event, not on a timer.
+      if (ZONE_ALERT_TYPES.has(alert.type))
+        queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.geofencesRoot });
     },
-  );
-
-  const onGeofenceEvent = (verb: string) => (e: TrackingGeofenceEvent) => {
-    toast.info(`${vehicleNameFor(geofenceEventVehicleId(e)) ?? "A vehicle"} ${verb} ${geofenceEventName(e) ?? "a geofence"}`);
-    // vehiclesInside changed — refresh that one list, on the event, not on a timer.
-    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.geofencesRoot });
-  };
-  useRealtimeEvent<TrackingGeofenceEvent>(
-    "vehicle.geofence.entered",
-    onGeofenceEvent("entered"),
-  );
-  useRealtimeEvent<TrackingGeofenceEvent>(
-    "vehicle.geofence.exited",
-    onGeofenceEvent("left"),
-  );
-  useRealtimeEvent<TrackingGeofenceEvent>(
-    "vehicle.geofence.dwelled",
-    onGeofenceEvent("is dwelling in"),
   );
 
   const selected = vehicles.find(v => v.vehicleId === selectedVehicle) ?? null;
@@ -505,7 +582,7 @@ export default function LiveMap() {
   }
 
   const railItems: {
-    key: Exclude<PanelKey, null> | "geofences" | "streetview" | "viewall"; icon: typeof Settings; label: string; onClick: () => void;
+    key: Exclude<PanelKey, null> | "geofences" | "streetview" | "satellite" | "viewall"; icon: typeof Settings; label: string; onClick: () => void;
   }[] = [
     {
       key: "settings", icon: Settings, label: "Map settings", onClick: () => togglePanel("settings"),
@@ -523,9 +600,25 @@ export default function LiveMap() {
       key: "streetview",
       icon: Eye,
       label: selected?.position ? "Street view" : "Street view (select a vehicle with a position)",
-      onClick: () => selected?.position && setStreetView({
-        lat: selected.position.lat, lng: selected.position.lng, heading: selected.position.heading ?? 0,
-      }),
+      onClick: () => {
+        if (!selected) {
+          toast.info("Select a vehicle to open Street View");
+          return;
+        }
+        if (!selected.position) {
+          toast.info(`${vehicleLabel(selected)} hasn't reported a position yet`);
+          return;
+        }
+        setStreetView({
+          lat: selected.position.lat, lng: selected.position.lng, heading: selected.position.heading ?? 0,
+        });
+      },
+    },
+    {
+      key: "satellite",
+      icon: Satellite,
+      label: "Satellite view",
+      onClick: () => setMapStyle(m => (m === "satellite" ? "map" : "satellite")),
     },
     {
       key: "viewall", icon: LayoutGrid, label: "View all vehicles", onClick: () => setSelectedVehicle(null),
@@ -540,9 +633,13 @@ export default function LiveMap() {
       ? {
           icon: WifiOff, text: REFUSED_COPY[realtime.reason] ?? `Live updates refused (${realtime.reason})`, className: "text-destructive", dot: "bg-destructive",
         }
-      : {
-          icon: WifiOff, text: "Connecting...", className: "text-warning", dot: "bg-warning",
-        };
+      : realtime.state === "disconnected"
+        ? {
+            icon: WifiOff, text: "Offline — reconnecting", className: "text-warning", dot: "bg-warning",
+          }
+        : {
+            icon: WifiOff, text: "Connecting...", className: "text-warning", dot: "bg-warning",
+          };
   const LiveIcon = liveBadge.icon;
 
   const mapSurface = (
@@ -565,6 +662,9 @@ export default function LiveMap() {
               vehicles={vehicles}
               geofences={geofences}
               showGeofences={showGeofences}
+              tileStyle={mapStyle}
+              routes={routes}
+              alertPins={alertPins}
               selectedVehicleId={selectedVehicle}
               followVehicleId={trackedVehicle}
               onVehicleSelect={(id) => {
@@ -634,6 +734,37 @@ export default function LiveMap() {
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {panel === "settings" && (
               <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm flex items-center gap-2">
+                    <MapIcon className="h-4 w-4 text-muted-foreground" />
+                    {" "}
+                    Map type
+                  </Label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={mapStyle === "map" ? "default" : "outline"}
+                      className="h-8 text-xs gap-1.5"
+                      onClick={() => setMapStyle("map")}
+                    >
+                      <MapIcon className="h-3.5 w-3.5" />
+                      {" "}
+                      Map
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={mapStyle === "satellite" ? "default" : "outline"}
+                      className="h-8 text-xs gap-1.5"
+                      onClick={() => setMapStyle("satellite")}
+                    >
+                      <Satellite className="h-3.5 w-3.5" />
+                      {" "}
+                      Satellite
+                    </Button>
+                  </div>
+                </div>
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="geofences"
@@ -710,6 +841,25 @@ export default function LiveMap() {
                     <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                   )}
                 </div>
+                <Select
+                  value={fleetFilter}
+                  onValueChange={setFleetFilter}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="All fleets" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All fleets</SelectItem>
+                    {fleets.map(f => (
+                      <SelectItem
+                        key={f.id}
+                        value={f.id}
+                      >
+                        {f.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <div className="space-y-1.5">
                   {listedVehicles.map((vehicle) => {
                     const meta = STATUS_META[vehicle.status];
@@ -834,7 +984,7 @@ export default function LiveMap() {
                   })}
                   {listedVehicles.length === 0 && (
                     <p className="text-xs text-muted-foreground text-center py-6">
-                      {search ? "No vehicles match your search" : "No vehicles yet"}
+                      {search || fleetIds ? "No vehicles match your search" : "No vehicles yet"}
                     </p>
                   )}
                 </div>
@@ -856,7 +1006,12 @@ export default function LiveMap() {
                               className={`p-2.5 rounded-xl text-xs ${alert.severity === "critical" || alert.severity === "high" ? "bg-destructive/10" : alert.severity === "medium" ? "bg-warning/10" : "bg-muted/30"}`}
                             >
                               <div className="min-w-0">
-                                <p className="font-medium">{alertHeadline(alert, vehicleNameFor(alert.vehicleId))}</p>
+                                <p className="font-medium">
+                                  {alertHeadline(
+                                    alert,
+                                    vehicleNameFor(alert.vehicleId),
+                                  )}
+                                </p>
                                 <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
                                   {formatRelative(alertTime(alert))}
@@ -896,7 +1051,7 @@ export default function LiveMap() {
             <Tooltip key={key}>
               <TooltipTrigger asChild>
                 <Button
-                  variant={panel === key ? "default" : "secondary"}
+                  variant={(key === "satellite" ? mapStyle === "satellite" : panel === key) ? "default" : "secondary"}
                   size="icon"
                   className="h-10 w-10 rounded-full shadow-lg"
                   onClick={onClick}
@@ -965,7 +1120,7 @@ export default function LiveMap() {
             {showGeofences && (
               <>
                 <div className="h-px bg-border my-1.5" />
-                {LEGEND_ZONES.map(([
+                {Object.entries(zoneTypeLabels).map(([
                   category,
                   label,
                 ]) => (

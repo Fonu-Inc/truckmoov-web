@@ -13,7 +13,7 @@ import { IS_DEV, requireBackendUrl } from './env'
 // `release()`, and the last release removes every listener, disconnects and drops
 // the auth subscription. Nothing survives an unmount or a logout.
 
-export type RealtimeRefusedReason = 'origin_not_allowed' | 'capacity_reached' | 'unauthenticated'
+export type RealtimeRefusedReason = 'origin_not_allowed' | 'capacity_reached' | 'unauthenticated' | 'scope_unavailable' | 'tenant_suspended' | 'app_check_failed'
 
 export type RealtimeStatus =
   | { state: 'idle' }
@@ -64,22 +64,35 @@ function create(): Socket {
     setStatus({ state: 'connected' })
   })
   s.io.on('reconnect_attempt', () => setStatus({ state: 'connecting' }))
+  // Any authed request runs the axios 401 → /auth/refresh flow; a new token then
+  // triggers the auth-store subscription below, which reconnects. One try per connection.
+  const refreshOnce = () => {
+    if (retriedAuth)
+      return null
+    retriedAuth = true
+    return axiosInstance.get('/auth/me').catch(() => {})
+  }
+
   s.on('disconnect', (reason) => {
     // A refusal already set a more useful status; keep it.
-    if (status.state !== 'refused')
-      setStatus({ state: 'disconnected' })
-    // Server-initiated disconnects are not auto-retried by socket.io — only our own
-    // unauthenticated path below reconnects, so a refusal can't loop.
-    void reason
+    if (status.state === 'refused')
+      return
+    setStatus({ state: 'disconnected' })
+    // socket.io never retries a server-initiated disconnect; the gateway sends one at
+    // token expiry, so refresh the token and let the auth subscription reconnect.
+    if (reason !== 'io server disconnect')
+      return
+    const token = useAuthStore.getState().accessToken
+    void refreshOnce()?.then(() => {
+      // The API still took the old token (clock skew), so nothing rotated: retry with it.
+      if (socket === s && token && !s.connected &&useAuthStore.getState().accessToken === token)
+        s.connect()
+    })
   })
   s.on('refused', ({ reason }: { reason: RealtimeRefusedReason }) => {
     setStatus({ state: 'refused', reason })
-    if (reason === 'unauthenticated' && !retriedAuth) {
-      retriedAuth = true
-      // Any authed request runs the axios 401 → /auth/refresh flow; a new token then
-      // triggers the auth-store subscription below, which reconnects. One try only.
-      axiosInstance.get('/auth/me').catch(() => {})
-    }
+    if (reason === 'unauthenticated')
+      refreshOnce()
   })
 
   // Token rotated → reconnect so the auth callback sends the new one. Logged out → close.

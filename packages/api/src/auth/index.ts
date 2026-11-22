@@ -419,6 +419,7 @@ import type {
   SystemSnapshotPeriod,
   DataBundleAllocationsQuery,
   AllocatableSimsQuery,
+  DataBundleRate,
   DataBundleRatesQuery,
   DataBundleTransactionsQuery,
   SimDataBundlesQuery,
@@ -2201,6 +2202,22 @@ export function getDataBundleRatesQueryOptions(payload?: DataBundleRatesQuery) {
   })
 }
 
+/** Every rate matching the filters: the endpoint caps a page at 100, so this walks pages until `total`. */
+export function getAllDataBundleRatesQueryOptions(params: Omit<NonNullable<DataBundleRatesQuery['params']>, 'page' | 'limit' | 'format'>) {
+  return queryOptions({
+    queryKey: ['dataBundleRates', 'all', params],
+    queryFn: async () => {
+      const items: DataBundleRate[] = []
+      for (let page = 1; ; page++) {
+        const { data } = await getDataBundleRates({ params: { ...params, page, limit: 100 } })
+        items.push(...data.items)
+        if (data.items.length === 0 || items.length >= data.total)
+          return items
+      }
+    },
+  })
+}
+
 export function getDataBundleAllocationQueryOptions(id: string) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.dataBundleAllocation(id),
@@ -2268,6 +2285,10 @@ export function useAllocateDataBundle() {
       queryClient.invalidateQueries({ queryKey: ['dataBundleTransactions'] })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleWalletBalance })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleDashboardSummary })
+      queryClient.invalidateQueries({ queryKey: ['dataBundleSpendTrend'] })
+      queryClient.invalidateQueries({ queryKey: ['dataBundleSpendBreakdown'] })
+      queryClient.invalidateQueries({ queryKey: ['dataBundleCarrierDistribution'] })
+      queryClient.invalidateQueries({ queryKey: ['dataBundleSubscriptionUsage'] })
     },
   })
 }

@@ -1,6 +1,7 @@
 import type {
   Geofence, TrackingStatus, TrackingVehicle,
 } from "@truckmoov/api/fleet";
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   MAP_ATTRIBUTION, MAP_TILES_LIGHT,
 } from "@truckmoov/reusables/lib/map";
@@ -8,7 +9,9 @@ import L from "leaflet";
 import {
   useEffect, useRef,
 } from "react";
-import { zoneTypeColors } from "@/features/fleet/utils/geofenceZones";
+import {
+  zoneCategoryKey, zoneTypeColors,
+} from "@/features/fleet/utils/geofenceZones";
 import "leaflet/dist/leaflet.css";
 
 const STATUS_COLOR: Record<TrackingStatus, string> = {
@@ -17,6 +20,16 @@ const STATUS_COLOR: Record<TrackingStatus, string> = {
   idle: "#f59e0b",
   offline: "#94a3b8",
 };
+
+const STATUS_LABEL: Record<TrackingStatus, string> = {
+  active: "Active",
+  in_progress: "In progress",
+  idle: "Idle",
+  offline: "Offline",
+};
+
+const SATELLITE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const SATELLITE_ATTRIBUTION = "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics";
 
 const LAGOS: L.LatLngExpression = [
   6.5244,
@@ -47,10 +60,112 @@ function vehicleIcon(status: TrackingStatus, heading: number | null, selected: b
   });
 }
 
+// Tooltips and popups take HTML; plates, names and addresses are tenant-typed text.
+function esc(value: unknown) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    c => `&#${c.charCodeAt(0)};`,
+  );
+}
+
+function vehicleLabel(v: TrackingVehicle) {
+  return v.plateNumber || v.registrationNumber || v.vehicleId.slice(
+    0,
+    8,
+  );
+}
+
+// Fleetflow's FleetMap popup, minus the network/battery row we have no data for.
+function vehiclePopup(v: TrackingVehicle) {
+  const model = [
+    v.make,
+    v.model,
+  ].filter(Boolean).join(" ");
+  const pill: Record<TrackingStatus, [string, string]> = {
+    active: [
+      "#dcfce7",
+      "#166534",
+    ],
+    in_progress: [
+      "#dbeafe",
+      "#1e40af",
+    ],
+    idle: [
+      "#fef3c7",
+      "#92400e",
+    ],
+    offline: [
+      "#f1f5f9",
+      "#475569",
+    ],
+  };
+  const [
+    bg,
+    fg,
+  ] = pill[v.status];
+  const fuel = v.fuelLevelPercent ?? v.fuelLevel;
+  const job = v.job;
+  return `
+    <div style="min-width:240px;padding:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e2e8f0;">
+        <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+          <div style="font-weight:700;font-size:15px;">${esc(model || vehicleLabel(v))}</div>
+          <div style="font-size:11px;color:#64748b;">${esc(vehicleLabel(v))}</div>
+        </div>
+        <span style="font-size:11px;padding:2px 8px;background:${bg};color:${fg};border-radius:9999px;white-space:nowrap;">${STATUS_LABEL[v.status]}</span>
+      </div>
+      <div style="font-size:13px;color:#334155;margin-bottom:10px;"><strong>Driver:</strong> ${esc(v.driverName || "Unassigned")}</div>
+      ${job
+        ? `<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12px;color:#475569;">
+            <div style="color:#94a3b8;">Job</div><div style="font-weight:600;color:#3b82f6;">${esc(job.reference)}</div>
+            <div style="color:#94a3b8;">Start</div><div style="font-weight:500;">${esc(job.pickupAddress || "—")}</div>
+            <div style="color:#94a3b8;">End</div><div style="font-weight:500;">${esc(job.deliveryAddress || job.dropoffAddress || "—")}</div>
+          </div>`
+        : ""}
+      <div style="display:flex;gap:10px;margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b;flex-wrap:wrap;">
+        <div>🚗 ${v.position?.speedKph != null ? `${Math.round(v.position.speedKph)} km/h` : "—"}</div>
+        ${fuel != null ? `<div>⛽ ${esc(fuel)}%</div>` : ""}
+        <div>⏱ ${v.position ? esc(formatRelative(v.position.fixedAt)) : "Never reported"}</div>
+      </div>
+    </div>`;
+}
+
+function alertIcon() {
+  return L.divIcon({
+    className: "geofence-alert-marker",
+    html: `<div style="width:28px;height:28px;background:#ef4444;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:alertPulse 1.5s infinite;box-shadow:0 0 0 rgba(239,68,68,.4)"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 22h20L12 2zm0 6v6m0 4h.01"/></svg></div><style>@keyframes alertPulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}70%{box-shadow:0 0 0 15px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}</style>`,
+    iconSize: [
+      28,
+      28,
+    ],
+    iconAnchor: [
+      14,
+      14,
+    ],
+  });
+}
+
+export type MapRoute = {
+  vehicleId: string;
+  points: [number, number][];
+  moving: boolean;
+};
+
+export type MapAlertPin = {
+  id: string;
+  position: [number, number];
+  title: string;
+  vehicle: string;
+  time: string;
+};
+
 type Props = {
   vehicles: TrackingVehicle[];
   geofences: Geofence[];
   showGeofences: boolean;
+  tileStyle: "map" | "satellite";
+  routes: MapRoute[];
+  alertPins: MapAlertPin[];
   selectedVehicleId: string | null;
   followVehicleId: string | null;
   onVehicleSelect: (vehicleId: string) => void;
@@ -63,12 +178,15 @@ type Props = {
  * first paint that has positions — never per frame, so it doesn't fight the user.
  */
 export function LiveTrackingMap({
-  vehicles, geofences, showGeofences, selectedVehicleId, followVehicleId, onVehicleSelect, onMapReady,
+  vehicles, geofences, showGeofences, tileStyle, routes, alertPins, selectedVehicleId, followVehicleId, onVehicleSelect, onMapReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef(new Map<string, L.Marker>());
   const geofenceLayerRef = useRef<L.LayerGroup | null>(null);
+  const routeLayerRef = useRef<L.LayerGroup | null>(null);
+  const alertLayerRef = useRef<L.LayerGroup | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const fittedRef = useRef(false);
   const selectRef = useRef(onVehicleSelect);
   useEffect(() => {
@@ -87,24 +205,39 @@ export function LiveTrackingMap({
         LAGOS,
         11,
       );
-      L.tileLayer(
-        MAP_TILES_LIGHT,
-        {
-          attribution: MAP_ATTRIBUTION, maxZoom: 19,
-        },
-      ).addTo(map);
       geofenceLayerRef.current = L.layerGroup().addTo(map);
+      routeLayerRef.current = L.layerGroup().addTo(map);
+      alertLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       onMapReady?.(map);
       const markers = markersRef.current;
       return () => {
         markers.clear();
         geofenceLayerRef.current = null;
+        routeLayerRef.current = null;
+        alertLayerRef.current = null;
+        tileLayerRef.current = null;
         mapRef.current = null;
         map.remove();
       };
     },
     [],
+  );
+
+  useEffect(
+    () => {
+      const map = mapRef.current;
+      if (!map)
+        return;
+      tileLayerRef.current?.remove();
+      tileLayerRef.current = L.tileLayer(
+        tileStyle === "satellite" ? SATELLITE_TILES : MAP_TILES_LIGHT,
+        {
+          attribution: tileStyle === "satellite" ? SATELLITE_ATTRIBUTION : MAP_ATTRIBUTION, maxZoom: 19,
+        },
+      ).addTo(map).bringToBack();
+    },
+    [tileStyle],
   );
 
   // Sync markers: add new, move/restyle existing, drop vehicles that left the list.
@@ -128,21 +261,25 @@ export function LiveTrackingMap({
           v.position.heading,
           v.vehicleId === selectedVehicleId,
         );
-        const label = v.plateNumber || v.registrationNumber || v.vehicleId.slice(
-          0,
-          8,
-        );
+        const label = esc(vehicleLabel(v));
+        const popup = vehiclePopup(v);
+        const zIndexOffset = v.vehicleId === selectedVehicleId ? 1000 : 0;
         const existing = markers.get(v.vehicleId);
         if (existing) {
           existing.setLatLng(latLng);
           existing.setIcon(icon);
           existing.setTooltipContent(label);
+          existing.setPopupContent(popup);
+          existing.setZIndexOffset(zIndexOffset);
         }
         else {
           const marker = L.marker(
             latLng,
-            { icon },
+            {
+              icon, zIndexOffset,
+            },
           )
+            .bindPopup(popup)
             .bindTooltip(
               label,
               {
@@ -192,6 +329,77 @@ export function LiveTrackingMap({
     ],
   );
 
+  // Picking a vehicle (list or marker) flies to it once — never per frame.
+  const vehiclesRef = useRef(vehicles);
+  useEffect(() => {
+    vehiclesRef.current = vehicles;
+  });
+  useEffect(
+    () => {
+      const map = mapRef.current;
+      const position = vehiclesRef.current.find(v => v.vehicleId === selectedVehicleId)?.position;
+      if (!map || !selectedVehicleId || !position)
+        return;
+      map.flyTo(
+        [
+          position.lat,
+          position.lng,
+        ],
+        Math.max(
+          map.getZoom(),
+          14,
+        ),
+        { duration: 0.8 },
+      );
+      markersRef.current.get(selectedVehicleId)?.openPopup();
+    },
+    [selectedVehicleId],
+  );
+
+  useEffect(
+    () => {
+      const layer = routeLayerRef.current;
+      if (!layer)
+        return;
+      layer.clearLayers();
+      for (const r of routes) {
+        if (r.points.length < 2)
+          continue;
+        L.polyline(
+          r.points,
+          {
+            color: r.moving ? "#3b82f6" : "#94a3b8", weight: 3, opacity: 0.7, dashArray: "10, 5",
+          },
+        ).addTo(layer);
+      }
+    },
+    [routes],
+  );
+
+  useEffect(
+    () => {
+      const layer = alertLayerRef.current;
+      if (!layer)
+        return;
+      layer.clearLayers();
+      for (const a of alertPins) {
+        L.marker(
+          a.position,
+          { icon: alertIcon() },
+        ).bindPopup(`
+          <div style="min-width:200px;padding:8px;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:4px;color:#b91c1c;">Alert</div>
+            <div style="font-size:12px;color:#4b5563;margin-bottom:4px;">${esc(a.title)}</div>
+            <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#9ca3af;">
+              <span>${esc(a.vehicle)}</span>
+              <span>${esc(a.time)}</span>
+            </div>
+          </div>`).addTo(layer);
+      }
+    },
+    [alertPins],
+  );
+
   // Follow a vehicle: re-centre whenever its position changes (i.e. per socket frame).
   const followed = followVehicleId ? vehicles.find(v => v.vehicleId === followVehicleId)?.position : null;
   useEffect(
@@ -229,9 +437,9 @@ export function LiveTrackingMap({
         return;
       for (const g of geofences) {
         const style = {
-          color: zoneTypeColors[g.category] ?? zoneTypeColors.custom, weight: 2, fillOpacity: 0.15,
+          color: zoneTypeColors[zoneCategoryKey(g.category)], weight: 2, fillOpacity: 0.15,
         };
-        const tip = `${g.name}${g.vehiclesInside !== undefined ? ` · ${g.vehiclesInside} inside` : ""}`;
+        const tip = `${esc(g.name)}${g.vehiclesInside !== undefined ? ` · ${g.vehiclesInside} inside` : ""}`;
         if (g.shape === "CIRCLE" && g.center && g.radiusMeters) {
           L.circle(
             [

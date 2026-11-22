@@ -1002,7 +1002,10 @@ export const router = createBrowserRouter([
           },
           {
             path: "/dispatcher/map",
-            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherLiveMap")).default }),
+            lazy: guarded(
+              "/map",
+              () => import("@/features/map/components/pages/LiveMap"),
+            ),
           },
           {
             path: "/dispatcher/drivers",

@@ -1,4 +1,6 @@
-import type { DataBundleAnalyticsRangeQuery } from "@truckmoov/api/auth";
+import type {
+  DataBundleAnalyticsRangeQuery, DataBundleDashboardSummary,
+} from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   getDataBundleCarriersQueryOptions, getDataBundleRatesQueryOptions,
@@ -9,6 +11,48 @@ import {
 import {
   useEffect, useMemo, useState,
 } from "react";
+import { formatCurrency } from "@/lib/currency";
+
+/** Bundle prices, spend and the wallet are NGN; shown as recorded, never through the global currency switch. */
+export function formatNgn(amount: number) {
+  return formatCurrency(
+    Number(amount || 0),
+    "NGN",
+  );
+}
+
+export const BLOCKED_SIM_STATUSES = [
+  "suspended",
+  "deactivated",
+];
+export const isSimBlocked = (status?: string) => BLOCKED_SIM_STATUSES.includes(String(status ?? "").toLowerCase());
+
+/** Fleetflow's renewal outlook buckets, counted on the server across every allocation. */
+export function bundleRenewalOutlook(summary?: Pick<DataBundleDashboardSummary, "activeAllocations" | "expiredAllocations" | "expiringWithinSevenDays" | "expiringWithinThirtyDays">) {
+  const active = summary?.activeAllocations ?? 0;
+  const within7 = summary?.expiringWithinSevenDays ?? 0;
+  const within30 = summary?.expiringWithinThirtyDays ?? 0;
+  return [
+    {
+      name: "Expired", count: summary?.expiredAllocations ?? 0,
+    },
+    {
+      name: "Within 7 days", count: within7,
+    },
+    {
+      name: "8–30 days", count: Math.max(
+        0,
+        within30 - within7,
+      ),
+    },
+    {
+      name: "Beyond 30 days", count: Math.max(
+        0,
+        active - within30,
+      ),
+    },
+  ];
+}
 
 export const formatBundleSize = (mb: number) => mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`;
 

@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   getDataBundleAllocationsQueryOptions,
+  getDataBundleCarriersQueryOptions,
   getDataBundleDashboardSummaryQueryOptions,
 } from "@truckmoov/api/auth";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Activity, AlertTriangle, Clock, Database, Plus, Smartphone, TrendingUp, Wifi,
+  Activity, AlertTriangle, Clock, Database, Plus, Smartphone, TrendingUp, Wallet, Wifi,
 } from "lucide-react";
 import { useState } from "react";
 import {
-  NavLink, Outlet,
+  Link, NavLink, Outlet,
 } from "react-router";
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
@@ -23,12 +24,13 @@ import {
 } from "@/components/shadcn/dialog";
 import { Progress } from "@/components/shadcn/progress";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { TopUpBundleDialog } from "@/features/data-bundle/components/ui/TopUpBundleDialog";
 import {
   formatBundleSize,
   formatDataUsedGb,
   formatMobile,
+  formatNgn,
+  useCarrierName,
   useDataBundleCatalog,
 } from "@/features/data-bundle/utils/dataBundle";
 import { DATA_BUNDLE_TABS } from "@/features/data-bundle/utils/dataBundleNav";
@@ -43,14 +45,15 @@ export type DataBundlesLayoutContext = {
 // dialogs but nothing on the page opens them, so neither is shown here. The API hooks
 // (useSaveDataBundleAutoTopup / useSaveDataBundleSpendingLimit) remain in packages/api.
 export function DataBundlesLayout() {
-  const { format: fmtCurrency } = useCurrency();
   const { catalog } = useDataBundleCatalog();
+  const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
+  const carrierName = useCarrierName(carriersQuery.data?.data.carriers);
   const summaryQuery = useQuery(getDataBundleDashboardSummaryQueryOptions());
   const summary = summaryQuery.data?.data;
   // Only the total is needed here — the summary has no "all allocations" count.
   const allocationsQuery = useQuery(getDataBundleAllocationsQueryOptions({
     params: {
-      page: 1, limit: 100,
+      page: 1, limit: 1,
     },
   }));
 
@@ -139,7 +142,16 @@ export function DataBundlesLayout() {
             Manage bundle allocations, top-ups, auto-renewal and spending limits
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/wallet"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/60 bg-card/50 px-3.5 text-sm hover:bg-muted/40"
+            title="Wallet balance shared by bundles and communications — fund it on the Wallet page"
+          >
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Wallet</span>
+            <span className="font-semibold">{formatNgn(summary?.walletBalance ?? 0)}</span>
+          </Link>
           <Button
             variant="gradient"
             onClick={() => openTopUp()}
@@ -251,6 +263,7 @@ export function DataBundlesLayout() {
           </DialogHeader>
           {viewAlloc && (() => {
             const b = viewAlloc.bundle ?? catalog.find(c => c.code === viewAlloc.bundle_code);
+            const carrierId = viewAlloc.bundle?.carrier ?? b?.carrierId;
             const pct = viewAlloc.data_mb_total > 0 ? (viewAlloc.data_mb_used / viewAlloc.data_mb_total) * 100 : 0;
             const days = viewAlloc.days_left ?? Math.ceil((new Date(viewAlloc.expires_at).getTime() - Date.now()) / 86400000);
             const status = String(viewAlloc.status).toUpperCase();
@@ -278,7 +291,7 @@ export function DataBundlesLayout() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Carrier</p>
-                    <p className="font-medium">{b?.carrier ?? "—"}</p>
+                    <p className="font-medium">{carrierId ? carrierName(carrierId) : "—"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Plan Type</p>
@@ -286,7 +299,7 @@ export function DataBundlesLayout() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Price</p>
-                    <p className="font-medium">{b ? fmtCurrency(Number(b.price ?? b.price_ngn)) : "—"}</p>
+                    <p className="font-medium">{b ? formatNgn(Number(b.price ?? b.price_ngn)) : "—"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Activated</p>

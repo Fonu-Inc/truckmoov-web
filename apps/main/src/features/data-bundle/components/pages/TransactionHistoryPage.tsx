@@ -31,19 +31,23 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import {
+  bundleReceiptFilename, canDownloadReceipt, generateBundleTransactionReceipt,
+} from "@/features/data-bundle/utils/bundleReceipt";
 import {
   formatMobile,
+  formatNgn,
   useDataBundleCatalog,
   useDebouncedValue,
 } from "@/features/data-bundle/utils/dataBundle";
 
 type TopupRow = {
-  id: string; created_at: string; msisdn: string; bundle_code: string; status: string; amount_ngn?: number; bundle?: { carrier?: string };
+  id: string; created_at: string; msisdn: string; bundle_code: string; status: string; amount_ngn?: number; payment_reference?: string | null; bundle?: {
+    carrier?: string; name?: string;
+  };
 };
 
 export function TransactionHistoryPage() {
-  const { format: fmtCurrency } = useCurrency();
   const { catalog } = useDataBundleCatalog();
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
 
@@ -104,7 +108,7 @@ export function TransactionHistoryPage() {
         id: item.id,
         created_at: item.date,
         msisdn: item.mobileNumber,
-        bundle_code: item.bundle.code,
+        bundle_code: item.bundle.code || item.bundle.id,
         bundle: item.bundle,
         status: String(item.status).toUpperCase(),
         amount_ngn: item.amount,
@@ -180,7 +184,7 @@ export function TransactionHistoryPage() {
       id: "amount",
       header: "Amount",
       accessorFn: amountFor,
-      cell: ({ row }) => fmtCurrency(amountFor(row.original)),
+      cell: ({ row }) => formatNgn(amountFor(row.original)),
     },
     {
       accessorKey: "status",
@@ -193,6 +197,37 @@ export function TransactionHistoryPage() {
           </Badge>
         );
       },
+    },
+    {
+      id: "receipt",
+      header: "Receipt",
+      enableSorting: false,
+      meta: { className: "text-right" },
+      cell: ({ row }) => canDownloadReceipt(row.original) && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="whitespace-nowrap"
+          onClick={() => {
+            try {
+              downloadBlob(
+                generateBundleTransactionReceipt(
+                  row.original,
+                  row.original.bundle?.name,
+                ),
+                bundleReceiptFilename(row.original.id),
+              );
+            }
+            catch {
+              toast.error("Unable to download this receipt. Please try again.");
+            }
+          }}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {" "}
+          Download Receipt
+        </Button>
+      ),
     },
   ];
 
@@ -232,9 +267,9 @@ export function TransactionHistoryPage() {
               <SelectTrigger className="h-10 rounded-xl px-3.5 w-[160px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="SUCCESS">Success</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="FAILED">Failed</SelectItem>
+                <SelectItem value="success">Success</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
             <Popover>

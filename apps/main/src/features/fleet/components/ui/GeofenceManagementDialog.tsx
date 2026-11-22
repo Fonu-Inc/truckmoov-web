@@ -27,6 +27,7 @@ import {
   Settings2,
   Shield,
   Square,
+  Undo2,
   X,
   Zap,
 } from "lucide-react";
@@ -71,20 +72,15 @@ import { Switch } from "@/components/shadcn/switch";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { zoneTypeColors } from "@/features/fleet/utils/geofenceZones";
+import { GeofenceDrawMap } from "@/features/fleet/components/ui/GeofenceDrawMap";
+import {
+  zoneCategoryKey, zoneTypeColors, zoneTypeLabels,
+} from "@/features/fleet/utils/geofenceZones";
 
 type GeofenceManagementDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preselectedVehicleId?: string | null;
-};
-
-const zoneTypeLabels: Record<string, string> = {
-  depot: "Depot",
-  delivery: "Delivery Zone",
-  restricted: "Restricted Area",
-  customer: "Customer Site",
-  custom: "Custom Zone",
 };
 
 const weekDays = [
@@ -105,6 +101,8 @@ type EditFormState = {
   geofence_type: "CIRCLE" | "POLYGON";
   center: [number, number];
   radius_meters: number;
+  /** Polygon vertices as [lat, lng]. */
+  points: [number, number][];
   color: string;
   alert_on_entry: boolean;
   alert_on_exit: boolean;
@@ -143,6 +141,7 @@ const defaultEditForm: EditFormState = {
     3.3792,
   ], // Lagos default
   radius_meters: 500,
+  points: [],
   color: zoneTypeColors.custom,
   alert_on_entry: true,
   alert_on_exit: true,
@@ -174,7 +173,7 @@ export function GeofenceManagementDialog({
   const geofences = useMemo(
     () => (geofenceResponse?.data ?? []).map(zone => ({
       ...zone,
-      color: zoneTypeColors[zone.category] ?? zoneTypeColors.custom,
+      color: zoneTypeColors[zoneCategoryKey(zone.category)],
       geofence_type: zone.shape,
       radius_meters: zone.radiusMeters,
       alert_on_entry: zone.alerts.entry,
@@ -245,11 +244,27 @@ export function GeofenceManagementDialog({
       description: zone.description ?? "",
       category: zone.category,
       geofence_type: zone.geofence_type,
-      center: [
-        zone.center.latitude,
-        zone.center.longitude,
-      ],
+      center: zone.center
+        ? [
+            zone.center.latitude,
+            zone.center.longitude,
+          ]
+        : zone.coordinates[0]
+          ? [
+              zone.coordinates[0][1],
+              zone.coordinates[0][0],
+            ]
+          : defaultEditForm.center,
       radius_meters: zone.radius_meters || 500,
+      points: zone.shape === "POLYGON"
+        ? zone.coordinates.map(([
+            lng,
+            lat,
+          ]) => [
+            lat,
+            lng,
+          ] as [number, number])
+        : [],
       color: zone.color,
       alert_on_entry: zone.alert_on_entry,
       alert_on_exit: zone.alert_on_exit,
@@ -272,6 +287,11 @@ export function GeofenceManagementDialog({
       toast.error("Zone name is required");
       return;
     }
+    const isPolygon = editForm.geofence_type === "POLYGON";
+    if (isPolygon && editForm.points.length < 3) {
+      toast.error("Click at least 3 points on the map to draw the zone");
+      return;
+    }
 
     const input: GeofencePayload = {
       name: editForm.name,
@@ -279,11 +299,20 @@ export function GeofenceManagementDialog({
       zoneType: editForm.category,
       category: editForm.category,
       shape: editForm.geofence_type,
-      center: {
-        latitude: editForm.center[0], longitude: editForm.center[1],
-      },
-      coordinates: editForm.geofence_type === "POLYGON"
-        ? []
+      center: isPolygon
+        ? null
+        : {
+            latitude: editForm.center[0], longitude: editForm.center[1],
+          },
+      // Stored GeoJSON-style [lng, lat]; the server closes the ring.
+      coordinates: isPolygon
+        ? editForm.points.map(([
+            lat,
+            lng,
+          ]) => [
+            lng,
+            lat,
+          ])
         : [
             [
               editForm.center[1],
@@ -449,7 +478,7 @@ export function GeofenceManagementDialog({
                                     <div>
                                       <p className="font-medium text-sm">{zone.name}</p>
                                       <p className="text-xs text-muted-foreground capitalize">
-                                        {zoneTypeLabels[zone.category]}
+                                        {zoneTypeLabels[zoneCategoryKey(zone.category)]}
                                       </p>
                                     </div>
                                   </div>
@@ -605,7 +634,7 @@ export function GeofenceManagementDialog({
                               onValueChange={(value: string) => {
                                 updateEditForm({
                                   category: value,
-                                  color: zoneTypeColors[value],
+                                  color: zoneTypeColors[zoneCategoryKey(value)],
                                 });
                               }}
                             >
@@ -613,11 +642,17 @@ export function GeofenceManagementDialog({
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="depot">Depot</SelectItem>
-                                <SelectItem value="delivery">Delivery Zone</SelectItem>
-                                <SelectItem value="restricted">Restricted Area</SelectItem>
-                                <SelectItem value="customer">Customer Site</SelectItem>
-                                <SelectItem value="custom">Custom Zone</SelectItem>
+                                {Object.entries(zoneTypeLabels).map(([
+                                  value,
+                                  label,
+                                ]) => (
+                                  <SelectItem
+                                    key={value}
+                                    value={value}
+                                  >
+                                    {label}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -645,81 +680,135 @@ export function GeofenceManagementDialog({
                               Polygon
                             </Button>
                           </div>
-                          {editForm.geofence_type === "POLYGON" && (
-                            <p className="text-xs text-muted-foreground">
-                              Polygon drawing requires map interaction. Enter coordinates manually below or use the map editor.
-                            </p>
-                          )}
                         </div>
 
                         <div className="space-y-2">
-                          <Label>
-                            Radius:
-                            {" "}
-                            {editForm.radius_meters}
-                            m (
-                            {(editForm.radius_meters / 1000).toFixed(1)}
-                            km)
-                          </Label>
-                          <Slider
-                            value={[editForm.radius_meters]}
-                            onValueChange={([value]) => updateEditForm({ radius_meters: value })}
-                            min={100}
-                            max={5000}
-                            step={100}
-                            className="w-full"
+                          <GeofenceDrawMap
+                            shape={editForm.geofence_type}
+                            center={editForm.center}
+                            radiusMeters={editForm.radius_meters}
+                            points={editForm.points}
+                            color={editForm.color}
+                            onMapClick={latLng => setEditForm(prev => (prev.geofence_type === "POLYGON"
+                              ? {
+                                  ...prev,
+                                  points: [
+                                    ...prev.points,
+                                    latLng,
+                                  ],
+                                }
+                              : {
+                                  ...prev, center: latLng,
+                                }))}
                           />
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>100m</span>
-                            <span>5km</span>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="lat">Latitude</Label>
-                            <Input
-                              id="lat"
-                              type="number"
-                              step="0.0001"
-                              value={editForm.center[0]}
-                              onChange={e =>
-                                updateEditForm({
-                                  center: [
-                                    Number.parseFloat(e.target.value) || 0,
-                                    editForm.center[1],
-                                  ],
-                                })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="lng">Longitude</Label>
-                            <Input
-                              id="lng"
-                              type="number"
-                              step="0.0001"
-                              value={editForm.center[1]}
-                              onChange={e =>
-                                updateEditForm({
-                                  center: [
-                                    editForm.center[0],
-                                    Number.parseFloat(e.target.value) || 0,
-                                  ],
-                                })}
-                            />
-                          </div>
-                        </div>
-
-                        <Card className="bg-muted/30">
-                          <CardContent className="p-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">
-                                Tip: Click on the map to set the zone center point
-                              </span>
+                          {editForm.geofence_type === "POLYGON" && (
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs text-muted-foreground">
+                                {`Click the map to add corners — ${editForm.points.length} placed, at least 3 needed.`}
+                              </p>
+                              <div className="flex gap-2 shrink-0">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={editForm.points.length === 0}
+                                  onClick={() => updateEditForm({
+                                    points: editForm.points.slice(
+                                      0,
+                                      -1,
+                                    ),
+                                  })}
+                                >
+                                  <Undo2 className="h-4 w-4 mr-1" />
+                                  Undo
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={editForm.points.length === 0}
+                                  onClick={() => updateEditForm({ points: [] })}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Clear
+                                </Button>
+                              </div>
                             </div>
-                          </CardContent>
-                        </Card>
+                          )}
+                        </div>
+
+                        {editForm.geofence_type === "CIRCLE" && (
+                          <>
+                            <div className="space-y-2">
+                              <Label>
+                                Radius:
+                                {" "}
+                                {editForm.radius_meters}
+                                m (
+                                {(editForm.radius_meters / 1000).toFixed(1)}
+                                km)
+                              </Label>
+                              <Slider
+                                value={[editForm.radius_meters]}
+                                onValueChange={([value]) => updateEditForm({ radius_meters: value })}
+                                min={100}
+                                max={5000}
+                                step={100}
+                                className="w-full"
+                              />
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>100m</span>
+                                <span>5km</span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="lat">Latitude</Label>
+                                <Input
+                                  id="lat"
+                                  type="number"
+                                  step="0.0001"
+                                  value={editForm.center[0]}
+                                  onChange={e =>
+                                    updateEditForm({
+                                      center: [
+                                        Number.parseFloat(e.target.value) || 0,
+                                        editForm.center[1],
+                                      ],
+                                    })}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="lng">Longitude</Label>
+                                <Input
+                                  id="lng"
+                                  type="number"
+                                  step="0.0001"
+                                  value={editForm.center[1]}
+                                  onChange={e =>
+                                    updateEditForm({
+                                      center: [
+                                        editForm.center[0],
+                                        Number.parseFloat(e.target.value) || 0,
+                                      ],
+                                    })}
+                                />
+                              </div>
+                            </div>
+
+                            <Card className="bg-muted/30">
+                              <CardContent className="p-3">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-muted-foreground">
+                                    Tip: Click on the map to set the zone center point
+                                  </span>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </>
+                        )}
                       </TabsContent>
 
                       <TabsContent
@@ -1055,7 +1144,7 @@ export function GeofenceManagementDialog({
                         <div>
                           <h3 className="font-medium">{selectedZone.name}</h3>
                           <p className="text-sm text-muted-foreground capitalize">
-                            {zoneTypeLabels[selectedZone.category]}
+                            {zoneTypeLabels[zoneCategoryKey(selectedZone.category)]}
                           </p>
                         </div>
                       </div>
