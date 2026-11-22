@@ -1,33 +1,69 @@
-import type { MaintenanceRecord } from "@truckmoov/api/fleet";
+import type {
+  FleetOverviewOperationalVehicle, MaintenanceRecord,
+} from "@truckmoov/api/fleet";
 import { differenceInCalendarDays } from "date-fns";
 import {
   Construction, Truck,
 } from "lucide-react";
 import {
-  DashboardListCard, DashboardListRow, NO_ENDPOINT, RowPill,
+  DashboardListCard, DashboardListRow, RowPill,
 } from "./DashboardListCard";
 
 const ROW_LIMIT = 5;
 
-// No endpoint yet: /fleet/tracking/live would carry vehicle + driver + route,
-// but it 404s on dev-api (see types.ts). The card keeps its shape with "-".
-export function VehiclesInOperationCard() {
+/** First place name in an address: "VI, Lagos" → "VI". */
+function place(address: string | null): string | null {
+  return address?.split(",")[0]?.trim() || null;
+}
+
+function routeLabel(vehicle: FleetOverviewOperationalVehicle): string {
+  const from = place(vehicle.pickupAddress);
+  const to = place(vehicle.dropoffAddress);
+  if (from && to)
+    return `${from} → ${to}`;
+  return vehicle.jobReference ? `Job ${vehicle.jobReference}` : "No active job";
+}
+
+/** Active vehicles with the driver and route they are currently running. */
+export function VehiclesInOperationCard({
+  vehicles,
+  isLoading,
+  isError,
+  onRetry,
+}: {
+  vehicles: FleetOverviewOperationalVehicle[];
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+}) {
   return (
     <DashboardListCard
       icon={Truck}
       tint="bg-success/10 text-success"
       title="Vehicles in Operation"
-      count={NO_ENDPOINT}
+      count={isLoading || isError ? undefined : vehicles.length}
       description="On route or currently on a job"
       actionLabel="View All Vehicles"
       actionHref="/fleet"
-      status={{ isEmpty: false }}
+      status={{
+        isLoading,
+        isError,
+        onRetry,
+        isEmpty: vehicles.length === 0,
+        emptyText: "No vehicles in operation.",
+      }}
     >
-      <DashboardListRow
-        title={NO_ENDPOINT}
-        subtitle={NO_ENDPOINT}
-        right={null}
-      />
+      {vehicles.slice(
+        0,
+        ROW_LIMIT,
+      ).map(vehicle => (
+        <DashboardListRow
+          key={vehicle.vehicleId}
+          title={`${vehicle.plateNumber} · ${vehicle.driverName ?? "Unassigned"}`}
+          subtitle={routeLabel(vehicle)}
+          right={<RowPill className="border-success/30 text-success">Active</RowPill>}
+        />
+      ))}
     </DashboardListCard>
   );
 }
@@ -67,6 +103,8 @@ function daysLabel(r: MaintenanceRecord) {
     new Date(),
     new Date(r.scheduledDate),
   ));
+  if (days === 0)
+    return "today";
   return `${days} day${days === 1 ? "" : "s"}`;
 }
 

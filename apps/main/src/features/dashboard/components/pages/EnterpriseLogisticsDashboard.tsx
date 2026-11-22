@@ -10,6 +10,7 @@ import {
   useMaintenanceRecords,
   useVehicles,
 } from "@truckmoov/api/fleet";
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   CalendarRange, Cpu, Package, Truck, Users,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { MaintenanceListCard } from "../ui/MaintenanceListCard";
 import {
@@ -75,8 +77,8 @@ const PERIODS = [
 
 type PeriodValue = (typeof PERIODS)[number]["value"];
 
-/** The design app's Recent Activity card lists five events. */
-const ACTIVITY_LIMIT = 5;
+/** The design app's Recent Activity card lists up to eight events. */
+const ACTIVITY_LIMIT = 8;
 
 /** Recent events shown in the violations lists; stats come from the server totals. */
 const VIOLATION_EVENTS_LIMIT = 100;
@@ -98,23 +100,21 @@ function activityDescription(entityType: string, action: string) {
   return ACTIVITY_DESCRIPTIONS[type];
 }
 
-/** "6 min ago", "1 hr ago", "3 hrs ago", "2 days ago". */
-function timeAgo(iso: string) {
-  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (Number.isNaN(minutes))
-    return "—";
-  if (minutes < 1)
-    return "just now";
-  if (minutes < 60)
-    return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24)
-    return `${hours} ${hours === 1 ? "hr" : "hrs"} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} ${days === 1 ? "day" : "days"} ago`;
+/** Snapshot rows describe a current state, so they read "Today"; events keep their timestamp. */
+function activityTime(item: {
+  id: string; occurredAt: string;
+}) {
+  if (item.id.startsWith("vehicle-") || item.id.startsWith("driver-"))
+    return "Today";
+  return formatWithPattern(
+    item.occurredAt,
+    "MMM d, h:mm a",
+  );
 }
 
 export default function EnterpriseLogisticsDashboard() {
+  const role = useAuthStore(s => s.user?.role);
+  const isOwnerOperator = role === "OWNER_OPERATOR";
   const [
     period,
     setPeriod,
@@ -230,12 +230,12 @@ export default function EnterpriseLogisticsDashboard() {
         return [];
       return overview.recentActivity.map(a => ({
         id: a.id,
-        title: a.summary || a.action,
-        description: activityDescription(
+        title: a.title || a.summary || a.action,
+        description: a.description || activityDescription(
           a.entityType,
           a.action,
         ),
-        time: timeAgo(a.occurredAt),
+        time: activityTime(a),
       }));
     },
     [overview],
@@ -249,6 +249,7 @@ export default function EnterpriseLogisticsDashboard() {
         <OverviewHeader
           period={period}
           onPeriodChange={setPeriod}
+          isOwnerOperator={isOwnerOperator}
         />
         {isLoading
           ? <EnterpriseLogisticsDashboardSkeleton />
@@ -281,6 +282,7 @@ export default function EnterpriseLogisticsDashboard() {
       <OverviewHeader
         period={period}
         onPeriodChange={setPeriod}
+        isOwnerOperator={isOwnerOperator}
       />
       <div className="space-y-6">
         <QuickActionsCard />
@@ -335,7 +337,12 @@ export default function EnterpriseLogisticsDashboard() {
               profiles={overdueProfiles}
               {...maintenanceProfilesState}
             />
-            <VehiclesInOperationCard />
+            <VehiclesInOperationCard
+              vehicles={overview.vehiclesInOperation?.items ?? []}
+              isLoading={false}
+              isError={false}
+              onRetry={() => refetch()}
+            />
             <VehiclesInMaintenanceCard
               records={openMaintenanceRecords}
               vehiclePlate={vehiclePlate}
@@ -371,14 +378,18 @@ export default function EnterpriseLogisticsDashboard() {
  * `/` sets `manualTitle` in sidebarNav, so the top bar leaves the title to this.
  */
 function OverviewHeader({
-  period, onPeriodChange,
+  period, onPeriodChange, isOwnerOperator,
 }: {
-  period: PeriodValue; onPeriodChange: (period: PeriodValue) => void;
+  period: PeriodValue;
+  onPeriodChange: (period: PeriodValue) => void;
+  isOwnerOperator: boolean;
 }) {
   return (
     <PageHeader
       title="Overview"
-      description="Enterprise-wide job monitoring & provider performance"
+      description={isOwnerOperator
+        ? "Monitor your fleet performance, vehicle activities, driver operations, and key fleet insights."
+        : "Enterprise-wide job monitoring & provider performance"}
       actions={(
         <div className="flex">
           <Select
