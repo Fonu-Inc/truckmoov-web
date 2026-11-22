@@ -31,6 +31,9 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import {
+  SLEEK_HEADER, SLEEK_TITLE, SleekCard,
+} from "./DashboardListCard";
 import { EmptyState } from "./EmptyState";
 
 /* ── Fleet utilization ─────────────────────────────────────────── */
@@ -182,21 +185,24 @@ function OverviewCardHeader({
   description,
   actionLabel,
   actionHref,
+  className = SLEEK_HEADER,
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
   actionLabel: string;
   actionHref: string;
+  /** Jobs keeps a single row; My Vehicles / My Drivers stack on mobile. */
+  className?: string;
 }) {
   return (
-    <CardHeader className="p-6 pb-4 flex flex-row items-start justify-between gap-3 space-y-0">
+    <div className={className}>
       <div>
-        <CardTitle className="font-display flex items-center gap-2 text-base">
+        <h3 className={`${SLEEK_TITLE} flex items-center gap-2`}>
           <Icon className="h-5 w-5 text-primary" />
           {title}
-        </CardTitle>
-        <CardDescription>{description}</CardDescription>
+        </h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       <Button
         asChild
@@ -208,7 +214,7 @@ function OverviewCardHeader({
           <ArrowRight className="h-4 w-4 ml-1" />
         </Link>
       </Button>
-    </CardHeader>
+    </div>
   );
 }
 
@@ -237,15 +243,16 @@ export function JobsOverviewCard({
   jobsHref: string;
 }) {
   return (
-    <Card className="rounded-2xl surface-sleek">
+    <SleekCard>
       <OverviewCardHeader
         icon={Package}
         title="Jobs"
         description="Jobs created recently and their delivery progress"
         actionLabel="View All Jobs"
         actionHref={jobsHref}
+        className="p-6 pb-4 flex flex-row items-start justify-between gap-3 space-y-0"
       />
-      <CardContent className="p-6 pt-0">
+      <div className="p-6 pt-0">
         {jobs.length === 0
           ? (
               <EmptyState
@@ -296,8 +303,8 @@ export function JobsOverviewCard({
                 ))}
               </div>
             )}
-      </CardContent>
-    </Card>
+      </div>
+    </SleekCard>
   );
 }
 
@@ -320,7 +327,7 @@ export function VehiclesOverviewCard({
   vehiclesHref: string;
 }) {
   return (
-    <Card className="rounded-2xl surface-sleek">
+    <SleekCard className="min-w-0">
       <OverviewCardHeader
         icon={Truck}
         title="My Vehicles"
@@ -328,7 +335,7 @@ export function VehiclesOverviewCard({
         actionLabel="View vehicles"
         actionHref={vehiclesHref}
       />
-      <CardContent className="p-6 pt-0">
+      <div className="p-6 pt-0">
         {vehicles.length === 0
           ? (
               <EmptyState
@@ -371,8 +378,8 @@ export function VehiclesOverviewCard({
                 ))}
               </div>
             )}
-      </CardContent>
-    </Card>
+      </div>
+    </SleekCard>
   );
 }
 
@@ -395,7 +402,7 @@ export function DriversOverviewCard({
   driversHref: string;
 }) {
   return (
-    <Card className="rounded-2xl surface-sleek">
+    <SleekCard className="min-w-0">
       <OverviewCardHeader
         icon={Users}
         title="My Drivers"
@@ -403,7 +410,7 @@ export function DriversOverviewCard({
         actionLabel="View All Drivers"
         actionHref={driversHref}
       />
-      <CardContent className="p-6 pt-0">
+      <div className="p-6 pt-0">
         {drivers.length === 0
           ? (
               <EmptyState
@@ -445,8 +452,8 @@ export function DriversOverviewCard({
                 ))}
               </div>
             )}
-      </CardContent>
-    </Card>
+      </div>
+    </SleekCard>
   );
 }
 
@@ -552,15 +559,15 @@ export type OverviewActivity = {
 
 export function RecentActivityCard({ items }: { items: OverviewActivity[] }) {
   return (
-    <Card className="rounded-2xl surface-sleek">
-      <CardHeader className="space-y-1.5 p-6 pb-4">
-        <CardTitle className="font-display flex items-center gap-2 text-base">
+    <SleekCard>
+      <div className="flex flex-col space-y-1.5 p-6 pb-4">
+        <h3 className={`${SLEEK_TITLE} flex items-center gap-2`}>
           <Activity className="h-5 w-5 text-primary" />
           Recent Activity
-        </CardTitle>
-        <CardDescription>Latest events across jobs, vehicles and drivers</CardDescription>
-      </CardHeader>
-      <CardContent className="p-6 pt-0">
+        </h3>
+        <p className="text-sm text-muted-foreground">Latest events across jobs, vehicles and drivers</p>
+      </div>
+      <div className="p-6 pt-0">
         {items.length === 0
           ? (
               <EmptyState
@@ -588,8 +595,8 @@ export function RecentActivityCard({ items }: { items: OverviewActivity[] }) {
                 ))}
               </div>
             )}
-      </CardContent>
-    </Card>
+      </div>
+    </SleekCard>
   );
 }
 

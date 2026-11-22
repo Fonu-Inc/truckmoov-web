@@ -2,10 +2,11 @@ import { Download } from "lucide-react";
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
+
+// The design app's card shell: plain, because the shared Card adds
+// `border bg-card shadow-enterprise` over the surface-sleek look.
+const CARD_CLASS = "rounded-2xl surface-sleek text-card-foreground border-border/50";
 
 export function SummaryStat({
   icon: Icon, label, value, hint, loading,
@@ -13,8 +14,8 @@ export function SummaryStat({
   icon: React.ElementType; label: string; value: string; hint?: string; loading?: boolean;
 }) {
   return (
-    <Card className="surface-sleek border-border/50">
-      <CardContent className="p-4">
+    <div className={CARD_CLASS}>
+      <div className="p-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
             <Icon className="h-5 w-5 text-primary" />
@@ -39,8 +40,8 @@ export function SummaryStat({
                 )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -51,11 +52,11 @@ export function SectionCard({
   action?: React.ReactNode; toolbar?: React.ReactNode;
 }) {
   return (
-    <Card className="surface-sleek border-border/50">
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+    <div className={CARD_CLASS}>
+      <div className="p-6 pb-4 flex flex-row items-start justify-between gap-3 space-y-0">
         <div>
-          <CardTitle className="text-base">{title}</CardTitle>
-          {description && <CardDescription>{description}</CardDescription>}
+          <h3 className="font-semibold tracking-tight text-foreground font-display text-base">{title}</h3>
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
         </div>
         <div className="flex items-center gap-2">
           {action}
@@ -71,12 +72,12 @@ export function SectionCard({
             </Button>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="p-6 pt-0 space-y-4">
         {toolbar}
         {children}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -125,7 +126,7 @@ export function ActivityRows({ rows }: { rows: Row[] }) {
           </div>
           <Badge
             variant="secondary"
-            className="rounded-full shrink-0"
+            className="px-2.5 rounded-full shrink-0"
           >
             {r.count}
           </Badge>

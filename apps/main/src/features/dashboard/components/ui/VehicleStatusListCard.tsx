@@ -4,50 +4,30 @@ import {
   Construction, Truck,
 } from "lucide-react";
 import {
-  DashboardListCard, DashboardListRow, RowPill,
+  DashboardListCard, DashboardListRow, NO_ENDPOINT, RowPill,
 } from "./DashboardListCard";
 
 const ROW_LIMIT = 5;
 
-// ponytail: mock data from fleetflow parity port — wire to packages/api
-// (/fleet/tracking/live carries vehicle + job, but 404s on dev-api; see types.ts).
-const vehiclesInOperation = [
-  {
-    id: "op-1", plate: "LAG-114-XA", driver: "Emeka Okafor", route: "VI → Ibadan",
-  },
-  {
-    id: "op-2", plate: "ABJ-405-KL", driver: "Aisha Bello", route: "Tin Can → Abuja",
-  },
-  {
-    id: "op-3", plate: "KAN-771-BQ", driver: "Chinedu Obi", route: "Lekki FZ → Kaduna",
-  },
-  {
-    id: "op-4", plate: "PHC-233-ZR", driver: "Fatima Musa", route: "Lekki → PH",
-  },
-];
-
+// No endpoint yet: /fleet/tracking/live would carry vehicle + driver + route,
+// but it 404s on dev-api (see types.ts). The card keeps its shape with "-".
 export function VehiclesInOperationCard() {
   return (
     <DashboardListCard
       icon={Truck}
       tint="bg-success/10 text-success"
       title="Vehicles in Operation"
-      count={vehiclesInOperation.length}
+      count={NO_ENDPOINT}
       description="On route or currently on a job"
       actionLabel="View All Vehicles"
       actionHref="/fleet"
-      status={{
-        isEmpty: vehiclesInOperation.length === 0, emptyText: "No vehicles on a job right now.",
-      }}
+      status={{ isEmpty: false }}
     >
-      {vehiclesInOperation.map(v => (
-        <DashboardListRow
-          key={v.id}
-          title={`${v.plate} · ${v.driver}`}
-          subtitle={v.route}
-          right={<RowPill className="border-success/30 text-success">Active</RowPill>}
-        />
-      ))}
+      <DashboardListRow
+        title={NO_ENDPOINT}
+        subtitle={NO_ENDPOINT}
+        right={null}
+      />
     </DashboardListCard>
   );
 }

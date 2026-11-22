@@ -1,7 +1,7 @@
 import type { UserRole } from "@truckmoov/api/auth";
 import type { ElementType } from "react";
 import {
-  CalendarDays, CalendarRange, Route,
+  CalendarDays, CalendarRange,
 } from "lucide-react";
 
 export type ReportsTab = {
@@ -28,9 +28,8 @@ export const REPORTS_TABS: ReportsTab[] = [
   {
     to: "/reports/weekly", label: "Weekly Summary", icon: CalendarRange, hasPermissions: [],
   },
-  {
-    to: "/reports/vehicle-activity", label: "Vehicle Activity", icon: Route, hasPermissions: [],
-  },
+  // Vehicle Activity (`/reports/vehicle-activity`) is still routed but off the
+  // tab bar: the design app's Reports page has only the two summaries.
 ];
 
 export function canSeeTab(tab: ReportsTab, role?: UserRole): boolean {

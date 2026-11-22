@@ -51,7 +51,7 @@ export function DashboardLayout() {
         )}
       >
         <ErrorBoundary>
-          <DashboardHeader title={entry ? resolveLabel(
+          <DashboardHeader title={entry && !entry.manualTitle ? resolveLabel(
             entry,
             role,
           ) : ""}

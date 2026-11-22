@@ -45,11 +45,7 @@ export function ReportsLayout() {
         <div className="flex justify-center">
           <nav
             aria-label="Reports sections"
-            className={cn(
-              // fleetflow TabsList base (its ui/tabs.tsx) + the Reports page className.
-              "inline-flex h-10 items-center justify-center rounded-xl bg-secondary/60 p-1 text-muted-foreground",
-              "bg-muted/50 p-1 flex-wrap h-auto gap-1",
-            )}
+            className="inline-flex items-center justify-center rounded-xl text-muted-foreground bg-muted/50 p-1 flex-wrap h-auto gap-1"
           >
             {visibleTabs.map(tab => (
               <NavLink
@@ -73,10 +69,8 @@ export function ReportsLayout() {
         </div>
       )}
 
-      {/* fleetflow TabsContent spacing */}
-      <div className="mt-3">
-        <Outlet />
-      </div>
+      {/* Each tab renders its PageHeader then its own `mt-3` content, as the design app does. */}
+      <Outlet />
     </div>
   );
 }

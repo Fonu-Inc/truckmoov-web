@@ -31,6 +31,11 @@ export type SidebarNavItem = {
   icon: LucideIcon;
   /** Page owns its own padding — DashboardLayout drops the `p-6` on `<main>`. */
   fullWidth?: boolean;
+  /**
+   * The page renders its own heading (the design app's in-page `h1` +
+   * description), so the top bar shows no title. `label` stays the nav text.
+   */
+  manualTitle?: boolean;
   /** Roles allowed to see this entry. On a group child, omit to inherit the group's roles. */
   hasPermission?: UserRole[];
 };
@@ -71,7 +76,7 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
 export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   // ─── Overview ──────────────────────────────────────────────────
   {
-    label: "Overview", href: "/", icon: LayoutDashboard, hasPermission: [
+    label: "Overview", href: "/", icon: LayoutDashboard, manualTitle: true, hasPermission: [
       "ENTERPRISE_ADMIN",
       "OWNER_OPERATOR",
     ],
@@ -86,7 +91,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
   // ─── Jobs & dispatch ───────────────────────────────────────────
   {
-    label: "Shipments", href: "/jobs", icon: Package,
+    label: "Shipments", href: "/jobs", icon: Package, manualTitle: true,
     labelByRole: {
       ENTERPRISE_ADMIN: "Jobs",
       OWNER_OPERATOR: "Jobs",
@@ -104,7 +109,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
 
   // ─── Fleet ─────────────────────────────────────────────────────
   {
-    label: "Fleets", href: "/fleet", icon: Truck,
+    label: "Fleets", href: "/fleet", icon: Truck, manualTitle: true,
     labelByRole: {
       ENTERPRISE_ADMIN: "My Vehicles",
       OWNER_OPERATOR: "My Vehicles",
@@ -121,7 +126,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
 
   // ─── Drivers ───────────────────────────────────────────────────
   {
-    label: "Drivers", href: "/drivers", icon: Users,
+    label: "Drivers", href: "/drivers", icon: Users, manualTitle: true,
     labelByRole: {
       ENTERPRISE_ADMIN: "My Drivers",
       OWNER_OPERATOR: "My Drivers",
@@ -207,10 +212,10 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
         label: "Messaging Center", href: "/inbox", icon: Inbox,
       },
     ],
+    // Not ENTERPRISE_ADMIN or OWNER_OPERATOR: the design app's sidebars for
+    // those roles have no Communications.
     hasPermission: [
-      "ENTERPRISE_ADMIN",
       "AGGREGATOR_ADMIN",
-      "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
     ],
   },
@@ -239,7 +244,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
 
   // ─── Reports & analytics ───────────────────────────────────────
   {
-    label: "Reports", href: "/reports", icon: BarChart3,
+    label: "Reports", href: "/reports", icon: BarChart3, manualTitle: true,
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "AGGREGATOR_ADMIN",
@@ -248,7 +253,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Analytics", href: "/analytics", icon: LineChart, hasPermission: [
+    label: "Analytics", href: "/analytics", icon: LineChart, manualTitle: true, hasPermission: [
       "ENTERPRISE_ADMIN",
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
@@ -257,7 +262,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Billing", href: "/subscription", icon: CreditCard,
+    label: "Billing", href: "/subscription", icon: CreditCard, manualTitle: true,
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "OWNER_OPERATOR",
@@ -273,7 +278,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     // TRU-FE-7 § D — Settings is now visible to every tenant role so anyone can
     // manage their own 2FA at /settings/security. Non-admin tabs stay narrow via
     // per-tab `hasPermissions` in settingsNav.ts.
-    label: "Organization Settings", href: "/settings", icon: Settings,
+    label: "Organization Settings", href: "/settings", icon: Settings, manualTitle: true,
     labelByRole: {
       ENTERPRISE_ADMIN: "Settings",
       DISPATCHER: "Profile",

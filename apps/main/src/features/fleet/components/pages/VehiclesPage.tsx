@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type { Vehicle as FleetApiVehicle } from "@truckmoov/api/fleet";
 import type { VehiclesFilterValue } from "@/features/fleet/components/ui/VehiclesFilterDialog";
 import type { Vehicle } from "@/types";
@@ -42,10 +41,6 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -59,8 +54,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { BulkUploadDialog } from "@/features/fleet/components/ui/BulkUploadDialog";
+import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
 import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
 import { VehicleDetailsSheet } from "@/features/fleet/components/ui/VehicleDetailsSheet";
 import { VehicleFormDialog } from "@/features/fleet/components/ui/VehicleFormDialog";
@@ -69,9 +66,20 @@ import {
   countActiveVehicleFilters,
 } from "@/features/fleet/components/ui/vehiclesFilter";
 import { VehiclesFilterDialog } from "@/features/fleet/components/ui/VehiclesFilterDialog";
+import { useClientPage } from "@/features/fleet/utils/useClientPage";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 
+const LOADING_ROWS = [
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+];
+
+/** `/fleet` — the design app's Vehicles tab. */
 export default function VehiclesPage() {
   const { requireSubscription } = useRequireSubscription();
   // ponytail: single-role check inline; extract to a helper if a third role or fourth page needs it
@@ -193,6 +201,7 @@ export default function VehiclesPage() {
   );
 
   const filteredVehicles = vehicles;
+  const vehiclePage = useClientPage(filteredVehicles);
 
   const handleAddVehicle = async (newVehicle: Partial<Vehicle>) => {
     try {
@@ -284,8 +293,6 @@ export default function VehiclesPage() {
     decommissioned: vehiclesSummaryResp?.data?.decommissioned ?? localStatusCounts.decommissioned,
   };
 
-  const allowance = vehiclesSummaryResp?.data?.allowance ?? null;
-
   const handleExportVehicles = async () => {
     setIsExporting(true);
     try {
@@ -316,177 +323,16 @@ export default function VehiclesPage() {
 
   const hasActiveFilters = !!debouncedSearch || activeFilterCount > 0;
 
-  const columns: ColumnDef<FleetApiVehicle>[] = [
-    {
-      id: "vehicle",
-      header: "Vehicle",
-      cell: ({ row }) => {
-        const v = row.original;
-        return (
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <Truck className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">
-                {v.make}
-                {" "}
-                {v.model}
-              </p>
-              <p className="text-[11px] text-muted-foreground">{v.year}</p>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      id: "vehicleId",
-      header: "Vehicle ID",
-      cell: ({ row }) => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {row.original.id.slice(
-            0,
-            8,
-          )}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "registrationNumber",
-      header: "Registration No.",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <span className="rounded bg-secondary px-2 py-1 font-mono text-xs">
-          {row.original.registrationNumber}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "type",
-      header: "Type",
-      enableSorting: false,
-      meta: { className: "capitalize" },
-    },
-    {
-      accessorKey: "year",
-      header: "Year",
-      enableSorting: false,
-    },
-    {
-      id: "driver",
-      header: "Driver",
-      cell: ({ row }) => {
-        const v = row.original;
-        const name = v.assignedDriverName ?? v.assignedDriverId;
-        return (
-          <span className={cn(!name && "text-muted-foreground")}>
-            {name ?? "Unassigned"}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <span
-          className={cn(
-            "rounded-full px-2.5 py-1 text-[11px] font-medium",
-            row.original.status === "active" && "bg-success/10 text-success",
-            row.original.status === "inactive" && "bg-muted text-muted-foreground",
-            row.original.status === "maintenance" && "bg-warning/10 text-warning",
-            row.original.status === "decommissioned" && "bg-destructive/10 text-destructive",
-          )}
-        >
-          {row.original.status}
-        </span>
-      ),
-    },
-    {
-      id: "fuel",
-      header: "Fuel",
-      cell: ({ row }) => {
-        const pct = row.original.fuelLevelPercent;
-        if (pct === null || pct === undefined)
-          return <span className="text-muted-foreground">-</span>;
-        return (
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-14 rounded-full bg-secondary">
-              <div
-                className={cn(
-                  "h-full rounded-full",
-                  pct > 50 ? "bg-success" : pct > 25 ? "bg-warning" : "bg-destructive",
-                )}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <span className="text-[11px] text-muted-foreground">
-              {pct}
-              %
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      meta: { className: "w-[60px] text-right" },
-      cell: ({ row }) => {
-        const vehicle = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  setSelectedVehicle(vehicle);
-                  setIsDetailsOpen(true);
-                }}
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                View Details
-              </DropdownMenuItem>
-              {!isAggregatorAdmin && (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedVehicle(vehicle);
-                      setIsEditDialogOpen(true);
-                    }}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setDeleteConfirmId(vehicle.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
+  const tileClass = "rounded-2xl surface-sleek text-card-foreground";
+  const statusLabel = (status: string) => (status === "maintenance" ? "In maintenance" : status);
 
   return (
     <>
-      <div className="space-y-6">
-        {!isAggregatorAdmin && (
-          <div className="flex justify-end gap-2">
+      <PageHeader
+        title="Vehicles"
+        description="Vehicle records, fleet membership, and operational details."
+        actions={!isAggregatorAdmin && (
+          <>
             <Button
               variant="outline"
               onClick={() => setIsBulkUploadOpen(true)}
@@ -498,106 +344,75 @@ export default function VehiclesPage() {
               <Plus className="mr-2 h-4 w-4" />
               Add Vehicle
             </Button>
-          </div>
+          </>
         )}
+      />
 
-        {/* ponytail: steps at xl, not md — the fixed w-64 sidebar makes this
-            container ~300px narrower than the viewport md: measures. */}
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
+      <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-6">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+          <div className={tileClass}>
+            <div className="p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                   <Truck className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-muted-foreground">Total Vehicles</p>
-                  <p className="text-2xl font-bold mt-1">{statusCounts.all}</p>
-                  {allowance && (
-                    allowance.unlimited || allowance.limit === null
-                      ? (
-                          <p className="text-[11px] text-muted-foreground mt-1">
-                            {`${allowance.used} used`}
-                          </p>
-                        )
-                      : (
-                          <div className="mt-1 space-y-1">
-                            <p className="text-[11px] text-muted-foreground">
-                              {`${allowance.used} / ${allowance.limit} used · ${allowance.usedPercent ?? 0}%`}
-                            </p>
-                            <div className="h-1.5 w-full rounded-full bg-secondary">
-                              <div
-                                className={cn(
-                                  "h-full rounded-full",
-                                  (allowance.usedPercent ?? 0) >= 90 ? "bg-destructive" : (allowance.usedPercent ?? 0) >= 75 ? "bg-warning" : "bg-primary",
-                                )}
-                                style={{
-                                  width: `${Math.min(
-                                    allowance.usedPercent ?? 0,
-                                    100,
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )
-                  )}
+                  <p className="text-xl font-bold mt-1 truncate">{statusCounts.all}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
+            </div>
+          </div>
+          <div className={tileClass}>
+            <div className="p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 shrink-0">
                   <MapPin className="h-5 w-5 text-success" />
                 </div>
-                <div className="min-w-0">
+                <div>
                   <p className="text-sm text-muted-foreground">Active</p>
                   <p className="text-2xl font-bold mt-1 text-success">{statusCounts.active}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
+            </div>
+          </div>
+          <div className={tileClass}>
+            <div className="p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 shrink-0">
                   <Wrench className="h-5 w-5 text-warning" />
                 </div>
-                <div className="min-w-0">
+                <div>
                   <p className="text-sm text-muted-foreground">In Maintenance</p>
                   <p className="text-2xl font-bold mt-1 text-warning">{statusCounts.maintenance}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
+            </div>
+          </div>
+          <div className={tileClass}>
+            <div className="p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted shrink-0">
                   <Shield className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <div className="min-w-0">
+                <div>
                   <p className="text-sm text-muted-foreground">Inactive</p>
                   <p className="text-2xl font-bold mt-1 text-muted-foreground">{statusCounts.inactive}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader className="space-y-4">
+        <div className={tileClass}>
+          <div className="flex flex-col p-6 pb-4 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display flex items-center gap-2">
                   <Truck className="h-5 w-5 text-primary" />
-                  Vehicles (
-                  {filteredVehicles.length}
-                  )
-                </CardTitle>
-                <CardDescription className="mt-1">All vehicles in your fleet — registration, assigned driver, and operational status at a glance.</CardDescription>
+                  {`Vehicles (${filteredVehicles.length})`}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">All vehicles in your fleet — registration, assigned driver, and operational status at a glance.</p>
               </div>
               <Button
                 variant="outline"
@@ -628,7 +443,7 @@ export default function VehiclesPage() {
                   statusEnabled: v !== "all",
                 })}
               >
-                <SelectTrigger className="w-[160px] bg-card/50 border-border/50">
+                <SelectTrigger className="h-10 rounded-xl px-3.5 w-full sm:w-[170px] bg-card/50 border-border/50">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -664,18 +479,162 @@ export default function VehiclesPage() {
                 )}
               />
             </div>
-          </CardHeader>
-          <CardContent className="overflow-x-auto p-0">
-            <DataTable
-              columns={columns}
-              data={filteredVehicles}
-              isLoading={isLoading}
-              hasActiveFilters={hasActiveFilters}
-              emptyState="No vehicles have been added yet."
-              filteredEmptyState="No vehicles match your search or filters."
+          </div>
+          <div className="p-6 pt-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                    <th className="pb-3 pr-6 font-medium">Registration No.</th>
+                    <th className="pb-3 pr-6 font-medium">Make</th>
+                    <th className="pb-3 pr-6 font-medium">Model</th>
+                    <th className="pb-3 pr-6 font-medium">Type</th>
+                    <th className="pb-3 pr-6 font-medium">Year</th>
+                    <th className="pb-3 pr-6 font-medium">Status</th>
+                    <th className="pb-3 pr-6 font-medium">Fuel</th>
+                    <th className="pb-3 pr-6 font-medium">Fleet</th>
+                    <th className="pb-3 pr-6 font-medium">Date Added</th>
+                    <th className="pb-3 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {isLoading
+                    ? LOADING_ROWS.map(key => (
+                        <tr key={key}>
+                          <td
+                            colSpan={10}
+                            className="py-4"
+                          >
+                            <Skeleton className="h-4 w-full" />
+                          </td>
+                        </tr>
+                      ))
+                    : filteredVehicles.length === 0
+                      ? (
+                          <tr>
+                            <td
+                              colSpan={10}
+                              className="py-8 text-center text-muted-foreground"
+                            >
+                              {hasActiveFilters ? "No vehicles match your search or filters." : "No vehicles have been added yet."}
+                            </td>
+                          </tr>
+                        )
+                      : vehiclePage.pageRows.map((vehicle) => {
+                          const pct = vehicle.fuelLevelPercent;
+                          return (
+                            <tr
+                              key={vehicle.id}
+                              className="group transition-colors hover:bg-secondary/30"
+                            >
+                              <td className="py-4 pr-6">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                                    <Truck className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <span className="rounded bg-secondary px-2 py-1 font-mono text-xs">{vehicle.registrationNumber || "—"}</span>
+                                </div>
+                              </td>
+                              <td className="py-4 pr-6 font-medium text-sm">{vehicle.make || "—"}</td>
+                              <td className="py-4 pr-6 font-medium text-sm">{vehicle.model || "—"}</td>
+                              <td className="py-4 pr-6 capitalize">{vehicle.type || "—"}</td>
+                              <td className="py-4 pr-6">{vehicle.year ?? "—"}</td>
+                              <td className="py-4 pr-6">
+                                <span
+                                  className={cn(
+                                    "rounded-full px-2.5 py-1 text-[11px] font-medium",
+                                    vehicle.status === "active" && "bg-success/10 text-success",
+                                    vehicle.status === "inactive" && "bg-muted text-muted-foreground",
+                                    vehicle.status === "maintenance" && "bg-warning/10 text-warning",
+                                    vehicle.status === "decommissioned" && "bg-destructive/10 text-destructive",
+                                  )}
+                                >
+                                  {statusLabel(vehicle.status)}
+                                </span>
+                              </td>
+                              <td className="py-4 pr-6">
+                                {pct === null || pct === undefined
+                                  ? <span className="text-[11px] text-muted-foreground">—</span>
+                                  : (
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-2 w-14 rounded-full bg-secondary">
+                                          <div
+                                            className={cn(
+                                              "h-full rounded-full",
+                                              pct > 50 ? "bg-success" : pct > 25 ? "bg-warning" : "bg-destructive",
+                                            )}
+                                            style={{ width: `${pct}%` }}
+                                          />
+                                        </div>
+                                        <span className="text-[11px] text-muted-foreground">{`${pct}%`}</span>
+                                      </div>
+                                    )}
+                              </td>
+                              {/* ponytail: no endpoint returns a vehicle's fleet membership — wire when one lands */}
+                              <td className="py-4 pr-6">
+                                <span className="text-sm text-foreground">-</span>
+                              </td>
+                              {/* ponytail: the vehicles endpoint returns no created/added date — wire when it does */}
+                              <td className="py-4 pr-6">
+                                <span className="text-sm text-muted-foreground">-</span>
+                              </td>
+                              <td className="py-4 text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedVehicle(vehicle);
+                                        setIsDetailsOpen(true);
+                                      }}
+                                    >
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    {!isAggregatorAdmin && (
+                                      <>
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedVehicle(vehicle);
+                                            setIsEditDialogOpen(true);
+                                          }}
+                                        >
+                                          <Edit className="mr-2 h-4 w-4" />
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          className="text-destructive focus:text-destructive"
+                                          onClick={() => setDeleteConfirmId(vehicle.id)}
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                </tbody>
+              </table>
+            </div>
+            <FleetTablePager
+              page={vehiclePage.page}
+              pageSize={vehiclePage.pageSize}
+              total={vehiclePage.total}
+              onPageChange={vehiclePage.setPage}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <VehicleFormDialog

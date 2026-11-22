@@ -404,6 +404,20 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "fleets",
+                lazy: guardedBy(
+                  fleetTabRoles("/fleet/fleets"),
+                  () => import("@/features/fleet/components/pages/FleetsPage"),
+                ),
+              },
+              {
+                path: "violations",
+                lazy: guardedBy(
+                  fleetTabRoles("/fleet/violations"),
+                  () => import("@/features/fleet/components/pages/VehicleViolationsPage"),
+                ),
+              },
+              {
                 path: "schedules",
                 // ponytail: the design's 2nd tab is Trips. MaintenanceProfilesTab is unmounted (the reference doesn't mount it either) — re-add a route here to bring it back.
                 lazy: guardedByNamed(
@@ -468,8 +482,24 @@ export const router = createBrowserRouter([
                 lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriversPage")).default }),
               },
               {
+                path: "violations",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriverViolationsPage")).default }),
+              },
+              {
                 path: "behaviour",
                 lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/BehaviourPage")).default }),
+              },
+              {
+                path: "fatigue",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/FatiguePage")).default }),
+              },
+              {
+                path: "groups",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriverGroupsPage")).default }),
+              },
+              {
+                path: "compliance",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriverCompliancePage")).default }),
               },
             ],
           },
@@ -531,6 +561,10 @@ export const router = createBrowserRouter([
               {
                 path: "fleet-utilization",
                 lazy: async () => ({ Component: (await import("@/features/analytics/components/pages/FleetUtilizationPage")).default }),
+              },
+              {
+                path: "operations",
+                lazy: async () => ({ Component: (await import("@/features/analytics/components/pages/OperationsSafetyPage")).default }),
               },
             ],
           },

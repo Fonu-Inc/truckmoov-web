@@ -28,6 +28,8 @@ export type SettingsTab = {
   hasPermissions: UserRole[];
   /** Routed and guarded, but left off the tab bar. */
   hidden?: boolean;
+  /** The design app's page-heading description (the label is the title). */
+  description?: string;
 };
 
 /**
@@ -50,41 +52,40 @@ const ORG_SETTINGS_ROLES: UserRole[] = [
  * longer a top-level tab — it lives inside Subscription as a sub-tab.
  */
 export const SETTINGS_TABS: SettingsTab[] = [
+  // The bar matches the design app: Organization, Storage, Invoicing, Fleet,
+  // Notifications, Users, Audit Log. `description` is each tab's page heading.
   {
-    to: "/settings", label: "Organization", icon: Building2, hasPermissions: ORG_SETTINGS_ROLES,
+    to: "/settings", label: "Organization", icon: Building2, hasPermissions: ORG_SETTINGS_ROLES, description: "Manage your organization details and business information.",
   },
   {
-    to: "/settings/documents", label: "Documents", icon: FileText, hasPermissions: [
-      "ENTERPRISE_ADMIN",
-      "OWNER_OPERATOR",
-    ],
+    to: "/settings/storage", label: "Storage", icon: HardDrive, hasPermissions: ORG_SETTINGS_ROLES, description: "Review storage usage and manage your stored files.",
   },
   {
-    to: "/settings/storage", label: "Storage", icon: HardDrive, hasPermissions: ORG_SETTINGS_ROLES,
+    to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: ORG_SETTINGS_ROLES, description: "Configure invoice details, payment terms and billing preferences.",
   },
   {
-    to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: ORG_SETTINGS_ROLES,
+    to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ORG_SETTINGS_ROLES, description: "Configure vehicle maintenance, fuel alerts and fleet monitoring preferences.",
   },
   {
-    to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ORG_SETTINGS_ROLES,
+    to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ORG_SETTINGS_ROLES, description: "Manage notification channels and the events you receive alerts for.",
   },
   {
-    to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ORG_SETTINGS_ROLES,
+    to: "/settings/users", label: "Users", icon: Users, hasPermissions: ORG_SETTINGS_ROLES, description: "Manage your team members, roles and access permissions.",
   },
   {
-    to: "/settings/users", label: "Users", icon: Users, hasPermissions: ORG_SETTINGS_ROLES,
+    to: "/settings/audit-log", label: "Audit Log", icon: ScrollText, hasPermissions: ORG_SETTINGS_ROLES, description: "Review recorded account activity and changes made by your team.",
   },
-  {
-    to: "/settings/branding", label: "Branding", icon: Palette, hasPermissions: ORG_SETTINGS_ROLES,
-  },
-  {
-    to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ORG_SETTINGS_ROLES,
-  },
-  {
-    to: "/settings/audit-log", label: "Audit Log", icon: ScrollText, hasPermissions: ORG_SETTINGS_ROLES,
-  },
-  // Routed but off the bar, to match fleetflow's tab set. Still reached by
+  // Routed but off the bar, to match the design app's tab set. Still reached by
   // links (TrialBanner, StoragePanel, authRedirect) and the /settings redirect.
+  {
+    to: "/settings/documents", label: "Documents", icon: FileText, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
+  },
+  {
+    to: "/settings/branding", label: "Branding", icon: Palette, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
+  },
+  {
+    to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
+  },
   {
     to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
   },

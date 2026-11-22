@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   TripDetail, TripStatus,
 } from "@/features/fleet/components/ui/TripDetailsDialog";
@@ -8,26 +7,25 @@ import {
 } from "@truckmoov/api/fleet";
 import { format } from "date-fns";
 import {
-  CheckCircle, Download, Eye, MapPin, Route, Search, Truck,
+  CircleCheckBig, Download, MapPin, Route, Search, SlidersHorizontal, Truck,
 } from "lucide-react";
 import {
   useMemo, useState,
 } from "react";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
-import { Input } from "@/components/shadcn/input";
-import { Progress } from "@/components/shadcn/progress";
+  DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { TripDetailsDialog } from "@/features/fleet/components/ui/TripDetailsDialog";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
+
+/** Shown where no endpoint returns the value yet. */
+const NO_ENDPOINT = "-";
 
 // A trip is a dispatch job seen from the vehicle's side. Progress follows the
-// driver-reported dispatch status rather than fleetflow's pseudo-random seed.
+// driver-reported dispatch status (used by the details dialog).
 const TRIP_STATUS: Record<string, {
   status: TripStatus; progress: number;
 }> = {
@@ -60,14 +58,54 @@ const TRIP_STATUS: Record<string, {
   },
 };
 
+type TripRow = TripDetail & {
+  vehicleId?: string;
+  vehicleName: string;
+  plate: string;
+  endedAt?: string;
+};
+
+// Class strings copied verbatim from the design app's Trips tab.
+const CARD_CLASS = "rounded-2xl surface-sleek text-card-foreground surface-sleek border-border/50";
+const TR_CLASS = "border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50";
+const TH_CLASS = "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-sm";
+const TD_CLASS = "p-4 align-middle [&:has([role=checkbox])]:pr-0";
+const TD_NUM_CLASS = `${TD_CLASS} whitespace-nowrap text-sm`;
+
+const COLUMNS = [
+  "Vehicle",
+  "Pickup Address",
+  "Delivery Address",
+  "Stops",
+  "Driver",
+  "Distance",
+  "Average Speed",
+  "Duration",
+  "Status",
+  "Date Started",
+  "Date Ended",
+  "Action",
+];
+
+/** "18 Oct 2026, 09:00 am" */
+function formatTripDate(iso?: string) {
+  if (!iso)
+    return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : format(
+    d,
+    "dd MMM yyyy, hh:mm aaa",
+  );
+}
+
 function Stat({
   icon: Icon, label, value,
 }: {
   icon: React.ElementType; label: string; value: string;
 }) {
   return (
-    <Card className="surface-sleek border-border/50">
-      <CardContent className="p-4">
+    <div className={CARD_CLASS}>
+      <div className="p-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
             <Icon className="h-5 w-5 text-primary" />
@@ -77,8 +115,8 @@ function Stat({
             <p className="text-xl font-bold truncate">{value}</p>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -95,11 +133,15 @@ export function TripsTab() {
     setStatusFilter,
   ] = useState("all");
   const [
+    vehicleFilter,
+    setVehicleFilter,
+  ] = useState("all");
+  const [
     selectedTrip,
     setSelectedTrip,
   ] = useState<TripDetail | null>(null);
 
-  const trips = useMemo<TripDetail[]>(
+  const trips = useMemo<TripRow[]>(
     () => {
       const vehicles = new Map((vehiclesQuery.data?.data ?? []).map(v => [
         v.id,
@@ -118,20 +160,25 @@ export function TripsTab() {
           const {
             status, progress,
           } = TRIP_STATUS[j.status ?? "created"] ?? TRIP_STATUS.created;
-          const vehicleName = vehicle
-            ? `${vehicle.plateNumber} · ${[
-              vehicle.make,
-              vehicle.model,
-            ].filter(Boolean).join(" ")}`
-            : j.assigned_vehicle_reg;
+          const vehicleName = [
+            vehicle?.make ?? j.assigned_vehicle_make,
+            vehicle?.model ?? j.assigned_vehicle_model,
+          ].filter(Boolean).join(" ");
+          const plate = vehicle?.plateNumber || j.assigned_vehicle_reg || "";
           return {
             id: j.id ?? j.reference ?? "",
             reference: j.reference || j.id || "—",
             status,
             progress,
             date: j.created_at ?? new Date().toISOString(),
-            vehicle: vehicleName || "Unassigned",
-            driver: driver?.name || j.assigned_driver_name || "Unassigned",
+            vehicle: [
+              plate,
+              vehicleName,
+            ].filter(Boolean).join(" · ") || "Unassigned",
+            vehicleId: j.assigned_vehicle_id,
+            vehicleName,
+            plate,
+            driver: driver?.name || j.assigned_driver_name || "",
             pickup: {
               address: j.pickup?.address ?? "", lat: j.pickup?.latitude, lng: j.pickup?.longitude,
             },
@@ -142,7 +189,8 @@ export function TripsTab() {
               address: s.address, lat: s.latitude, lng: s.longitude,
             })),
             deadline: j.deadline,
-            completedAt: status === "completed" ? j.updated_at : undefined,
+            completedAt: status === "completed" ? j.delivered_at ?? j.updated_at : undefined,
+            endedAt: j.delivered_at,
             notes: j.notes?.map(n => n.text).filter(Boolean).join("\n") || undefined,
           };
         });
@@ -154,46 +202,57 @@ export function TripsTab() {
     ],
   );
 
-  const q = search.toLowerCase();
+  const vehicleOptions = useMemo(
+    () => [
+      ...new Map(trips.filter(t => t.vehicleId).map(t => [
+        t.vehicleId as string,
+        t.vehicle,
+      ])),
+    ],
+    [trips],
+  );
+
+  const q = search.trim().toLowerCase();
   const filtered = trips.filter(t => (statusFilter === "all" || t.status === statusFilter)
+    && (vehicleFilter === "all" || t.vehicleId === vehicleFilter)
     && (!q || [
+      t.id,
       t.reference,
-      t.vehicle,
       t.driver,
       t.pickup.address,
       t.delivery.address,
+      ...t.stops.map(s => s.address),
     ].some(f => f.toLowerCase().includes(q))));
 
   const handleExport = () => {
     const rows = filtered.map(t => [
-      t.reference,
-      format(
-        new Date(t.date),
-        "yyyy-MM-dd",
-      ),
-      t.vehicle,
-      t.driver,
-      t.pickup.address,
-      t.delivery.address,
+      t.vehicleName || "—",
+      t.plate || "—",
+      t.pickup.address || "—",
+      t.delivery.address || "—",
       t.stops.length,
+      t.driver || "—",
+      NO_ENDPOINT,
+      NO_ENDPOINT,
+      NO_ENDPOINT,
       t.status,
+      NO_ENDPOINT,
+      formatTripDate(t.endedAt),
     ]);
     const csv = [
       [
-        "Reference",
-        "Date",
         "Vehicle",
-        "Driver",
-        "Pickup",
-        "Delivery",
-        "Stops",
-        "Status",
-      ].join(","),
-      ...rows.map(r => r.map(c => `"${String(c).replace(
-        /"/g,
-        "\"\"",
-      )}"`).join(",")),
-    ].join("\n");
+        "Plate",
+        ...COLUMNS.slice(
+          1,
+          -1,
+        ),
+      ],
+      ...rows,
+    ].map(r => r.map(c => `"${String(c).replace(
+      /"/g,
+      "\"\"",
+    )}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob(
       [csv],
       { type: "text/csv;charset=utf-8;" },
@@ -209,186 +268,235 @@ export function TripsTab() {
   };
 
   const count = (s: TripStatus) => trips.filter(t => t.status === s).length;
-
-  const columns = useMemo<ColumnDef<TripDetail>[]>(
-    () => [
-      {
-        id: "reference",
-        header: "Job Reference ID",
-        cell: ({ row }) => <span className="font-medium">{row.original.reference}</span>,
-      },
-      {
-        id: "date",
-        header: "Date",
-        cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
-            {format(
-              new Date(row.original.date),
-              "dd MMM yyyy",
-            )}
-          </span>
-        ),
-      },
-      {
-        id: "vehicle",
-        header: "Vehicle",
-        cell: ({ row }) => <span className="text-sm">{row.original.vehicle}</span>,
-      },
-      {
-        id: "driver",
-        header: "Driver",
-        cell: ({ row }) => <span className="text-sm">{row.original.driver}</span>,
-      },
-      {
-        id: "route",
-        header: "Route",
-        meta: { className: "max-w-[260px] truncate text-sm" },
-        cell: ({ row }) => `${row.original.pickup.address || "—"} → ${row.original.delivery.address || "—"}`,
-      },
-      {
-        id: "stops",
-        header: () => <span className="block text-right">Stops</span>,
-        cell: ({ row }) => <span className="block text-right">{row.original.stops.length}</span>,
-      },
-      {
-        id: "progress",
-        header: "Progress",
-        meta: { className: "w-[160px]" },
-        cell: ({ row }) => (row.original.status === "cancelled"
-          ? <span className="text-xs text-muted-foreground">—</span>
-          : (
-              <div className="flex items-center gap-2">
-                <Progress
-                  value={row.original.progress}
-                  className="h-1.5 flex-1"
-                />
-                <span className="text-xs text-muted-foreground w-9 text-right">
-                  {row.original.progress}
-                  %
-                </span>
-              </div>
-            )),
-      },
-      {
-        id: "status",
-        header: "Status",
-        cell: ({ row }) => (
-          <Badge
-            variant={row.original.status === "active" ? "default" : "secondary"}
-            className="rounded-full capitalize"
-          >
-            {row.original.status}
-          </Badge>
-        ),
-      },
-      {
-        id: "action",
-        header: () => <span className="block text-right">Action</span>,
-        cell: ({ row }) => (row.original.status === "active" || row.original.status === "completed") && (
-          <div className="text-right">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedTrip(row.original)}
-            >
-              <Eye className="h-3.5 w-3.5 mr-1.5" />
-              {" "}
-              View Trip
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [],
-  );
+  const hasFilters = Boolean(q) || statusFilter !== "all" || vehicleFilter !== "all";
+  const tableState = jobsQuery.isLoading
+    ? "Loading trips..."
+    : jobsQuery.isError
+      ? null
+      : filtered.length === 0
+        ? hasFilters ? "No trips found" : "No trips yet. Trips appear once jobs are dispatched."
+        : undefined;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat
-          icon={Route}
-          label="Total trips"
-          value={`${trips.length}`}
-        />
-        <Stat
-          icon={Truck}
-          label="Active trips"
-          value={`${count("active")}`}
-        />
-        <Stat
-          icon={MapPin}
-          label="Scheduled trips"
-          value={`${count("scheduled")}`}
-        />
-        <Stat
-          icon={CheckCircle}
-          label="Completed trips"
-          value={`${count("completed")}`}
-        />
-      </div>
-
-      <Card className="surface-sleek border-border/50">
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-          <div>
-            <CardTitle className="text-base">Trip History</CardTitle>
-            <CardDescription>Jobs each vehicle has been on, with routes and locations</CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {" "}
-            Export
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search trips, vehicles, routes..."
-                className="pl-9"
-              />
-            </div>
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-            >
-              <SelectTrigger className="w-[200px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="active">Active trips</SelectItem>
-                <SelectItem value="scheduled">Scheduled trips</SelectItem>
-                <SelectItem value="completed">Completed trips</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="overflow-x-auto">
-            <DataTable
-              columns={columns}
-              data={filtered}
-              isLoading={jobsQuery.isLoading}
-              isError={jobsQuery.isError}
-              errorMessage={jobsQuery.error?.message ?? "Unable to load trips"}
-              onRetry={() => void jobsQuery.refetch()}
-              hasActiveFilters={Boolean(q) || statusFilter !== "all"}
-              emptyState="No trips yet. Trips appear once jobs are dispatched."
-              filteredEmptyState="No trips found"
+    <>
+      <PageHeader
+        title="Trips"
+        description="Vehicle journeys, pickup and drop-off locations, stops, and travel times."
+      />
+      <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Stat
+              icon={Route}
+              label="Total trips"
+              value={`${trips.length}`}
+            />
+            <Stat
+              icon={Truck}
+              label="Active trips"
+              value={`${count("active")}`}
+            />
+            <Stat
+              icon={MapPin}
+              label="Scheduled trips"
+              value={`${count("scheduled")}`}
+            />
+            <Stat
+              icon={CircleCheckBig}
+              label="Completed trips"
+              value={`${count("completed")}`}
             />
           </div>
-        </CardContent>
-      </Card>
+
+          <div className={`${CARD_CLASS} min-w-0`}>
+            <div className="flex flex-col p-6 pb-4 space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold tracking-tight text-foreground font-display text-base">Trip History</h3>
+                  <p className="text-sm text-muted-foreground mt-1.5">Jobs each vehicle has been on, with pickup, drop-off, intermediate stops, and travel details.</p>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold tracking-[-0.01em] ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border hover:bg-secondary hover:text-foreground h-8 rounded-lg px-3 text-xs bg-transparent border-input"
+                  onClick={handleExport}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Data
+                </button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search trip ID, locations, or driver..."
+                    className="flex h-10 w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 text-foreground pl-9"
+                  />
+                </div>
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="h-10 rounded-xl px-3.5 sm:w-44"><SelectValue placeholder="All statuses" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="active">Active trips</SelectItem>
+                    <SelectItem value="scheduled">Scheduled trips</SelectItem>
+                    <SelectItem value="completed">Completed trips</SelectItem>
+                  </SelectContent>
+                </Select>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold tracking-[-0.01em] ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-border bg-transparent hover:bg-secondary hover:text-foreground h-9 px-4 py-2"
+                    >
+                      <SlidersHorizontal className="h-4 w-4 mr-2" />
+                      Filter
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="max-h-80 overflow-y-auto"
+                  >
+                    <DropdownMenuLabel>Vehicle</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuRadioGroup
+                      value={vehicleFilter}
+                      onValueChange={setVehicleFilter}
+                    >
+                      <DropdownMenuRadioItem value="all">All vehicles</DropdownMenuRadioItem>
+                      {vehicleOptions.map(([
+                        id,
+                        label,
+                      ]) => (
+                        <DropdownMenuRadioItem
+                          key={id}
+                          value={id}
+                        >
+                          {label}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+            <div className="p-6 pt-0 min-w-0">
+              <div className="overflow-x-auto">
+                <div className="relative w-full overflow-auto">
+                  <table className="w-full caption-bottom text-sm min-w-[1500px] [&_td]:px-4 [&_th]:px-4 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+                    <thead className="[&_tr]:border-b">
+                      <tr className={TR_CLASS}>
+                        {COLUMNS.map(c => (
+                          <th
+                            key={c}
+                            className={TH_CLASS}
+                          >
+                            {c}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="[&_tr:last-child]:border-0">
+                      {tableState !== undefined && (
+                        <tr className="border-b">
+                          <td
+                            colSpan={COLUMNS.length}
+                            className={`${TD_CLASS} h-24 text-center text-sm text-muted-foreground`}
+                          >
+                            {tableState ?? (
+                              <span className="inline-flex items-center gap-2">
+                                {jobsQuery.error?.message ?? "Unable to load trips"}
+                                <button
+                                  type="button"
+                                  className="font-medium text-primary hover:underline"
+                                  onClick={() => void jobsQuery.refetch()}
+                                >
+                                  Retry
+                                </button>
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                      {tableState === undefined && filtered.map(t => (
+                        <tr
+                          key={t.id}
+                          className={TR_CLASS}
+                        >
+                          <td className={TD_CLASS}>
+                            {/* The design app says "Unassigned" when no vehicle is on the job. */}
+                            <span
+                              className="block text-sm font-medium"
+                              title={t.vehicleName || (t.plate ? "—" : "Unassigned")}
+                            >
+                              {t.vehicleName || (t.plate ? "—" : "Unassigned")}
+                            </span>
+                            {t.plate && <span className="block text-xs text-muted-foreground">{t.plate}</span>}
+                          </td>
+                          <td className={TD_CLASS}>
+                            <span className="block">{t.pickup.address || "—"}</span>
+                          </td>
+                          <td className={TD_CLASS}>
+                            <span className="block">{t.delivery.address || "—"}</span>
+                          </td>
+                          <td className={TD_NUM_CLASS}>
+                            {t.stops.length > 0
+                              ? t.stops.length
+                              : <span className="text-muted-foreground text-xs">None</span>}
+                          </td>
+                          <td className={TD_CLASS}>
+                            <span
+                              className="block"
+                              title={t.driver || "Unassigned"}
+                            >
+                              {t.driver || "Unassigned"}
+                            </span>
+                          </td>
+                          {/* Distance, average speed, duration and start time need trip telemetry — no endpoint yet. */}
+                          <td className={TD_NUM_CLASS}>{NO_ENDPOINT}</td>
+                          <td className={TD_NUM_CLASS}>{NO_ENDPOINT}</td>
+                          <td className={TD_NUM_CLASS}>{NO_ENDPOINT}</td>
+                          <td className={TD_CLASS}>
+                            <div className="inline-flex items-center rounded-full border py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 capitalize text-[11px] px-1.5">
+                              {t.status}
+                            </div>
+                          </td>
+                          <td className={`${TD_CLASS} text-sm`}>
+                            <span className="block">{NO_ENDPOINT}</span>
+                          </td>
+                          <td className={`${TD_CLASS} text-sm`}>
+                            <span className="block">{formatTripDate(t.endedAt)}</span>
+                          </td>
+                          <td className={TD_CLASS}>
+                            <button
+                              type="button"
+                              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold tracking-[-0.01em] ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-border bg-transparent hover:bg-secondary hover:text-foreground rounded-lg text-xs h-8 px-3"
+                              onClick={() => setSelectedTrip({
+                                ...t, driver: t.driver || "Unassigned",
+                              })}
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <TripDetailsDialog
         trip={selectedTrip}
         open={!!selectedTrip}
         onOpenChange={o => !o && setSelectedTrip(null)}
       />
-    </div>
+    </>
   );
 }

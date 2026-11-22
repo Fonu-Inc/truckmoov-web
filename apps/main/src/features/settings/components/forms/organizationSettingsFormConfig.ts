@@ -6,9 +6,17 @@ import * as z from "zod";
 
 export const ORGANIZATION_SETTINGS_FORM_ID = "organization-settings-form";
 export const MAX_ORGANIZATION_IMAGE_SIZE = 2 * 1024 * 1024;
+/** The organization logo ("PNG, JPG up to 2MB"). */
 export const ORGANIZATION_IMAGE_TYPES = [
   "image/png",
   "image/jpeg",
+] as const;
+/** The profile image ("PNG, JPG, SVG or WebP. Max 2MB."). */
+export const PROFILE_IMAGE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/svg+xml",
+  "image/webp",
 ] as const;
 
 export const organizationSettingsSchema = z.object({
@@ -22,6 +30,7 @@ export const organizationSettingsSchema = z.object({
   ).email("Enter a valid email address."),
   phoneNumber: z.string().trim(),
   address: z.string().trim(),
+  logoUrl: z.string().url().or(z.literal("")),
   profilePictureUrl: z.string().url().or(z.literal("")),
   timezone: z.string().min(
     1,
@@ -40,6 +49,7 @@ export const EMPTY_ORGANIZATION_SETTINGS: OrganizationSettingsFormValues = {
   contactEmail: "",
   phoneNumber: "",
   address: "",
+  logoUrl: "",
   profilePictureUrl: "",
   timezone: "Africa/Lagos",
   language: "en",
@@ -51,6 +61,7 @@ export function organizationSettingsToFormValues(settings?: OrgSettingsData): Or
     contactEmail: settings?.branding?.contactEmail ?? "",
     phoneNumber: settings?.branding?.phoneNumber ?? "",
     address: settings?.branding?.address ?? "",
+    logoUrl: settings?.branding?.logoUrl ?? "",
     profilePictureUrl: settings?.branding?.profilePictureUrl ?? "",
     timezone: settings?.defaults?.timezone ?? "Africa/Lagos",
     language: settings?.defaults?.language ?? "en",
@@ -65,6 +76,7 @@ export function organizationSettingsToPayload(values: OrganizationSettingsFormVa
         contactEmail: values.contactEmail,
         phoneNumber: values.phoneNumber,
         address: values.address,
+        logoUrl: values.logoUrl,
         profilePictureUrl: values.profilePictureUrl,
       },
       defaults: {
@@ -73,6 +85,11 @@ export function organizationSettingsToPayload(values: OrganizationSettingsFormVa
       },
     },
   };
+}
+
+export function isValidProfileImage(file: File) {
+  return PROFILE_IMAGE_TYPES.includes(file.type as (typeof PROFILE_IMAGE_TYPES)[number])
+    && file.size <= MAX_ORGANIZATION_IMAGE_SIZE;
 }
 
 export function isValidOrganizationImage(file: File) {

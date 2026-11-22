@@ -25,6 +25,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { MaintenanceListCard } from "../ui/MaintenanceListCard";
 import {
   DriversOverviewCard,
@@ -73,6 +74,9 @@ const PERIODS = [
 ] as const;
 
 type PeriodValue = (typeof PERIODS)[number]["value"];
+
+/** The design app's Recent Activity card lists five events. */
+const ACTIVITY_LIMIT = 5;
 
 /** Recent events shown in the violations lists; stats come from the server totals. */
 const VIOLATION_EVENTS_LIMIT = 100;
@@ -237,10 +241,20 @@ export default function EnterpriseLogisticsDashboard() {
     [overview],
   );
 
-  if (isLoading)
-    return <EnterpriseLogisticsDashboardSkeleton />;
-  if (isError || !overview) {
-    return <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />;
+  // The heading stays put while the overview loads or fails: the top bar no
+  // longer carries the title for this route.
+  if (isLoading || isError || !overview) {
+    return (
+      <>
+        <OverviewHeader
+          period={period}
+          onPeriodChange={setPeriod}
+        />
+        {isLoading
+          ? <EnterpriseLogisticsDashboardSkeleton />
+          : <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />}
+      </>
+    );
   }
 
   const violationEvents = violations.data?.data.items ?? [];
@@ -263,104 +277,132 @@ export default function EnterpriseLogisticsDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <Select
-          value={period}
-          onValueChange={v => setPeriod(v as PeriodValue)}
-        >
-          <SelectTrigger className="h-10 px-3.5 w-[180px] rounded-xl">
-            <CalendarRange className="h-4 w-4 mr-2 text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PERIODS.map(p => (
-              <SelectItem
-                key={p.value}
-                value={p.value}
-              >
-                {p.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <QuickActionsCard />
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Vehicles"
-          value={overview.cards.totalVehicles}
-          icon={Truck}
-        />
-        <StatCard
-          title="Total Jobs"
-          value={overview.cards.totalJobs}
-          icon={Package}
-        />
-        <StatCard
-          title="Total Drivers"
-          value={overview.cards.totalDrivers}
-          icon={Users}
-        />
-        <StatCard
-          title="Total Devices"
-          value={devicesSummary.isLoading ? "…" : devicesSummary.isError ? "—" : (devicesSummary.data?.data.total ?? 0)}
-          icon={Cpu}
-        />
-      </div>
-
+    <>
+      <OverviewHeader
+        period={period}
+        onPeriodChange={setPeriod}
+      />
       <div className="space-y-6">
-        <ViolationsCard
-          mode="driver"
-          {...violationProps}
+        <QuickActionsCard />
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Vehicles"
+            value={overview.cards.totalVehicles}
+            icon={Truck}
+          />
+          <StatCard
+            title="Total Jobs"
+            value={overview.cards.totalJobs}
+            icon={Package}
+          />
+          <StatCard
+            title="Total Drivers"
+            value={overview.cards.totalDrivers}
+            icon={Users}
+          />
+          <StatCard
+            title="Total Devices"
+            value={devicesSummary.isLoading ? "…" : devicesSummary.isError ? "—" : (devicesSummary.data?.data.total ?? 0)}
+            icon={Cpu}
+          />
+        </div>
+
+        <RecentActivityCard items={recentActivity.slice(
+          0,
+          ACTIVITY_LIMIT,
+        )}
         />
-        <ViolationsCard
-          mode="vehicle"
-          {...violationProps}
+
+        <div className="space-y-6">
+          <ViolationsCard
+            mode="driver"
+            {...violationProps}
+          />
+          <ViolationsCard
+            mode="vehicle"
+            {...violationProps}
+          />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <MaintenanceListCard
+              variant="due"
+              profiles={dueProfiles}
+              {...maintenanceProfilesState}
+            />
+            <MaintenanceListCard
+              variant="overdue"
+              profiles={overdueProfiles}
+              {...maintenanceProfilesState}
+            />
+            <VehiclesInOperationCard />
+            <VehiclesInMaintenanceCard
+              records={openMaintenanceRecords}
+              vehiclePlate={vehiclePlate}
+              isLoading={maintenanceRecords.isLoading}
+              isError={maintenanceRecords.isError}
+              onRetry={() => maintenanceRecords.refetch()}
+            />
+          </div>
+        </div>
+
+        <JobsOverviewCard
+          jobs={overviewJobs}
+          jobsHref="/jobs"
         />
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <MaintenanceListCard
-            variant="due"
-            profiles={dueProfiles}
-            {...maintenanceProfilesState}
+          <VehiclesOverviewCard
+            vehicles={overviewVehicles}
+            vehiclesHref="/fleet"
           />
-          <MaintenanceListCard
-            variant="overdue"
-            profiles={overdueProfiles}
-            {...maintenanceProfilesState}
-          />
-          <VehiclesInOperationCard />
-          <VehiclesInMaintenanceCard
-            records={openMaintenanceRecords}
-            vehiclePlate={vehiclePlate}
-            isLoading={maintenanceRecords.isLoading}
-            isError={maintenanceRecords.isError}
-            onRetry={() => maintenanceRecords.refetch()}
+          <DriversOverviewCard
+            drivers={overviewDrivers}
+            driversHref="/drivers"
           />
         </div>
       </div>
+    </>
+  );
+}
 
-      <JobsOverviewCard
-        jobs={overviewJobs}
-        jobsHref="/jobs"
-      />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <VehiclesOverviewCard
-          vehicles={overviewVehicles}
-          vehiclesHref="/fleet"
-        />
-        <DriversOverviewCard
-          drivers={overviewDrivers}
-          driversHref="/drivers"
-        />
-      </div>
-
-      <RecentActivityCard items={recentActivity} />
-    </div>
+/**
+ * The design app's page heading with the period filter in its action slot.
+ * `/` sets `manualTitle` in sidebarNav, so the top bar leaves the title to this.
+ */
+function OverviewHeader({
+  period, onPeriodChange,
+}: {
+  period: PeriodValue; onPeriodChange: (period: PeriodValue) => void;
+}) {
+  return (
+    <PageHeader
+      title="Overview"
+      description="Enterprise-wide job monitoring & provider performance"
+      actions={(
+        <div className="flex">
+          <Select
+            value={period}
+            onValueChange={v => onPeriodChange(v as PeriodValue)}
+          >
+            <SelectTrigger className="px-3.5 w-[160px] rounded-xl">
+              <CalendarRange className="h-4 w-4 mr-2 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIODS.map(p => (
+                <SelectItem
+                  key={p.value}
+                  value={p.value}
+                >
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    />
   );
 }
 
@@ -394,10 +436,6 @@ function EnterpriseLogisticsDashboardSkeleton() {
       aria-busy="true"
       aria-live="polite"
     >
-      <div className="flex justify-end">
-        <Skeleton className="h-10 w-[180px] rounded-xl" />
-      </div>
-
       <ListCardSkeleton rows={1} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

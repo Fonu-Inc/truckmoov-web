@@ -16,10 +16,6 @@ import {
 import {
   NavLink, Outlet,
 } from "react-router";
-import { Badge } from "@/components/shadcn/badge";
-import {
-  Card, CardContent,
-} from "@/components/shadcn/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { VehicleFinancialConfigDialog } from "@/features/fleet/components/ui/VehicleFinancialConfigDialog";
 import { VehiclePLStatementBuilder } from "@/features/fleet/components/ui/VehiclePLStatementBuilder";
@@ -28,6 +24,7 @@ import {
 } from "@/features/fleet/utils/fleetFinancials";
 import { FINANCIALS_TABS } from "@/features/fleet/utils/fleetFinancialsNav";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 
 export type FleetFinancialsLayoutContext = {
   openConfigDialog: () => void;
@@ -171,17 +168,22 @@ export function FleetFinancialsLayout() {
 
   const getTierBadge = useCallback(
     (tier: string) => {
+      // Design app's tier badge colours, copied verbatim (incl. its palette classes).
       const colors: Record<string, string> = {
-        "excellent": "bg-success/20 text-success",
-        "good": "bg-info/20 text-info",
-        "marginal": "bg-warning/20 text-warning",
-        "loss-making": "bg-destructive/20 text-destructive",
+        "excellent": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+        "good": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+        "marginal": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+        "loss-making": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
         "unscored": "bg-muted text-muted-foreground",
       };
       return (
-        <Badge className={colors[normalizeTier(tier)] || colors.marginal}>
+        <div className={cn(
+          "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent shadow-sm hover:bg-primary/90",
+          colors[normalizeTier(tier)] || colors.marginal,
+        )}
+        >
           {TIER_LABELS[normalizeTier(tier)] || tier}
-        </Badge>
+        </div>
       );
     },
     [],
@@ -200,110 +202,99 @@ export function FleetFinancialsLayout() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/20 shrink-0">
-                <TrendingUp className="h-5 w-5 text-success" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-2xl font-bold text-success">{format(summaryStats.totalRevenue)}</p>
-                <p className="text-xs text-muted-foreground">
-                  Total Revenue ·
-                  {" "}
-                  {fleetTotals.jobsCompleted}
-                  {" "}
-                  jobs
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/20 shrink-0">
-                <TrendingDown className="h-5 w-5 text-destructive" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-2xl font-bold text-destructive">{format(summaryStats.totalCost)}</p>
-                <p className="text-xs text-muted-foreground">
-                  Total Costs ·
-                  {" "}
-                  {fleetTotals.totalKm.toFixed(0)}
-                  {" "}
-                  km
-                </p>
+    <>
+      <PageHeader
+        title="Financials"
+        description="Details and current information for financials."
+      />
+      <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <div className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-2xl surface-sleek text-card-foreground">
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-success/20">
+                    <TrendingUp className="h-5 w-5 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">{format(summaryStats.totalRevenue)}</p>
+                    <p className="text-xs text-muted-foreground">{`Total Revenue · ${fleetTotals.jobsCompleted} jobs`}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/20 shrink-0">
-                <DollarSign className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                  {format(summaryStats.totalProfit)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Net Profit ·
-                  {" "}
-                  {summaryStats.avgMarginPercent.toFixed(1)}
-                  % margin
-                </p>
+            <div className="rounded-2xl surface-sleek text-card-foreground">
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-destructive/20">
+                    <TrendingDown className="h-5 w-5 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-600">{format(summaryStats.totalCost)}</p>
+                    <p className="text-xs text-muted-foreground">{`Total Costs · ${fleetTotals.totalKm.toFixed(0)} km`}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/20 shrink-0">
-                <Calculator className="h-5 w-5 text-accent" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-2xl font-bold">
-                  {fleetTotals.totalKm > 0 ? format(fleetTotals.totalCosts / fleetTotals.totalKm) : "—"}
-                </p>
-                <p className="text-xs text-muted-foreground">Cost per KM · Fleet average</p>
+            <div className="rounded-2xl surface-sleek text-card-foreground">
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      {format(summaryStats.totalProfit)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{`Net Profit · ${summaryStats.avgMarginPercent.toFixed(1)}% margin`}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      <div className="space-y-4">
-        <nav
-          aria-label="Financials sections"
-          className="bg-muted/50 text-muted-foreground inline-flex w-auto justify-start gap-1 rounded-md p-1"
-        >
-          {FINANCIALS_TABS.map(t => (
-            <NavLink
-              key={t.to}
-              to={t.to}
-              end
-              className={({ isActive }) => cn(
-                "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-150",
-                "hover:text-foreground/80",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                isActive && "bg-background text-foreground shadow-sm border-b-2 border-primary",
-              )}
+            <div className="rounded-2xl surface-sleek text-card-foreground">
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Calculator className="h-5 w-5 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {fleetTotals.totalKm > 0 ? format(fleetTotals.totalCosts / fleetTotals.totalKm) : "—"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Cost per KM · Fleet average</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <nav
+              aria-label="Financials sections"
+              className="h-10 items-center rounded-xl bg-secondary/60 text-muted-foreground inline-flex w-auto justify-start gap-1 p-1"
             >
-              {t.label}
-            </NavLink>
-          ))}
-        </nav>
+              {FINANCIALS_TABS.map(t => (
+                <NavLink
+                  key={t.to}
+                  to={t.to}
+                  end
+                  className={({ isActive }) => cn(
+                    "inline-flex items-center justify-center whitespace-nowrap rounded-lg py-1.5 text-sm font-medium ring-offset-background transition-all duration-150 hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 px-3",
+                    isActive && "bg-background text-foreground shadow-sm border-b-2 border-primary",
+                  )}
+                >
+                  {t.label}
+                </NavLink>
+              ))}
+            </nav>
 
-        <Outlet context={ctx} />
+            <Outlet context={ctx} />
+          </div>
+        </div>
       </div>
 
       <VehicleFinancialConfigDialog
@@ -325,7 +316,7 @@ export function FleetFinancialsLayout() {
         defaultPeriodLabel={`Last ${profitabilityPeriod} days`}
         periodMonths={periodToMonths(profitabilityPeriod)}
       />
-    </div>
+    </>
   );
 }
 

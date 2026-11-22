@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type { OrganizationUser } from "@truckmoov/api/auth";
 import type {
   FilterField, FilterValues,
@@ -19,7 +18,7 @@ import {
 } from "@truckmoov/app-core/utils/general-utils";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Clock, Mail, MoreHorizontal, Pencil, Plus, Trash2, UserCheck, UserX,
+  ChevronDown, Clock, Mail, MoreHorizontal, Pencil, Plus, Shield, Trash2, UserCheck, UserX,
 } from "lucide-react";
 import {
   useEffect, useMemo, useState,
@@ -28,12 +27,7 @@ import { toast } from "sonner";
 import {
   Avatar, AvatarFallback,
 } from "@/components/shadcn/avatar";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardHeader,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -57,9 +51,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getRoleLabel } from "@/features/auth/utils/role-label";
+import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
+import { useClientPage } from "@/features/fleet/utils/useClientPage";
 import { RolePermissionsMatrix } from "@/features/settings/components/ui/RolePermissionsMatrix";
 import { canManageOrganizationUsers } from "@/features/settings/utils/userManagementPermissions";
 
@@ -111,17 +111,32 @@ type TenantUser = {
   accountStatus: string;
 };
 
+// The design app's role badge tints. Dispatcher takes the audit log's Dispatcher tint.
 const roleColors: Partial<Record<UserRole, string>> = {
-  SUPER_ADMIN: "bg-primary/20 text-primary border-primary/30",
-  SYSTEM_ADMIN: "bg-primary/20 text-primary border-primary/30",
-  PLATFORM_ADMIN: "bg-primary/20 text-primary border-primary/30",
-  ENTERPRISE_ADMIN: "bg-primary/20 text-primary border-primary/30",
-  AGGREGATOR_ADMIN: "bg-primary/20 text-primary border-primary/30",
-  OWNER_OPERATOR: "bg-primary/20 text-primary border-primary/30",
-  OPERATIONS_MANAGER: "bg-accent/20 text-accent border-accent/30",
-  DISPATCHER: "bg-success/20 text-success border-success/30",
-  FINANCE_VIEWER: "bg-muted text-muted-foreground border-muted",
+  ENTERPRISE_ADMIN: "bg-primary/15 text-primary border-primary/30",
+  AGGREGATOR_ADMIN: "bg-primary/15 text-primary border-primary/30",
+  OWNER_OPERATOR: "bg-primary/15 text-primary border-primary/30",
+  OPERATIONS_MANAGER: "bg-accent/15 text-accent border-accent/30",
+  DISPATCHER: "bg-warning/15 text-warning border-warning/30",
+  FINANCE_VIEWER: "bg-success/15 text-success border-success/30",
 };
+const DEFAULT_ROLE_COLOR = "bg-muted text-muted-foreground border-border";
+
+/** The org admin roles: their row shows "Account owner" instead of the row menu. */
+const OWNER_ROLES: UserRole[] = [
+  UserRole.ENTERPRISE_ADMIN,
+  UserRole.AGGREGATOR_ADMIN,
+  UserRole.OWNER_OPERATOR,
+];
+
+/** The Roles card: the backend's team roles (no roles endpoint lists custom ones). */
+const TEAM_ROLE_OPTIONS: {
+  key: string; label: string;
+}[] = TEAM_ROLES.map(r => ({
+  key: r.value, label: getRoleLabel(r.value),
+}));
+
+const USER_COLUMN_COUNT = 5;
 
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success border-success/30",
@@ -414,105 +429,59 @@ export default function UsersSettingsPage() {
     );
   };
 
-  const columns: ColumnDef<TenantUser>[] = [
-    {
-      accessorKey: "name",
-      header: "User",
-      cell: ({ row }) => {
-        const tenantUser = row.original;
-        return (
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
-                {getInitials(tenantUser.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">{tenantUser.name}</p>
-              <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "role",
-      header: "Role",
-      cell: ({ row }) => (
-        <Badge className={roleColors[row.original.role]}>{getRoleLabel(row.original.role)}</Badge>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => (
-        <Badge className={statusColors[row.original.status]}>{row.original.status}</Badge>
-      ),
-    },
-    {
-      accessorKey: "lastActive",
-      header: "Last Active",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          {row.original.lastActive}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      header: "",
-      meta: { className: "w-[60px]" },
-      cell: ({ row }) => {
-        const tenantUser = row.original;
-        if (!canManage)
-          return null;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit User
-              </DropdownMenuItem>
-              {tenantUser.status === "invited" && (
-                <DropdownMenuItem
-                  onClick={() => handleResendInvite(tenantUser)}
-                  disabled={resendInviteMutation.isPending}
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  Resend Invite
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={() => handleToggleUserStatus(tenantUser)}
-                disabled={updateStatusMutation.isPending}
-              >
-                {tenantUser.accountStatus === "disabled"
-                  ? <UserCheck className="h-4 w-4 mr-2" />
-                  : <UserX className="h-4 w-4 mr-2" />}
-                {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => handleOpenRemoveDialog(tenantUser)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Remove
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
+  // The design app's last column: "Account owner" on the org's admin, the row menu on everyone else.
+  const renderActions = (tenantUser: TenantUser) => {
+    if (OWNER_ROLES.includes(tenantUser.role))
+      return <span className="text-xs text-muted-foreground">Account owner</span>;
+    if (!canManage)
+      return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Edit User
+          </DropdownMenuItem>
+          {tenantUser.status === "invited" && (
+            <DropdownMenuItem
+              onClick={() => handleResendInvite(tenantUser)}
+              disabled={resendInviteMutation.isPending}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Resend Invite
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem
+            onClick={() => handleToggleUserStatus(tenantUser)}
+            disabled={updateStatusMutation.isPending}
+          >
+            {tenantUser.accountStatus === "disabled"
+              ? <UserCheck className="h-4 w-4 mr-2" />
+              : <UserX className="h-4 w-4 mr-2" />}
+            {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={() => handleOpenRemoveDialog(tenantUser)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Remove
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  const hasActiveFilters = !!debouncedSearch || teamStatus !== "all" || !!activeRoleFilter;
+  const usersPage = useClientPage(tenantUsers);
 
   // Role filter offers every tenant-facing role — a stable option list, so the
   // dropdown doesn't reshape as the current page's results narrow. Admin roles
@@ -539,85 +508,78 @@ export default function UsersSettingsPage() {
           <h3 className="text-lg font-semibold">Team Members</h3>
           <p className="text-sm text-muted-foreground">Manage who has access to your organization</p>
         </div>
-        {canInviteUsers
-          ? (
-              <Dialog
-                open={isInviteDialogOpen}
-                onOpenChange={setIsInviteDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button variant="gradient">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Invite User
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-card border-border">
-                  <DialogHeader>
-                    <DialogTitle>Invite Team Member</DialogTitle>
-                    <DialogDescription>Send an invitation to join your organization</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="inviteEmail">Email Address</Label>
-                      <Input
-                        id="inviteEmail"
-                        type="email"
-                        placeholder="colleague@company.com"
-                        value={inviteEmail}
-                        onChange={e => setInviteEmail(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="inviteRole">Role</Label>
-                      <Select
-                        value={inviteRole}
-                        onValueChange={v => setInviteRole(v as UserRole)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {inviteRoleOptions.map(opt => (
-                            <SelectItem
-                              key={opt.value}
-                              value={opt.value}
-                            >
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsInviteDialogOpen(false)}
-                      disabled={isInviting}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="gradient"
-                      onClick={handleInviteUser}
-                      disabled={isInviting}
-                    >
-                      {isInviting ? "Sending..." : "Send Invitation"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )
-          : (
-              <span className="text-xs text-muted-foreground max-w-xs text-right">
-                You have view-only access to team members. Ask an Enterprise
-                Admin to make changes.
-              </span>
-            )}
+        {canInviteUsers && (
+          <Dialog
+            open={isInviteDialogOpen}
+            onOpenChange={setIsInviteDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button variant="gradient">
+                <Plus className="h-4 w-4 mr-2" />
+                Invite User
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader>
+                <DialogTitle>Invite Team Member</DialogTitle>
+                <DialogDescription>Send an invitation to join your organization</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="inviteEmail">Email Address</Label>
+                  <Input
+                    id="inviteEmail"
+                    type="email"
+                    placeholder="colleague@company.com"
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="inviteRole">Role</Label>
+                  <Select
+                    value={inviteRole}
+                    onValueChange={v => setInviteRole(v as UserRole)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {inviteRoleOptions.map(opt => (
+                        <SelectItem
+                          key={opt.value}
+                          value={opt.value}
+                        >
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsInviteDialogOpen(false)}
+                  disabled={isInviting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="gradient"
+                  onClick={handleInviteUser}
+                  disabled={isInviting}
+                >
+                  {isInviting ? "Sending..." : "Send Invitation"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
+      <div className="rounded-2xl surface-sleek text-card-foreground bg-card/50 border-border/50">
+        <div className="flex flex-col space-y-1.5 p-6 pb-4">
           <TableToolbar
             search={teamSearch}
             onSearchChange={setTeamSearch}
@@ -643,19 +605,107 @@ export default function UsersSettingsPage() {
             filterValues={teamFilters}
             onFiltersApply={setTeamFilters}
           />
-        </CardHeader>
-        <DataTable
-          columns={columns}
-          data={tenantUsers}
-          isLoading={isLoadingUsers}
-          isError={organizationUsersQuery.isError}
-          errorMessage="Unable to load team members."
-          onRetry={() => organizationUsersQuery.refetch()}
-          hasActiveFilters={!!debouncedSearch || teamStatus !== "all" || !!activeRoleFilter}
-          emptyState="No team members yet. Invite someone to get started."
-          filteredEmptyState="No team members match your filters."
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border/50 hover:bg-transparent">
+              <TableHead>User</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Active</TableHead>
+              <TableHead className="w-[60px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoadingUsers
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow
+                    key={`skeleton-${i}`}
+                    className="border-border/50"
+                  >
+                    {Array.from({ length: USER_COLUMN_COUNT }).map((__, j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              : organizationUsersQuery.isError
+                ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={USER_COLUMN_COUNT}
+                        className="text-center py-8"
+                      >
+                        <p className="text-destructive">Unable to load team members.</p>
+                        <Button
+                          variant="link"
+                          className="mt-1"
+                          onClick={() => organizationUsersQuery.refetch()}
+                        >
+                          Retry
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                : tenantUsers.length === 0
+                  ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={USER_COLUMN_COUNT}
+                          className="text-center py-8 text-muted-foreground"
+                        >
+                          {hasActiveFilters ? "No team members match your filters." : "No team members yet. Invite someone to get started."}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : usersPage.pageRows.map(tenantUser => (
+                      <TableRow
+                        key={tenantUser.id}
+                        className="border-border/50"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
+                                {getInitials(tenantUser.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{tenantUser.name}</p>
+                              <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 gap-1 font-medium ${roleColors[tenantUser.role] ?? DEFAULT_ROLE_COLOR}`}>
+                            <Shield className="h-3 w-3" />
+                            {getRoleLabel(tenantUser.role)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow-sm hover:bg-primary/90 ${statusColors[tenantUser.status] ?? ""}`}>
+                            {tenantUser.status}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {tenantUser.lastActive}
+                          </div>
+                        </TableCell>
+                        <TableCell>{renderActions(tenantUser)}</TableCell>
+                      </TableRow>
+                    ))}
+          </TableBody>
+        </Table>
+        <FleetTablePager
+          page={usersPage.page}
+          pageSize={usersPage.pageSize}
+          total={usersPage.total}
+          onPageChange={usersPage.setPage}
         />
-      </Card>
+      </div>
 
       {/* Edit User Dialog */}
       <Dialog
@@ -769,8 +819,39 @@ export default function UsersSettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Role Permissions Summary — US-E02-002 */}
-      <RolePermissionsMatrix />
+      <div className="space-y-6">
+        <div className="rounded-2xl surface-sleek text-card-foreground">
+          <div className="flex flex-col space-y-1.5 p-6 pb-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="font-semibold tracking-tight text-foreground font-display flex items-center gap-2 text-base">
+                  <Shield className="h-4 w-4 text-primary" />
+                  {`Roles (${TEAM_ROLE_OPTIONS.length})`}
+                </h3>
+                <p className="text-sm text-muted-foreground">Your organisation&apos;s roles, what they do, and the permissions assigned to each.</p>
+              </div>
+              {/* ponytail: no roles endpoint (list / create custom roles), so both stay disabled until packages/api has one. */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  disabled
+                >
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  View all roles
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Role
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <RolePermissionsMatrix />
+      </div>
     </div>
   );
 }

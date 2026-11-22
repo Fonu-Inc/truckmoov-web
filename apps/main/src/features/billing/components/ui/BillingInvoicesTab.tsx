@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   TenantInvoice, TenantInvoiceFilter,
 } from "@truckmoov/api/billing";
@@ -7,14 +6,10 @@ import {
 } from "@truckmoov/api/billing";
 import { queryClient } from "@truckmoov/api/lib/query-client";
 import {
-  Download, Eye, Search,
+  Download, Search,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -22,17 +17,19 @@ import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
+import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
 import { invoiceDocument } from "../../utils/billingDocuments";
 import {
   formatDate, formatLongDate, INVOICE_STATUS_LABEL, invoiceStatusKey, methodLabel, ngn, toneForStatus,
 } from "../../utils/billingHelpers";
 import {
-  ChargeBreakdown, DialogSkeleton, LabelValue, PlanSummary, SectionError, StatusPill,
+  BILLING_CARD, BILLING_CARD_SUBTITLE, BILLING_CARD_TITLE, BILLING_PAGE_SIZE, ChargeBreakdown, DialogSkeleton, LabelValue, PlanSummary, RowActions, SectionError, StatusPill, TableStateRows,
 } from "../../utils/billingShared";
 import { useBillingDownload } from "../../utils/useBillingDownload";
-
-const PAGE_SIZE = 20;
 
 function InvoiceStatus({ invoice }: { invoice: TenantInvoice }) {
   const key = invoiceStatusKey(invoice.status);
@@ -146,116 +143,7 @@ function InvoiceDialog({
   );
 }
 
-function invoiceColumns({
-  onView, onDownload, busyId,
-}: {
-  onView: (id: string) => void; onDownload: (id: string) => void; busyId: string | null;
-}): ColumnDef<TenantInvoice>[] {
-  return [
-    {
-      accessorKey: "number",
-      header: "Invoice",
-      enableSorting: false,
-      meta: { className: "font-medium whitespace-nowrap" },
-    },
-    {
-      id: "plan",
-      header: "M2M plan",
-      enableSorting: false,
-      meta: { className: "whitespace-nowrap" },
-      cell: ({ row }) => (row.original.planName
-        ? (
-            <StatusPill
-              label={row.original.planName}
-              tone="info"
-            />
-          )
-        : <span className="text-muted-foreground">—</span>),
-    },
-    {
-      id: "devices",
-      header: "Devices",
-      enableSorting: false,
-      meta: { className: "text-right tabular-nums" },
-      cell: ({ row }) => row.original.deviceCount || "—",
-    },
-    {
-      accessorKey: "billingPeriod",
-      header: "Billing period",
-      enableSorting: false,
-      meta: { className: "text-muted-foreground" },
-    },
-    {
-      id: "issueDate",
-      header: "Invoice date",
-      enableSorting: false,
-      meta: { className: "whitespace-nowrap" },
-      cell: ({ row }) => formatDate(row.original.issueDate),
-    },
-    {
-      id: "dueDate",
-      header: "Due date",
-      enableSorting: false,
-      meta: { className: "whitespace-nowrap" },
-      cell: ({ row }) => formatDate(row.original.dueDate),
-    },
-    {
-      id: "total",
-      header: "Total",
-      enableSorting: false,
-      meta: { className: "text-right tabular-nums" },
-      cell: ({ row }) => ngn(row.original.totalNgn),
-    },
-    {
-      id: "paid",
-      header: "Paid",
-      enableSorting: false,
-      meta: { className: "text-right tabular-nums" },
-      cell: ({ row }) => ngn(row.original.amountPaidNgn),
-    },
-    {
-      id: "outstanding",
-      header: "Outstanding",
-      enableSorting: false,
-      meta: { className: "text-right tabular-nums" },
-      cell: ({ row }) => ngn(row.original.outstandingNgn),
-    },
-    {
-      id: "status",
-      header: "Status",
-      enableSorting: false,
-      cell: ({ row }) => <InvoiceStatus invoice={row.original} />,
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      enableSorting: false,
-      meta: { className: "text-right whitespace-nowrap" },
-      cell: ({ row }) => (
-        <>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onView(row.original.id)}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            {" "}
-            View
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={busyId === row.original.id}
-            onClick={() => onDownload(row.original.id)}
-            aria-label="Download document"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-        </>
-      ),
-    },
-  ];
-}
+const COLUMNS = 11;
 
 export function BillingInvoicesTab() {
   const [
@@ -278,7 +166,7 @@ export function BillingInvoicesTab() {
 
   const invoices = useTenantInvoices({
     params: {
-      status: status as TenantInvoiceFilter, q: q || undefined, page, pageSize: PAGE_SIZE,
+      status: status as TenantInvoiceFilter, q: q || undefined, page, pageSize: BILLING_PAGE_SIZE,
     },
   });
   const {
@@ -288,15 +176,15 @@ export function BillingInvoicesTab() {
     invoiceDocument,
   );
   const list = invoices.data?.data;
+  const rows = list?.items ?? [];
 
   return (
-    <Card className="surface-sleek rounded-2xl">
-      <CardHeader className="space-y-4">
+    <div className={BILLING_CARD}>
+      <div className="flex flex-col p-6 pb-4 space-y-4">
         <div>
-          <CardTitle>Invoice History</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Invoices are issued automatically by the platform for each billing period and approved request.
-          </p>
+          <h3 className={BILLING_CARD_TITLE}>Invoice History</h3>
+          <p className="text-sm text-muted-foreground mt-1.5">{BILLING_CARD_SUBTITLE}</p>
+          <p className="text-sm text-muted-foreground mt-1">Invoices are issued automatically by the platform for each billing period and approved request.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -318,7 +206,7 @@ export function BillingInvoicesTab() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-full sm:w-52 rounded-xl">
+            <SelectTrigger className="h-10 px-3.5 w-full sm:w-52 rounded-xl">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -337,36 +225,85 @@ export function BillingInvoicesTab() {
             </SelectContent>
           </Select>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-6 pt-0">
         <div className="rounded-2xl border border-border overflow-x-auto">
-          <DataTable
-            columns={invoiceColumns({
-              onView: setSelectedId,
-              onDownload: download,
-              busyId,
-            })}
-            data={list?.items ?? []}
-            isLoading={invoices.isLoading}
-            isError={invoices.isError}
-            errorMessage="Could not load your invoices."
-            onRetry={() => invoices.refetch()}
-            emptyState="No invoices match your filters."
-            pagination={list && {
-              page,
-              pageSize: PAGE_SIZE,
-              total: list.total,
-              onPageChange: setPage,
-            }}
-          />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Invoice</TableHead>
+                <TableHead>M2M plan</TableHead>
+                <TableHead className="text-right">Devices</TableHead>
+                <TableHead>Billing period</TableHead>
+                <TableHead>Invoice date</TableHead>
+                <TableHead>Due date</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Paid</TableHead>
+                <TableHead className="text-right">Outstanding</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableStateRows
+                colSpan={COLUMNS}
+                isLoading={invoices.isLoading}
+                isError={invoices.isError}
+                errorMessage="Could not load your invoices."
+                onRetry={() => invoices.refetch()}
+                isEmpty={rows.length === 0}
+                emptyMessage="No invoices match your filters."
+              />
+              {!invoices.isLoading && !invoices.isError && rows.map(inv => (
+                <TableRow key={inv.id}>
+                  <TableCell className="font-medium whitespace-nowrap">{inv.number}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {inv.planName
+                      ? (
+                          <StatusPill
+                            label={inv.planName}
+                            tone="info"
+                          />
+                        )
+                      : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{inv.deviceCount || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{inv.billingPeriod}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDate(inv.issueDate)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDate(inv.dueDate)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{ngn(inv.totalNgn)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{ngn(inv.amountPaidNgn)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{ngn(inv.outstandingNgn)}</TableCell>
+                  <TableCell>
+                    <InvoiceStatus invoice={inv} />
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <RowActions
+                      onView={() => setSelectedId(inv.id)}
+                      onDownload={() => download(inv.id)}
+                      downloadDisabled={busyId === inv.id}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
-      </CardContent>
+        {list && (
+          <FleetTablePager
+            page={page}
+            pageSize={BILLING_PAGE_SIZE}
+            total={list.total}
+            onPageChange={setPage}
+          />
+        )}
+      </div>
 
       <InvoiceDialog
         id={selectedId}
         onClose={() => setSelectedId(null)}
         onDownload={download}
       />
-    </Card>
+    </div>
   );
 }

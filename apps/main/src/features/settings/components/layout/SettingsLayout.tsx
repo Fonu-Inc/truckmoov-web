@@ -6,6 +6,7 @@ import {
   canSeeTab, SETTINGS_TABS,
 } from "@/features/settings/utils/settingsNav";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 
 /**
  * The settings shell, mounted as a pathful layout route at `/settings` (see
@@ -26,6 +27,9 @@ export function SettingsLayout() {
     role,
   ));
   const barTabs = visibleTabs.filter(tab => !tab.hidden);
+  // Hidden tabs (Subscription, KYC, …) still get a heading — their label.
+  const activeTab = visibleTabs.find(tab => tab.to === pathname)
+    ?? visibleTabs.find(tab => tab.to !== "/settings" && pathname.startsWith(`${tab.to}/`));
 
   // Organization is enterprise-admin-only, but the sidebar routes several
   // other roles to /settings. Send them to their first visible tab instead
@@ -49,7 +53,7 @@ export function SettingsLayout() {
       {barTabs.length > 1 && (
         <nav
           aria-label="Settings sections"
-          className="bg-muted/50 text-muted-foreground flex flex-wrap gap-1 h-auto rounded-md p-1"
+          className="items-center justify-center rounded-xl text-muted-foreground bg-muted/50 flex flex-wrap gap-1 h-auto p-1"
         >
           {barTabs.map(tab => (
             <NavLink
@@ -60,9 +64,7 @@ export function SettingsLayout() {
               // stay lit on their children.
               end
               className={({ isActive }) => cn(
-                "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-150",
-                "hover:text-foreground/80",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "justify-center whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium ring-offset-background transition-all duration-150 hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex items-center gap-2",
                 isActive && "bg-background text-foreground shadow-sm border-b-2 border-primary",
               )}
             >
@@ -73,7 +75,14 @@ export function SettingsLayout() {
         </nav>
       )}
 
-      <Outlet />
+      {/* The design app: tab bar, then the active tab's page heading, then its `mt-3` panel. */}
+      <PageHeader
+        title={activeTab?.label ?? "Settings"}
+        description={activeTab?.description}
+      />
+      <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-6">
+        <Outlet />
+      </div>
     </div>
   );
 }

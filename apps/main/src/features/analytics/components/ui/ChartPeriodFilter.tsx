@@ -2,6 +2,7 @@ import { Calendar } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { cn } from "@/lib/utils";
 
 export type ChartPeriod = "today" | "yesterday" | "7d" | "10d" | "30d";
 
@@ -26,16 +27,23 @@ const CHART_PERIOD_OPTIONS: {
 ];
 
 export function ChartPeriodFilter({
-  value, onChange,
+  value, onChange, className,
 }: {
-  value: ChartPeriod; onChange: (v: ChartPeriod) => void;
+  value: ChartPeriod;
+  onChange: (v: ChartPeriod) => void;
+  /** Extra trigger classes, merged after the defaults. */
+  className?: string;
 }) {
   return (
     <Select
       value={value}
       onValueChange={v => onChange(v as ChartPeriod)}
     >
-      <SelectTrigger className="w-[150px] h-8 text-xs">
+      <SelectTrigger className={cn(
+        "w-[150px] h-8 text-xs",
+        className,
+      )}
+      >
         <Calendar className="h-3.5 w-3.5 text-muted-foreground mr-1.5 shrink-0" />
         <SelectValue />
       </SelectTrigger>

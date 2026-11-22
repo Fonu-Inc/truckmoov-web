@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   DriverCommunicationPreference, DriverInput, DriverStatus, FleetDriver,
 } from "@truckmoov/api/fleet";
@@ -12,7 +11,7 @@ import { useAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useSendNotifyMessage } from "@truckmoov/api/notification";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
-  daysUntil, formatDate,
+  daysUntil, formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, Ban, Clock, Eye, Mail, MessageSquare,
@@ -40,11 +39,7 @@ import {
 } from "@/components/shadcn/alert-dialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -61,10 +56,31 @@ import { Progress } from "@/components/shadcn/progress";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 import { getPerformanceBand } from "@/features/drivers/utils/driverPerformance";
-import { cn } from "@/lib/utils";
+import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
+import { useClientPage } from "@/features/fleet/utils/useClientPage";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
+
+// Classes copied from the design app's rendered DOM (shadcn Card / Badge bases
+// there differ from packages/reusables, so these are plain elements).
+const TILE_CLASS = "rounded-2xl surface-sleek text-card-foreground";
+const STATUS_BADGE_CLASS = "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow-sm hover:bg-primary/90";
+const BAND_BADGE_CLASS = "inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-[10px]";
+const CONTACT_LINK_CLASS = "h-auto justify-start p-0 text-sm font-normal whitespace-nowrap";
+const COLUMN_COUNT = 10;
+const LOADING_ROWS = [
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+];
 
 const DRIVER_STATUSES: DriverStatus[] = [
   "active",
@@ -84,13 +100,6 @@ const statusColors: Record<string, string> = {
   available: "bg-success/20 text-success border-success/30",
   offline: "bg-muted text-muted-foreground border-muted",
   suspended: "bg-destructive/20 text-destructive border-destructive/30",
-};
-
-const commIcons: Record<string, React.ReactNode> = {
-  whatsapp: <WhatsAppIcon className="h-4 w-4 text-success" />,
-  sms: <MessageSquare className="h-4 w-4 text-primary" />,
-  email: <Mail className="h-4 w-4 text-warning" />,
-  voice: <Phone className="h-4 w-4 text-accent" />,
 };
 
 type DriverRow = Omit<FleetDriver, "status" | "communicationPreference"> & {
@@ -500,179 +509,211 @@ export default function DriversPage() {
     ? localDrivers.find(d => d.id === selectedDriver.id) ?? toLocalDriver(selectedDriver)
     : null;
 
-  const columns: ColumnDef<DriverRow>[] = [
+  const driverPage = useClientPage(filteredDrivers);
+  const callBusy = [
+    "connecting",
+    "ringing",
+    "connected",
+  ].includes(callStatus);
+
+  const kpiTiles = [
     {
-      accessorKey: "name",
-      header: "Driver",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-medium text-primary-foreground">
-            {getInitials(row.original.name)}
+      label: "All Drivers",
+      value: stats.total,
+      icon: Users,
+      chip: "bg-primary/10",
+      iconClass: "text-primary",
+      valueClass: "",
+    },
+    {
+      label: "Active",
+      value: stats.onJob,
+      icon: UserCheck,
+      chip: "bg-success/10",
+      iconClass: "text-success",
+      valueClass: " text-success",
+    },
+    {
+      label: "Available",
+      value: stats.available,
+      icon: Clock,
+      chip: "bg-warning/10",
+      iconClass: "text-warning",
+      valueClass: " text-warning",
+    },
+    {
+      label: "Offline",
+      value: stats.offline,
+      icon: UserX,
+      chip: "bg-muted",
+      iconClass: "text-muted-foreground",
+      valueClass: " text-muted-foreground",
+    },
+    {
+      label: "Suspended",
+      value: stats.suspended,
+      icon: Ban,
+      chip: "bg-destructive/10",
+      iconClass: "text-destructive",
+      valueClass: " text-destructive",
+    },
+  ];
+
+  const formDriver = selectedDriver
+    ? {
+        name: selectedDriver.name,
+        phone: selectedDriver.phone,
+        email: selectedDriver.email,
+        licenseNumber: selectedDriver.licenseNumber,
+        licenseExpiry: selectedDriver.licenseExpiryDate,
+        status: selectedDriver.status,
+        communicationPreference: selectedDriver.communicationPreference,
+      }
+    : null;
+
+  const renderRow = (driver: DriverRow) => {
+    const remainingDays = daysUntil(driver.licenseExpiryDate);
+    const licenseWarning = remainingDays !== null && remainingDays <= 30;
+    const score = driverScore(driver);
+    const band = score === null ? null : getPerformanceBand(score);
+    return (
+      <TableRow
+        key={driver.id}
+        className="hover:bg-muted/50 border-border/50"
+      >
+        <TableCell>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
+              {getInitials(driver.name)}
+            </div>
+            <div>
+              <p className="font-medium">{driver.name || "—"}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-medium">{row.original.name || "Unnamed driver"}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "driverId",
-      header: "Driver ID",
-      cell: ({ row }) => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {row.original.id.slice(
-            0,
-            8,
-          )}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "phone",
-      header: "Contact",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="text-sm">
-          <p>{row.original.phone || "—"}</p>
-          {row.original.email && (
-            <p className="max-w-[150px] truncate text-muted-foreground">{row.original.email}</p>
-          )}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "licenseNumber",
-      header: "License",
-      enableSorting: false,
-      cell: ({ row }) => {
-        const remainingDays = daysUntil(row.original.licenseExpiryDate);
-        const warning = remainingDays !== null && remainingDays <= 30;
-        return (
+        </TableCell>
+        <TableCell>
+          {driver.phone
+            ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="link"
+                      className={CONTACT_LINK_CLASS}
+                      aria-label={`phone number: ${driver.phone}`}
+                    >
+                      {driver.phone}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem
+                      disabled={callBusy}
+                      onClick={() => void handleCall(driver)}
+                    >
+                      <Phone className="mr-2 h-4 w-4" />
+                      Call
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openSms(driver)}>
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Send SMS
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openWhatsApp(driver)}>
+                      <WhatsAppIcon className="mr-2 h-4 w-4" />
+                      WhatsApp
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )
+            : <span className="text-sm text-muted-foreground">—</span>}
+        </TableCell>
+        <TableCell>
+          {driver.email
+            ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="link"
+                      className={CONTACT_LINK_CLASS}
+                      aria-label={`email address: ${driver.email}`}
+                    >
+                      {driver.email}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem asChild>
+                      <a href={`mailto:${driver.email}`}>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Send Email
+                      </a>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )
+            : <span className="text-sm text-muted-foreground">—</span>}
+        </TableCell>
+        <TableCell>
           <div className="text-sm">
-            <p className="font-mono">{row.original.licenseNumber || "—"}</p>
-            <p className={warning ? "text-xs text-warning" : "text-xs text-muted-foreground"}>
-              {warning && <AlertTriangle className="mr-1 inline h-3 w-3" />}
-              Exp:
-              {" "}
-              {formatDate(row.original.licenseExpiryDate)}
+            <p className="font-mono">{driver.licenseNumber || "—"}</p>
+            <p className={licenseWarning ? "text-xs text-warning" : "text-xs text-muted-foreground"}>
+              {licenseWarning && <AlertTriangle className="h-3 w-3 inline mr-1" />}
+              {`Exp: ${formatWithPattern(
+                driver.licenseExpiryDate,
+                "MMM dd, yyyy",
+              )}`}
             </p>
           </div>
-        );
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      enableSorting: false,
-      cell: ({ row }) => row.original.status
-        ? (
-            <Badge className={statusColors[row.original.status]}>
-              {row.original.status.replace(
-                "_",
-                " ",
+        </TableCell>
+        <TableCell>
+          {driver.status
+            ? (
+                <div className={`${STATUS_BADGE_CLASS} ${statusColors[driver.status]}`}>
+                  {driver.status.replace(
+                    "_",
+                    " ",
+                  )}
+                </div>
+              )
+            : <span className="text-sm text-muted-foreground">—</span>}
+        </TableCell>
+        <TableCell>
+          {score === null || !band
+            ? <span className="text-sm text-muted-foreground">—</span>
+            : (
+                <div className="min-w-[120px] space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold">{`${Math.round(score)}%`}</span>
+                    <div className={`${BAND_BADGE_CLASS} ${band.className}`}>
+                      {band.label}
+                    </div>
+                  </div>
+                  <Progress
+                    value={score}
+                    className="h-1.5"
+                  />
+                </div>
               )}
-            </Badge>
-          )
-        : <span className="text-muted-foreground">Unknown</span>,
-    },
-    {
-      id: "performance",
-      header: "Performance Score",
-      cell: ({ row }) => {
-        const score = driverScore(row.original);
-        if (score === null)
-          return <span className="text-sm text-muted-foreground">Unscored</span>;
-        const band = getPerformanceBand(score);
-        return (
-          <div className="min-w-[120px] space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-semibold">
-                {Math.round(score)}
-                %
-              </span>
-              <Badge
-                variant="outline"
-                className={`text-[10px] ${band.className}`}
-              >
-                {band.label}
-              </Badge>
-            </div>
-            <Progress
-              value={score}
-              className="h-1.5"
-            />
-          </div>
-        );
-      },
-    },
-    {
-      id: "trips",
-      header: "Trips",
-      cell: ({ row }) => row.original.trips ?? 0,
-    },
-    {
-      accessorKey: "communicationPreference",
-      header: "Preferred",
-      enableSorting: false,
-      cell: ({ row }) => {
-        const channel = row.original.communicationPreference;
-        return (
-          <div className="flex items-center gap-2">
-            {channel && commIcons[channel]}
-            <span className="text-sm capitalize">{channel || "Unknown"}</span>
-          </div>
-        );
-      },
-    },
-    {
-      id: "actions",
-      header: "",
-      meta: { className: "w-[180px]" },
-      cell: ({ row }) => {
-        const driver = row.original;
-        const callBusy = [
-          "connecting",
-          "ringing",
-          "connected",
-        ].includes(callStatus);
-        return (
-          <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-success hover:bg-success/10 hover:text-success"
-              title="WhatsApp"
-              onClick={() => openWhatsApp(driver)}
-            >
-              <WhatsAppIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-primary hover:bg-primary/10 hover:text-primary"
-              title="SMS"
-              onClick={() => openSms(driver)}
-            >
-              <MessageSquare className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-accent hover:bg-accent/10 hover:text-accent"
-              title="Call"
-              disabled={callBusy}
-              onClick={() => void handleCall(driver)}
-            >
-              <Phone className="h-4 w-4" />
-            </Button>
+        </TableCell>
+        <TableCell>{driver.trips ?? "—"}</TableCell>
+        <TableCell>
+          {/* ponytail: FleetDriver has no group field and packages/api has no driver-group endpoint */}
+          <span className="text-sm text-foreground">-</span>
+        </TableCell>
+        <TableCell>
+          <span className="text-sm text-muted-foreground">
+            {formatWithPattern(
+              driver.createdAt,
+              "MMM dd, yyyy HH:mm",
+            )}
+          </span>
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-1 justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  title="More"
+                  aria-label="More"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -706,385 +747,357 @@ export default function DriversPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        );
-      },
-    },
-  ];
+        </TableCell>
+      </TableRow>
+    );
+  };
 
-  const formDriver = selectedDriver
-    ? {
-        name: selectedDriver.name,
-        phone: selectedDriver.phone,
-        email: selectedDriver.email,
-        licenseNumber: selectedDriver.licenseNumber,
-        licenseExpiry: selectedDriver.licenseExpiryDate,
-        status: selectedDriver.status,
-        communicationPreference: selectedDriver.communicationPreference,
-      }
-    : null;
+  const renderBody = () => {
+    if (driversQuery.isLoading) {
+      return LOADING_ROWS.map(key => (
+        <TableRow
+          key={key}
+          className="hover:bg-muted/50 border-border/50"
+        >
+          <TableCell colSpan={COLUMN_COUNT}>
+            <Skeleton className="h-4 w-full" />
+          </TableCell>
+        </TableRow>
+      ));
+    }
+    if (driversQuery.isError) {
+      return (
+        <TableRow className="hover:bg-muted/50 border-border/50">
+          <TableCell
+            colSpan={COLUMN_COUNT}
+            className="text-center text-muted-foreground"
+          >
+            {driversQuery.error?.message || "Unable to load drivers."}
+            {" "}
+            <Button
+              variant="link"
+              className="h-auto p-0"
+              onClick={() => void driversQuery.refetch()}
+            >
+              Try again
+            </Button>
+          </TableCell>
+        </TableRow>
+      );
+    }
+    if (filteredDrivers.length === 0) {
+      return (
+        <TableRow className="hover:bg-muted/50 border-border/50">
+          <TableCell
+            colSpan={COLUMN_COUNT}
+            className="text-center text-muted-foreground"
+          >
+            {hasActiveFilters ? "No drivers match your filters." : "No drivers have been added yet."}
+          </TableCell>
+        </TableRow>
+      );
+    }
+    return driverPage.pageRows.map(renderRow);
+  };
 
   return (
-    <div className="space-y-6">
-      {/* ponytail: the reference uses md:grid-cols-5; the fixed w-64 sidebar leaves too
-          little room for that below xl, so step 1 → 2 → 3 → 5 instead. */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <Users className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-muted-foreground">All Drivers</p>
-                <p className="mt-1 text-2xl font-bold">{stats.total}</p>
-                {/* TRU-FE-3 § 2 — allowance bar; every driver holds a seat until deletion. */}
-                {summary?.allowance && (
-                  summary.allowance.unlimited || summary.allowance.limit === null
-                    ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {summary.allowance.used}
-                          {" / Unlimited"}
-                        </p>
-                      )
-                    : (
-                        <div className="mt-1 space-y-1">
-                          <p className="text-[11px] text-muted-foreground">
-                            {summary.allowance.used}
-                            {" / "}
-                            {summary.allowance.limit}
-                            {" used · "}
-                            {summary.allowance.usedPercent ?? 0}
-                            %
-                          </p>
-                          <div className="h-1.5 w-full rounded-full bg-secondary">
-                            <div
-                              className={cn(
-                                "h-full rounded-full",
-                                (summary.allowance.usedPercent ?? 0) >= 90
-                                  ? "bg-destructive"
-                                  : (summary.allowance.usedPercent ?? 0) >= 75 ? "bg-warning" : "bg-primary",
-                              )}
-                              style={{
-                                width: `${Math.min(
-                                  summary.allowance.usedPercent ?? 0,
-                                  100,
-                                )}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10">
-                <UserCheck className="h-5 w-5 text-success" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-muted-foreground">Active</p>
-                <p className="mt-1 text-2xl font-bold text-success">{stats.onJob}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning/10">
-                <Clock className="h-5 w-5 text-warning" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-muted-foreground">Available</p>
-                <p className="mt-1 text-2xl font-bold text-warning">{stats.available}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <UserX className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-muted-foreground">Offline</p>
-                <p className="mt-1 text-2xl font-bold text-muted-foreground">{stats.offline}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10">
-                <Ban className="h-5 w-5 text-destructive" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-muted-foreground">Suspended</p>
-                <p className="mt-1 text-2xl font-bold text-destructive">{stats.suspended}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <>
+      <PageHeader
+        title="Drivers"
+        description="Driver records, contact details, and driving activity."
+        align="start"
+        actions={(
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkUploadOpen(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Drivers
+            </Button>
+            <Button
+              variant="gradient"
+              onClick={openAdd}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Driver
+            </Button>
+          </>
+        )}
+      />
 
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setIsBulkUploadOpen(true)}
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          Upload Driver
-        </Button>
-        <Button
-          variant="gradient"
-          onClick={openAdd}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Driver
-        </Button>
-      </div>
-
-      <Card className="border-border/50 bg-card/50">
-        <CardHeader className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Drivers (
-                {filteredDrivers.length}
-                )
-              </CardTitle>
-              <CardDescription>Roster of drivers with licence, status and performance details.</CardDescription>
+      <div className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-0 space-y-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-5">
+          {kpiTiles.map(tile => (
+            <div
+              key={tile.label}
+              className={TILE_CLASS}
+            >
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${tile.chip} shrink-0`}>
+                    <tile.icon className={`h-5 w-5 ${tile.iconClass}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-muted-foreground">{tile.label}</p>
+                    <p className={`text-xl font-bold mt-1${tile.valueClass} truncate`}>{tile.value}</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <ExportButton
-              filename="drivers"
-              rows={filteredDrivers}
-              disabled={driversQuery.isLoading}
-              columns={[
-                {
-                  header: "Name", accessor: "name",
-                },
-                {
-                  header: "Phone", accessor: "phone",
-                },
-                {
-                  header: "Email", accessor: row => row.email ?? "",
-                },
-                {
-                  header: "License", accessor: "licenseNumber",
-                },
-                {
-                  header: "License Expiry", accessor: row => row.licenseExpiryDate ?? "",
-                },
-                {
-                  header: "Status", accessor: row => row.status ?? "",
-                },
-                {
-                  header: "Performance Score", accessor: row => formatScore(driverScore(row)),
-                },
-                {
-                  header: "Total Trips", accessor: row => row.trips ?? 0,
-                },
-                {
-                  header: "Preferred Channel", accessor: row => row.communicationPreference ?? "",
-                },
-              ]}
-            />
-          </div>
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="relative min-w-0 flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                aria-label="Search drivers"
-                placeholder="Search by name, phone, or license..."
-                value={searchQuery}
-                onChange={event => setSearchQuery(event.target.value)}
-                className="border-border/50 bg-card/50 pl-10"
+          ))}
+        </div>
+
+        <div className={`${TILE_CLASS} bg-card/50 border-border/50`}>
+          <div className="flex flex-col p-6 pb-4 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  {`Drivers (${filteredDrivers.length})`}
+                </h3>
+                <p className="text-sm text-muted-foreground">Roster of drivers with licence, status and performance details.</p>
+              </div>
+              <ExportButton
+                filename="drivers"
+                rows={filteredDrivers}
+                disabled={driversQuery.isLoading}
+                columns={[
+                  {
+                    header: "Name", accessor: "name",
+                  },
+                  {
+                    header: "Phone", accessor: "phone",
+                  },
+                  {
+                    header: "Email", accessor: row => row.email ?? "",
+                  },
+                  {
+                    header: "License", accessor: "licenseNumber",
+                  },
+                  {
+                    header: "License Expiry", accessor: row => row.licenseExpiryDate ?? "",
+                  },
+                  {
+                    header: "Status", accessor: row => row.status ?? "",
+                  },
+                  {
+                    header: "Performance Score", accessor: row => formatScore(driverScore(row)),
+                  },
+                  {
+                    header: "Trips", accessor: row => row.trips ?? "",
+                  },
+                  {
+                    header: "Date Added", accessor: row => row.createdAt ?? "",
+                  },
+                ]}
               />
             </div>
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-            >
-              <SelectTrigger
-                aria-label="Filter by status"
-                className="w-full border-border/50 bg-card/50 sm:w-[170px]"
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  aria-label="Search drivers"
+                  placeholder="Search by name, phone, or license..."
+                  value={searchQuery}
+                  onChange={event => setSearchQuery(event.target.value)}
+                  className="pl-10 bg-card/50 border-border/50"
+                />
+              </div>
+              <Select
+                value={statusFilter}
+                onValueChange={setStatusFilter}
               >
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {DRIVER_STATUSES.map(status => (
-                  <SelectItem
-                    key={status}
-                    value={status}
-                    className="capitalize"
-                  >
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="relative border-border/50 bg-card/50"
+                <SelectTrigger
+                  aria-label="Filter by status"
+                  className="h-10 rounded-xl px-3.5 w-full sm:w-[170px] bg-card/50 border-border/50"
                 >
-                  <SlidersHorizontal className="mr-2 h-4 w-4" />
-                  Filter
-                  {activeFilterCount > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="ml-2 h-5 px-1.5 text-[10px]"
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {DRIVER_STATUSES.map(status => (
+                    <SelectItem
+                      key={status}
+                      value={status}
+                      className="capitalize"
                     >
-                      {activeFilterCount}
-                    </Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="w-72 space-y-4"
-              >
-                <Label className="text-sm font-semibold">Only show drivers by...</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="drv-flt-rating"
-                      checked={ratingFilter !== "all"}
-                      onCheckedChange={(c) => {
-                        if (!c)
-                          setRatingFilter("all");
-                      }}
-                    />
-                    <Label
-                      htmlFor="drv-flt-rating"
-                      className="cursor-pointer text-xs"
-                    >
-                      Performance score
-                    </Label>
-                  </div>
-                  <Select
-                    value={ratingFilter}
-                    onValueChange={setRatingFilter}
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="bg-card/50 border-border/50 relative"
                   >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="All Scores" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Scores</SelectItem>
-                      <SelectItem value="5">85% and above</SelectItem>
-                      <SelectItem value="4">70% – 84%</SelectItem>
-                      <SelectItem value="3">50% – 69%</SelectItem>
-                      <SelectItem value="below3">Below 50%</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="drv-flt-trips"
-                      checked={tripsFilter !== "all"}
-                      onCheckedChange={(c) => {
-                        if (!c)
-                          setTripsFilter("all");
-                      }}
-                    />
-                    <Label
-                      htmlFor="drv-flt-trips"
-                      className="cursor-pointer text-xs"
-                    >
-                      Trips completed
-                    </Label>
-                  </div>
-                  <Select
-                    value={tripsFilter}
-                    onValueChange={setTripsFilter}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="All Trip Counts" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Trip Counts</SelectItem>
-                      <SelectItem value="100plus">100+ trips</SelectItem>
-                      <SelectItem value="50to99">50 – 99 trips</SelectItem>
-                      <SelectItem value="10to49">10 – 49 trips</SelectItem>
-                      <SelectItem value="below10">Below 10 trips</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="drv-flt-comm"
-                      checked={commFilter !== "all"}
-                      onCheckedChange={(c) => {
-                        if (!c)
-                          setCommFilter("all");
-                      }}
-                    />
-                    <Label
-                      htmlFor="drv-flt-comm"
-                      className="cursor-pointer text-xs"
-                    >
-                      Preferred channel
-                    </Label>
-                  </div>
-                  <Select
-                    value={commFilter}
-                    onValueChange={setCommFilter}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="All Channels" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Channels</SelectItem>
-                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                      <SelectItem value="sms">SMS</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="voice">Voice</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    setCommFilter("all");
-                    setRatingFilter("all");
-                    setTripsFilter("all");
-                  }}
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filter
+                    {activeFilterCount > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-2 h-5 px-1.5 text-[10px]"
+                      >
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  className="w-72 space-y-4"
                 >
-                  Reset Filters
-                </Button>
-              </PopoverContent>
-            </Popover>
+                  <Label className="text-sm font-semibold">Only show drivers by...</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="drv-flt-rating"
+                        checked={ratingFilter !== "all"}
+                        onCheckedChange={(c) => {
+                          if (!c)
+                            setRatingFilter("all");
+                        }}
+                      />
+                      <Label
+                        htmlFor="drv-flt-rating"
+                        className="cursor-pointer text-xs"
+                      >
+                        Performance score
+                      </Label>
+                    </div>
+                    <Select
+                      value={ratingFilter}
+                      onValueChange={setRatingFilter}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="All Scores" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Scores</SelectItem>
+                        <SelectItem value="5">85% and above</SelectItem>
+                        <SelectItem value="4">70% – 84%</SelectItem>
+                        <SelectItem value="3">50% – 69%</SelectItem>
+                        <SelectItem value="below3">Below 50%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="drv-flt-trips"
+                        checked={tripsFilter !== "all"}
+                        onCheckedChange={(c) => {
+                          if (!c)
+                            setTripsFilter("all");
+                        }}
+                      />
+                      <Label
+                        htmlFor="drv-flt-trips"
+                        className="cursor-pointer text-xs"
+                      >
+                        Trips completed
+                      </Label>
+                    </div>
+                    <Select
+                      value={tripsFilter}
+                      onValueChange={setTripsFilter}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="All Trip Counts" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Trip Counts</SelectItem>
+                        <SelectItem value="100plus">100+ trips</SelectItem>
+                        <SelectItem value="50to99">50 – 99 trips</SelectItem>
+                        <SelectItem value="10to49">10 – 49 trips</SelectItem>
+                        <SelectItem value="below10">Below 10 trips</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="drv-flt-comm"
+                        checked={commFilter !== "all"}
+                        onCheckedChange={(c) => {
+                          if (!c)
+                            setCommFilter("all");
+                        }}
+                      />
+                      <Label
+                        htmlFor="drv-flt-comm"
+                        className="cursor-pointer text-xs"
+                      >
+                        Preferred channel
+                      </Label>
+                    </div>
+                    <Select
+                      value={commFilter}
+                      onValueChange={setCommFilter}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="All Channels" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Channels</SelectItem>
+                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                        <SelectItem value="sms">SMS</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="voice">Voice</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setCommFilter("all");
+                      setRatingFilter("all");
+                      setTripsFilter("all");
+                    }}
+                  >
+                    Reset Filters
+                  </Button>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="overflow-x-auto p-0">
-          <DataTable
-            columns={columns}
-            data={filteredDrivers}
-            isLoading={driversQuery.isLoading}
-            isError={driversQuery.isError}
-            errorMessage={driversQuery.error?.message || "Unable to load drivers."}
-            onRetry={() => void driversQuery.refetch()}
-            hasActiveFilters={hasActiveFilters}
-            emptyState="No drivers have been added yet."
-            filteredEmptyState="No drivers match your filters."
-          />
-        </CardContent>
-      </Card>
+          <div className="p-0">
+            <Table className="min-w-[1680px] [&_th]:px-6 [&_td]:px-6 [&_td]:py-5 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+              <TableHeader>
+                <TableRow className="border-border/50 hover:bg-transparent">
+                  <TableHead>Driver</TableHead>
+                  <TableHead>Phone Number</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>License</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Performance Score</TableHead>
+                  <TableHead>Trips</TableHead>
+                  <TableHead>Group</TableHead>
+                  <TableHead>Date Added</TableHead>
+                  <TableHead className="w-[60px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>{renderBody()}</TableBody>
+            </Table>
+            {driverPage.total > driverPage.pageSize && (
+              <div className="px-6 pb-4">
+                <FleetTablePager
+                  page={driverPage.page}
+                  pageSize={driverPage.pageSize}
+                  total={driverPage.total}
+                  onPageChange={driverPage.setPage}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <DriverFormDialog
         open={isFormOpen}
@@ -1208,6 +1221,6 @@ export default function DriversPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

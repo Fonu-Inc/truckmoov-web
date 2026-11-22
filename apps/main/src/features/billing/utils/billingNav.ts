@@ -10,6 +10,8 @@ export type BillingTab = {
   icon?: ElementType;
   /** Roles that may see this tab. Empty means every role reaching /subscription. */
   hasPermissions: UserRole[];
+  /** The design app's page-heading description for this tab (the tab label is the title). */
+  description: string;
 };
 
 /**
@@ -21,16 +23,16 @@ export type BillingTab = {
  */
 export const BILLING_TABS: BillingTab[] = [
   {
-    to: "/subscription", label: "Overview", hasPermissions: [],
+    to: "/subscription", label: "Overview", hasPermissions: [], description: "An overview of your billing, active license plan, and related analytics.",
   },
   {
-    to: "/subscription/quotations", label: "Quotations", hasPermissions: [],
+    to: "/subscription/quotations", label: "Quotations", hasPermissions: [], description: "View and manage your quotations.",
   },
   {
-    to: "/subscription/invoices", label: "Invoices", hasPermissions: [],
+    to: "/subscription/invoices", label: "Invoices", hasPermissions: [], description: "View and manage your billing invoices and payment status.",
   },
   {
-    to: "/subscription/payments", label: "Payments", hasPermissions: [],
+    to: "/subscription/payments", label: "Payments", hasPermissions: [], description: "Track and review your payment history and transactions.",
   },
 ];
 

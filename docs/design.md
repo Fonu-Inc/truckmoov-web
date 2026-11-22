@@ -52,6 +52,17 @@ Two consequences worth knowing:
   own body.
 - `fullWidth: true` on an entry drops the `p-6` on `<main>` for full-bleed pages like
   `/map`. It replaced a per-page prop.
+- `manualTitle: true` blanks the top-bar title for pages that render the design app's
+  in-page heading (`h1` + description, actions on the right) themselves. The `label`
+  still names the sidebar link. Admin pages render `<PageTitle>`; main pages render
+  `<PageHeader>` (`apps/main/src/shared/components/layout/PageHeader.tsx`) — today `/`,
+  `/jobs`, and every `/fleet`, `/drivers` and `/reports` tab (those layouts keep only
+  the tab bar; each tab page renders its own heading and actions under it).
+  `/subscription` and `/settings` render the heading in the layout instead (tab
+  label + `description` from `billingNav.ts` / `settingsNav.ts`), since none of
+  their tabs has heading actions.
+  `/analytics` is `manualTitle` too, but its tabs copy the design app's per-tab
+  headings as-is (a small `h3`, an `h2`, a `PageHeader`, or a status bar).
 
 Visibility is `hasPermission`: a role sees an entry iff its key is listed, and
 `getEntriesForRole` drops groups whose children are all filtered out.
@@ -525,8 +536,11 @@ nothing to show. Every component that calls an endpoint renders one of the two.
 
 `DataTable` turns sorting off by itself whenever `pagination` is an object
 (server-paged): sorting one page of a server-paged list is misleading. Older
-pages that build the `pagination` object by hand (the billing tabs, installer
-jobs) are fine as they are.
+pages that build the `pagination` object by hand (installer jobs) are fine as
+they are. The `/subscription` billing tabs are a parity port and hand-roll the
+design app's `<Table>` instead (row states via `TableStateRows` in
+`features/billing/utils/billingShared.tsx`, server-paged with
+`FleetTablePager`, which stays hidden until a list outgrows one page).
 
 ### Card grids step at `sm` / `xl`, not `md`
 
@@ -631,6 +645,9 @@ without being asked. What was removed, so it can be found again in git history:
   (`/settings/ai-usage`); admin's **AI** (`/settings/ai-providers`).
 - Drivers: the **Fatigue AI** tab (`/drivers/fatigue-ai`), the dispatcher's
   Fatigue AI tab, and the Fatigue tab / score in `DriverDetailsSheet`.
+  Exception: `/drivers/fatigue` ("Driver Fatigue Detection") is back because the
+  design app has it — it reads the recorded fatigue summary
+  (`useDriverFatigueSummary`) and has no AI generate/recommend actions.
 - Dispatch: `JobMatchingDialog` is manual-only (pick vehicle + driver);
   `AssignResourceDialog` lost its "AI Recommendation" ranking view.
 - Waybills: no "Extract with AI" and no AI confidence badges — fields are

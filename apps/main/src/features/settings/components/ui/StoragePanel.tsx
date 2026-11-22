@@ -1,326 +1,167 @@
-import type { ColumnDef } from "@tanstack/react-table";
-import { useQuery } from "@tanstack/react-query";
 import {
-  AlertTriangle, Archive, Database, HardDrive, TrendingUp,
+  Archive, Database, FileText, HardDrive, ImageIcon, Info, Receipt, ShieldCheck, TrendingUp,
 } from "lucide-react";
-import { useNavigate } from "react-router";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import { Progress } from "@/components/shadcn/progress";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { useAuthStore } from "@/features/auth/stores/authStore";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 
-function fmt(bytes: number) {
-  if (bytes < 1024)
-    return `${bytes} B`;
-  const KB = bytes / 1024;
-  if (KB < 1024)
-    return `${KB.toFixed(1)} KB`;
-  const MB = KB / 1024;
-  if (MB < 1024)
-    return `${MB.toFixed(1)} MB`;
-  return `${(MB / 1024).toFixed(2)} GB`;
-}
+/**
+ * The file categories the design app breaks storage down by. These are row
+ * labels, not data: no endpoint reports storage usage yet, so every figure on
+ * this tab renders "-" until one does.
+ */
+const STORAGE_CATEGORIES = [
+  {
+    key: "pod", label: "Proof of Delivery (POD) photos", icon: ImageIcon,
+  },
+  {
+    key: "waybill", label: "Waybill scans & extractions", icon: Receipt,
+  },
+  {
+    key: "compliance", label: "Compliance documents", icon: ShieldCheck,
+  },
+  {
+    key: "kyc", label: "KYC documents", icon: FileText,
+  },
+];
 
-type StorageRow = {
-  key: string; label: string; icon: React.ElementType; count: number; bytes: number;
-};
+const STORAGE_TIPS = [
+  {
+    title: "Archive completed jobs", body: "Older POD photos can be archived from the Jobs page once jobs are settled.",
+  },
+  {
+    title: "Re-scan waybills at lower DPI", body: "Capture waybills via the mobile app — server-side compression keeps quality high.",
+  },
+  {
+    title: "Remove expired compliance docs", body: "Outdated insurance, FRSC and roadworthiness scans can be safely deleted after renewal.",
+  },
+  {
+    title: "Upgrade your plan", body: "Higher tiers include significantly more storage and longer retention windows.",
+  },
+];
 
-function storageColumns(usedBytes: number): ColumnDef<StorageRow>[] {
-  return [
-    {
-      accessorKey: "label",
-      header: "Category",
-      cell: ({ row }) => {
-        const Icon = row.original.icon;
-        return (
-          <div className="flex items-center gap-2">
-            <Icon className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{row.original.label}</span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "count",
-      header: "Files",
-      meta: { className: "text-right tabular-nums" },
-      cell: ({ row }) => row.original.count.toLocaleString(),
-    },
-    {
-      accessorKey: "bytes",
-      header: "Size",
-      meta: { className: "text-right tabular-nums" },
-      cell: ({ row }) => fmt(row.original.bytes),
-    },
-    {
-      id: "share",
-      header: "Share",
-      enableSorting: false,
-      meta: { className: "w-[35%]" },
-      cell: ({ row }) => {
-        const share = usedBytes > 0 ? (row.original.bytes / usedBytes) * 100 : 0;
-        return (
-          <div className="flex items-center gap-2">
-            <Progress
-              value={share}
-              className="h-2"
-            />
-            <span className="text-xs text-muted-foreground w-10 text-right tabular-nums">
-              {share.toFixed(0)}
-              %
-            </span>
-          </div>
-        );
-      },
-    },
-  ];
-}
+const KPI_TILES = [
+  {
+    label: "Storage used", icon: HardDrive, chip: "bg-primary/10", iconClass: "text-primary", footer: "of - on current plan", footerClass: "",
+  },
+  {
+    label: "Remaining", icon: Database, chip: "bg-success/10", iconClass: "text-success", footer: "-", footerClass: "",
+  },
+  {
+    label: "Total files", icon: Archive, chip: "bg-warning/10", iconClass: "text-warning", footer: "Across PODs, waybills, KYC & compliance", footerClass: "",
+  },
+  {
+    label: "Largest category", icon: TrendingUp, chip: "bg-accent/10", iconClass: "text-accent-foreground", footer: "-", footerClass: " truncate",
+  },
+];
 
 export function StoragePanel() {
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const tenantId = user?.tenantId;
-  const currentPlan = null;
-  const usedBytes = 0;
-  const usedGB = 0;
-  const limitGB: number | null = null;
-  const percentage = 0;
-  const usageLoading = false;
-
-  const {
-    data: breakdown, isLoading: breakdownLoading,
-  } = useQuery({
-    queryKey: [
-      "storage-breakdown",
-      tenantId,
-    ],
-    enabled: !!tenantId,
-    queryFn: async () => {
-      return null;
-    },
-  });
-
-  const isLoading = usageLoading || breakdownLoading;
-  const near = limitGB !== null && percentage >= 80 && percentage < 100;
-  const over = limitGB !== null && percentage >= 100;
-  const remainingGB = limitGB !== null
-    ? Math.max(
-        0,
-        limitGB - usedGB,
-      )
-    : null;
-  const totalFiles = (breakdown?.rows ?? []).reduce(
-    (s, r) => s + r.count,
-    0,
-  );
-  const largestCat = (breakdown?.rows ?? []).slice().sort((a, b) => b.bytes - a.bytes)[0];
-
   return (
     <div className="space-y-6">
-      {/* KPI strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
-            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-              <HardDrive className="h-5 w-5 text-primary" />
+        {KPI_TILES.map(tile => (
+          <div
+            key={tile.label}
+            className="rounded-2xl surface-sleek text-card-foreground"
+          >
+            <div className="p-6 flex flex-row items-center gap-3 space-y-0 pb-2">
+              <div className={`h-10 w-10 rounded-md ${tile.chip} flex items-center justify-center shrink-0`}>
+                <tile.icon className={`h-5 w-5 ${tile.iconClass}`} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-xs">{tile.label}</p>
+                <h3 className="font-semibold tracking-tight text-foreground font-display text-xl truncate">-</h3>
+              </div>
             </div>
-            <div className="min-w-0">
-              <CardDescription className="text-xs">Storage used</CardDescription>
-              <CardTitle className="text-xl truncate">
-                {isLoading ? <Skeleton className="h-6 w-24" /> : usedGB < 0.01 ? fmt(usedBytes) : `${usedGB.toFixed(2)} GB`}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground">
-            of
-            {" "}
-            {limitGB !== null ? `${limitGB} GB` : "unlimited"}
-            {" "}
-            on
-            {" "}
-            {currentPlan?.name ?? "current plan"}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
-            <div className="h-10 w-10 rounded-md bg-success/10 flex items-center justify-center shrink-0">
-              <Database className="h-5 w-5 text-success" />
-            </div>
-            <div className="min-w-0">
-              <CardDescription className="text-xs">Remaining</CardDescription>
-              <CardTitle className="text-xl truncate">
-                {isLoading ? <Skeleton className="h-6 w-24" /> : remainingGB === null ? "∞" : `${remainingGB.toFixed(2)} GB`}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground">
-            {limitGB !== null ? `${(100 - percentage).toFixed(0)}% capacity free` : "No plan limit"}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
-            <div className="h-10 w-10 rounded-md bg-warning/10 flex items-center justify-center shrink-0">
-              <Archive className="h-5 w-5 text-warning" />
-            </div>
-            <div className="min-w-0">
-              <CardDescription className="text-xs">Total files</CardDescription>
-              <CardTitle className="text-xl truncate">
-                {isLoading ? <Skeleton className="h-6 w-16" /> : totalFiles.toLocaleString()}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground">
-            Across PODs, waybills, KYC & compliance
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
-            <div className="h-10 w-10 rounded-md bg-accent/10 flex items-center justify-center shrink-0">
-              <TrendingUp className="h-5 w-5 text-accent-foreground" />
-            </div>
-            <div className="min-w-0">
-              <CardDescription className="text-xs">Largest category</CardDescription>
-              <CardTitle className="text-xl truncate">
-                {isLoading ? <Skeleton className="h-6 w-24" /> : largestCat ? fmt(largestCat.bytes) : "—"}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground truncate">
-            {largestCat?.label ?? "—"}
-          </CardContent>
-        </Card>
+            <div className={`p-6 pt-0 text-xs text-muted-foreground${tile.footerClass}`}>{tile.footer}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Usage progress card */}
-      <Card>
-        <CardHeader>
+      <div className="rounded-2xl surface-sleek text-card-foreground">
+        <div className="flex flex-col space-y-1.5 p-6 pb-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <CardTitle>Plan storage</CardTitle>
-              <CardDescription>
-                Your
-                {" "}
-                {currentPlan?.name ?? "current"}
-                {" "}
-                plan includes
-                {" "}
-                {limitGB !== null ? `${limitGB} GB` : "unlimited"}
-                {" "}
-                of storage.
-              </CardDescription>
+              <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display">Plan storage</h3>
+              <p className="text-sm text-muted-foreground">Your current plan includes - of storage.</p>
             </div>
-            {currentPlan?.name && (
-              <Badge
-                variant="secondary"
-                className="uppercase tracking-wide text-[10px]"
-              >
-                {currentPlan.name}
-              </Badge>
-            )}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isLoading
-            ? (
-                <Skeleton className="h-20 w-full" />
-              )
-            : (
-                <>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <div className="text-3xl font-semibold leading-none">
-                        {usedGB < 0.01 ? fmt(usedBytes) : `${usedGB.toFixed(2)} GB`}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        used of
-                        {" "}
-                        {limitGB !== null ? `${limitGB} GB` : "unlimited"}
-                      </div>
-                    </div>
-                    {limitGB !== null && (
-                      <div className={`text-2xl font-semibold ${over ? "text-destructive" : near ? "text-warning" : "text-muted-foreground"}`}>
-                        {percentage.toFixed(0)}
-                        %
-                      </div>
-                    )}
-                  </div>
-                  {limitGB !== null && (
-                    <Progress
-                      value={percentage}
-                      className={over ? "[&>div]:bg-destructive" : near ? "[&>div]:bg-warning" : ""}
-                    />
-                  )}
-                  {(near || over) && (
-                    <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/5 p-3 text-sm">
-                      <AlertTriangle className="h-4 w-4 mt-0.5 text-warning shrink-0" />
-                      <div className="flex-1">
-                        {over
-                          ? `You're over the ${limitGB} GB storage limit on ${currentPlan?.name}. New uploads may be blocked — upgrade to add capacity.`
-                          : `You've used ${percentage.toFixed(0)}% of your ${limitGB} GB storage. Consider upgrading soon to avoid disruption.`}
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => navigate("/settings/subscription")}
-                      >
-                        Upgrade plan
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-        </CardContent>
-      </Card>
+        </div>
+        <div className="p-6 pt-0 space-y-4">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-3xl font-semibold leading-none">-</div>
+              <div className="text-xs text-muted-foreground mt-1">used of -</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle>What's taking space</CardTitle>
-          <CardDescription>Storage broken down by file category</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            columns={storageColumns(usedBytes)}
-            data={breakdown?.rows ?? []}
-            isLoading={isLoading}
-            emptyState="No storage usage recorded yet."
-          />
-        </CardContent>
-      </Card>
+      <div className="rounded-2xl surface-sleek text-card-foreground">
+        <div className="flex flex-col space-y-1.5 p-6 pb-4">
+          <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display">What's taking space</h3>
+          <p className="text-sm text-muted-foreground">Storage broken down by file category</p>
+        </div>
+        <div className="p-6 pt-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Files</TableHead>
+                <TableHead className="text-right">Size</TableHead>
+                <TableHead className="w-[35%]">Share</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {STORAGE_CATEGORIES.map(category => (
+                <TableRow key={category.key}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <category.icon className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{category.label}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">-</TableCell>
+                  <TableCell className="text-right tabular-nums">-</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Progress
+                        value={0}
+                        className="h-2"
+                      />
+                      <span className="text-xs text-muted-foreground w-10 text-right tabular-nums">-</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
-      {/* Tips */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Ways to free up space</CardTitle>
-          <CardDescription>Reduce storage before upgrading your plan</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-md border p-3 text-sm">
-            <div className="font-medium mb-1">Archive completed jobs</div>
-            <p className="text-xs text-muted-foreground">Older POD photos can be archived from the Jobs page once jobs are settled.</p>
-          </div>
-          <div className="rounded-md border p-3 text-sm">
-            <div className="font-medium mb-1">Re-scan waybills at lower DPI</div>
-            <p className="text-xs text-muted-foreground">Capture waybills via the mobile app — server-side compression keeps quality high.</p>
-          </div>
-          <div className="rounded-md border p-3 text-sm">
-            <div className="font-medium mb-1">Remove expired compliance docs</div>
-            <p className="text-xs text-muted-foreground">Outdated insurance, FRSC and roadworthiness scans can be safely deleted after renewal.</p>
-          </div>
-          <div className="rounded-md border p-3 text-sm">
-            <div className="font-medium mb-1">Upgrade your plan</div>
-            <p className="text-xs text-muted-foreground">Higher tiers include significantly more storage and longer retention windows.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-2xl surface-sleek text-card-foreground">
+        <div className="flex flex-col space-y-1.5 p-6 pb-4">
+          <h3 className="font-semibold tracking-tight text-foreground font-display text-base">Ways to free up space</h3>
+          <p className="text-sm text-muted-foreground">Reduce storage before upgrading your plan</p>
+        </div>
+        <div className="p-6 pt-0 grid gap-3 sm:grid-cols-2">
+          {STORAGE_TIPS.map(tip => (
+            <div
+              key={tip.title}
+              className="flex items-start gap-3 rounded-md border p-3 text-sm"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Info className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium mb-1">{tip.title}</div>
+                <p className="text-xs text-muted-foreground">{tip.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

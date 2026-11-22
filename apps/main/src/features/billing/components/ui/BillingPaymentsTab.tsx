@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   TenantPayment, TenantPaymentStatus,
 } from "@truckmoov/api/billing";
@@ -6,14 +5,10 @@ import {
   useTenantPayment, useTenantPayments,
 } from "@truckmoov/api/billing";
 import {
-  Download, Eye, Search,
+  Download, Search,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
@@ -21,16 +16,18 @@ import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
+import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
 import { receiptDocument } from "../../utils/billingDocuments";
 import {
   downloadDocument, formatDate, formatLongDate, methodLabel, ngn, PAYMENT_STATUS_LABEL, toneForStatus,
 } from "../../utils/billingHelpers";
 import {
-  DialogSkeleton, LabelValue, PlanSummary, SectionError, StatusPill,
+  BILLING_CARD, BILLING_CARD_SUBTITLE, BILLING_CARD_TITLE, BILLING_PAGE_SIZE, DialogSkeleton, LabelValue, PlanSummary, RowActions, SectionError, StatusPill, TableStateRows,
 } from "../../utils/billingShared";
-
-const PAGE_SIZE = 20;
 
 function PaymentStatus({ status }: { status: TenantPaymentStatus }) {
   return (
@@ -147,102 +144,7 @@ function PaymentDialog({
   );
 }
 
-function paymentColumns(onView: (p: TenantPayment) => void): ColumnDef<TenantPayment>[] {
-  return [
-    {
-      accessorKey: "reference",
-      header: "Reference",
-      enableSorting: false,
-      meta: { className: "font-medium whitespace-nowrap" },
-    },
-    {
-      id: "date",
-      header: "Date",
-      enableSorting: false,
-      meta: { className: "whitespace-nowrap" },
-      cell: ({ row }) => formatDate(row.original.date),
-    },
-    {
-      id: "plan",
-      header: "M2M plan",
-      enableSorting: false,
-      meta: { className: "whitespace-nowrap" },
-      cell: ({ row }) => (row.original.planName
-        ? (
-            <StatusPill
-              label={row.original.planName}
-              tone="info"
-            />
-          )
-        : <span className="text-muted-foreground">—</span>),
-    },
-    {
-      id: "devices",
-      header: "Devices",
-      enableSorting: false,
-      meta: { className: "text-right tabular-nums" },
-      cell: ({ row }) => row.original.deviceCount || "—",
-    },
-    {
-      id: "amount",
-      header: "Amount paid",
-      enableSorting: false,
-      meta: { className: "text-right tabular-nums" },
-      cell: ({ row }) => ngn(row.original.amountNgn),
-    },
-    {
-      id: "method",
-      header: "Method",
-      enableSorting: false,
-      cell: ({ row }) => methodLabel(row.original.method),
-    },
-    {
-      id: "related",
-      header: "Related invoice / quotation",
-      enableSorting: false,
-      meta: { className: "text-muted-foreground" },
-      cell: ({ row }) => [
-        row.original.invoiceNumber,
-        row.original.quotationNumber,
-      ].filter(Boolean).join(" · ") || "—",
-    },
-    {
-      id: "status",
-      header: "Status",
-      enableSorting: false,
-      cell: ({ row }) => <PaymentStatus status={row.original.status} />,
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      enableSorting: false,
-      meta: { className: "text-right whitespace-nowrap" },
-      cell: ({ row }) => (
-        <>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onView(row.original)}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            {" "}
-            View
-          </Button>
-          {row.original.status === "successful" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => receipt(row.original)}
-              aria-label="Download document"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          )}
-        </>
-      ),
-    },
-  ];
-}
+const COLUMNS = 9;
 
 export function BillingPaymentsTab() {
   const [
@@ -268,19 +170,19 @@ export function BillingPaymentsTab() {
       status: status === "all" ? undefined : status as TenantPaymentStatus,
       q: q || undefined,
       page,
-      pageSize: PAGE_SIZE,
+      pageSize: BILLING_PAGE_SIZE,
     },
   });
   const list = payments.data?.data;
+  const rows = list?.items ?? [];
 
   return (
-    <Card className="surface-sleek rounded-2xl">
-      <CardHeader className="space-y-4">
+    <div className={BILLING_CARD}>
+      <div className="flex flex-col p-6 pb-4 space-y-4">
         <div>
-          <CardTitle>Payments History</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Every payment made by your organization and what it settled.
-          </p>
+          <h3 className={BILLING_CARD_TITLE}>Payments History</h3>
+          <p className="text-sm text-muted-foreground mt-1.5">{BILLING_CARD_SUBTITLE}</p>
+          <p className="text-sm text-muted-foreground mt-1">Every payment made by your organization and what it settled.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -302,7 +204,7 @@ export function BillingPaymentsTab() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-full sm:w-48 rounded-xl">
+            <SelectTrigger className="h-10 px-3.5 w-full sm:w-48 rounded-xl">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -321,31 +223,84 @@ export function BillingPaymentsTab() {
             </SelectContent>
           </Select>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-6 pt-0">
         <div className="rounded-2xl border border-border overflow-x-auto">
-          <DataTable
-            columns={paymentColumns(setSelected)}
-            data={list?.items ?? []}
-            isLoading={payments.isLoading}
-            isError={payments.isError}
-            errorMessage="Could not load your payments."
-            onRetry={() => payments.refetch()}
-            emptyState="No payments match your filters."
-            pagination={list && {
-              page,
-              pageSize: PAGE_SIZE,
-              total: list.total,
-              onPageChange: setPage,
-            }}
-          />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Reference</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>M2M plan</TableHead>
+                <TableHead className="text-right">Devices</TableHead>
+                <TableHead className="text-right">Amount paid</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead>Related invoice / quotation</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableStateRows
+                colSpan={COLUMNS}
+                isLoading={payments.isLoading}
+                isError={payments.isError}
+                errorMessage="Could not load your payments."
+                onRetry={() => payments.refetch()}
+                isEmpty={rows.length === 0}
+                emptyMessage="No payments match your filters."
+              />
+              {!payments.isLoading && !payments.isError && rows.map(p => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium whitespace-nowrap">{p.reference}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDate(p.date)}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {p.planName
+                      ? (
+                          <StatusPill
+                            label={p.planName}
+                            tone="info"
+                          />
+                        )
+                      : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{p.deviceCount || "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{ngn(p.amountNgn)}</TableCell>
+                  <TableCell>{methodLabel(p.method)}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {[
+                      p.invoiceNumber,
+                      p.quotationNumber,
+                    ].filter(Boolean).join(" · ") || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <PaymentStatus status={p.status} />
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <RowActions
+                      onView={() => setSelected(p)}
+                      onDownload={p.status === "successful" ? () => receipt(p) : undefined}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
-      </CardContent>
+        {list && (
+          <FleetTablePager
+            page={page}
+            pageSize={BILLING_PAGE_SIZE}
+            total={list.total}
+            onPageChange={setPage}
+          />
+        )}
+      </div>
 
       <PaymentDialog
         payment={selected}
         onClose={() => setSelected(null)}
       />
-    </Card>
+    </div>
   );
 }

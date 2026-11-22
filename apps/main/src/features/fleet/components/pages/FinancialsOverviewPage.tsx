@@ -12,15 +12,14 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
+  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import {
   ChartContainer,
   ChartTooltip,
@@ -34,10 +33,12 @@ import {
   normalizeTier,
   ORDERED_PROFITABILITY_TIERS,
   periodToMonths,
-
   TIER_COLORS,
   TIER_LABELS,
 } from "@/features/fleet/utils/fleetFinancials";
+
+// The design app's period Select trigger (h-10 rounded-xl px-3.5), over the shared base.
+const PERIOD_TRIGGER_CLASS = "h-10 rounded-xl px-3.5 w-[150px]";
 
 export default function FinancialsOverviewPage() {
   const {
@@ -77,23 +78,11 @@ export default function FinancialsOverviewPage() {
   const profitabilityDistributionData = ORDERED_PROFITABILITY_TIERS.map(tier => ({
     tier,
     name: TIER_LABELS[tier],
-    label: `${TIER_LABELS[tier]}: ${tierDistribution[tier] ?? 0}`,
     value: tierDistribution[tier] ?? 0,
     fill: TIER_COLORS[tier],
   })).filter(entry => entry.value > 0);
 
-  const profitabilityDistributionTotal = profitabilityDistributionData.reduce(
-    (total, item) => total + item.value,
-    0,
-  );
-  const hasProfitabilityDistribution = profitabilityDistributionTotal > 0;
-
-  const profitabilityDistributionLegend = ORDERED_PROFITABILITY_TIERS.map(tier => ({
-    tier,
-    name: TIER_LABELS[tier],
-    value: tierDistribution[tier] ?? 0,
-    fill: TIER_COLORS[tier],
-  }));
+  const hasProfitabilityDistribution = profitabilityDistributionData.length > 0;
 
   // Cost breakdown for bar chart
   const costBreakdown = costBreakdownData.reduce(
@@ -128,8 +117,11 @@ export default function FinancialsOverviewPage() {
     },
   ];
 
-  const costChartDataVisible = costChartData.filter(item => item.value > 0);
-  const hasCostBreakdownData = costChartDataVisible.length > 0;
+  const costTotal = costChartData.reduce(
+    (total, item) => total + item.value,
+    0,
+  );
+  const hasCostBreakdownData = costTotal > 0;
 
   const chartConfig = {
     fuel: {
@@ -150,27 +142,23 @@ export default function FinancialsOverviewPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profitability Distribution */}
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div className="rounded-2xl surface-sleek text-card-foreground">
+          <div className="p-6 pb-4 flex flex-row items-start justify-between gap-4 space-y-0">
             <div>
-              <CardTitle className="text-lg">Profitability Distribution</CardTitle>
-              <CardDescription>
-                Vehicle count by profitability tier ·
-                {" "}
-                {formatPeriodLabel(profitabilityPeriod)}
-              </CardDescription>
+              <h3 className="font-semibold tracking-tight text-foreground font-display text-lg">Profitability Distribution</h3>
+              <p className="text-sm text-muted-foreground">Vehicle count by profitability tier</p>
             </div>
             <PeriodFilter
               value={profitabilityPeriod}
               onChange={setProfitabilityPeriod}
               variant="short"
-              className="w-[150px]"
+              className={PERIOD_TRIGGER_CLASS}
             />
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6 pt-0">
             {isProfitabilityFetching
               ? (
                   <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
@@ -179,88 +167,67 @@ export default function FinancialsOverviewPage() {
                 )
               : hasProfitabilityDistribution
                 ? (
-                    <div className="space-y-3">
-                      <ChartContainer
-                        config={chartConfig}
-                        className="h-[250px]"
+                    <ChartContainer
+                      config={chartConfig}
+                      className="h-[250px]"
+                    >
+                      <ResponsiveContainer
+                        width="100%"
+                        height="100%"
                       >
-                        <ResponsiveContainer
-                          width="100%"
-                          height="100%"
-                        >
-                          <PieChart>
-                            <Pie
-                              data={profitabilityDistributionData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={86}
-                              paddingAngle={4}
-                              dataKey="value"
-                              nameKey="name"
-                              label={({ payload }) => payload.label}
-                            >
-                              {profitabilityDistributionData.map(entry => (
-                                <Cell
-                                  key={entry.tier}
-                                  fill={entry.fill}
-                                />
-                              ))}
-                            </Pie>
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </ChartContainer>
-                      <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
-                        {profitabilityDistributionLegend.map(entry => (
-                          <div
-                            key={entry.tier}
-                            className="flex items-center gap-2"
+                        <PieChart>
+                          <Pie
+                            data={profitabilityDistributionData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={2}
+                            dataKey="value"
+                            nameKey="name"
+                            label={({
+                              name, value,
+                            }) => `${name}: ${value}`}
                           >
-                            <span
-                              className="h-3 w-3 rounded-sm"
-                              style={{ backgroundColor: entry.fill }}
-                            />
-                            <span>{entry.name}</span>
-                            <span className="text-muted-foreground">{entry.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                            {profitabilityDistributionData.map(entry => (
+                              <Cell
+                                key={entry.tier}
+                                fill={entry.fill}
+                              />
+                            ))}
+                          </Pie>
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
                   )
                 : (
                     <div className="flex h-[250px] flex-col items-center justify-center text-center">
                       <BarChart3 className="mb-3 h-10 w-10 text-muted-foreground/40" />
                       <p className="text-sm font-medium">No profitability data</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        No vehicles were returned for
-                        {" "}
-                        {formatPeriodLabel(profitabilityPeriod).toLowerCase()}
-                        .
+                        {`No vehicles were returned for ${formatPeriodLabel(profitabilityPeriod).toLowerCase()}.`}
                       </p>
                     </div>
                   )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Cost Breakdown */}
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div className="rounded-2xl surface-sleek text-card-foreground">
+          <div className="p-6 pb-4 flex flex-row items-start justify-between gap-4 space-y-0">
             <div>
-              <CardTitle className="text-lg">Cost Breakdown</CardTitle>
-              <CardDescription>
-                Total costs by category ·
-                {" "}
-                {formatPeriodLabel(costBreakdownPeriod)}
-              </CardDescription>
+              <h3 className="font-semibold tracking-tight text-foreground font-display text-lg">Cost Breakdown</h3>
+              <p className="text-sm text-muted-foreground">Total costs by category</p>
             </div>
             <PeriodFilter
               value={costBreakdownPeriod}
               onChange={setCostBreakdownPeriod}
               variant="short"
-              className="w-[150px]"
+              className={PERIOD_TRIGGER_CLASS}
             />
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6 pt-0">
             {isCostBreakdownFetching
               ? (
                   <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
@@ -278,8 +245,11 @@ export default function FinancialsOverviewPage() {
                         height="100%"
                       >
                         <BarChart
-                          data={costChartDataVisible}
+                          data={costChartData}
                           layout="vertical"
+                          margin={{
+                            top: 0, right: 120, left: 0, bottom: 0,
+                          }}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis
@@ -298,7 +268,20 @@ export default function FinancialsOverviewPage() {
                           <Bar
                             dataKey="value"
                             radius={4}
-                          />
+                          >
+                            {costChartData.map(entry => (
+                              <Cell
+                                key={entry.name}
+                                fill={entry.fill}
+                              />
+                            ))}
+                            <LabelList
+                              dataKey="value"
+                              position="right"
+                              className="fill-foreground text-[10px]"
+                              formatter={(value: number) => `${format(value)} · ${((value / costTotal) * 100).toFixed(1)}%`}
+                            />
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </ChartContainer>
@@ -308,15 +291,12 @@ export default function FinancialsOverviewPage() {
                       <BarChart3 className="mb-3 h-10 w-10 text-muted-foreground/40" />
                       <p className="text-sm font-medium">No cost data</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        No vehicle costs were returned for
-                        {" "}
-                        {formatPeriodLabel(costBreakdownPeriod).toLowerCase()}
-                        .
+                        {`No vehicle costs were returned for ${formatPeriodLabel(costBreakdownPeriod).toLowerCase()}.`}
                       </p>
                     </div>
                   )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

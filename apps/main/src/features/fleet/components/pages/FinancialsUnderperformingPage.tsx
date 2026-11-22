@@ -9,9 +9,6 @@ import {
   useMemo, useState,
 } from "react";
 import { useOutletContext } from "react-router";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PeriodFilter } from "@/features/fleet/components/ui/PeriodFilter";
 import {
@@ -57,26 +54,26 @@ export default function FinancialsUnderperformingPage() {
   );
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+    <div className="mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <div className="rounded-2xl surface-sleek text-card-foreground">
+        <div className="p-6 pb-4 flex flex-row items-start justify-between gap-2 space-y-0">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
+            <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
               Underperforming Assets
-            </CardTitle>
-            <CardDescription>
+            </h3>
+            <p className="text-sm text-muted-foreground">
               Vehicles with marginal or negative profitability requiring attention
-            </CardDescription>
+            </p>
           </div>
           <PeriodFilter
             value={underperformingPeriod}
             onChange={setUnderperformingPeriod}
             variant="short"
-            className="w-[140px] h-8"
+            className="rounded-xl px-3.5 w-[140px] h-8"
           />
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-6 pt-0">
           {underperformingVehicles.length === 0
             ? (
                 <div className="text-center py-8">
@@ -97,37 +94,24 @@ export default function FinancialsUnderperformingPage() {
                       model: "",
                     };
                     return (
-                      <Card
+                      <div
                         key={item.vehicle_id}
-                        className="border-warning/30"
+                        className="rounded-2xl surface-sleek text-card-foreground border-amber-200 dark:border-amber-800"
                       >
-                        <CardContent className="pt-4">
+                        <div className="p-6 pt-4">
                           <div className="flex items-start justify-between">
                             <div>
                               <h4 className="font-semibold flex items-center gap-2">
                                 {vehicleName}
                                 {getTierBadge(item.profitability?.tier || "marginal")}
                               </h4>
-                              <p className="text-sm text-muted-foreground">
-                                {vehicle?.make}
-                                {" "}
-                                {vehicle?.model}
-                                {" "}
-                                •
-                                {" "}
-                                {item.revenue?.jobs_completed || 0}
-                                {" "}
-                                jobs
-                              </p>
+                              <p className="text-sm text-muted-foreground">{`${vehicle.make} ${vehicle.model} • ${item.revenue?.jobs_completed || 0} jobs`}</p>
                             </div>
                             <div className="text-right">
-                              <p className={`text-lg font-bold ${(item.profitability?.net_profit || 0) >= 0 ? "text-warning" : "text-destructive"}`}>
+                              <p className={`text-lg font-bold ${(item.profitability?.net_profit || 0) >= 0 ? "text-amber-600" : "text-red-600"}`}>
                                 {format(item.profitability?.net_profit || 0)}
                               </p>
-                              <p className="text-xs text-muted-foreground">
-                                {(item.profitability?.margin_percent || 0).toFixed(1)}
-                                % margin
-                              </p>
+                              <p className="text-xs text-muted-foreground">{`${(item.profitability?.margin_percent || 0).toFixed(1)}% margin`}</p>
                             </div>
                           </div>
                           <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
@@ -141,21 +125,17 @@ export default function FinancialsUnderperformingPage() {
                             </div>
                             <div>
                               <span className="text-muted-foreground">KM Driven:</span>
-                              <span className="ml-2 font-medium">
-                                {(item.revenue?.total_km || 0).toFixed(0)}
-                                {" "}
-                                km
-                              </span>
+                              <span className="ml-2 font-medium">{`${(item.revenue?.total_km || 0).toFixed(0)} km`}</span>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
               )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

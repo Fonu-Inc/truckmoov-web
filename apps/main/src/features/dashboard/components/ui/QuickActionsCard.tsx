@@ -4,8 +4,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
+  SLEEK_TITLE, SleekCard,
+} from "./DashboardListCard";
 
 type QuickAction = {
   title: string;
@@ -35,12 +35,12 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 export function QuickActionsCard() {
   return (
-    <Card className="rounded-2xl surface-sleek">
-      <CardHeader className="space-y-1.5 p-6 pb-3">
-        <CardTitle className="font-display text-base">Quick Actions</CardTitle>
-        <CardDescription>Jump into common workflows</CardDescription>
-      </CardHeader>
-      <CardContent className="p-6 pt-0">
+    <SleekCard>
+      <div className="flex flex-col space-y-1.5 p-6 pb-3">
+        <h3 className={SLEEK_TITLE}>Quick Actions</h3>
+        <p className="text-sm text-muted-foreground">Jump into common workflows</p>
+      </div>
+      <div className="p-6 pt-0">
         <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 snap-x snap-mandatory [scrollbar-width:thin]">
           {QUICK_ACTIONS.map(action => (
             <Link
@@ -65,7 +65,7 @@ export function QuickActionsCard() {
             </Link>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </SleekCard>
   );
 }
