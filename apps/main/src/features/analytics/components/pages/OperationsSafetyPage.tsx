@@ -1,7 +1,6 @@
 import type {
   FleetAnalyticsDriverScore,
   FleetAnalyticsEvent,
-  FleetAnalyticsFuelLevel,
   FleetAnalyticsPeriodDays,
 } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +9,6 @@ import {
   useFleetAnalyticsDriverScores,
   useFleetAnalyticsEvents,
   useFleetAnalyticsFleetStatus,
-  useFleetAnalyticsFuelLevels,
   useFleetAnalyticsJobPipeline,
   useFleetAnalyticsSummary,
   useVehicleSafetyRadar,
@@ -20,7 +18,6 @@ import {
   AlertTriangle,
   Calendar,
   DollarSign,
-  Fuel,
   Loader2,
   Minus,
   Package,
@@ -57,7 +54,6 @@ import {
   YAxis,
 } from "recharts";
 import { Button } from "@/components/shadcn/button";
-import { Progress } from "@/components/shadcn/progress";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
@@ -93,7 +89,6 @@ const CARD = "rounded-2xl surface-sleek text-card-foreground border-border/50";
 const CARD_HEADER = "p-6 pb-2 flex flex-row items-start justify-between gap-2 space-y-0";
 const CARD_TITLE = "tracking-tight text-foreground font-display text-sm font-medium";
 
-const EMPTY_FUEL_LEVELS: FleetAnalyticsFuelLevel[] = [];
 const EMPTY_DRIVER_SCORES: FleetAnalyticsDriverScore[] = [];
 const EMPTY_EVENTS: FleetAnalyticsEvent[] = [];
 
@@ -377,10 +372,6 @@ export default function OperationsSafetyPage() {
     setJobPipelinePeriod,
   ] = useState<FleetAnalyticsPeriodDays>(30);
   const [
-    fuelLevelsPeriod,
-    setFuelLevelsPeriod,
-  ] = useState<FleetAnalyticsPeriodDays>(30);
-  const [
     safetyRadarPeriod,
     setSafetyRadarPeriod,
   ] = useState<FleetAnalyticsPeriodDays>(30);
@@ -399,7 +390,6 @@ export default function OperationsSafetyPage() {
   const safetyScoresQuery = useFleetAnalyticsDriverScores({ params: { period_days: 30 } });
   const fleetStatusQuery = useFleetAnalyticsFleetStatus({ params: { period_days: fleetStatusPeriod } });
   const jobPipelineQuery = useFleetAnalyticsJobPipeline({ params: { period_days: jobPipelinePeriod } });
-  const fuelLevelsQuery = useFleetAnalyticsFuelLevels({ params: { period_days: fuelLevelsPeriod } });
   const safetyRadarQuery = useVehicleSafetyRadar({ params: { period_days: safetyRadarPeriod } });
   const driverScoresQuery = useFleetAnalyticsDriverScores({
     params: {
@@ -418,7 +408,6 @@ export default function OperationsSafetyPage() {
     safetyScoresQuery,
     fleetStatusQuery,
     jobPipelineQuery,
-    fuelLevelsQuery,
     safetyRadarQuery,
     driverScoresQuery,
     eventsQuery,
@@ -438,11 +427,6 @@ export default function OperationsSafetyPage() {
   const summary = summaryQuery.data?.data;
   const fleetStatus = fleetStatusQuery.data?.data;
   const jobPipeline = jobPipelineQuery.data?.data;
-  // Typed as `{ vehicles }`; older deployments sent a bare array, so accept both.
-  const fuelPayload: unknown = fuelLevelsQuery.data?.data;
-  const fuelLevels = Array.isArray(fuelPayload)
-    ? fuelPayload as FleetAnalyticsFuelLevel[]
-    : fuelLevelsQuery.data?.data?.vehicles ?? EMPTY_FUEL_LEVELS;
   const safetyScores = Array.isArray(safetyScoresQuery.data?.data) ? safetyScoresQuery.data.data : EMPTY_DRIVER_SCORES;
   const driverScores = Array.isArray(driverScoresQuery.data?.data) ? driverScoresQuery.data.data : EMPTY_DRIVER_SCORES;
   const events = Array.isArray(eventsQuery.data?.data) ? eventsQuery.data.data : EMPTY_EVENTS;
@@ -515,15 +499,6 @@ export default function OperationsSafetyPage() {
     },
     [jobPipeline],
   );
-
-  const availableFuelLevels = fuelLevels
-    .filter(vehicle => vehicle.fuelLevelPercent !== null)
-    .map(vehicle => ({
-      vehicleId: vehicle.vehicleId,
-      plateNumber: vehicle.plateNumber,
-      level: clampScore(vehicle.fuelLevelPercent ?? 0),
-    }))
-    .sort((a, b) => a.level - b.level);
 
   const safetyRadar = safetyRadarQuery.data?.data;
   // Every axis null = nothing scored in the period; show the empty state, not a 0-score chart.
@@ -642,7 +617,7 @@ export default function OperationsSafetyPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={CARD}>
           <CardHeading
             title="Fleet Status"
@@ -747,46 +722,6 @@ export default function OperationsSafetyPage() {
           </div>
         </div>
 
-        <div className={CARD}>
-          <CardHeading
-            icon={Fuel}
-            title="Fuel Levels"
-            description="Current tank readings"
-            period={fuelLevelsPeriod}
-            onPeriodChange={setFuelLevelsPeriod}
-          />
-          <div className="p-6 pt-0">
-            <CardBody
-              query={fuelLevelsQuery}
-              isEmpty={availableFuelLevels.length === 0}
-              emptyMessage="Fuel telemetry is not available for these vehicles."
-            >
-              <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
-                {availableFuelLevels.map(vehicle => (
-                  <div
-                    key={vehicle.vehicleId}
-                    className="space-y-1"
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono text-muted-foreground">{vehicle.plateNumber}</span>
-                      <span className={cn(
-                        "font-medium",
-                        vehicle.level > 50 ? "text-success" : vehicle.level > 25 ? "text-warning" : "text-destructive",
-                      )}
-                      >
-                        {`${vehicle.level}%`}
-                      </span>
-                    </div>
-                    <Progress
-                      value={vehicle.level}
-                      className="h-1.5"
-                    />
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
