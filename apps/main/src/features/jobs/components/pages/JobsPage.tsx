@@ -164,9 +164,6 @@ const JOB_STATUS_OPTIONS: Record<JobsTab, Array<{
   ],
 };
 
-/** Shown where no endpoint returns the data yet (vehicles carry no fleet name). */
-const NO_ENDPOINT = "-";
-
 /** "Dec 11, 2024 8:30 AM" — the design app's start date and deadline cells. */
 function formatScheduleDate(iso?: string | null) {
   if (!iso)
@@ -981,13 +978,10 @@ export default function JobsPage() {
                               <TableCell>
                                 {job.assigned_vehicle_id && plate
                                   ? (
-                                      <div className="space-y-0.5">
-                                        <p className="text-sm font-medium flex items-center gap-1.5">
-                                          <Truck className="h-3.5 w-3.5 text-primary" />
-                                          {plate}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground break-words">{`Fleet: ${NO_ENDPOINT}`}</p>
-                                      </div>
+                                      <p className="text-sm font-medium flex items-center gap-1.5">
+                                        <Truck className="h-3.5 w-3.5 text-primary" />
+                                        {plate}
+                                      </p>
                                     )
                                   : job.assigned_vehicle_id
                                     ? <span className="text-xs text-muted-foreground">—</span>
