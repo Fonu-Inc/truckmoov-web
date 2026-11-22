@@ -16,11 +16,11 @@ import type {
   OnboardingApplicationVehicle,
   OnboardingVehicleInput,
 } from "@truckmoov/api/auth";
-import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
+
+import { MAX_DOCUMENT_BYTES } from "@truckmoov/app-core/apply/applyTypes";
 
 import * as z from "zod";
-
-import { MAX_DOCUMENT_BYTES } from "@/features/get-started/utils/applyTypes";
 
 export const IDENTIFICATION_TYPES = [
   {
@@ -178,6 +178,15 @@ const businessDetailsBase = z.object({
     "",
   ]).default(""),
   identificationNumber: z.string().trim().default(""),
+  /** Telecom Master (enterprise only, as in Settings). */
+  telecomMasterNumberType: z.enum([
+    "existing",
+    "new",
+    "",
+  ]).default(""),
+  telecomMasterMsisdn: z.string().trim().default(""),
+  /** The number Verify last accepted (234XXXXXXXXXX); Continue needs it to match telecomMasterMsisdn. */
+  telecomMasterVerifiedMsisdn: z.string().default(""),
 });
 
 export const businessDetailsSchema = businessDetailsBase;
@@ -191,12 +200,49 @@ export type BusinessDetailsValues = z.infer<typeof businessDetailsBase>;
  */
 export function businessDetailsSchemaFor(customerType: "enterprise" | "owner_operator") {
   if (customerType === "enterprise") {
-    return businessDetailsBase.extend({ contactName: personNameField });
+    return businessDetailsBase.extend({ contactName: personNameField }).superRefine(refineTelecomMaster);
   }
   return businessDetailsBase.extend({
     firstName: nameWordField,
     lastName: nameWordField,
   });
+}
+
+/** MTN Nigeria prefixes, the server's list (telecom-master.use-cases normalizeMtnNumber). */
+const MTN_PREFIX = /^(?:703|704|706|707|803|806|810|813|814|816|903|906|913|916)/;
+
+/** "0803 123 4567" -> "2348031234567", the form the server stores; null unless an MTN number. */
+export function toMtnMsisdn(value: string) {
+  const phone = normalizePhone(value);
+  return NG_PHONE.test(phone) && MTN_PREFIX.test(phone.slice(4)) ? phone.slice(1) : null;
+}
+
+function refineTelecomMaster(values: BusinessDetailsValues, ctx: z.RefinementCtx) {
+  if (!values.telecomMasterNumberType) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["telecomMasterNumberType"],
+      message: "Choose a Telecom Master number option to continue.",
+    });
+    return;
+  }
+  if (values.telecomMasterNumberType !== "existing")
+    return;
+  const msisdn = toMtnMsisdn(values.telecomMasterMsisdn);
+  const issue = !values.telecomMasterMsisdn
+    ? "Enter your existing MTN number."
+    : !msisdn
+        ? "Enter a valid MTN mobile number."
+        : values.telecomMasterVerifiedMsisdn !== msisdn
+          ? "Verify your MTN number to continue."
+          : null;
+  if (issue) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["telecomMasterMsisdn"],
+      message: issue,
+    });
+  }
 }
 
 export const EMPTY_BUSINESS_DETAILS: BusinessDetailsValues = {
@@ -213,6 +259,9 @@ export const EMPTY_BUSINESS_DETAILS: BusinessDetailsValues = {
   taxIdentificationNumber: "",
   identificationType: "",
   identificationNumber: "",
+  telecomMasterNumberType: "",
+  telecomMasterMsisdn: "",
+  telecomMasterVerifiedMsisdn: "",
 };
 
 /** The whole details set — PATCH replaces, so create and update send the same body. */
@@ -240,8 +289,10 @@ export function detailsToPayload(
     m2mPlanCode: optional(m2mPlanCode),
     rcNumber: enterprise ? optional(values.rcNumber) : undefined,
     taxIdentificationNumber: enterprise ? optional(values.taxIdentificationNumber) : undefined,
-    identificationType: !enterprise && values.identificationType ? values.identificationType : undefined,
+    identificationType: values.identificationType || undefined,
     identificationNumber: enterprise ? undefined : optional(values.identificationNumber),
+    telecomMasterNumberType: enterprise ? values.telecomMasterNumberType || undefined : undefined,
+    telecomMasterMsisdn: enterprise && values.telecomMasterNumberType === "existing" ? toMtnMsisdn(values.telecomMasterMsisdn) ?? undefined : undefined,
   };
 }
 
@@ -265,6 +316,10 @@ export function applicationToDetails(app: OnboardingApplication): BusinessDetail
     taxIdentificationNumber: app.registry.taxIdentificationNumber ?? "",
     identificationType: app.registry.identificationType ?? "",
     identificationNumber: app.registry.identificationNumber ?? "",
+    telecomMasterNumberType: app.telecomMaster?.numberType ?? "",
+    telecomMasterMsisdn: app.telecomMaster?.msisdn ?? "",
+    // The server only stores a number that passed its MTN check.
+    telecomMasterVerifiedMsisdn: app.telecomMaster?.msisdn ?? "",
   };
 }
 
@@ -281,6 +336,8 @@ export const SERVER_FIELD_TO_FORM_FIELD: Record<string, keyof BusinessDetailsVal
   taxIdentificationNumber: "taxIdentificationNumber",
   identificationType: "identificationType",
   identificationNumber: "identificationNumber",
+  telecomMasterNumberType: "telecomMasterNumberType",
+  telecomMasterMsisdn: "telecomMasterMsisdn",
 };
 
 /** Which detail clashes with another live application — never who holds it. */
@@ -521,3 +578,5 @@ export function checkFile(file: File, pdfOnly = false): string | null {
 
   return null;
 }
+
+export { companyNameMatches } from "@truckmoov/app-core/apply/companyName";

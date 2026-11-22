@@ -1,12 +1,7 @@
 "use client";
 
-import type { DeviceFulfilment } from "@/features/get-started/utils/applyTypes";
-import {
-  Info,
-  Package,
-  Storefront,
-  Truck,
-} from "@phosphor-icons/react/dist/ssr";
+import type { DeviceFulfilment } from "@truckmoov/app-core/apply/applyTypes";
+import { Package } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
 import { getPickupLocationsQueryOptions } from "@truckmoov/api/auth";
 import { NIGERIAN_STATES } from "@/features/get-started/schemas/applySchemas";
@@ -14,44 +9,24 @@ import {
   CARD_CLASS,
   FIELD_CLASS,
   LABEL_CLASS,
+  LINK_CLASS,
 } from "@/features/get-started/utils/getStartedContent";
 import { cn } from "@/shared/utils";
 
-const METHODS = [
-  {
-    id: "pickup",
-    label: "Pickup",
-    description: "Collect from an MTN Connect Store",
-    icon: Storefront,
-  },
-  {
-    id: "delivery",
-    label: "Delivery",
-    description: "Delivered to your address",
-    icon: Truck,
-  },
-] as const;
-
 /**
- * How the requested devices reach the applicant (main app: DeviceFulfilmentCard). Owner
- * Operators always collect from a store, so their method is derived as "pickup" here (and
- * set in the draft store when the customer type is chosen); Enterprise customers pick
- * pickup or delivery.
- *
- * Pickup points come from `GET …/pickup-locations` (state → area → store); `store` holds the
- * location id. The choice is saved to the application when the fleet step continues.
+ * Device Pickup (main app: DeviceFulfilmentCard): both customer types collect their devices
+ * from an MTN Connect Store or Service Centre. Pickup points come from
+ * `GET …/pickup-locations` (state → area → store); `store` holds the location id.
  */
 export function DeviceFulfilmentCard({
   value,
   onChange,
-  isOwnerOperator,
 }: {
   value: DeviceFulfilment;
   onChange: (value: DeviceFulfilment) => void;
-  isOwnerOperator: boolean;
 }) {
-  const method = isOwnerOperator ? "pickup" : value.method;
-  const locations = useQuery(getPickupLocationsQueryOptions()).data?.data ?? [];
+  const locationsQuery = useQuery(getPickupLocationsQueryOptions());
+  const locations = locationsQuery.data?.data ?? [];
   const areas = [...new Set(locations.filter(location => location.state === value.state).map(location => location.area))];
   const stores = locations.filter(location => location.state === value.state && location.area === value.area);
 
@@ -62,195 +37,114 @@ export function DeviceFulfilmentCard({
           <Package className="size-5 text-brand-deep" />
         </span>
         <div className="min-w-0">
-          <h3 className="text-base leading-5 font-semibold text-heading">Device Fulfilment</h3>
+          <h3 className="text-base leading-5 font-semibold text-heading">Device Pickup</h3>
           <p className="mt-1 text-xs leading-[17px] text-muted-foreground">
-            {isOwnerOperator
-              ? "Requested devices are collected from an MTN Connect Store or Service Centre."
-              : "Choose how you would like to receive your requested devices."}
+            Requested devices are collected from an MTN Connect Store or Service Centre.
           </p>
         </div>
       </div>
 
-      {!isOwnerOperator && (
-        <div
-          role="radiogroup"
-          aria-label="Device fulfilment method"
-          className="mt-4 grid gap-[9px] sm:grid-cols-2"
-        >
-          {METHODS.map(option => (
-            <button
-              key={option.id}
-              type="button"
-              role="radio"
-              aria-checked={method === option.id}
-              onClick={() => onChange({
-                ...value,
-                method: option.id,
-              })}
-              className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-[15px] bg-background p-4 text-left transition-colors",
-                method === option.id
-                  ? "border-2 border-brand-bright"
-                  : "border-[0.5px] border-border hover:border-border-deep",
-              )}
-            >
-              <option.icon className="mt-0.5 size-4 shrink-0 text-brand-deep" />
-              <span>
-                <span className="block text-sm font-semibold text-heading">{option.label}</span>
-                <span className="block text-xs text-muted-foreground">{option.description}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {method === "pickup" && (
-        <div className="mt-5 space-y-[19px]">
-          <label className="block space-y-1.5">
-            <span className={LABEL_CLASS}>State</span>
-            <select
-              value={value.state}
-              onChange={event => onChange({
-                ...value,
-                state: event.target.value,
-                area: "",
-                store: "",
-              })}
-              className={cn(
-                FIELD_CLASS,
-                !value.state && "text-faint-foreground",
-              )}
-            >
-              <option value="">Select state</option>
-              {NIGERIAN_STATES.map(state => (
-                <option
-                  key={state}
-                  value={state}
-                  className="text-heading"
-                >
-                  {state}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block space-y-1.5">
-            <span className={LABEL_CLASS}>Area</span>
-            <select
-              value={value.area}
-              disabled={!value.state || areas.length === 0}
-              onChange={event => onChange({
-                ...value,
-                area: event.target.value,
-                store: "",
-              })}
-              className={cn(
-                FIELD_CLASS,
-                !value.area && "text-faint-foreground",
-              )}
-            >
-              <option value="">{value.state ? "Select area" : "Select a state first"}</option>
-              {areas.map(area => (
-                <option
-                  key={area}
-                  value={area}
-                  className="text-heading"
-                >
-                  {area}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block space-y-1.5">
-            <span className={LABEL_CLASS}>MTN Connect Store / Service Centre</span>
-            <select
-              value={value.store}
-              disabled={!value.area || stores.length === 0}
-              onChange={event => onChange({
-                ...value,
-                store: event.target.value,
-              })}
-              className={cn(
-                FIELD_CLASS,
-                !value.store && "text-faint-foreground",
-              )}
-            >
-              <option value="">{value.area ? "Select location" : "Select an area first"}</option>
-              {stores.map(store => (
-                <option
-                  key={store.id}
-                  value={store.id}
-                  className="text-heading"
-                >
-                  {store.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
-
-      {method === "delivery" && (
-        <div className="mt-5 space-y-[19px]">
-          <label className="block space-y-1.5">
-            <span className={LABEL_CLASS}>Street Address</span>
-            <input
-              placeholder="e.g. 14 Wharf Road"
-              value={value.deliveryStreet}
-              onChange={event => onChange({
-                ...value,
-                deliveryStreet: event.target.value,
-              })}
-              className={FIELD_CLASS}
-            />
-          </label>
-          <label className="block space-y-1.5">
-            <span className={LABEL_CLASS}>City</span>
-            <input
-              placeholder="e.g. Apapa"
-              value={value.deliveryCity}
-              onChange={event => onChange({
-                ...value,
-                deliveryCity: event.target.value,
-              })}
-              className={FIELD_CLASS}
-            />
-          </label>
-          <label className="block space-y-1.5">
-            <span className={LABEL_CLASS}>State</span>
-            <select
-              value={value.deliveryState}
-              onChange={event => onChange({
-                ...value,
-                deliveryState: event.target.value,
-              })}
-              className={cn(
-                FIELD_CLASS,
-                !value.deliveryState && "text-faint-foreground",
-              )}
-            >
-              <option value="">Select state</option>
-              {NIGERIAN_STATES.map(state => (
-                <option
-                  key={state}
-                  value={state}
-                  className="text-heading"
-                >
-                  {state}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p className="flex items-start gap-2 rounded-[15px] bg-surface px-4 py-3 text-xs leading-[17px] text-muted-foreground">
-            <Info className="mt-0.5 size-3.5 shrink-0 text-brand-deep" />
-            <span>
-              Delivery and fulfilment fees apply to delivered devices and vary with your delivery
-              location and the number of devices being delivered. Any applicable fee will be shown
-              to you as an additional charge on your quotation before you make payment, so there
-              are no surprise costs later.
+      <div className="mt-5 space-y-[19px]">
+        <label className="block space-y-1.5">
+          <span className={LABEL_CLASS}>State</span>
+          <select
+            value={value.state}
+            onChange={event => onChange({
+              ...value,
+              method: "pickup",
+              state: event.target.value,
+              area: "",
+              store: "",
+            })}
+            className={cn(
+              FIELD_CLASS,
+              !value.state && "text-faint-foreground",
+            )}
+          >
+            <option value="">Select state</option>
+            {NIGERIAN_STATES.map(state => (
+              <option
+                key={state}
+                value={state}
+                className="text-heading"
+              >
+                {state}
+              </option>
+            ))}
+          </select>
+          {value.state && !locationsQuery.isLoading && areas.length === 0 && (
+            <span className="block text-xs text-muted-foreground">No pickup points in this state yet. Choose another state.</span>
+          )}
+          {locationsQuery.isError && (
+            <span className="block text-xs text-destructive">
+              Pickup points couldn't be loaded.
+              {" "}
+              <button
+                type="button"
+                className={LINK_CLASS}
+                onClick={() => void locationsQuery.refetch()}
+              >
+                Try again
+              </button>
             </span>
-          </p>
-        </div>
-      )}
+          )}
+        </label>
+        <label className="block space-y-1.5">
+          <span className={LABEL_CLASS}>Area</span>
+          <select
+            value={value.area}
+            disabled={!value.state || areas.length === 0}
+            onChange={event => onChange({
+              ...value,
+              method: "pickup",
+              area: event.target.value,
+              store: "",
+            })}
+            className={cn(
+              FIELD_CLASS,
+              !value.area && "text-faint-foreground",
+            )}
+          >
+            <option value="">{value.state ? "Select area" : "Select a state first"}</option>
+            {areas.map(area => (
+              <option
+                key={area}
+                value={area}
+                className="text-heading"
+              >
+                {area}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block space-y-1.5">
+          <span className={LABEL_CLASS}>MTN Connect Store / Service Centre</span>
+          <select
+            value={value.store}
+            disabled={!value.area || stores.length === 0}
+            onChange={event => onChange({
+              ...value,
+              method: "pickup",
+              store: event.target.value,
+            })}
+            className={cn(
+              FIELD_CLASS,
+              !value.store && "text-faint-foreground",
+            )}
+          >
+            <option value="">{value.area ? "Select location" : "Select an area first"}</option>
+            {stores.map(store => (
+              <option
+                key={store.id}
+                value={store.id}
+                className="text-heading"
+              >
+                {store.isDemo ? `${store.name} (demo)` : store.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
     </section>
   );
 }

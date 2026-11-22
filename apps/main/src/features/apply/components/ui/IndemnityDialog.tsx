@@ -22,6 +22,7 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
+import { companyNameMatches } from "@/features/apply/utils/applySchemas";
 import { cn } from "@/lib/utils";
 
 type SignatureMode = "draw" | "upload";
@@ -45,12 +46,15 @@ export function IndemnityDialog({
   open,
   onOpenChange,
   initialName,
+  companyName,
   notice,
   onSigned,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialName?: string;
+  /** The application's organizationName; the typed name must match it (server enforces the same rule). */
+  companyName: string;
   /** Shown above the pad, e.g. after the agreement was superseded mid-signing. */
   notice?: string | null;
   onSigned: (result: SignedIndemnity) => void;
@@ -179,11 +183,18 @@ export function IndemnityDialog({
     });
   }
 
+  const nameMatches = companyNameMatches(
+    name,
+    companyName,
+  );
+
   async function confirmSignature() {
     if (!name.trim()) {
-      setError("Enter your full legal name to sign the form.");
+      setError("Enter your company name to sign the form.");
       return;
     }
+    if (!nameMatches)
+      return;
     const image = mode === "draw" ? await drawnImage() : (uploaded?.file ?? null);
     if (!image) {
       setError(mode === "draw" ? "Draw your signature to sign the form." : "Upload an image of your signature to sign the form.");
@@ -258,15 +269,19 @@ export function IndemnityDialog({
                 htmlFor="indemnity-signer-name"
                 className="text-sm"
               >
-                Full Legal Name
+                Company Name
                 <span className="ml-0.5 text-destructive">*</span>
               </Label>
               <Input
                 id="indemnity-signer-name"
                 value={name}
-                placeholder="Enter your full legal name"
+                placeholder="Enter your company name"
+                aria-invalid={Boolean(name.trim()) && !nameMatches}
                 onChange={event => setName(event.target.value)}
               />
+              {name.trim() && !nameMatches && (
+                <p className="text-sm text-destructive">{`This must match your company name: ${companyName}`}</p>
+              )}
             </div>
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -387,7 +402,7 @@ export function IndemnityDialog({
               </Button>
               <Button
                 type="button"
-                disabled={!agreement}
+                disabled={!agreement || !nameMatches}
                 onClick={() => void confirmSignature()}
               >
                 <Check className="mr-2 h-4 w-4" />

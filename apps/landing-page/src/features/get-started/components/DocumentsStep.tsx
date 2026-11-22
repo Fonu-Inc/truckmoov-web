@@ -6,7 +6,7 @@ import type {
   OnboardingIdentificationType,
 } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
-import type { RequiredDocument } from "@/features/get-started/utils/applyTypes";
+import type { RequiredDocument } from "@truckmoov/app-core/apply/applyTypes";
 import type { DraftFile } from "@/features/get-started/utils/draftFiles";
 import {
   useDeleteOnboardingApplicationDocument,
@@ -333,7 +333,7 @@ export function DocumentsStep({
       footer={(
         <DialogFooter
           onBack={onBack}
-          continueLabel="Review Application"
+          continueLabel="Next"
           continueDisabled={!allPresent}
           onContinue={onNext}
         />
@@ -341,7 +341,7 @@ export function DocumentsStep({
     >
       <StepHeading
         title="Required Documents"
-        description="Upload Each Document As A PDF File Smaller Than 10 MB. Files Are Validated As Soon As They Are Added."
+        description="Upload each document as a PDF file smaller than 10 MB. Files are validated as soon as they are added."
       />
 
       <div className={cn(

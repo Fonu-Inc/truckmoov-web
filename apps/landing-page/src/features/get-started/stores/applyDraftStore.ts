@@ -15,19 +15,19 @@
  *   lose it. Nothing is booked until the form is posted.
  */
 
-import type { InstallationValues } from "@/features/get-started/schemas/applySchemas";
 import type {
   DeviceFulfilment,
   LicenceAndIndemnity,
-} from "@/features/get-started/utils/applyTypes";
-
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+} from "@truckmoov/app-core/apply/applyTypes";
+import type { InstallationValues } from "@/features/get-started/schemas/applySchemas";
 
 import {
   EMPTY_DEVICE_FULFILMENT,
   EMPTY_LICENCE_AND_INDEMNITY,
-} from "@/features/get-started/utils/applyTypes";
+} from "@truckmoov/app-core/apply/applyTypes";
+import { create } from "zustand";
+
+import { persist } from "zustand/middleware";
 import {
   deleteDraftFile,
   getDraftFile,

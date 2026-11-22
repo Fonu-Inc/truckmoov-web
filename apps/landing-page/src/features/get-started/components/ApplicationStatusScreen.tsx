@@ -8,6 +8,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
 import { getOnboardingApplicationStatusQueryOptions } from "@truckmoov/api/auth";
+import { DOCUMENT_LABELS } from "@truckmoov/app-core/apply/applyTypes";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
 import {
   LoadingBlock,
@@ -16,7 +17,6 @@ import {
   StepLayout,
   SuccessMark,
 } from "@/features/get-started/components/StepParts";
-import { DOCUMENT_LABELS } from "@/features/get-started/utils/applyTypes";
 import { CARD_CLASS } from "@/features/get-started/utils/getStartedContent";
 import { cn } from "@/shared/utils";
 
@@ -152,7 +152,7 @@ export function ApplicationStatusScreen({
           {booked
             ? "Your account is ready. Sign in with the setup link we emailed you."
             : awaitingProvisioning
-              ? "We're allocating your devices and SIMs. Payment opens as soon as that's done, and we'll email you."
+              ? "We're allocating your devices and SIMs. Payment opens as soon as that's done — we'll email you."
               : approved
                 ? "You can now make payment for your Fleet Pro package to continue."
                 : rejected
@@ -216,7 +216,7 @@ export function ApplicationStatusScreen({
               className="text-muted-foreground"
             >
               <span className="font-medium text-heading">{DOCUMENT_LABELS[document.documentType] ?? document.documentType}</span>
-              {document.rejectionReason ? `: ${document.rejectionReason}` : ""}
+              {document.rejectionReason ? ` — ${document.rejectionReason}` : ""}
             </p>
           ))}
         </div>

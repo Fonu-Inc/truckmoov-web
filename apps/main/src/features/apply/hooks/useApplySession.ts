@@ -1,4 +1,3 @@
-import type { OnboardingApplication } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 
 import { useQuery } from "@tanstack/react-query";
@@ -16,7 +15,6 @@ import {
   readStoredApplicationId,
   writeDraft,
 } from "@/features/apply/utils/applyDraftStorage";
-import { documentsForApplicant } from "@/features/apply/utils/applyTypes";
 
 /** First render: adopt a resume link, and forget a draft that has outlived the server's. */
 function initialSession() {
@@ -102,26 +100,4 @@ export function useApplySession() {
     start,
     clear,
   };
-}
-
-export function requestedDeviceTotal(application?: OnboardingApplication) {
-  return (application?.deviceRequests ?? []).reduce(
-    (total, request) => total + request.quantity,
-    0,
-  );
-}
-
-export function isIndemnitySigned(application?: OnboardingApplication) {
-  return Boolean(application?.documents.some(document => document.documentType === "signed_indemnity_form"));
-}
-
-/** Every document the applicant owes (`documentsForApplicant`) is on file. */
-export function documentsComplete(application: OnboardingApplication | undefined, returning: boolean) {
-  if (!application)
-    return false;
-  return documentsForApplicant(
-    application.applicantType,
-    returning,
-  )
-    .every(required => application.documents.some(document => document.documentType === required.type));
 }

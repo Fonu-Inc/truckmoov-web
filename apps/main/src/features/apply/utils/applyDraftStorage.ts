@@ -7,7 +7,7 @@
  * is kept by `@truckmoov/api` (switched to localStorage below).
  */
 
-import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 
 import {
   getOnboardingToken,

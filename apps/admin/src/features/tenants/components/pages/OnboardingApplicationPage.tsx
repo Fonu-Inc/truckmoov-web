@@ -163,6 +163,14 @@ function applicationFormSections(app: SystemOnboardingApplicationDetail) {
           "Business location",
           location,
         ],
+        [
+          "Telecom Master",
+          app.telecomMaster?.numberType === "existing"
+            ? `Existing MTN number +${app.telecomMaster.msisdn ?? ""}`
+            : app.telecomMaster?.numberType === "new"
+              ? "New Telecom Master SIM requested"
+              : "—",
+        ],
       ] as Array<[string, string]>,
     },
   ];

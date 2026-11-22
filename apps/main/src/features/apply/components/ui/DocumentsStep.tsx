@@ -4,7 +4,7 @@ import type {
   OnboardingIdentificationType,
 } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
-import type { RequiredDocument } from "@/features/apply/utils/applyTypes";
+import type { RequiredDocument } from "@truckmoov/app-core/apply/applyTypes";
 
 import {
   useDeleteOnboardingApplicationDocument,

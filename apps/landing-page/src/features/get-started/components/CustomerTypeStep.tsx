@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { ApplicantTypeCard } from "@/features/get-started/components/ApplicantTypeCard";
@@ -41,7 +41,7 @@ export function CustomerTypeStep({
     >
       <StepHeading
         title="What type of customer are you?"
-        description="Select The Option That Matches How You Operate. Owner Operator / Individual Accounts Are Limited To 10 Vehicles — Choose Enterprise Customer If You Run More Than 10."
+        description="Select the option that matches how you operate. Owner Operator / Individual accounts are limited to 10 vehicles — choose Enterprise Customer if you run more than 10."
       />
       <div className="mt-[30px] grid gap-[9px] sm:grid-cols-2">
         {CUSTOMER_TYPES.map(type => (

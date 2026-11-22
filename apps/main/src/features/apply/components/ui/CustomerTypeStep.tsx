@@ -1,4 +1,4 @@
-import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 
 import {
   ArrowRight,

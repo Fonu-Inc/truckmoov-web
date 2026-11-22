@@ -1,14 +1,17 @@
 "use client";
 
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/get-started/schemas/applySchemas";
-import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
 import {
   Envelope, FileText,
 } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
-import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
+import {
+  CITIES_BY_STATE,
+  getOnboardingM2mPlansQueryOptions,
+} from "@truckmoov/api/auth";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
@@ -21,7 +24,12 @@ import {
   StepLayout,
 } from "@/features/get-started/components/StepParts";
 import { SubDialog } from "@/features/get-started/components/SubDialog";
+import { TelecomMasterSection } from "@/features/get-started/components/TelecomMasterSection";
 import { useEmailAvailability } from "@/features/get-started/hooks/useEmailAvailability";
+import {
+  companyNameMatches,
+  NIGERIAN_STATES,
+} from "@/features/get-started/schemas/applySchemas";
 import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
 import {
   CARD_CLASS,
@@ -133,6 +141,13 @@ export function BusinessDetailsStep({
   }
 
   function handleValid(values: BusinessDetailsValues) {
+    if (!(CITIES_BY_STATE[values.state] ?? []).includes(values.city)) {
+      form.setError(
+        "city",
+        { message: "Select your city." },
+      );
+      return;
+    }
     // A taken company email opens the design's "You already have a Fleet Pro account" dialog.
     if (emailTaken) {
       setExistingAccountOpen(true);
@@ -148,6 +163,14 @@ export function BusinessDetailsStep({
     }
     if (!licence.indemnityAccepted) {
       setSectionError("Confirm that you have reviewed the indemnity form.");
+      return;
+    }
+    // A signature not yet uploaded is checked against the name being saved with it.
+    if (pendingSignature && !companyNameMatches(
+      pendingSignature.name,
+      values.organizationName,
+    )) {
+      setSectionError("The name on your indemnity signature no longer matches your company name. Sign the form again.");
       return;
     }
     setSectionError(null);
@@ -183,6 +206,55 @@ export function BusinessDetailsStep({
     />
   );
 
+  const selectedState = form.watch("state");
+  const cities = CITIES_BY_STATE[selectedState] ?? [];
+
+  const selectField = (name: "state" | "city", label: string, options: readonly string[], placeholder: string) => (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
+          <RequiredLabel>{label}</RequiredLabel>
+          <FormControl>
+            <select
+              aria-label={label}
+              value={field.value ?? ""}
+              disabled={name === "city" && !selectedState}
+              onBlur={field.onBlur}
+              onChange={(event) => {
+                field.onChange(event.target.value);
+                // A city belongs to one state: changing the state clears it.
+                if (name === "state") {
+                  form.setValue(
+                    "city",
+                    "",
+                  );
+                }
+              }}
+              className={cn(
+                FIELD_CLASS,
+                !field.value && "text-faint-foreground",
+              )}
+            >
+              <option value="">{placeholder}</option>
+              {options.map(option => (
+                <option
+                  key={option}
+                  value={option}
+                  className="text-heading"
+                >
+                  {option}
+                </option>
+              ))}
+            </select>
+          </FormControl>
+          <FormMessage className="text-xs" />
+        </FormItem>
+      )}
+    />
+  );
+
   return (
     <StepLayout
       footer={(
@@ -197,7 +269,7 @@ export function BusinessDetailsStep({
     >
       <StepHeading
         title="Customer Details"
-        description="Complete Your Customer Information, Select A License Plan, And Review The Indemnity Form."
+        description="Complete your customer information, select a license plan, and review the indemnity form."
       />
 
       <Form {...form}>
@@ -260,18 +332,22 @@ export function BusinessDetailsStep({
                   wide: isEnterprise,
                 },
               )}
-              {textField(
-                "city",
-                "City",
-                { placeholder: "Lagos" },
-              )}
-              {textField(
+              {selectField(
                 "state",
                 "State",
-                { placeholder: "Lagos State" },
+                NIGERIAN_STATES,
+                "Select state",
+              )}
+              {selectField(
+                "city",
+                "City",
+                cities,
+                selectedState ? "Select city" : "Select a state first",
               )}
             </div>
           </section>
+
+          {isEnterprise && <TelecomMasterSection form={form} />}
 
           <section>
             <SectionHeading
@@ -337,12 +413,19 @@ export function BusinessDetailsStep({
                     <span className="flex w-full flex-col gap-1 rounded-[15px] bg-surface p-3">
                       <span className="flex items-baseline gap-1.5">
                         <span className="text-lg font-bold text-heading">{`₦${plan.perDeviceYear1Ngn.toLocaleString()}`}</span>
-                        <span className="text-xs text-muted-foreground">per device, Year 1</span>
+                        <span className="text-xs text-muted-foreground">per device — Year 1</span>
                       </span>
                       <span className="flex items-baseline gap-1.5">
                         <span className="text-sm font-semibold text-heading">{`₦${plan.perDeviceRenewalNgn.toLocaleString()}`}</span>
-                        <span className="text-xs text-muted-foreground">per device, Renewal</span>
+                        <span className="text-xs text-muted-foreground">per device — Renewal</span>
                       </span>
+                    </span>
+                    <span className={cn(
+                      "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                      selected ? "bg-brand-deep text-field-soft" : "bg-surface text-muted-foreground",
+                    )}
+                    >
+                      {selected ? "Selected" : `Select ${plan.name}`}
                     </span>
                   </button>
                 );
@@ -384,7 +467,7 @@ export function BusinessDetailsStep({
                 className={SECONDARY_BUTTON_CLASS}
                 onClick={() => setIndemnityOpen(true)}
               >
-                {indemnitySigned ? "Review & Re-sign" : "View & Sign Form"}
+                {indemnitySigned ? "Review Signature" : "View & Sign Form"}
               </button>
             </div>
             <InfoRow className="mt-3 text-xs text-muted-foreground">
@@ -421,6 +504,7 @@ export function BusinessDetailsStep({
         open={indemnityOpen}
         onOpenChange={setIndemnityOpen}
         initialName={licence.indemnitySignatureName}
+        companyName={form.watch("organizationName")}
         notice={indemnityNotice}
         onSigned={({
           method,

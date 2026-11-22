@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getOnboardingApplicationStatusQueryOptions } from "@truckmoov/api/auth";
+import { DOCUMENT_LABELS } from "@truckmoov/app-core/apply/applyTypes";
 import {
   ArrowRight,
   CheckCircle2,
@@ -30,18 +31,6 @@ const STAGES_AFTER_BOOKING = [
   "connectivity_verification",
   "fleet_ready",
 ];
-
-const DOCUMENT_LABELS: Record<string, string> = {
-  customer_request_letter: "Customer Request Letter",
-  cac_document: "CAC Document",
-  tax_certificate_or_tin: "Tax Certificate or TIN",
-  signature_card: "Signature Card",
-  utility_bill: "Utility Bill",
-  identification_card: "Identification Card",
-  proof_of_ownership: "Proof of Ownership",
-  vehicle_license: "Vehicle Licence",
-  signed_indemnity_form: "Signed Indemnity Form",
-};
 
 /**
  * Post-submission view (TRU-FE-13), from `GET …/:id/status`. Most applications land in

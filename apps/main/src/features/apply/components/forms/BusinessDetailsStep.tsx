@@ -1,7 +1,7 @@
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas";
-import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
 
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -51,8 +51,12 @@ import {
 } from "@/components/shadcn/select";
 import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
 import { IndemnityDialog } from "@/features/apply/components/ui/IndemnityDialog";
+import { TelecomMasterSection } from "@/features/apply/components/ui/TelecomMasterSection";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
-import { NIGERIAN_STATES } from "@/features/apply/utils/applySchemas";
+import {
+  companyNameMatches,
+  NIGERIAN_STATES,
+} from "@/features/apply/utils/applySchemas";
 import { useEmailAvailability } from "@/features/apply/utils/useEmailAvailability";
 import { cn } from "@/lib/utils";
 
@@ -158,6 +162,14 @@ export function BusinessDetailsStep({
     }
     if (!licence.indemnityAccepted) {
       setSectionError("Confirm that you have reviewed the indemnity form.");
+      return;
+    }
+    // A signature not yet uploaded is checked against the name being saved with it.
+    if (pendingSignature && !companyNameMatches(
+      pendingSignature.name,
+      values.organizationName,
+    )) {
+      setSectionError("The name on your indemnity signature no longer matches your company name. Sign the form again.");
       return;
     }
     setSectionError(null);
@@ -376,6 +388,8 @@ export function BusinessDetailsStep({
             </div>
           </section>
 
+          {isEnterprise && <TelecomMasterSection form={form} />}
+
           {/* ─── M2M License Plan ─────────────────────────────────────────── */}
           <section className="space-y-5 border-b border-border/60 pb-8">
             <div>
@@ -587,6 +601,7 @@ export function BusinessDetailsStep({
         open={indemnityOpen}
         onOpenChange={setIndemnityOpen}
         initialName={licence.indemnitySignatureName}
+        companyName={form.watch("organizationName")}
         notice={indemnityNotice}
         onSigned={(signature) => {
           setPendingSignature(signature);

@@ -28,7 +28,6 @@ import {
   useForm,
   useWatch,
 } from "react-hook-form";
-import { CityInput } from "@/features/get-started/components/CityInput";
 import {
   LoadingBlock,
   Notice,
@@ -42,11 +41,9 @@ import {
 import {
   installationDateLimit,
   installationSchema,
-  NIGERIAN_STATES,
   normalizePhone,
 } from "@/features/get-started/schemas/applySchemas";
 import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
-import { TIME_SLOTS } from "@/features/get-started/utils/applyTypes";
 import {
   CARD_CLASS,
   FIELD_CLASS,
@@ -77,6 +74,15 @@ const SERVER_FIELD: Record<string, keyof InstallationValues> = {
   siteContactPhone: "contactPhone",
   notes: "notes",
 };
+
+/** "09:30" -> the API slot: morning before noon, afternoon after. Open 08:00–16:00. */
+function slotForTime(time: string): InstallationValues["timeSlot"] {
+  return time < "12:00" ? "morning" : "afternoon";
+}
+
+function withinHours(time: string) {
+  return time >= "08:00" && time <= "16:00";
+}
 
 function deviceLabel(deviceIndex: number) {
   return `Device ${String(deviceIndex).padStart(
@@ -142,12 +148,14 @@ export function ScheduleInstallationStep({
       notes: "",
     },
   });
-  const state = useWatch({
-    control: form.control,
-    name: "state",
-  });
   // The summary line under the form reads what is typed.
   const watched = useWatch({ control: form.control });
+  // The design defaults the clock to 09:00 (the morning slot, the form default).
+  const [
+    time,
+    setTime,
+  ] = useState(watched.timeSlot === "afternoon" ? "13:00" : "09:00");
+  const timeOutOfHours = !withinHours(time);
 
   /** A vehicle can only be fitted with one device. */
   function assign(deviceIndex: number, vehicleId: string) {
@@ -174,6 +182,8 @@ export function ScheduleInstallationStep({
   }
 
   async function handleSubmit(values: InstallationValues) {
+    if (timeOutOfHours)
+      return;
     setInstallation(values);
     setBookingError(null);
     if (assignedCount < deviceCount) {
@@ -276,7 +286,7 @@ export function ScheduleInstallationStep({
     <StepLayout>
       <StepHeading
         title="Schedule Installation"
-        description="Choose When Our Team Should Install Your Devices. We Assign The Right Installer For You Automatically."
+        description="Choose when our team should install your devices. We assign the right installer for you automatically."
       />
 
       <section className={cn(
@@ -425,13 +435,11 @@ export function ScheduleInstallationStep({
                   render={({ field }) => (
                     <FormItem className="gap-1.5">
                       <FormControl>
-                        <CityInput
-                          state={state ?? ""}
-                          value={field.value}
-                          name={field.name}
-                          ref={field.ref}
-                          onBlur={field.onBlur}
-                          onChange={field.onChange}
+                        <Input
+                          aria-label="City"
+                          placeholder="City"
+                          className={FIELD_CLASS}
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage className="text-xs" />
@@ -444,38 +452,13 @@ export function ScheduleInstallationStep({
                   render={({ field }) => (
                     <FormItem className="gap-1.5">
                       <FormControl>
-                        <select
-                          {...field}
+                        <Input
                           aria-label="State"
+                          placeholder="State"
+                          className={FIELD_CLASS}
+                          {...field}
                           value={field.value ?? ""}
-                          onChange={(event) => {
-                            field.onChange(event.target.value);
-                            form.setValue(
-                              "city",
-                              "",
-                            );
-                          }}
-                          className={cn(
-                            FIELD_CLASS,
-                            !field.value && "text-faint-foreground",
-                          )}
-                        >
-                          <option
-                            value=""
-                            disabled
-                          >
-                            State
-                          </option>
-                          {NIGERIAN_STATES.map(name => (
-                            <option
-                              key={name}
-                              value={name}
-                              className="text-heading"
-                            >
-                              {name}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </FormControl>
                       <FormMessage className="text-xs" />
                     </FormItem>
@@ -509,20 +492,25 @@ export function ScheduleInstallationStep({
                 <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
                   <FormLabel className={LABEL_CLASS}>Installation Time</FormLabel>
                   <FormControl>
-                    <select
-                      {...field}
+                    {/* The design takes a clock time; the API books a slot, so the time
+                        picks it — before noon is the morning slot. */}
+                    <Input
+                      type="time"
+                      min="08:00"
+                      max="16:00"
+                      value={time}
                       className={FIELD_CLASS}
-                    >
-                      {TIME_SLOTS.map(slot => (
-                        <option
-                          key={slot.value}
-                          value={slot.value}
-                        >
-                          {slot.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(event) => {
+                        setTime(event.target.value);
+                        field.onChange(slotForTime(event.target.value));
+                      }}
+                    />
                   </FormControl>
+                  {timeOutOfHours && (
+                    <p className="text-xs font-medium text-destructive">
+                      Pick a time between 08:00 and 16:00.
+                    </p>
+                  )}
                   <FormMessage className="text-xs" />
                 </FormItem>
               )}
@@ -606,7 +594,7 @@ export function ScheduleInstallationStep({
                 watched.streetAddress,
                 watched.city,
                 watched.state,
-              ].filter(Boolean).join(", ") || "your confirmed address"}${watched.date ? ` on ${watched.date}` : ""} — ${TIME_SLOTS.find(slot => slot.value === watched.timeSlot)?.label ?? watched.timeSlot}.`}
+              ].filter(Boolean).join(", ") || "your confirmed address"}${watched.date ? ` on ${watched.date}` : ""} — ${time}.`}
             </p>
 
             <button

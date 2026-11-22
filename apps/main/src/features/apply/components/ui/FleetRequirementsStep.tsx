@@ -21,6 +21,16 @@ import {
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
 import {
+  fulfilmentComplete,
+  fulfilmentToPayload,
+  OWNER_OPERATOR_VEHICLE_LIMIT,
+  OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE,
+  PURCHASE_TYPE_LABELS,
+  requestedDeviceTotal,
+  VEHICLE_TYPE_LABELS,
+  vehicleSummary,
+} from "@truckmoov/app-core/apply/applyTypes";
+import {
   ArrowLeft,
   Car,
   ChevronDown,
@@ -31,12 +41,12 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+
 import {
   useEffect,
   useState,
 } from "react";
 import { toast } from "sonner";
-
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -47,22 +57,12 @@ import {
 import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
 import { DetailDialog } from "@/features/apply/components/ui/DetailDialog";
 import { DeviceFulfilmentCard } from "@/features/apply/components/ui/DeviceFulfilmentCard";
-import { requestedDeviceTotal } from "@/features/apply/hooks/useApplySession";
 import { useConfirmDialog } from "@/features/apply/hooks/useConfirmDialog";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import {
   vehicleToPayload,
   vehicleToValues,
 } from "@/features/apply/utils/applySchemas";
-import {
-  fulfilmentComplete,
-  fulfilmentToPayload,
-  OWNER_OPERATOR_VEHICLE_LIMIT,
-  OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE,
-  PURCHASE_TYPE_LABELS,
-  VEHICLE_TYPE_LABELS,
-  vehicleSummary,
-} from "@/features/apply/utils/applyTypes";
 import { cn } from "@/lib/utils";
 
 type FleetRequirementsStepProps = {

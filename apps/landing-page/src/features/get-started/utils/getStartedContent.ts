@@ -1,7 +1,7 @@
-import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 
 // Copy and class recipes for the apply modal. The fields, steps and API calls follow the
-// main app's /apply (see utils/applyTypes.ts); the look follows the Figma "Get Started" dialog.
+// main app's /apply (see @truckmoov/app-core/apply/applyTypes); the look follows the Figma "Get Started" dialog.
 
 const mapIllustration = "/images/get-started/map.png";
 const truckIllustration = "/images/get-started/truck.png";
@@ -20,7 +20,7 @@ export const CUSTOMER_TYPES: {
   {
     id: "enterprise",
     title: "Enterprise Customer",
-    description: "For Businesses And Organizations Managing A Large Company Fleet.",
+    description: "For businesses and organizations managing a Large company fleet.",
     points: [
       "No limit on the number of vehicles",
       "Manage company vehicles",
@@ -37,7 +37,7 @@ export const CUSTOMER_TYPES: {
   {
     id: "owner_operator",
     title: "Owner Operator / Individual Customer",
-    description: "For Individuals, Companies And Organisations With 10 Vehicles Or Fewer.",
+    description: "For individuals, companies and organisations with 10 vehicles or fewer.",
     points: [
       "Maximum of 10 vehicles",
       "Manage personal vehicles",

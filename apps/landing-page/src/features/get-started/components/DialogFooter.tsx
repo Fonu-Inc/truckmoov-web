@@ -4,8 +4,14 @@ import type { ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  Save,
 } from "lucide-react";
-import { PRIMARY_BUTTON_CLASS } from "@/features/get-started/utils/getStartedContent";
+import { use } from "react";
+import { ApplicationSaveContext } from "@/features/get-started/components/ApplicationSaveContext";
+import {
+  PRIMARY_BUTTON_CLASS,
+  SECONDARY_BUTTON_CLASS,
+} from "@/features/get-started/utils/getStartedContent";
 import { cn } from "@/shared/utils";
 
 // Wizard footer: ghost "← Back" and the yellow "Continue →" button
@@ -36,6 +42,7 @@ export function DialogFooter({
   /** Shown between the two buttons, e.g. "Save & Continue Later". */
   extra?: ReactNode;
 }) {
+  const onSave = use(ApplicationSaveContext);
   return (
     <footer className="mx-[14px] flex min-h-[98px] shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border px-[10px] py-3">
       {onBack
@@ -57,6 +64,19 @@ export function DialogFooter({
           )
         : <span />}
       {extra}
+      {onSave && (
+        <button
+          type="button"
+          onClick={onSave}
+          className={cn(
+            SECONDARY_BUTTON_CLASS,
+            "order-last h-[45px] w-full sm:order-none sm:w-auto",
+          )}
+        >
+          <Save className="size-3.5 shrink-0" />
+          Save and continue later
+        </button>
+      )}
       {continueLabel && (
         <button
           type={form ? "submit" : "button"}

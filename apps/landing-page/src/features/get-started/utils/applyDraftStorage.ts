@@ -9,7 +9,7 @@
  * see `setOnboardingTokenStorage` in GetStartedHost). Unsent files are in IndexedDB.
  */
 
-import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 
 import {
   getOnboardingToken,

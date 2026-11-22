@@ -137,8 +137,13 @@ The site should not render anything it doesn't need to:
 
 The main app has the same flow as a public page, `/apply` (`apps/main/src/features/apply/`),
 which its sign-in page's "Apply for one" links to. Both run the same steps, fields and
-onboarding-applications calls, so **change both apps together**: `schemas/applySchemas.ts` and
-`utils/applyTypes.ts` here are copies of main's `utils/applySchemas.ts` and `utils/applyTypes.ts`.
+onboarding-applications calls, and must show the same screens, copy and validation, so
+**change both apps together**. The reference data and pure helpers are shared from
+`@truckmoov/app-core/apply/applyTypes` (document lists, vehicle/purchase labels, steps,
+pickup-only fulfilment, `documentsComplete`) and `@truckmoov/app-core/apply/companyName`
+(the indemnity company-name matcher). `schemas/applySchemas.ts` stays a per-app copy of
+main's `utils/applySchemas.ts` (zod 4 here, zod 3 there); keep the two identical apart from
+import paths.
 
 ### Flow
 
@@ -160,7 +165,7 @@ step component names the main component it mirrors. The look follows the Figma G
 - `StepLayout` + `DialogFooter` for each step
 - `SubDialog` for nested dialogs
 - the class recipes in `utils/getStartedContent.ts`
-- native `<select>` and `CityInput` (a datalist of `CITIES_BY_STATE`)
+- native `<select>` where main uses the shadcn Select
 
 ### Resume
 
@@ -211,7 +216,7 @@ The wizard follows the design app's two entries: **Apply for Account Creation** 
   resume link keeps it.
 - Returning changes two things. The heading copy becomes "Returning MTN customer
   onboarding", and the only required document is the **Customer Request Letter**
-  (`RETURNING_DOCUMENTS` / `documentsForApplicant` in `utils/applyTypes.ts`).
+  (`RETURNING_DOCUMENTS` / `documentsForApplicant` in `@truckmoov/app-core/apply/applyTypes`).
 - ponytail: client-side only. The API doesn't know about returning customers yet. It still
   lists every document in `missingDocuments`, so a returning submit can come back
   `incomplete` until the backend supports it.
@@ -229,14 +234,12 @@ field.
   are attached in Add Vehicle, as in the design.
 - RC Number / TIN and ID Type / ID Number, which are optional server-side but feed
   automated approval
-- "Save & Continue Later". Resume links from emails still work.
 
 **Adapted to the API:**
 
-- Customer Details' City and State are plain inputs. The state is normalised to the
-  canonical name (`normalizeState` in `schemas/applySchemas.ts`).
-- Installation scheduling keeps the state select, the city datalist and the API's time-slot
-  select. The design uses free text and a clock time.
+- Customer Details' State and City are selects (state → city from `CITIES_BY_STATE`).
+- Installation scheduling takes the design's free-text street, city and state and a clock
+  time (08:00–16:00); the time picks the API's slot (before noon is the morning slot).
 - Vehicle Type and Type of Purchase use the API's values. The design's Pickup, Other
   (vehicle type) and Rental have no API value.
 

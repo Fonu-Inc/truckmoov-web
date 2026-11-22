@@ -1,9 +1,9 @@
 "use client";
 
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 import type { Resolver } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/get-started/schemas/applySchemas";
-import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
 import type { DialogIntent } from "@/shared/stores/dialogStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,12 +20,20 @@ import {
   useVerifyOnboardingApplicationPhone,
 } from "@truckmoov/api/auth";
 import {
+  APPLY_STEPS,
+  displayStep,
+  documentsComplete,
+  documentsForApplicant,
+  isIndemnitySigned,
+} from "@truckmoov/app-core/apply/applyTypes";
+import {
   useEffect,
   useEffectEvent,
   useRef,
   useState,
 } from "react";
 import { useForm } from "react-hook-form";
+import { ApplicationSaveContext } from "@/features/get-started/components/ApplicationSaveContext";
 import { ApplicationStatusScreen } from "@/features/get-started/components/ApplicationStatusScreen";
 import { BusinessDetailsStep } from "@/features/get-started/components/BusinessDetailsStep";
 import { CustomerTypeStep } from "@/features/get-started/components/CustomerTypeStep";
@@ -61,15 +69,6 @@ import {
   readStoredCustomerType,
   writeDraft,
 } from "@/features/get-started/utils/applyDraftStorage";
-import {
-  documentsComplete,
-  isIndemnitySigned,
-} from "@/features/get-started/utils/applyHelpers";
-import {
-  APPLY_STEPS,
-  displayStep,
-  documentsForApplicant,
-} from "@/features/get-started/utils/applyTypes";
 import {
   Dialog,
   DialogContent,
@@ -240,11 +239,10 @@ export function GetStartedDialog({
   const setLicence = useApplyDraftStore(state => state.setLicence);
   const storedReturning = useApplyDraftStore(state => state.returning);
   const setReturning = useApplyDraftStore(state => state.setReturning);
-  const fulfilment = useApplyDraftStore(state => state.fulfilment);
-  const setFulfilment = useApplyDraftStore(state => state.setFulfilment);
   const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
   const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
-  const isReturning = entryReturning ?? storedReturning;
+  // Once saved, the application's own flag decides.
+  const isReturning = application?.returningCustomer ?? entryReturning ?? storedReturning;
 
   // Remember the returning flag for the rest of the application (and the next visit).
   useEffect(
@@ -404,7 +402,7 @@ export function GetStartedDialog({
                   ? 4
                   : !documentsComplete(
                       application,
-                      isReturning,
+                      application.returningCustomer,
                     )
                       ? 5
                       : 8;
@@ -487,7 +485,10 @@ export function GetStartedDialog({
         id: applicationId,
         data: { code },
       });
-      setBanner(null);
+      setBanner({
+        tone: "success",
+        message: channel === "email" ? "Email address verified" : "Phone number verified",
+      });
       return true;
     }
     catch (error) {
@@ -532,7 +533,11 @@ export function GetStartedDialog({
     setSaving(true);
     setSaveError(null);
     const payload = detailsToPayload(
-      values,
+      {
+        ...values,
+        // Picked on Required Documents; PATCH replaces, so keep it.
+        identificationType: application?.registry.identificationType ?? values.identificationType,
+      },
       customerType,
       licence.licensePlan,
       isReturning,
@@ -622,13 +627,6 @@ export function GetStartedDialog({
       "customerType",
       next,
     );
-    // Owner Operators always collect devices from a store.
-    if (next === "owner_operator" && fulfilment.method !== "pickup") {
-      setFulfilment({
-        ...fulfilment,
-        method: "pickup",
-      });
-    }
     setStep(1);
   }
 
@@ -687,7 +685,7 @@ export function GetStartedDialog({
   async function confirmStartOver() {
     const ok = await confirm({
       title: "Start a new application?",
-      description: "The application saved in this browser, and any files not yet uploaded, will be removed from this device.",
+      description: "This will delete the progress saved in this browser.",
       confirmLabel: "Start new application",
     });
     if (ok)
@@ -706,6 +704,17 @@ export function GetStartedDialog({
     onOpenChange(false);
     if (window.location.pathname !== routes.home)
       window.location.assign(routes.home);
+  }
+
+  function saveProgress() {
+    writeDraft(
+      "step",
+      String(step),
+    );
+    setBanner({
+      tone: "success",
+      message: "Application progress saved. Your current application has been saved in this browser.",
+    });
   }
 
   function close() {
@@ -861,7 +870,6 @@ export function GetStartedDialog({
           )}
           onBack={() => setStep(step - 1)}
           onNext={() => setStep(step + 1)}
-          onChangeContact={() => setStep(1)}
         />
       );
     }
@@ -873,6 +881,10 @@ export function GetStartedDialog({
           onBack={() => setStep(3)}
           onNext={() => setStep(5)}
           onError={showError}
+          onSuccess={message => setBanner({
+            tone: "success",
+            message,
+          })}
         />
       );
     }
@@ -937,7 +949,9 @@ export function GetStartedDialog({
           </div>
         )}
 
-        {renderScreen()}
+        <ApplicationSaveContext value={phase === "form" && customerType && !entry ? saveProgress : null}>
+          {renderScreen()}
+        </ApplicationSaveContext>
         {confirmDialog}
       </DialogContent>
     </Dialog>

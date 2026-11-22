@@ -1,8 +1,8 @@
 import type { OnboardingApplication } from "@truckmoov/api/auth";
-import type { ReactNode } from "react";
 import type {
   ApplicantCustomerType, RequiredDocument,
-} from "@/features/apply/utils/applyTypes";
+} from "@truckmoov/app-core/apply/applyTypes";
+import type { ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -10,17 +10,17 @@ import {
   getPickupLocationsQueryOptions,
 } from "@truckmoov/api/auth";
 
+import { requestedDeviceTotal } from "@truckmoov/app-core/apply/applyTypes";
+
 import {
   ArrowLeft,
   CheckCircle2,
   FileText,
   Pencil,
 } from "lucide-react";
-
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
-import { requestedDeviceTotal } from "@/features/apply/hooks/useApplySession";
 import { applicationToDetails } from "@/features/apply/utils/applySchemas";
 
 type ReviewStepProps = {
@@ -129,6 +129,14 @@ export function ReviewStep({
             label="License Plan"
             value={plan?.name ?? application.m2mPlanCode ?? ""}
           />
+          {application.telecomMaster?.numberType && (
+            <Field
+              label="Telecom Master"
+              value={application.telecomMaster.numberType === "existing"
+                ? `Existing MTN number +${application.telecomMaster.msisdn ?? ""}`
+                : "New Telecom Master SIM (allocation pending)"}
+            />
+          )}
           <Field
             label="Street Address"
             value={organization.streetAddress}

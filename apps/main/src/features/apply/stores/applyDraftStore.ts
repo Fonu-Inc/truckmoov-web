@@ -11,19 +11,19 @@
  *   doesn't lose it. Nothing is booked until the form is posted.
  */
 
-import type { InstallationValues } from "@/features/apply/utils/applySchemas";
 import type {
   DeviceFulfilment,
   LicenceAndIndemnity,
-} from "@/features/apply/utils/applyTypes";
-
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+} from "@truckmoov/app-core/apply/applyTypes";
+import type { InstallationValues } from "@/features/apply/utils/applySchemas";
 
 import {
   EMPTY_DEVICE_FULFILMENT,
   EMPTY_LICENCE_AND_INDEMNITY,
-} from "@/features/apply/utils/applyTypes";
+} from "@truckmoov/app-core/apply/applyTypes";
+import { create } from "zustand";
+
+import { persist } from "zustand/middleware";
 
 export type PendingSignature = {
   method: "drawn" | "uploaded";

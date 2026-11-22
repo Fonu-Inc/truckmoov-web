@@ -1,6 +1,6 @@
-import { Check } from "lucide-react";
+import { APPLY_STEPS } from "@truckmoov/app-core/apply/applyTypes";
 
-import { APPLY_STEPS } from "@/features/apply/utils/applyTypes";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** The vertical rail rendered inside the dark branding panel. */

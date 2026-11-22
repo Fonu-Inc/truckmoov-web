@@ -1,10 +1,11 @@
 /**
- * Shared types + reference data for the public "Apply for Account Creation" flow. The
- * landing page's get-started copy calls the same endpoints; keep the two in step.
+ * Types + reference data for the "Apply for Account Creation" flow, shared by the main app's
+ * /apply and the landing page's get-started wizard so the two can't drift.
  */
 
 import type {
   OnboardingApplicantType,
+  OnboardingApplication,
   OnboardingApplicationVehicle,
   OnboardingFulfilment,
   OnboardingUploadableDocumentType,
@@ -251,4 +252,38 @@ export function fulfilmentToPayload(value: DeviceFulfilment): OnboardingFulfilme
     method: "pickup",
     pickupLocationId: value.store,
   };
+}
+
+/** Every document type the server can return, for the status screen. */
+export const DOCUMENT_LABELS: Record<string, string> = {
+  customer_request_letter: "Customer Request Letter",
+  cac_document: "CAC Document",
+  tax_certificate_or_tin: "Tax Certificate or TIN",
+  signature_card: "Signature Card",
+  utility_bill: "Utility Bill",
+  identification_card: "Identification Card",
+  proof_of_ownership: "Proof of Ownership",
+  vehicle_license: "Vehicle Licence",
+  signed_indemnity_form: "Signed Indemnity Form",
+};
+
+export function isIndemnitySigned(application?: OnboardingApplication) {
+  return Boolean(application?.documents.some(document => document.documentType === "signed_indemnity_form"));
+}
+
+export function requestedDeviceTotal(application?: OnboardingApplication) {
+  return (application?.deviceRequests ?? []).reduce(
+    (total, request) => total + request.quantity,
+    0,
+  );
+}
+
+/** Every document the applicant owes (`documentsForApplicant`) is on file. */
+export function documentsComplete(application: OnboardingApplication | undefined, returning: boolean) {
+  if (!application)
+    return false;
+  return documentsForApplicant(
+    application.applicantType,
+    returning,
+  ).every(required => application.documents.some(document => document.documentType === required.type));
 }

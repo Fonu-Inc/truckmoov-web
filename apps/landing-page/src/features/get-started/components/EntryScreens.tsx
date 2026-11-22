@@ -24,15 +24,13 @@ export function DraftChoiceScreen({
   const options = [
     {
       key: "continue",
-      title: "Continue my application",
-      description: "Pick up on the step you stopped at.",
+      title: "Continue your application",
       icon: ArrowCounterClockwise,
       onSelect: onContinue,
     },
     {
       key: "new",
       title: "Start a new application",
-      description: "Discard the saved application in this browser and start again.",
       icon: Plus,
       onSelect: onStartNew,
     },
@@ -43,13 +41,12 @@ export function DraftChoiceScreen({
       footer={(
         <DialogFooter
           onBack={onClose}
-          backLabel="Close"
         />
       )}
     >
       <StepHeading
         title="You have an application in progress"
-        description="We Saved Your Progress In This Browser. Continue Where You Stopped, Or Start A New Application."
+        description="We saved your progress in this browser. Continue where you stopped or start a new application."
       />
       <div className="mt-[30px] grid gap-[9px] sm:grid-cols-2">
         {options.map(option => (
@@ -65,7 +62,6 @@ export function DraftChoiceScreen({
               <option.icon className="size-5 text-brand-deep" />
             </span>
             <span className="text-base leading-5 font-semibold text-heading">{option.title}</span>
-            <span className="text-xs leading-[17px] text-muted-foreground">{option.description}</span>
           </button>
         ))}
       </div>

@@ -74,7 +74,7 @@ function paymentError(error: unknown) {
   if (err.statusCode === 402)
     return "Your payment was declined. Try again.";
   if (err.statusCode === 503)
-    return "Payments are temporarily unavailable. Please try again later. This isn't a problem with your details.";
+    return "Payments are temporarily unavailable. Please try again later — this isn't a problem with your details.";
   if (err.statusCode === 409 && /stage/i.test(err.message))
     return "Payment opens once your devices have been allocated. We'll email you when you can pay.";
   return err.message || "The payment couldn't be started. Try again.";
@@ -266,7 +266,7 @@ export function PaymentStep({
     <StepLayout>
       <StepHeading
         title="Payment"
-        description="Your Application Passed System Verification. Pay Your Quotation, Then Schedule Installation. Your Subscription Becomes Active Only After Installation And Final System Verification."
+        description="Your application passed system verification. Pay your quotation, then schedule installation. Your subscription becomes active only after installation and final system verification."
       />
 
       <div className="mt-[30px] space-y-4">

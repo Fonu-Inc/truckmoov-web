@@ -15,8 +15,11 @@ const nextConfig: NextConfig = {
   // Emit `/about/index.html` rather than `/about.html`, so nginx's `$uri/` lookup
   // resolves every route without a rewrite rule.
   trailingSlash: true,
-  // @truckmoov/api ships TypeScript source.
-  transpilePackages: ["@truckmoov/api"],
+  // @truckmoov/api and @truckmoov/app-core ship TypeScript source.
+  transpilePackages: [
+    "@truckmoov/api",
+    "@truckmoov/app-core",
+  ],
   poweredByHeader: false,
   images: {
     // A static export has no image optimisation endpoint. Keep next/image's

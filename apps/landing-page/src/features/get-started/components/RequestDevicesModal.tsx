@@ -61,7 +61,7 @@ export function RequestDevicesModal({
     resolver: zodResolver(deviceRequestSchema.refine(
       values => values.quantity <= maxQuantity,
       {
-        message: `You can request at most ${maxQuantity} more device${maxQuantity === 1 ? "" : "s"}, one per vehicle.`,
+        message: `You can request at most ${maxQuantity} more device${maxQuantity === 1 ? "" : "s"} — one per vehicle.`,
         path: ["quantity"],
       },
     )) as Resolver<DeviceRequestValues>,

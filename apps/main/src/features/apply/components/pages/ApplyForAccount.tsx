@@ -1,7 +1,7 @@
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
+import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
 import type { ReactNode } from "react";
 import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas";
-import type { ApplicantCustomerType } from "@/features/apply/utils/applyTypes";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,13 @@ import {
   useVerifyOnboardingApplicationEmail,
   useVerifyOnboardingApplicationPhone,
 } from "@truckmoov/api/auth";
+import {
+  displayStep,
+  documentsComplete,
+  documentsForApplicant,
+  isIndemnitySigned,
+  isReturningSearch,
+} from "@truckmoov/app-core/apply/applyTypes";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
   ArrowLeft,
@@ -33,8 +40,8 @@ import {
   useLocation,
   useNavigate,
 } from "react-router";
-import { toast } from "sonner";
 
+import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BusinessDetailsStep } from "@/features/apply/components/forms/BusinessDetailsStep";
@@ -55,11 +62,7 @@ import {
 } from "@/features/apply/components/ui/PaymentStep";
 import { ReviewStep } from "@/features/apply/components/ui/ReviewStep";
 import { VerificationStep } from "@/features/apply/components/ui/VerificationStep";
-import {
-  documentsComplete,
-  isIndemnitySigned,
-  useApplySession,
-} from "@/features/apply/hooks/useApplySession";
+import { useApplySession } from "@/features/apply/hooks/useApplySession";
 import { useConfirmDialog } from "@/features/apply/hooks/useConfirmDialog";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import {
@@ -77,11 +80,6 @@ import {
   EMPTY_BUSINESS_DETAILS,
   SERVER_FIELD_TO_FORM_FIELD,
 } from "@/features/apply/utils/applySchemas";
-import {
-  displayStep,
-  documentsForApplicant,
-  isReturningSearch,
-} from "@/features/apply/utils/applyTypes";
 
 /**
  * Internal step numbers, matching the design app:
@@ -699,7 +697,7 @@ export default function ApplyForAccount() {
     );
     toast.success(
       "Application progress saved",
-      { description: "Your application is saved in this browser. Come back to /apply to continue." },
+      { description: "Your current application has been saved in this browser." },
     );
   }
 

@@ -13,6 +13,7 @@ import {
   Spinner,
 } from "@/features/get-started/components/StepParts";
 import { SubDialog } from "@/features/get-started/components/SubDialog";
+import { companyNameMatches } from "@/features/get-started/schemas/applySchemas";
 import {
   FIELD_CLASS,
   LABEL_CLASS,
@@ -36,13 +37,16 @@ export function IndemnityDialog({
   open,
   onOpenChange,
   initialName,
+  companyName,
   notice,
   onSigned,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Pre-fills the legal-name field when re-opening an already signed form. */
+  /** Pre-fills the company-name field when re-opening an already signed form. */
   initialName?: string;
+  /** The application's organizationName; the typed name must match it (server enforces the same rule). */
+  companyName: string;
   /** Shown above the pad, e.g. after the agreement was superseded mid-signing. */
   notice?: string | null;
   onSigned: (result: {
@@ -175,14 +179,21 @@ export function IndemnityDialog({
     });
   }
 
+  const nameMatches = companyNameMatches(
+    typedSignature,
+    companyName,
+  );
+
   async function confirmSignature() {
     if (!typedSignature.trim()) {
-      setError("Enter your full legal name to sign the form.");
+      setError("Enter your company name to sign the form.");
       return;
     }
+    if (!nameMatches)
+      return;
     const image = signatureMode === "draw" ? await drawnImage() : (uploadedSignature?.file ?? null);
     if (!image) {
-      setError(signatureMode === "draw" ? "Draw your signature in the box." : "Upload an image of your signature.");
+      setError(signatureMode === "draw" ? "Draw your signature to sign the form." : "Upload an image of your signature to sign the form.");
       return;
     }
     if (!agreement) {
@@ -221,7 +232,7 @@ export function IndemnityDialog({
           <button
             type="button"
             className={PRIMARY_BUTTON_CLASS}
-            disabled={!agreement}
+            disabled={!agreement || !nameMatches}
             onClick={() => void confirmSignature()}
           >
             Confirm Signature
@@ -264,20 +275,27 @@ export function IndemnityDialog({
 
         <label className="block space-y-1.5">
           <span className={LABEL_CLASS}>
-            Full Legal Name
+            Company Name
             <span className="ml-0.5 text-destructive">*</span>
           </span>
           <input
             value={typedSignature}
-            placeholder="Enter your full legal name"
+            placeholder="Enter your company name"
             className={FIELD_CLASS}
+            aria-invalid={Boolean(typedSignature.trim()) && !nameMatches}
             onChange={event => setTypedSignature(event.target.value)}
           />
+          {typedSignature.trim() && !nameMatches && (
+            <span className="block text-xs text-destructive">{`This must match your company name: ${companyName}`}</span>
+          )}
         </label>
 
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className={LABEL_CLASS}>Signature</span>
+            <span className={LABEL_CLASS}>
+              Signature
+              <span className="ml-0.5 text-destructive">*</span>
+            </span>
             <div className="inline-flex rounded-[12px] border-[0.5px] border-border p-0.5">
               {([
                 "draw",
@@ -311,6 +329,7 @@ export function IndemnityDialog({
                     onPointerMove={moveDraw}
                     onPointerUp={endDraw}
                     onPointerLeave={endDraw}
+                    onPointerCancel={endDraw}
                   />
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-muted-foreground">Draw your signature in the box above.</p>

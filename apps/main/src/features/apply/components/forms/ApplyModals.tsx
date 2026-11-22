@@ -11,6 +11,10 @@ import {
   getOnboardingVehicleImportTemplate,
 } from "@truckmoov/api/auth";
 import {
+  PURCHASE_TYPE_LABELS,
+  VEHICLE_TYPE_LABELS,
+} from "@truckmoov/app-core/apply/applyTypes";
+import {
   Download,
   FileSpreadsheet,
   FileText,
@@ -22,8 +26,8 @@ import {
   useState,
 } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
+import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
@@ -57,10 +61,6 @@ import {
   SERVER_VEHICLE_FIELD,
   vehicleSchema,
 } from "@/features/apply/utils/applySchemas";
-import {
-  PURCHASE_TYPE_LABELS,
-  VEHICLE_TYPE_LABELS,
-} from "@/features/apply/utils/applyTypes";
 import { cn } from "@/lib/utils";
 
 const EMPTY_VEHICLE: VehicleValues = {

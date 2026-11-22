@@ -1,17 +1,18 @@
 "use client";
 
 import type { OnboardingApplication } from "@truckmoov/api/auth";
-import type { ReactNode } from "react";
 import type {
   ApplicantCustomerType,
   RequiredDocument,
-} from "@/features/get-started/utils/applyTypes";
+} from "@truckmoov/app-core/apply/applyTypes";
+import type { ReactNode } from "react";
 import { PencilSimple } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
 import {
   getOnboardingM2mPlansQueryOptions,
   getPickupLocationsQueryOptions,
 } from "@truckmoov/api/auth";
+import { requestedDeviceTotal } from "@truckmoov/app-core/apply/applyTypes";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
 import {
   InfoRow,
@@ -22,8 +23,6 @@ import {
   StepLayout,
 } from "@/features/get-started/components/StepParts";
 import { applicationToDetails } from "@/features/get-started/schemas/applySchemas";
-import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
-import { requestedDeviceTotal } from "@/features/get-started/utils/applyHelpers";
 import { CARD_CLASS } from "@/features/get-started/utils/getStartedContent";
 
 /** Everything saved on the application, read back from the server before submitting (main app: ReviewStep). */
@@ -55,9 +54,9 @@ export function ReviewStep({
   const plan = plansQuery.data?.data.plans.find(entry => entry.code === application.m2mPlanCode);
   const { organization } = application;
   const details = applicationToDetails(application);
-  const fulfilment = useApplyDraftStore(state => state.fulfilment);
-  const delivery = customerType === "enterprise" && fulfilment.method === "delivery";
-  const pickupName = useQuery(getPickupLocationsQueryOptions()).data?.data.find(location => location.id === fulfilment.store)?.name;
+  const savedFulfilment = application.fulfilment;
+  const pickupId = savedFulfilment?.method === "pickup" ? savedFulfilment.pickupLocationId : null;
+  const pickup = useQuery(getPickupLocationsQueryOptions()).data?.data.find(location => location.id === pickupId);
   const isEnterprise = customerType === "enterprise";
   const deviceTotal = requestedDeviceTotal(application);
   const documentRows = requiredDocuments.map(document => ({
@@ -78,8 +77,8 @@ export function ReviewStep({
       )}
     >
       <StepHeading
-        title="Review your application"
-        description="Check Everything Below Carefully. You Can Go Back And Edit Any Section Before Submitting."
+        title="Review your application before submitting"
+        description="Check everything below carefully. You can go back and edit any section before submitting."
       />
 
       <div className="mt-[30px] space-y-4">
@@ -90,7 +89,9 @@ export function ReviewStep({
           <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
             <Field
               label="Customer Type"
-              value={isEnterprise ? "Enterprise Customer" : "Owner Operator"}
+              value={isEnterprise
+                ? "Fleet Provider (more than 10 vehicles)"
+                : "Owner-Operator (10 vehicles or fewer)"}
             />
             <Field
               label="Organization Name"
@@ -132,6 +133,14 @@ export function ReviewStep({
               label="License Plan"
               value={plan?.name ?? application.m2mPlanCode ?? ""}
             />
+            {application.telecomMaster?.numberType && (
+              <Field
+                label="Telecom Master"
+                value={application.telecomMaster.numberType === "existing"
+                  ? `Existing MTN number +${application.telecomMaster.msisdn ?? ""}`
+                  : "New Telecom Master SIM (allocation pending)"}
+              />
+            )}
             <Field
               label="Street Address"
               value={organization.streetAddress}
@@ -165,24 +174,31 @@ export function ReviewStep({
             <dl className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2">
               <Field
                 label="Device fulfilment method"
-                value={delivery ? "Delivery" : "Pickup"}
+                value="Pickup"
               />
               <Field
-                label={delivery ? "Delivery address" : "Pickup location"}
-                value={delivery
-                  ? [
-                      fulfilment.deliveryStreet,
-                      fulfilment.deliveryCity,
-                      fulfilment.deliveryState,
-                    ].filter(part => part.trim()).join(", ")
-                  : pickupName
-                    ? `${pickupName}, ${fulfilment.area}, ${fulfilment.state}`
-                    : ""}
+                label="Pickup location"
+                value={pickup ? `${pickup.name}, ${pickup.area}, ${pickup.state}` : ""}
               />
             </dl>
           )}
+          {application.deviceRequests.length > 0 && (
+            <ul className="mt-4 space-y-2">
+              <li className="text-2xs tracking-wide text-muted-foreground uppercase">Devices requested</li>
+              {application.deviceRequests.map(request => (
+                <li
+                  key={request.id}
+                  className="flex items-center justify-between gap-3 rounded-[12px] border-[0.5px] border-border px-3 py-2"
+                >
+                  <span className="min-w-0 truncate text-sm font-medium text-heading">{request.useCase || "Device request"}</span>
+                  <Pill>{request.quantity}</Pill>
+                </li>
+              ))}
+            </ul>
+          )}
           {application.vehicles.length > 0 && (
             <ul className="mt-4 space-y-2">
+              <li className="text-2xs tracking-wide text-muted-foreground uppercase">Vehicles</li>
               {application.vehicles.map(vehicle => (
                 <li
                   key={vehicle.id}
@@ -196,19 +212,6 @@ export function ReviewStep({
                       vehicle.year,
                     ].filter(Boolean).join(" · ") || "—"}
                   </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {application.deviceRequests.length > 0 && (
-            <ul className="mt-2 space-y-2">
-              {application.deviceRequests.map(request => (
-                <li
-                  key={request.id}
-                  className="flex items-center justify-between gap-3 rounded-[12px] border-[0.5px] border-border px-3 py-2"
-                >
-                  <span className="min-w-0 truncate text-sm font-medium text-heading">{request.useCase || "Device request"}</span>
-                  <Pill>{`${request.quantity} device${request.quantity === 1 ? "" : "s"}`}</Pill>
                 </li>
               ))}
             </ul>

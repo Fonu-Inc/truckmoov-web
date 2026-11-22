@@ -8,6 +8,10 @@ import {
   FileText,
 } from "@phosphor-icons/react/dist/ssr";
 import {
+  PURCHASE_TYPE_LABELS,
+  VEHICLE_TYPE_LABELS,
+} from "@truckmoov/app-core/apply/applyTypes";
+import {
   useEffect,
   useRef,
   useState,
@@ -23,10 +27,6 @@ import {
   SERVER_VEHICLE_FIELD,
   vehicleSchema,
 } from "@/features/get-started/schemas/applySchemas";
-import {
-  PURCHASE_TYPE_LABELS,
-  VEHICLE_TYPE_LABELS,
-} from "@/features/get-started/utils/applyTypes";
 import {
   FIELD_CLASS,
   LABEL_CLASS,
@@ -404,7 +404,7 @@ export function VehicleModal({
                     <CloudArrowUp className="size-6 text-muted-foreground" />
                     <span className="text-sm font-medium text-heading">Upload vehicle license</span>
                     <span className="text-xs text-muted-foreground">
-                      {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG, max 10MB"}
+                      {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG — max 10MB"}
                     </span>
                   </button>
                 )}

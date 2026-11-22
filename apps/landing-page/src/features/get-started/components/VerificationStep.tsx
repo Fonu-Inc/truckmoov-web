@@ -31,7 +31,6 @@ export function VerificationStep({
   onVerify,
   onBack,
   onNext,
-  onChangeContact,
 }: {
   channel: "email" | "phone";
   /** Masked by the server when available, otherwise what the applicant typed. */
@@ -44,8 +43,6 @@ export function VerificationStep({
   onVerify: (code: string) => Promise<boolean>;
   onBack: () => void;
   onNext: () => void;
-  /** Back to the details step, where the email or phone is edited. */
-  onChangeContact: () => void;
 }) {
   const isEmail = channel === "email";
   const [
@@ -91,7 +88,7 @@ export function VerificationStep({
       footer={(
         <DialogFooter
           onBack={onBack}
-          continueLabel="Continue"
+          continueLabel="Next"
           continueDisabled={!verified}
           onContinue={onNext}
         />
@@ -105,7 +102,7 @@ export function VerificationStep({
             >
               <SuccessMark className="mt-[90px]" />
               <h2 className="mt-[21px] text-[20px] leading-[25px] font-semibold text-heading">
-                {isEmail ? "Email Verified" : "Phone Number Verified"}
+                {isEmail ? "Email address verified" : "Phone number verified"}
               </h2>
               <p className="mt-[3px] text-sm leading-5 text-heading">{destination}</p>
             </div>
@@ -113,13 +110,13 @@ export function VerificationStep({
         : (
             <div className="sm:px-[17px]">
               <StepHeading
-                title={isEmail ? "Verify your email" : "Verify your phone number"}
+                title={isEmail ? "Check your inbox" : "Check your messages"}
                 description={(
                   <>
-                    We've Sent A 6-Digit Code To
+                    We sent a 6-digit code to
                     {" "}
                     <span className="font-semibold text-heading">{destination || `your ${label}`}</span>
-                    . Enter It Below To Continue.
+                    . Enter it below to continue.
                   </>
                 )}
                 descriptionClassName="max-w-[420px]"
@@ -137,31 +134,18 @@ export function VerificationStep({
                   Verifying…
                 </p>
               )}
-              <div className="mt-[17px] space-y-3">
-                <InfoRow>
-                  {isEmail ? "Didn't receive the email?" : "Didn't receive the code?"}
-                  {" "}
-                  <button
-                    type="button"
-                    onClick={onSend}
-                    disabled={sending || cooldown > 0}
-                    className={LINK_CLASS}
-                  >
-                    {sending ? "Sending…" : cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
-                  </button>
-                </InfoRow>
-                <InfoRow>
-                  {isEmail ? "Made a mistake with the email?" : "Made a mistake with the phone number?"}
-                  {" "}
-                  <button
-                    type="button"
-                    onClick={onChangeContact}
-                    className={LINK_CLASS}
-                  >
-                    {isEmail ? "Change Email" : "Change Phone Number"}
-                  </button>
-                </InfoRow>
-              </div>
+              <InfoRow className="mt-[17px]">
+                Didn't receive it?
+                {" "}
+                <button
+                  type="button"
+                  onClick={onSend}
+                  disabled={sending || cooldown > 0}
+                  className={LINK_CLASS}
+                >
+                  {sending ? "Sending…" : cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
+                </button>
+              </InfoRow>
             </div>
           )}
     </StepLayout>

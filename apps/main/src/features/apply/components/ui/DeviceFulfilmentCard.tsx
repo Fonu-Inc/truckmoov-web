@@ -1,4 +1,4 @@
-import type { DeviceFulfilment } from "@/features/apply/utils/applyTypes";
+import type { DeviceFulfilment } from "@truckmoov/app-core/apply/applyTypes";
 
 import { useQuery } from "@tanstack/react-query";
 import { getPickupLocationsQueryOptions } from "@truckmoov/api/auth";

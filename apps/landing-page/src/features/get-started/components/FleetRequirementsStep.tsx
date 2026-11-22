@@ -32,6 +32,16 @@ import {
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
 import {
+  fulfilmentComplete,
+  fulfilmentToPayload,
+  OWNER_OPERATOR_VEHICLE_LIMIT,
+  OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE,
+  PURCHASE_TYPE_LABELS,
+  requestedDeviceTotal,
+  VEHICLE_TYPE_LABELS,
+  vehicleSummary,
+} from "@truckmoov/app-core/apply/applyTypes";
+import {
   useEffect,
   useState,
 } from "react";
@@ -52,16 +62,6 @@ import {
   vehicleToValues,
 } from "@/features/get-started/schemas/applySchemas";
 import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
-import { requestedDeviceTotal } from "@/features/get-started/utils/applyHelpers";
-import {
-  fulfilmentComplete,
-  fulfilmentToPayload,
-  OWNER_OPERATOR_VEHICLE_LIMIT,
-  OWNER_OPERATOR_VEHICLE_LIMIT_MESSAGE,
-  PURCHASE_TYPE_LABELS,
-  VEHICLE_TYPE_LABELS,
-  vehicleSummary,
-} from "@/features/get-started/utils/applyTypes";
 import {
   CARD_CLASS,
   ICON_BUTTON_CLASS,
@@ -74,18 +74,20 @@ import { cn } from "@/shared/utils";
  * Vehicles one at a time or by CSV, then device requests, all saved on the application as
  * they are made (main app: FleetRequirementsStep). Devices are bound to vehicles: the total
  * requested can never exceed the vehicles added. The main app's toasts show in the dialog's
- * banner (`onError`) here.
+ * banner (`onError` / `onSuccess`) here.
  */
 export function FleetRequirementsStep({
   application,
   onBack,
   onNext,
   onError,
+  onSuccess,
 }: {
   application: OnboardingApplication;
   onBack: () => void;
   onNext: () => void;
   onError: (message: string) => void;
+  onSuccess: (message: string) => void;
 }) {
   const id = application.id;
   const addVehicle = useAddOnboardingVehicle();
@@ -148,23 +150,13 @@ export function FleetRequirementsStep({
       }
     : null;
 
-  // A resumed application in a browser without the draft: show what was saved.
+  // A resumed application in a browser without the draft: show the saved pickup point.
   const savedFulfilment = application.fulfilment;
   const pickupLocations = useQuery(getPickupLocationsQueryOptions()).data?.data;
   useEffect(
     () => {
-      if (!savedFulfilment || fulfilment.store || fulfilment.deliveryStreet)
+      if (savedFulfilment?.method !== "pickup" || fulfilment.store)
         return;
-      if (savedFulfilment.method === "delivery") {
-        setFulfilment({
-          ...fulfilment,
-          method: "delivery",
-          deliveryStreet: savedFulfilment.deliveryStreet,
-          deliveryCity: savedFulfilment.deliveryCity,
-          deliveryState: savedFulfilment.deliveryState,
-        });
-        return;
-      }
       const location = pickupLocations?.find(item => item.id === savedFulfilment.pickupLocationId);
       if (location) {
         setFulfilment({
@@ -187,25 +179,19 @@ export function FleetRequirementsStep({
   async function handleNext() {
     if (!canProceed)
       return;
-    if (deviceTotal > 0 && !fulfilmentComplete(
-      fulfilment,
-      isOwnerOperator,
-    )) {
-      onError("Complete the Device Fulfilment details to continue.");
-      return;
-    }
     if (deviceTotal > 0) {
+      if (!fulfilmentComplete(fulfilment)) {
+        onError("Choose an MTN Connect Store or Service Centre for device pickup to continue.");
+        return;
+      }
       try {
         await saveFulfilment.mutateAsync({
           id,
-          data: fulfilmentToPayload(
-            fulfilment,
-            isOwnerOperator,
-          ),
+          data: fulfilmentToPayload(fulfilment),
         });
       }
       catch (error) {
-        onError((error as ServerErrorResponse).message || "Your device fulfilment couldn't be saved. Try again.");
+        onError((error as ServerErrorResponse).message || "Your device pickup couldn't be saved. Try again.");
         return;
       }
     }
@@ -225,7 +211,7 @@ export function FleetRequirementsStep({
     const hasLicence = application.documents.some(document => document.vehicleId === vehicle.id);
     const devicesAfter = vehicles.length - 1;
     if (deviceTotal > devicesAfter) {
-      onError(`Remove a device request first: ${deviceTotal} devices can't be fitted to ${devicesAfter} vehicle${devicesAfter === 1 ? "" : "s"}.`);
+      onError(`Remove a device request first — ${deviceTotal} devices can't be fitted to ${devicesAfter} vehicle${devicesAfter === 1 ? "" : "s"}.`);
       return;
     }
     if (hasLicence && !(await confirm({
@@ -241,6 +227,7 @@ export function FleetRequirementsStep({
         id,
         vehicleId: vehicle.id,
       });
+      onSuccess(`${vehicle.registrationNumber} removed.`);
     }
     catch (error) {
       onError((error as { message?: string }).message || "The vehicle couldn't be removed.");
@@ -304,6 +291,7 @@ export function FleetRequirementsStep({
         id,
         requestId,
       });
+      onSuccess("Device request removed.");
     }
     catch (error) {
       onError((error as { message?: string }).message || "The request couldn't be removed.");
@@ -392,7 +380,7 @@ export function FleetRequirementsStep({
     >
       <StepHeading
         title="Fleet Requirements"
-        description="Add Your Vehicles And, Request Tracking Devices. Devices Provisioned Through Fleet Pro Use MTN SIM Connectivity."
+        description="Add your vehicles and, request Tracking devices. Devices provisioned through Fleet Pro use MTN SIM connectivity."
       />
 
       <div className="mt-[30px] space-y-4">
@@ -507,7 +495,6 @@ export function FleetRequirementsStep({
         </SectionCard>
 
         <DeviceFulfilmentCard
-          isOwnerOperator={isOwnerOperator}
           value={fulfilment}
           onChange={setFulfilment}
         />
@@ -539,6 +526,7 @@ export function FleetRequirementsStep({
                 file: licence,
               });
             }
+            onSuccess("Vehicle updated.");
             return;
           }
           await addVehicle.mutateAsync({
@@ -546,6 +534,7 @@ export function FleetRequirementsStep({
             data: vehicleToPayload(values),
             licence: licence as File,
           });
+          onSuccess(`${values.registrationNumber} added.`);
         }}
       />
       <RequestDevicesModal
@@ -565,6 +554,7 @@ export function FleetRequirementsStep({
             data,
             editingRequest?.id,
           );
+          onSuccess(editingRequest ? "Device request updated." : "Device request added.");
         }}
       />
       <VehicleImportModal

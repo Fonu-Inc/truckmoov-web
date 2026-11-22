@@ -28,7 +28,7 @@ export function DialogHeader({ returning = false }: { returning?: boolean }) {
         <DialogDescription className="text-xs text-muted-foreground">
           {returning
             ? "You already have an existing relationship or account with MTN, Complete your FleetPro Onboarding."
-            : "Complete The Steps Below To Apply For A Fleet Pro Account."}
+            : "Complete the steps below to submit your application for a Fleet Pro account."}
         </DialogDescription>
       </div>
       <DialogClose className="absolute top-1/2 right-9 -translate-y-1/2 cursor-pointer rounded-sm text-foreground transition-opacity hover:opacity-70 max-sm:right-4">

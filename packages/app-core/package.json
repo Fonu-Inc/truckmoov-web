@@ -9,6 +9,8 @@
     "./package.json": "./package.json",
     "./tsconfig.base.json": "./tsconfig.base.json",
     "./eslint-config": "./src/lib/eslint-config.mjs",
+    "./apply/applyTypes": "./src/apply/applyTypes.ts",
+    "./apply/companyName": "./src/apply/companyName.ts",
     "./utils/general-utils": "./src/utils/general-utils.ts",
     "./utils/time-utils": "./src/utils/time-utils.ts"
   },
