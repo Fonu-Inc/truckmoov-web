@@ -310,9 +310,10 @@ export type SetGeofenceVehiclesPayload = {
 
 export type CreateDeviceSetupRequestPayload = {
   data: {
-    manufacturer: string
+    /** Optional: the platform picks the hardware when it fulfils the request. */
+    manufacturer?: string
     model?: string
-    trackerType: DeviceTrackerType
+    trackerType?: DeviceTrackerType
     quantity?: number
     simRequired?: boolean
     carrierId?: string
@@ -1352,6 +1353,10 @@ export type FleetDevice = {
 // TRU-FE-4 § 1 — status cards + allowance bar
 export type DevicesSummary = {
   total: number
+  /** In service and reported within the heartbeat threshold. */
+  online?: number
+  /** In service and not online, including devices that have never reported. */
+  offline?: number
   active: number
   registered: number
   assigned: number

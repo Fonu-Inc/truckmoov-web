@@ -20,7 +20,9 @@ import {
   useUpdateDeviceFirmware,
   useVehicles,
 } from "@truckmoov/api/fleet";
-import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  formatRelative, formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
 import {
   CheckCircle2,
   Cpu,
@@ -313,8 +315,8 @@ export default function DeviceManagement() {
   ));
   const stats = {
     total: summary?.total ?? devices.length,
-    active: states.filter(s => s === "active").length,
-    offline: states.filter(s => s === "offline").length,
+    active: summary?.online ?? states.filter(s => s === "active").length,
+    offline: summary?.offline ?? states.filter(s => s === "offline").length,
     suspended: summary?.suspended ?? states.filter(s => s === "suspended").length,
   };
 
@@ -377,13 +379,15 @@ export default function DeviceManagement() {
   };
 
   const handleCreateDeviceSetupRequest = async (data: {
-    manufacturer: string;
-    trackerType: DeviceTrackerType;
     quantity: number;
-    state?: string;
-    city?: string;
     useCase: string;
     notes?: string;
+    state?: string;
+    city?: string;
+    preferredDate?: string;
+    preferredTime?: string;
+    manufacturer?: string;
+    trackerType?: DeviceTrackerType;
   }) => {
     try {
       const result = await createDeviceSetupRequest.mutateAsync({
@@ -451,22 +455,6 @@ export default function DeviceManagement() {
   ];
 
   const deviceColumns: ColumnDef<FleetDevice>[] = [
-    {
-      id: "deviceId",
-      header: "Device ID",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <span
-          className="rounded bg-secondary px-2 py-1 font-mono text-xs"
-          title={row.original.id}
-        >
-          {row.original.id.slice(
-            0,
-            8,
-          )}
-        </span>
-      ),
-    },
     {
       id: "model",
       header: "Manufacturer / Model",
@@ -600,6 +588,16 @@ export default function DeviceManagement() {
       accessorFn: device => device.lastSeen ?? "",
       meta: { className: "text-sm text-muted-foreground" },
       cell: ({ row }) => (row.original.lastSeen ? formatRelative(row.original.lastSeen) : "Never"),
+    },
+    {
+      id: "dateAdded",
+      header: "Date Added",
+      accessorFn: device => device.createdAt,
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => formatWithPattern(
+        row.original.createdAt,
+        "d MMM yyyy, HH:mm",
+      ),
     },
     {
       id: "actions",
@@ -914,7 +912,6 @@ export default function DeviceManagement() {
         open={isRequestDialogOpen}
         onOpenChange={setIsRequestDialogOpen}
         onSubmit={handleCreateDeviceSetupRequest}
-        manufacturers={manufacturers}
       />
 
       <DeviceFormDialog
@@ -1035,6 +1032,7 @@ export default function DeviceManagement() {
                 type: detailVehicle.type as "truck" | "van" | "trailer",
                 status: detailVehicle.status,
                 capacity: detailVehicle.capacity || 0,
+                currentDriver: detailVehicle.assignedDriverName ?? undefined,
               }
             : undefined}
           sim={detailSim
@@ -1048,8 +1046,14 @@ export default function DeviceManagement() {
                 dataUsage: detailSim.dataUsedGb ?? 0,
                 dataLimit: detailSim.dataLimitGb ?? 0,
                 deviceId: detailSim.assignedDevice?.id,
+                simType: detailSim.simType,
+                simStatus: detailSim.status,
               }
             : null}
+          onUpdateFirmware={() => {
+            setFirmwareDevice(detailDevice);
+            setFirmwareVersion(detailDevice.firmwareVersion || "");
+          }}
         />
       )}
     </>

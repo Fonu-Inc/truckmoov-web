@@ -37,6 +37,7 @@ import {
   YAxis,
 } from "recharts";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
@@ -70,8 +71,12 @@ type DeviceDetailsSheetProps = {
   onOpenChange: (open: boolean) => void;
   device: ExtendedDevice | null;
   vehicle?: Vehicle | null;
-  sim?: SIMCard | null;
+  sim?: (SIMCard & {
+    simType?: string | null; simStatus?: string | null;
+  }) | null;
   provisioning?: Pick<FleetDevice, "provisionStatus" | "provisionAttempts" | "provisionNextAttemptAt" | "provisionError"> | null;
+  /** Opens the shared firmware-version dialog from the page. */
+  onUpdateFirmware?: () => void;
 };
 
 const healthTone: Record<DeviceHealth, string> = {
@@ -98,6 +103,7 @@ export function DeviceDetailsSheet({
   vehicle,
   sim,
   provisioning,
+  onUpdateFirmware,
 }: DeviceDetailsSheetProps) {
   const deviceId = device?.id ?? "";
   const overviewQuery = useDeviceOverview(deviceId);
@@ -176,8 +182,8 @@ export function DeviceDetailsSheet({
           >
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="connectivity">Connectivity</TabsTrigger>
-              <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
+              <TabsTrigger value="connectivity">Connectivity &amp; Telemetry</TabsTrigger>
+              <TabsTrigger value="telemetry">Signal &amp; Data</TabsTrigger>
               <TabsTrigger value="firmware">Firmware</TabsTrigger>
             </TabsList>
 
@@ -283,13 +289,21 @@ export function DeviceDetailsSheet({
                           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                             <Truck className="h-5 w-5 text-primary" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="font-medium">{vehicle.registrationNumber}</p>
                             <p className="text-xs text-muted-foreground">
-                              {vehicle.make}
-                              {" "}
-                              {vehicle.model}
+                              {[
+                                vehicle.make,
+                                vehicle.model,
+                                vehicle.type ? `· ${vehicle.type}` : null,
+                              ].filter(Boolean).join(" ")}
                             </p>
+                            {vehicle.currentDriver && (
+                              <p className="mt-2 flex items-center justify-between gap-3 text-xs">
+                                <span className="text-muted-foreground">Assigned Driver</span>
+                                <span className="font-medium text-foreground">{vehicle.currentDriver}</span>
+                              </p>
+                            )}
                           </div>
                         </div>
                       )
@@ -310,24 +324,49 @@ export function DeviceDetailsSheet({
                   {sim
                     ? (
                         <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Mobile Number</span>
-                            <span className="font-medium">{sim.mobileNumber}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Operator</span>
-                            <span>{sim.networkOperator}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Data Usage</span>
-                            <span>
-                              {sim.dataUsage}
-                              /
-                              {sim.dataLimit}
-                              {" "}
-                              GB
-                            </span>
-                          </div>
+                          {[
+                            [
+                              "ICCID",
+                              sim.iccid,
+                            ],
+                            [
+                              "Phone Number",
+                              sim.mobileNumber,
+                            ],
+                            [
+                              "IMSI",
+                              sim.imsi,
+                            ],
+                            [
+                              "Carrier",
+                              sim.networkOperator,
+                            ],
+                            [
+                              "Data Usage",
+                              `${sim.dataUsage} / ${sim.dataLimit} GB`,
+                            ],
+                            [
+                              "SIM Status",
+                              sim.simStatus ?? sim.status,
+                            ],
+                            [
+                              "SIM Type",
+                              sim.simType,
+                            ],
+                          ].map(([
+                            label,
+                            value,
+                          ]) => value
+                            ? (
+                                <div
+                                  key={label}
+                                  className="flex justify-between gap-4 text-sm"
+                                >
+                                  <span className="text-muted-foreground">{label}</span>
+                                  <span className="truncate text-right font-medium">{value}</span>
+                                </div>
+                              )
+                            : null)}
                         </div>
                       )
                     : (
@@ -406,16 +445,25 @@ export function DeviceDetailsSheet({
                       <div className="grid grid-cols-3 gap-3">
                         <div className="rounded-lg bg-secondary/50 p-3 text-center">
                           <p className="text-xs text-muted-foreground">Expected</p>
-                          <p className="text-sm font-semibold mt-1">{formatSeconds(connectivity.status_timeout_seconds)}</p>
+                          <p className="text-sm font-semibold mt-1">
+                            {connectivity.status_timeout_seconds}
+                            s
+                          </p>
                         </div>
                         <div className="rounded-lg bg-warning/10 p-3 text-center">
                           <p className="text-xs text-warning">Online ≤</p>
                           {/* ponytail: online threshold not in API, derived as 3× reporting interval; use a real field if the backend adds one */}
-                          <p className="text-sm font-semibold mt-1 text-warning">{formatSeconds(connectivity.heartbeat.online_threshold_seconds)}</p>
+                          <p className="text-sm font-semibold mt-1 text-warning">
+                            {connectivity.heartbeat.online_threshold_seconds}
+                            s
+                          </p>
                         </div>
                         <div className="rounded-lg bg-destructive/10 p-3 text-center">
                           <p className="text-xs text-destructive">Offline &gt;</p>
-                          <p className="text-sm font-semibold mt-1 text-destructive">{formatSeconds(connectivity.heartbeat.offline_threshold_seconds)}</p>
+                          <p className="text-sm font-semibold mt-1 text-destructive">
+                            {connectivity.heartbeat.offline_threshold_seconds}
+                            s
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -542,16 +590,33 @@ export function DeviceDetailsSheet({
               className="mt-4 space-y-4"
             >
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Settings className="h-4 w-4 text-primary" />
                     Current Configuration
                   </CardTitle>
+                  {onUpdateFirmware && (
+                    <Button
+                      size="sm"
+                      onClick={onUpdateFirmware}
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Update Firmware
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Firmware Version</span>
-                    <span className="font-mono">{device.firmwareVersion || "Unknown"}</span>
+                    <span className="font-mono">{firmware?.current_version || device.firmwareVersion || "Unknown"}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Reporting Interval</span>
+                    <span className="font-medium">{formatSeconds(firmware?.reporting_interval_seconds ?? connectivity?.reporting_interval_seconds)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Protocol</span>
+                    <span className="font-medium uppercase">{firmware?.protocol || "—"}</span>
                   </div>
                   {connectivity && (
                     <div className="flex justify-between text-sm">

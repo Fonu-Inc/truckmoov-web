@@ -33,10 +33,7 @@ const CUSTOM_VALUE = "__custom__";
 
 const deviceSchema = z
   .object({
-    deviceName: z.string().min(
-      1,
-      "Device name is required",
-    ).max(60),
+    deviceName: z.string().max(60).optional(),
     imei: z
       .string()
       .min(
@@ -186,24 +183,26 @@ export function DeviceFormDialog({
             onSubmit={form.handleSubmit(handleSubmit)}
             className="space-y-4"
           >
-            <FormField
-              control={form.control}
-              name="deviceName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Device Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g. Truck 12 — Tracker"
-                      maxLength={60}
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isEditing && (
+              <FormField
+                control={form.control}
+                name="deviceName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Device Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. Truck 12 — Tracker"
+                        maxLength={60}
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
