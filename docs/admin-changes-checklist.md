@@ -144,3 +144,28 @@ Reference moved to `fleetflow-pro-fork-main` (`src/pages/platform/*`). Ported fr
 - [x] Live data: KPIs + Platform Totals (overall → `getSystemDashboard` / `getSystemTenantsSummary` (active) / `getSystemDevicesSummary`; This/Last Week → tenants onboarded in the period from `getSystemTenants`, summed, as the fork), revenue (`getSystemRevenueByMonth(12)`, NGN/USD via `useCurrency`), Recent Activity (`getSystemActivityLog`, period filters a 100-entry window by `occurredAt`; icon bucketed from service/entity/action; tenant name from the tenant list, else "System"), Tenants tab (`getSystemTenants`; tenant type = fork rule — owner-operator wins, else Enterprise), Vehicles per Tenant (period tenants), manufacturers (`getSystemDeviceManufacturers`, wired to the chart's range control), data usage (`getSystemSimDataUsage(7)`)
 - [x] The five KPI `change` percentages are live from `GET /auth/system/dashboard` (`changes.totalTenants`, `activeTenants`, `totalVehicles`, `totalDrivers`, `totalDevices`); no fallback constants. No demo chart series remain
 - [~] As the fork, the Revenue & Tenant Growth and Tenant Distribution range controls are presentational (chart always shows 12 months / all tenants). The manufacturers control offers 7 / 30 / 90 days only (fork: Today / Yesterday / 7 / 30) because the endpoint takes no shorter window. Period selector doesn't apply to the revenue, manufacturer, data-usage or Tenants-tab stakeholder figures (fork doesn't either)
+
+## 9. Backend wiring — IoT SIMs and M2M IoT Bundles (22 Nov 2026)
+
+The fleetflow screens are unchanged; this wires the fields the reference showed as mock or "—" to the
+`apps/auth` routes behind them (`/auth/system/sims/*`, `/auth/system/bundle-catalog/*`,
+`/auth/system/bundle-adoption`). Types are hand-written in `packages/api/src/auth/types.ts` (see [api.md](api.md)).
+
+### IoT SIMs
+
+- [x] SIM Inventory cards — Assigned and Suspended read `summary.assigned` / `summary.suspended` (`SystemSimsSummary`); they were picked out of `byStatus`
+- [x] Activation cards — Completed reads `summary.completed` from `GET /auth/system/sims/batches/summary`. The extra all-batches query that counted it is gone; the all-batches list still feeds the Operator filter options
+- [x] Bulk Import — Download Template fetches `GET /auth/system/sims/import/template` (`getSystemSimImportTemplateQueryOptions`). The file's header is `ICCID,Phone Number,IMSI,Carrier`, which is what `parseSimCsv` reads; the inline template text is gone
+- [x] An approved SIM request is recorded as a completed batch (SIMs reach the tenant already activated on the bundle it paid for), so Activation no longer shows approved requests as pending forever. No admin code change
+
+### M2M IoT Bundles
+
+- [x] Data Bundles — the catalogue is the platform's own `GET /auth/system/bundle-catalog` (`status=all`), not the tenant `data-bundles/rates` route, which hid inactive bundles. The carrier label is `carrierName`. `BundleCatalogItem` in `packages/api` now matches the server (`carrier`, `carrierName`, `price`, `active`)
+- [x] KPI strip — Total Active Bundles, Expiring in 7 Days, SIMs Across Tenants and Monthly Bundle Spend come from `GET /auth/system/bundle-catalog/summary` (`getBundleSummaryQueryOptions`); three of them were "—"
+- [x] Add Bundle — the Active switch is sent on create (`active`); the follow-up update that switched a new bundle off is gone. A duplicate code answers 409 and shows as the error toast
+- [x] Export Data (catalogue) — server-side `GET /auth/system/bundle-catalog/export` with the table's search, carrier and status, instead of a browser-built CSV
+- [x] Tenant Adoption — live from `GET /auth/system/bundle-adoption` (`getBundleAdoptionQueryOptions`). Each tenant's live bundles are grouped per mobile number into the table's existing shape (`toTenantAdoption`); the tab no longer renders an empty constant. Monthly spend is the server's `monthlySpendNgn` (live bundles only, yearly divided by 12)
+- [~] Subscription vs Top-up is derived, not stored: the first live bundle on a mobile number is its Subscription and each one added on top is a Top-up (`kind` on the adoption line)
+- [~] Tenant Adoption Export Data stays a browser CSV of the filtered per-SIM view; the server export is per tenant
+- [~] Tenant Adoption Vehicle column shows nothing: adoption lines carry `vehicleId` only. Needs a fleet lookup for the plate (`ponytail:` in `toTenantAdoption`)
+- [~] The Bundle Type filter is applied client-side to the per-SIM rows, as in the fork; the endpoint also takes `bundleType`

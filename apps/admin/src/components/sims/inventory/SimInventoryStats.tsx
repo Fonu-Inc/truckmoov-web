@@ -37,7 +37,7 @@ export function SimInventoryStats({
       />
       <StatCard
         title="Assigned"
-        value={value(summary?.byStatus.assigned ?? (summary ? 0 : undefined))}
+        value={value(summary?.assigned)}
         icon={Smartphone}
         loading={loading}
       />
@@ -50,7 +50,7 @@ export function SimInventoryStats({
       />
       <StatCard
         title="Suspended"
-        value={value(summary?.byStatus.suspended ?? (summary ? 0 : undefined))}
+        value={value(summary?.suspended)}
         icon={XCircle}
         variant="danger"
         loading={loading}

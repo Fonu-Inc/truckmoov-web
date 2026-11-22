@@ -321,8 +321,11 @@ import {
   updateOnboardingVehicle,
   deleteOnboardingApplicationDocument,
   exportBundleAdoption,
+  exportBundleCatalog,
   getBundleAdoption,
   getBundleCatalog,
+  getBundleSummary,
+  getSystemSimImportTemplate,
   getCommunicationsWalletRates,
   getCommunicationsWalletSpendBreakdown,
   getCommunicationsWalletSpendTrend,
@@ -405,6 +408,7 @@ import type {
   SystemFailedLoginsQuery,
   SystemAuthEventsQuery,
   SystemSecurityEventsQuery,
+  BundleAdoptionQuery,
   BundleCatalogQuery,
   CommunicationsWalletRangeQuery,
   CreateOnboardingApplicationResponse,
@@ -620,7 +624,10 @@ export const AUTH_QUERY_KEY = {
   communicationsWalletSpendBreakdown: (payload?: CommunicationsWalletRangeQuery) =>
     ['communicationsWalletSpendBreakdown', payload],
 
-  bundleAdoption: ['bundleAdoption'],
+  bundleAdoption: (payload?: BundleAdoptionQuery) =>
+    payload ? ['bundleAdoption', payload] : ['bundleAdoption'],
+  bundleSummary: ['bundleSummary'] as const,
+  systemSimImportTemplate: ['systemSimImportTemplate'] as const,
   bundleCatalog: (payload?: BundleCatalogQuery) =>
     payload ? ['bundleCatalog', payload] : ['bundleCatalog'],
 
@@ -2187,6 +2194,8 @@ export function useCreateSystemBundle() {
     mutationFn: createSystemBundle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dataBundleRates'] })
+      for (const key of ['bundleCatalog', 'bundleSummary', 'bundleAdoption'])
+        queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -2196,6 +2205,8 @@ export function useUpdateSystemBundle() {
     mutationFn: updateSystemBundle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dataBundleRates'] })
+      for (const key of ['bundleCatalog', 'bundleSummary', 'bundleAdoption'])
+        queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -2205,6 +2216,8 @@ export function useDeleteSystemBundle() {
     mutationFn: deleteSystemBundle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dataBundleRates'] })
+      for (const key of ['bundleCatalog', 'bundleSummary', 'bundleAdoption'])
+        queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -3121,10 +3134,31 @@ export function getCommunicationsWalletSpendBreakdownQueryOptions(
 
 // ─── System Billing — bundle adoption + bundle catalog list ──────────────────
 
-export function getBundleAdoptionQueryOptions() {
+export function getBundleAdoptionQueryOptions(payload?: BundleAdoptionQuery) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.bundleAdoption,
-    queryFn: getBundleAdoption,
+    queryKey: AUTH_QUERY_KEY.bundleAdoption(payload),
+    queryFn: () => getBundleAdoption(payload),
+  })
+}
+
+export function getBundleSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.bundleSummary,
+    queryFn: getBundleSummary,
+  })
+}
+
+export function getBundleCatalogExportQueryOptions(payload?: BundleCatalogQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.bundleCatalog(payload), 'export'],
+    queryFn: () => exportBundleCatalog(payload),
+  })
+}
+
+export function getSystemSimImportTemplateQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSimImportTemplate,
+    queryFn: getSystemSimImportTemplate,
   })
 }
 

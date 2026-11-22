@@ -1037,6 +1037,7 @@ export type GetSimBatchPayload = {
 export type SystemSimBatchesSummary = {
   pendingActivation: number
   inProgress: number
+  completed: number
   totalSimsQueued: number
   needsAttention: number
 }
@@ -2183,6 +2184,8 @@ export type SystemSimCarrierBreakdown = {
 export type SystemSimsSummary = {
   total: number
   active: number
+  assigned: number
+  suspended: number
   unassigned: number
   carriers: number
   byStatus: Record<string, number>
@@ -2485,15 +2488,19 @@ export type UpdateSystemCarrierPayload = {
 
 export type CreateSystemBundlePayload = {
   data: {
-    id: string
+    /** Defaults to the code. */
+    id?: string
     code: string
     name: string
-    carrierId: string
+    /** Defaults to MTN. */
+    carrierId?: string
     dataAmountGb: number
     validityDays: number
     billingCycle: string
     priceNaira: number
     currency?: string
+    /** Inactive bundles are hidden from tenants; defaults to true. */
+    active?: boolean
   }
 }
 
@@ -4454,8 +4461,61 @@ export type CommunicationsWalletSpendBreakdownResponse = ServerResponse<unknown>
 
 // ─── System Billing — bundle adoption + bundle catalog list ──────────────────
 
-// ponytail: bundle-adoption response shape not declared in the current spec.
-export type BundleAdoptionResponse = ServerResponse<unknown>
+export type BundleType = 'subscription' | 'top_up'
+
+export type BundleAdoptionQuery = {
+  params?: {
+    search?: string
+    /** Only tenants with a bundle of this kind. */
+    bundleType?: BundleType
+  }
+}
+
+/** One bundle on one mobile number. */
+export type BundleAdoptionLine = {
+  mobileNumber: string
+  iccid: string | null
+  /** The fleet vehicle id; the plate lives in the fleet service. */
+  vehicleId: string | null
+  bundleId: string
+  bundleName: string | null
+  carrier: string | null
+  status: string
+  dataUsedMb: number
+  dataTotalMb: number
+  /** The first live bundle on a number is its subscription, each one added on top a top-up; null when not live. */
+  kind: BundleType | null
+  priceNgn: number | null
+  expiresAt: string | null
+  /** Whole days left, null when there is no expiry or it has passed. */
+  expiresInDays: number | null
+}
+
+export type BundleAdoptionItem = {
+  tenantId: string
+  tenantName: string
+  simCount: number
+  activeBundleCount: number
+  carriers: string[]
+  /** What the tenant's live bundles cost per month (yearly ones divided by 12). */
+  monthlySpendNgn: number
+  lines: BundleAdoptionLine[]
+}
+
+export type BundleAdoptionResponse = ServerResponse<{
+  total: number
+  items: BundleAdoptionItem[]
+}>
+
+/** The four figures above the M2M bundle tables. */
+export type BundleSummary = {
+  totalActiveBundles: number
+  expiringIn7Days: number
+  simsAcrossTenants: number
+  monthlyBundleSpendNgn: number
+}
+
+export type BundleSummaryResponse = ServerResponse<BundleSummary>
 
 export type BundleCatalogQuery = {
   params?: {
@@ -4472,13 +4532,17 @@ export type BundleCatalogItem = {
   id: string
   code: string
   name: string
-  carrierId: string
+  /** Catalog carrier id, e.g. "carrier-mtn". */
+  carrier: string
+  /** The carrier's display name; null for a carrier the catalog does not know. */
+  carrierName: string | null
   dataAmountGb: number
   validityDays: number
   billingCycle: string
-  priceNaira: number
-  currency?: string
-  active?: boolean
+  /** Naira. */
+  price: number
+  currency: string
+  active: boolean
 }
 
 export type BundleCatalogListResponse = ServerResponse<{

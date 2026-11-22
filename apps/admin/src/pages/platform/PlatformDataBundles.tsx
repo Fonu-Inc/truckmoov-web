@@ -1,10 +1,16 @@
+import type { BundleAdoptionItem } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
+  getBundleAdoptionQueryOptions,
+  getBundleCatalogExportQueryOptions,
+  getBundleCatalogQueryOptions,
+  getBundleSummaryQueryOptions,
   getDataBundleCarriersQueryOptions,
-  getDataBundleRatesQueryOptions,
   useCreateSystemBundle,
   useUpdateSystemBundle,
 } from "@truckmoov/api/auth";
+import { queryClient } from "@truckmoov/api/lib/query-client";
+import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
 import {
   Building2,
   ChevronDown,
@@ -105,13 +111,13 @@ function formatBundleSize(mb: number): string {
   return `${mb} MB`;
 }
 
-/* ── Per-SIM adoption demo data ──
+/* ── Per-SIM adoption ──
    Each tenant has multiple SIMs; each SIM has its own MSISDN/ICCID
    and may carry one or more active subscription / top-up bundles. */
 type TenantSim = {
   msisdn: string;
   iccid: string;
-  carrier: "MTN Nigeria";
+  carrier: string;
   vehicle?: string;
   bundles: {
     name: string;
@@ -122,11 +128,41 @@ type TenantSim = {
 };
 type TenantAdoption = {
   tenant: string;
+  /** What the tenant's live bundles cost per month. */
+  monthlySpendNgn: number;
   sims: TenantSim[];
 };
 
-// No tenant-adoption endpoint yet; keep the tab empty rather than invent tenants.
-const TENANT_ADOPTION: TenantAdoption[] = [];
+/** One tenant's live bundles grouped per mobile number, the shape the table renders. */
+function toTenantAdoption(item: BundleAdoptionItem): TenantAdoption {
+  const byNumber = new Map<string, TenantSim>();
+  for (const line of item.lines) {
+    if (line.status !== "active" || !line.kind)
+      continue;
+    // ponytail: adoption lines carry the vehicle id only, so no vehicle is shown until the API resolves the plate.
+    const sim = byNumber.get(line.mobileNumber) ?? {
+      msisdn: line.mobileNumber,
+      iccid: line.iccid ?? "—",
+      carrier: line.carrier ?? "",
+      bundles: [],
+    };
+    sim.bundles.push({
+      name: line.bundleName ?? line.bundleId,
+      type: line.kind === "top_up" ? "top-up" : "subscription",
+      price_ngn: line.priceNgn ?? 0,
+      expires_in_days: line.expiresInDays ?? 0,
+    });
+    byNumber.set(
+      line.mobileNumber,
+      sim,
+    );
+  }
+  return {
+    tenant: item.tenantName,
+    monthlySpendNgn: item.monthlySpendNgn,
+    sims: [...byNumber.values()],
+  };
+}
 
 type BundleFormState = {
   id?: string;
@@ -165,11 +201,15 @@ export default function PlatformDataBundles() {
         title: "M2M Data Bundles", description: "Manage available M2M data bundles, configure bundle offerings, and monitor their availability across the platform.",
       };
   const { format: fmtCurrency } = useCurrency();
-  const catalogQuery = useQuery(getDataBundleRatesQueryOptions({
+  const catalogQuery = useQuery(getBundleCatalogQueryOptions({
     params: {
-      page: 1, limit: 100,
+      status: "all", page: 1, limit: 100,
     },
   }));
+  const summaryQuery = useQuery(getBundleSummaryQueryOptions());
+  const adoptionQuery = useQuery(getBundleAdoptionQueryOptions());
+  const summary = summaryQuery.data?.data;
+  const figure = (value: number | undefined) => summaryQuery.isError || value === undefined ? "—" : value;
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
   const carrierList = useMemo(
     () => carriersQuery.data?.data.carriers ?? [],
@@ -178,30 +218,25 @@ export default function PlatformDataBundles() {
   const createBundle = useCreateSystemBundle();
   const updateBundle = useUpdateSystemBundle();
 
-  // ponytail: mirrors apps/main useDataBundleCatalog; move to packages/api if a third consumer appears.
+  // The platform's own catalogue, so a bundle that is switched off still shows here.
   const catalog = useMemo<BundleCatalogItem[]>(
-    () => {
-      const nameById = new Map(carrierList.map(c => [
-        c.id,
-        c.displayName || c.name,
-      ]));
-      return (catalogQuery.data?.data.items ?? []).map(rate => ({
-        id: rate.id,
-        code: rate.code,
-        name: rate.name,
-        carrierId: rate.carrier,
-        carrier: nameById.get(rate.carrier) ?? rate.carrier,
-        data_mb: rate.dataAmountGb * 1024,
-        validity_days: rate.validityDays,
-        price_ngn: rate.price,
-        billing_cycle: rate.billingCycle,
-        is_active: rate.active,
-      }));
-    },
-    [
-      catalogQuery.data,
-      carrierList,
-    ],
+    () => (catalogQuery.data?.data.items ?? []).map(bundle => ({
+      id: bundle.id,
+      code: bundle.code,
+      name: bundle.name,
+      carrierId: bundle.carrier,
+      carrier: bundle.carrierName ?? bundle.carrier,
+      data_mb: bundle.dataAmountGb * 1024,
+      validity_days: bundle.validityDays,
+      price_ngn: bundle.price,
+      billing_cycle: bundle.billingCycle,
+      is_active: bundle.active,
+    })),
+    [catalogQuery.data],
+  );
+  const adoption = useMemo(
+    () => (adoptionQuery.data?.data.items ?? []).map(toTenantAdoption),
+    [adoptionQuery.data],
   );
 
   const [
@@ -262,7 +297,6 @@ export default function PlatformDataBundles() {
     ],
   );
 
-  const totalActive = catalog.filter(b => b.is_active).length;
   // Fleetflow's form has no carrier field and defaults new bundles to MTN Nigeria.
   const defaultCarrierId = (carrierList.find(c => /mtn/i.test(`${c.id} ${c.name}`)) ?? carrierList[0])?.id ?? "";
 
@@ -321,15 +355,9 @@ export default function PlatformDataBundles() {
         const id = `bundle-${form.code.toLowerCase()}`;
         await createBundle.mutateAsync({
           data: {
-            ...fields, id, code: form.code, carrierId: form.carrier,
+            ...fields, id, code: form.code, carrierId: form.carrier, active: form.is_active,
           },
         });
-        // Create takes no active flag, so a bundle saved as inactive needs a follow-up update.
-        if (!form.is_active) {
-          await updateBundle.mutateAsync({
-            id, data: { active: false },
-          });
-        }
       }
       toast.success(editing ? "Bundle updated" : "Bundle created");
       setFormOpen(false);
@@ -340,40 +368,32 @@ export default function PlatformDataBundles() {
   };
   const isSaving = createBundle.isPending || updateBundle.isPending;
 
-  const exportCsv = () => {
-    const rows = [
-      [
-        "Code",
-        "Name",
-        "Carrier",
-        "Data (MB)",
-        "Validity (days)",
-        "Cycle",
-        "Price (NGN)",
-        "Active",
-      ],
-      ...filtered.map(b => [
-        b.code,
-        b.name,
-        b.carrier,
-        String(b.data_mb),
-        String(b.validity_days),
-        b.billing_cycle,
-        String(b.price_ngn),
-        b.is_active ? "Yes" : "No",
-      ]),
-    ];
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
-    const blob = new Blob(
-      [csv],
-      { type: "text/csv" },
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `bundle-catalog-${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const carrierId = carrierFilterEnabled && carrierFilter
+        ? catalog.find(b => b.carrier === carrierFilter)?.carrierId
+        : undefined;
+      downloadBlob(
+        await queryClient.fetchQuery(getBundleCatalogExportQueryOptions({
+          params: {
+            search: search || undefined, carrierId, status: statusFilter,
+          },
+        })),
+        "bundle-catalog.csv",
+      );
+      toast.success("Bundles exported");
+    }
+    catch {
+      toast.error("Export failed");
+    }
+    finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -394,24 +414,27 @@ export default function PlatformDataBundles() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Active Bundles"
-            value={catalogQuery.isError ? "—" : totalActive}
+            value={figure(summary?.totalActiveBundles)}
             icon={Layers}
-            loading={catalogQuery.isPending}
+            loading={summaryQuery.isPending}
           />
           <StatCard
             title="Expiring in 7 Days"
-            value="—"
+            value={figure(summary?.expiringIn7Days)}
             icon={Clock}
+            loading={summaryQuery.isPending}
           />
           <StatCard
             title="SIMs Across Tenants"
-            value="—"
+            value={figure(summary?.simsAcrossTenants)}
             icon={Building2}
+            loading={summaryQuery.isPending}
           />
           <StatCard
             title="Monthly Bundle Spend"
-            value="—"
+            value={summary ? fmtCurrency(summary.monthlyBundleSpendNgn) : "—"}
             icon={TrendingUp}
+            loading={summaryQuery.isPending}
           />
         </div>
 
@@ -452,7 +475,8 @@ export default function PlatformDataBundles() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={exportCsv}
+                  onClick={handleExport}
+                  disabled={isExporting}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Export Data
@@ -600,7 +624,11 @@ export default function PlatformDataBundles() {
 
         {/* TENANT ADOPTION */}
         <TabsContent value="adoption">
-          <TenantAdoptionTable data={TENANT_ADOPTION} />
+          <TenantAdoptionTable
+            data={adoption}
+            loading={adoptionQuery.isPending}
+            failed={adoptionQuery.isError}
+          />
         </TabsContent>
       </Tabs>
 
@@ -738,7 +766,15 @@ export default function PlatformDataBundles() {
 
 /* ─────────────── Tenant Adoption (per-SIM) ─────────────── */
 
-function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
+function TenantAdoptionTable({
+  data,
+  loading,
+  failed,
+}: {
+  data: TenantAdoption[];
+  loading: boolean;
+  failed: boolean;
+}) {
   const { format: fmtCurrency } = useCurrency();
   const [
     search,
@@ -810,14 +846,7 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
     ],
   );
 
-  const tenantSpend = (t: TenantAdoption) =>
-    t.sims.reduce(
-      (s, sim) => s + sim.bundles.reduce(
-        (b, x) => b + x.price_ngn,
-        0,
-      ),
-      0,
-    );
+  const tenantSpend = (t: TenantAdoption) => t.monthlySpendNgn;
 
   const exportCsv = () => {
     const rows: string[][] = [
@@ -991,7 +1020,13 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
                         colSpan={5}
                         className="text-center py-6 text-muted-foreground"
                       >
-                        No tenants match the current filters
+                        {loading
+                          ? "Loading tenant adoption…"
+                          : failed
+                            ? "Couldn't load tenant adoption"
+                            : data.length === 0
+                              ? "No tenant has a bundle yet"
+                              : "No tenants match the current filters"}
                       </TableCell>
                     </TableRow>
                   )

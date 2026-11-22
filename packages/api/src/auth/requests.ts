@@ -346,9 +346,11 @@ import type {
   ValidateInviteQuery,
   VerifyEmailPayload,
   VerifyResetPayload,
+  BundleAdoptionQuery,
   BundleAdoptionResponse,
   BundleCatalogListResponse,
   BundleCatalogQuery,
+  BundleSummaryResponse,
   CloseSupportTicketPayload,
   CommunicationsWalletRangeQuery,
   CommunicationsWalletRatesResponse,
@@ -2568,8 +2570,30 @@ export async function getCommunicationsWalletSpendBreakdown(
 
 // ─── System Billing — bundle adoption + bundle catalog list ──────────────────
 
-export async function getBundleAdoption() {
-  const { data } = await axiosInstance.get<BundleAdoptionResponse>('/auth/system/bundle-adoption')
+export async function getBundleAdoption(payload?: BundleAdoptionQuery) {
+  const { data } = await axiosInstance.get<BundleAdoptionResponse>('/auth/system/bundle-adoption', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getBundleSummary() {
+  const { data } = await axiosInstance.get<BundleSummaryResponse>('/auth/system/bundle-catalog/summary')
+  return data
+}
+
+export async function exportBundleCatalog(payload?: BundleCatalogQuery) {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/bundle-catalog/export', {
+    params: payload?.params,
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function getSystemSimImportTemplate() {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/sims/import/template', {
+    responseType: 'blob',
+  })
   return data
 }
 

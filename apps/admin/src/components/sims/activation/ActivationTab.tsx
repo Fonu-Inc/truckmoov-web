@@ -99,7 +99,6 @@ export function ActivationTab() {
 
   const allBatches = allQuery.data?.data.batches;
   const batches = batchesQuery.data?.data.batches ?? [];
-  const completed = allBatches?.filter(batch => batch.status === "completed").length;
   const operatorOptions = useMemo(
     () => uniqueOptions((allBatches ?? []).map(batch => batch.operator)),
     [allBatches],
@@ -153,9 +152,7 @@ export function ActivationTab() {
     <div className="space-y-6">
       <ActivationSummaryCards
         summary={summaryQuery.data?.data}
-        completed={completed}
         isLoading={summaryQuery.isLoading}
-        completedLoading={allQuery.isLoading}
       />
 
       <Card>

@@ -1,3 +1,7 @@
+import { getSystemSimImportTemplateQueryOptions } from "@truckmoov/api/auth";
+import { queryClient } from "@truckmoov/api/lib/query-client";
+import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
+import { toast } from "sonner";
 import {
   ICCID_PATTERN,
   MSISDN_PATTERN,
@@ -5,10 +9,6 @@ import {
 
 export const MAX_IMPORT_ROWS = 1000;
 export const TEMPLATE_FILE_NAME = "sim_import_template.csv";
-export const TEMPLATE_CONTENT
-  = "ICCID,Phone Number,IMSI,Carrier\n"
-    + "8927100012345678901,+2348031234567,621301234567890,MTN Nigeria\n"
-    + "8927100012345678902,+2348052345678,621302345678901,Glo";
 
 export type ParsedSimRow = {
   iccid: string;
@@ -109,11 +109,15 @@ export function parseSimCsv(content: string): ParsedSimRow[] {
   });
 }
 
-export function downloadSimTemplate() {
-  const url = URL.createObjectURL(new Blob([TEMPLATE_CONTENT], { type: "text/csv" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = TEMPLATE_FILE_NAME;
-  link.click();
-  URL.revokeObjectURL(url);
+/** The template comes from the server, in the columns `parseSimCsv` reads. */
+export async function downloadSimTemplate() {
+  try {
+    downloadBlob(
+      await queryClient.fetchQuery(getSystemSimImportTemplateQueryOptions()),
+      TEMPLATE_FILE_NAME,
+    );
+  }
+  catch {
+    toast.error("Couldn't download the template");
+  }
 }

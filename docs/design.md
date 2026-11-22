@@ -581,6 +581,7 @@ both apps from `packages/reusables/src/components/pages/`:
 | 404 catch-all | `NotFound.tsx` | 404 | `primary` — a wrong turn, not a fault |
 | No access | `NotAuthorized.tsx` | 403 | `destructive` |
 | Crash fallback | `AppError.tsx` | 500 | `destructive` |
+| Route failed to load | `RouteError.tsx` | UPDATE / 500 | `primary` for a stale page, else the crash screen |
 
 They compose `StatusScreen.tsx`, which is presentational — no router, no stores,
 the action is a `children` slot. That is what lets both apps import the pages
@@ -600,6 +601,24 @@ depth check is `utils/goBack.ts`: `history.state.idx > 0`. Do **not** use
 `history.length` (it counts the whole tab session, so it is > 1 even in a fresh
 tab) or `location.key === "default"` (`createBrowserRouter` always generates a
 key, so it never equals `"default"`).
+
+### Route errors and stale pages
+
+React Router shows its own "Unexpected Application Error" developer page for anything a route throws while
+loading — a customer must never see it. Every app's root route sets `ErrorBoundary: RouteError`
+(`shared/lib/route.tsx`); it renders `AppError` for a real fault.
+
+The common cause is a deploy: an open tab still points at the old hashed files, so a lazy route's `import()`
+fails ("error loading dynamically imported module", "Failed to fetch dynamically imported module",
+"Importing a module script failed"). `lib/chunkError.ts` in `packages/reusables` recognises those messages:
+
+- `installChunkErrorRecovery()` runs in every app's `main.tsx` and reloads once on Vite's `vite:preloadError`.
+- `RouteError` and `ErrorBoundary` do the same when the error reaches them. If the reload did not help, the
+  reader gets "A new version is available" with a Reload button.
+- One reload per 30 seconds (`sessionStorage`), so a file that is really missing cannot loop.
+
+The helper lives in `lib/` rather than `utils/` because the apps import it through the package's `./lib/*`
+export, which `utils/` does not have.
 
 ### ErrorBoundary
 

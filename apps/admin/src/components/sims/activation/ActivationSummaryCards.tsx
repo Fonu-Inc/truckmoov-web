@@ -53,16 +53,12 @@ function StatCard({
 
 type Props = {
   summary: SystemSimBatchesSummary | undefined;
-  completed: number | undefined;
   isLoading: boolean;
-  completedLoading: boolean;
 };
 
 export function ActivationSummaryCards({
   summary,
-  completed,
   isLoading,
-  completedLoading,
 }: Props) {
   const needsAttention = summary?.needsAttention ?? 0;
   return (
@@ -93,9 +89,9 @@ export function ActivationSummaryCards({
       <StatCard
         title="Completed"
         icon={<CheckCircle2 className="h-4 w-4 text-success" />}
-        value={completed}
+        value={summary?.completed}
         note="Activation finished"
-        isLoading={completedLoading}
+        isLoading={isLoading}
         valueClassName="text-success"
       />
       <StatCard
