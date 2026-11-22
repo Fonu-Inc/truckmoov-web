@@ -10,7 +10,6 @@ import {
   useMaintenanceRecords,
   useVehicles,
 } from "@truckmoov/api/fleet";
-import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   CalendarRange, Cpu, Package, Truck, Users,
 } from "lucide-react";
@@ -77,9 +76,8 @@ const PERIODS = [
 
 type PeriodValue = (typeof PERIODS)[number]["value"];
 
-/** The design app lists eight events for an operator, five for an enterprise account. */
+/** One shared feed size: the endpoint is the same for every role. */
 const ACTIVITY_LIMIT = 8;
-const ENTERPRISE_ACTIVITY_LIMIT = 5;
 
 /** Recent events shown in the violations lists; stats come from the server totals. */
 const VIOLATION_EVENTS_LIMIT = 100;
@@ -99,18 +97,6 @@ function activityDescription(entityType: string, action: string) {
   if (type === "job" && /complet|deliver/i.test(action))
     return "A job was completed and marked as delivered.";
   return ACTIVITY_DESCRIPTIONS[type];
-}
-
-/** Snapshot rows describe a current state, so they read "Today"; events keep their timestamp. */
-function activityTime(item: {
-  id: string; occurredAt: string;
-}) {
-  if (item.id.startsWith("vehicle-") || item.id.startsWith("driver-"))
-    return "Today";
-  return formatWithPattern(
-    item.occurredAt,
-    "MMM d, h:mm a",
-  );
 }
 
 /** "6 min ago", "1 hr ago", "3 hrs ago", "2 days ago". */
@@ -252,13 +238,10 @@ export default function EnterpriseLogisticsDashboard() {
           a.entityType,
           a.action,
         ),
-        time: isOwnerOperator ? activityTime(a) : timeAgo(a.occurredAt),
+        time: timeAgo(a.occurredAt),
       }));
     },
-    [
-      isOwnerOperator,
-      overview,
-    ],
+    [overview],
   );
 
   // The heading stays put while the overview loads or fails: the top bar no
@@ -332,7 +315,7 @@ export default function EnterpriseLogisticsDashboard() {
 
         <RecentActivityCard items={recentActivity.slice(
           0,
-          isOwnerOperator ? ACTIVITY_LIMIT : ENTERPRISE_ACTIVITY_LIMIT,
+          ACTIVITY_LIMIT,
         )}
         />
 
