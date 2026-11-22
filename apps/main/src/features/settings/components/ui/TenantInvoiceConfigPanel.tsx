@@ -1,67 +1,36 @@
 import { Save } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
 
-type InvoiceConfig = {
-  payment_terms_days: number | null;
-  ncc_levy_enabled: boolean | null;
-  ncc_levy_percent: number | null;
-  ncc_levy_label: string | null;
-  tax_enabled: boolean | null;
-  tax_rate_percent: number | null;
-  tax_label: string | null;
-};
-
+/**
+ * The Invoicing tab (`/settings/invoicing`). No endpoint stores the tenant's
+ * invoice configuration (payment terms, VAT, NCC levy) yet, so every control
+ * shows "-" and is locked, and saving says so instead of pretending.
+ */
 export function TenantInvoiceConfigPanel() {
-  const [
-    cfg,
-    setCfg,
-  ] = useState<InvoiceConfig>({
-    // ponytail: blank until an invoice-config endpoint exists
-    payment_terms_days: 0,
-    ncc_levy_enabled: false,
-    ncc_levy_percent: 0,
-    ncc_levy_label: "NCC Levy",
-    tax_enabled: false,
-    tax_rate_percent: 0,
-    tax_label: "VAT",
-  });
-  const [saving] = useState(false);
-
-  const save = async () => {
-    toast.info("Coming soon");
+  const save = () => {
+    toast.info("Invoice settings are not available yet.");
   };
 
   return (
-    <Card className="bg-card/50 border-border/50">
-      <CardHeader>
-        <CardTitle>Invoice Configuration</CardTitle>
-        <CardDescription>Payment terms, regulatory levies, and tax settings applied to all generated invoices.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="rounded-2xl surface-sleek text-card-foreground bg-card/50 border-border/50">
+      <div className="flex flex-col space-y-1.5 p-6 pb-4">
+        <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display">Invoice Configuration</h3>
+        <p className="text-sm text-muted-foreground">Payment terms, regulatory levies, and tax settings applied to all generated invoices.</p>
+      </div>
+      <div className="p-6 pt-0 space-y-6">
         <div className="space-y-2 max-w-xs">
-          <Label>Payment Terms (days)</Label>
+          <Label htmlFor="invoicePaymentTerms">Payment Terms (days)</Label>
           <Input
-            type="number"
-            min={0}
-            value={cfg.payment_terms_days ?? 15}
-            onChange={e => setCfg({
-              ...cfg, payment_terms_days: Number(e.target.value),
-            })}
+            id="invoicePaymentTerms"
+            value="-"
+            readOnly
+            disabled
           />
-          <p className="text-xs text-muted-foreground">
-            Default Net 15 — invoices fall due
-            {cfg.payment_terms_days ?? 15}
-            {" "}
-            days after issue.
-          </p>
+          <p className="text-xs text-muted-foreground">Default Net 15 — invoices fall due - days after issue.</p>
         </div>
 
         <div className="space-y-3 border-t border-border/50 pt-4">
@@ -71,36 +40,31 @@ export function TenantInvoiceConfigPanel() {
               <p className="text-xs text-muted-foreground">Standard tax line on invoices</p>
             </div>
             <Switch
-              checked={!!cfg.tax_enabled}
-              onCheckedChange={v => setCfg({
-                ...cfg, tax_enabled: v,
-              })}
+              aria-label="VAT"
+              checked={false}
+              disabled
             />
           </div>
-          {cfg.tax_enabled && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Label</Label>
-                <Input
-                  value={cfg.tax_label ?? "VAT"}
-                  onChange={e => setCfg({
-                    ...cfg, tax_label: e.target.value,
-                  })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Rate %</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={cfg.tax_rate_percent ?? 7.5}
-                  onChange={e => setCfg({
-                    ...cfg, tax_rate_percent: Number(e.target.value),
-                  })}
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="invoiceTaxLabel">Label</Label>
+              <Input
+                id="invoiceTaxLabel"
+                value="-"
+                readOnly
+                disabled
+              />
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="invoiceTaxRate">Rate %</Label>
+              <Input
+                id="invoiceTaxRate"
+                value="-"
+                readOnly
+                disabled
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3 border-t border-border/50 pt-4">
@@ -110,49 +74,23 @@ export function TenantInvoiceConfigPanel() {
               <p className="text-xs text-muted-foreground">Nigerian Communications Commission levy applied to telecom usage</p>
             </div>
             <Switch
-              checked={!!cfg.ncc_levy_enabled}
-              onCheckedChange={v => setCfg({
-                ...cfg, ncc_levy_enabled: v,
-              })}
+              aria-label="NCC Regulatory Levy"
+              checked={false}
+              disabled
             />
           </div>
-          {cfg.ncc_levy_enabled && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Label</Label>
-                <Input
-                  value={cfg.ncc_levy_label ?? "NCC Levy"}
-                  onChange={e => setCfg({
-                    ...cfg, ncc_levy_label: e.target.value,
-                  })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Rate %</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={cfg.ncc_levy_percent ?? 2.5}
-                  onChange={e => setCfg({
-                    ...cfg, ncc_levy_percent: Number(e.target.value),
-                  })}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="flex justify-end">
           <Button
             variant="gradient"
             onClick={save}
-            disabled={saving}
           >
             <Save className="h-4 w-4 mr-2" />
-            {saving ? "Saving..." : "Save Invoice Settings"}
+            Save Invoice Settings
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

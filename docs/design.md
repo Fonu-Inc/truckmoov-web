@@ -58,6 +58,9 @@ Two consequences worth knowing:
   `<PageHeader>` (`apps/main/src/shared/components/layout/PageHeader.tsx`) — today `/`,
   `/jobs`, and every `/fleet`, `/drivers` and `/reports` tab (those layouts keep only
   the tab bar; each tab page renders its own heading and actions under it).
+  `/subscription` and `/settings` render the heading in the layout instead (tab
+  label + `description` from `billingNav.ts` / `settingsNav.ts`), since none of
+  their tabs has heading actions.
   `/analytics` is `manualTitle` too, but its tabs copy the design app's per-tab
   headings as-is (a small `h3`, an `h2`, a `PageHeader`, or a status bar).
 
@@ -533,8 +536,11 @@ nothing to show. Every component that calls an endpoint renders one of the two.
 
 `DataTable` turns sorting off by itself whenever `pagination` is an object
 (server-paged): sorting one page of a server-paged list is misleading. Older
-pages that build the `pagination` object by hand (the billing tabs, installer
-jobs) are fine as they are.
+pages that build the `pagination` object by hand (installer jobs) are fine as
+they are. The `/subscription` billing tabs are a parity port and hand-roll the
+design app's `<Table>` instead (row states via `TableStateRows` in
+`features/billing/utils/billingShared.tsx`, server-paged with
+`FleetTablePager`, which stays hidden until a list outgrows one page).
 
 ### Card grids step at `sm` / `xl`, not `md`
 

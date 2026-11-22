@@ -6,9 +6,8 @@ import {
   useUpdateOrganizationSettings,
   useUploadMedia,
 } from "@truckmoov/api/auth";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
-  Save, Upload,
+  Globe, ImageIcon, Phone, Save, Upload,
 } from "lucide-react";
 
 import {
@@ -20,9 +19,6 @@ import {
   Avatar, AvatarFallback, AvatarImage,
 } from "@/components/shadcn/avatar";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import {
   Form,
   FormControl,
@@ -43,16 +39,56 @@ import {
 import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
+import { OrganizationAccountSecurityCard } from "@/features/settings/components/ui/OrganizationAccountSecurityCard";
 import {
   EMPTY_ORGANIZATION_SETTINGS,
-  MAX_ORGANIZATION_IMAGE_SIZE,
+  isValidOrganizationImage,
+  isValidProfileImage,
   ORGANIZATION_IMAGE_TYPES,
   ORGANIZATION_SETTINGS_FORM_ID,
-
   organizationSettingsSchema,
   organizationSettingsToFormValues,
   organizationSettingsToPayload,
+  PROFILE_IMAGE_TYPES,
 } from "./organizationSettingsFormConfig";
+
+/** The design app's card surface — the shared `Card` adds its own border/shadow. */
+const CARD_CLASS = "rounded-2xl surface-sleek text-card-foreground bg-card/50 border-border/50";
+const CARD_HEADER_CLASS = "flex flex-col space-y-1.5 p-6 pb-4";
+const CARD_TITLE_CLASS = "text-base font-semibold leading-none tracking-tight text-foreground font-display";
+
+const TIMEZONE_OPTIONS = [
+  {
+    value: "Africa/Lagos", label: "West Africa Time (GMT+1)",
+  },
+  {
+    value: "Africa/Johannesburg", label: "South Africa Standard Time (GMT+2)",
+  },
+  {
+    value: "Africa/Nairobi", label: "East Africa Time (GMT+3)",
+  },
+  {
+    value: "Europe/London", label: "Greenwich Mean Time (GMT)",
+  },
+];
+
+const LANGUAGE_OPTIONS = [
+  {
+    value: "en", label: "English",
+  },
+  {
+    value: "ha", label: "Hausa",
+  },
+  {
+    value: "yo", label: "Yoruba",
+  },
+  {
+    value: "ig", label: "Igbo",
+  },
+  {
+    value: "pcm", label: "Nigerian Pidgin",
+  },
+];
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
@@ -61,34 +97,46 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function LoadingCard() {
+function LoadingCards() {
   return (
-    <Card className="bg-card/50 border-border/50">
-      <CardHeader>
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-4 w-80 max-w-full" />
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <Skeleton className="h-20 w-64 max-w-full" />
-        <Separator />
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton
-              key={index}
-              className="h-16 w-full"
-            />
-          ))}
+    <>
+      {[
+        "profile-image",
+        "organization-profile",
+        "display-preferences",
+      ].map(key => (
+        <div
+          key={key}
+          className={CARD_CLASS}
+        >
+          <div className={CARD_HEADER_CLASS}>
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-80 max-w-full" />
+          </div>
+          <div className="p-6 pt-0">
+            <Skeleton className="h-20 w-full" />
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      ))}
+    </>
   );
 }
 
+/**
+ * The Organization tab (`/settings`): every card inside the design app's panel,
+ * in its order — Profile Image, Telematics Number, Organization Profile,
+ * Account & Security, Display Preferences. One form holds the org settings so
+ * the profile save never sends a stale timezone/language or profile image.
+ */
 export function OrganizationSettingsForm() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const settingsQuery = useQuery(getOrganizationSettingsQueryOptions());
-  const uploadMutation = useUploadMedia();
+  const photoUploadMutation = useUploadMedia();
+  const logoUploadMutation = useUploadMedia();
   const updateMutation = useUpdateOrganizationSettings();
+  // Profile image and display preferences save on their own (their cards have no button).
+  const instantUpdateMutation = useUpdateOrganizationSettings();
   const form = useForm<OrganizationSettingsFormValues>({
     resolver: zodResolver(organizationSettingsSchema),
     defaultValues: EMPTY_ORGANIZATION_SETTINGS,
@@ -107,31 +155,26 @@ export function OrganizationSettingsForm() {
     ],
   );
 
-  async function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file)
       return;
 
-    if (!ORGANIZATION_IMAGE_TYPES.includes(file.type as (typeof ORGANIZATION_IMAGE_TYPES)[number])) {
-      toast.error("Upload a PNG or JPG image.");
-      return;
-    }
-    if (file.size > MAX_ORGANIZATION_IMAGE_SIZE) {
-      toast.error("Image size must not exceed 2 MB.");
+    if (!isValidProfileImage(file)) {
+      toast.error("Upload a PNG, JPG, SVG or WebP image up to 2MB.");
       return;
     }
 
     try {
-      const response = await uploadMutation.mutateAsync(file);
+      const response = await photoUploadMutation.mutateAsync(file);
+      const profilePictureUrl = response.data.url;
+      await instantUpdateMutation.mutateAsync({ data: { branding: { profilePictureUrl } } });
       form.setValue(
         "profilePictureUrl",
-        response.data.url,
-        {
-          shouldDirty: true, shouldValidate: true,
-        },
+        profilePictureUrl,
       );
-      toast.success("Image uploaded. Save changes to apply it.");
+      toast.success("Profile image updated.");
     }
     catch (error) {
       toast.error(getErrorMessage(
@@ -139,6 +182,50 @@ export function OrganizationSettingsForm() {
         "Unable to upload image.",
       ));
     }
+  }
+
+  async function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file)
+      return;
+
+    if (!isValidOrganizationImage(file)) {
+      toast.error("Upload a PNG or JPG image up to 2MB.");
+      return;
+    }
+
+    try {
+      const response = await logoUploadMutation.mutateAsync(file);
+      form.setValue(
+        "logoUrl",
+        response.data.url,
+        {
+          shouldDirty: true, shouldValidate: true,
+        },
+      );
+      toast.success("Logo uploaded. Save changes to apply it.");
+    }
+    catch (error) {
+      toast.error(getErrorMessage(
+        error,
+        "Unable to upload image.",
+      ));
+    }
+  }
+
+  function handleDisplayPreferenceChange(key: "timezone" | "language", value: string) {
+    form.setValue(
+      key,
+      value,
+    );
+    instantUpdateMutation.mutate(
+      { data: { defaults: { [key]: value } } },
+      {
+        onSuccess: () => toast.success("Display preferences saved."),
+        onError: error => toast.error(error.message),
+      },
+    );
   }
 
   function onSubmit(values: OrganizationSettingsFormValues) {
@@ -155,16 +242,16 @@ export function OrganizationSettingsForm() {
   }
 
   if (settingsQuery.isPending)
-    return <LoadingCard />;
+    return <LoadingCards />;
 
   if (settingsQuery.isError) {
     return (
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
-          <CardTitle>Organization Profile</CardTitle>
-          <CardDescription>We could not load your organization settings.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className={CARD_CLASS}>
+        <div className={CARD_HEADER_CLASS}>
+          <h3 className={CARD_TITLE_CLASS}>Organization Profile</h3>
+          <p className="text-sm text-muted-foreground">We could not load your organization settings.</p>
+        </div>
+        <div className="p-6 pt-0 space-y-4">
           <p className="text-sm text-destructive">{settingsQuery.error.message}</p>
           <Button
             type="button"
@@ -173,63 +260,120 @@ export function OrganizationSettingsForm() {
           >
             Try again
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   const organizationName = form.watch("organizationName");
+  const logoUrl = form.watch("logoUrl");
   const profilePictureUrl = form.watch("profilePictureUrl");
+  const timezone = form.watch("timezone");
+  const language = form.watch("language");
 
   return (
-    <Card className="bg-card/50 border-border/50">
-      <CardHeader>
-        <CardTitle>Organization Profile</CardTitle>
-        <CardDescription>Manage your organization's information and branding</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <>
+      <div className={CARD_CLASS}>
+        <div className={CARD_HEADER_CLASS}>
+          <h3 className={`${CARD_TITLE_CLASS} flex items-center gap-2`}>
+            <ImageIcon className="h-5 w-5" />
+            Profile Image
+          </h3>
+          <p className="text-sm text-muted-foreground">Upload your profile picture. It will appear in the sidebar and header.</p>
+        </div>
+        <div className="p-6 pt-0">
+          <div className="flex items-center gap-6">
+            <Avatar className="h-20 w-20 rounded-lg">
+              <AvatarImage
+                src={profilePictureUrl || undefined}
+                alt="Profile"
+              />
+              <AvatarFallback className="bg-primary/20 text-primary text-xl rounded-lg">Photo</AvatarFallback>
+            </Avatar>
+            <div className="space-y-2">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept={PROFILE_IMAGE_TYPES.join(",")}
+                className="hidden"
+                aria-label="Upload profile photo"
+                onChange={handlePhotoChange}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                loading={photoUploadMutation.isPending}
+                onClick={() => photoInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Photo
+              </Button>
+              <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP. Max 2MB.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={CARD_CLASS}>
+        <div className={CARD_HEADER_CLASS}>
+          <h3 className={`${CARD_TITLE_CLASS} flex items-center gap-2`}>
+            <Phone className="h-4 w-4" />
+            Telematics Number
+          </h3>
+          <p className="text-sm text-muted-foreground">Your account's telematics number for fleet management service. This is separate from your tracking device SIMs.</p>
+        </div>
+        <div className="p-6 pt-0">
+          {/* No endpoint serves the tenant's telematics number yet, so the value is "-"
+              rather than the design app's "none assigned" claim, which we can't back. */}
+          <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">-</p>
+        </div>
+      </div>
+
+      <div className={CARD_CLASS}>
+        <div className={CARD_HEADER_CLASS}>
+          <h3 className={CARD_TITLE_CLASS}>Organization Profile</h3>
+          <p className="text-sm text-muted-foreground">Manage your organization's information and branding</p>
+        </div>
         <Form {...form}>
           <form
             id={ORGANIZATION_SETTINGS_FORM_ID}
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-6"
+            className="p-6 pt-0 space-y-6"
           >
             <div className="flex items-center gap-6">
               <Avatar className="h-20 w-20">
                 <AvatarImage
-                  src={profilePictureUrl || undefined}
+                  src={logoUrl || "/placeholder.svg"}
                   alt={organizationName || "Organization"}
                 />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-2xl">
-                  {getInitials(organizationName)}
-                </AvatarFallback>
               </Avatar>
               <div>
                 <input
-                  ref={fileInputRef}
+                  ref={logoInputRef}
                   type="file"
                   accept={ORGANIZATION_IMAGE_TYPES.join(",")}
                   className="hidden"
                   aria-label="Upload organization logo"
-                  onChange={handleImageChange}
+                  onChange={handleLogoChange}
                 />
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  loading={uploadMutation.isPending}
-                  onClick={() => fileInputRef.current?.click()}
+                  loading={logoUploadMutation.isPending}
+                  onClick={() => logoInputRef.current?.click()}
                 >
-                  <Upload className="h-4 w-4" />
+                  <Upload className="h-4 w-4 mr-2" />
                   Upload Logo
                 </Button>
-                <p className="mt-2 text-xs text-muted-foreground">PNG, JPG up to 2MB</p>
+                <p className="text-xs text-muted-foreground mt-2">PNG, JPG up to 2MB</p>
               </div>
             </div>
 
             <Separator />
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="organizationName"
@@ -257,12 +401,15 @@ export function OrganizationSettingsForm() {
                   </FormItem>
                 )}
               />
+              {/* No endpoint stores a billing email yet, so the field shows "-" and is locked. */}
               <div className="space-y-2">
-                <Label htmlFor="organizationBillingEmail">Billing Email</Label>
+                <Label htmlFor="orgBillingEmail">Billing Email</Label>
                 <Input
-                  id="organizationBillingEmail"
-                  type="email"
+                  id="orgBillingEmail"
+                  type="text"
                   placeholder="billing@company.com"
+                  value="-"
+                  readOnly
                   disabled
                 />
               </div>
@@ -272,59 +419,7 @@ export function OrganizationSettingsForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="tel"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="timezone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Timezone</FormLabel>
-                    <Select
-                      name={field.name}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="Africa/Lagos">Africa/Lagos (WAT, GMT+1)</SelectItem>
-                        <SelectItem value="Africa/Johannesburg">Africa/Johannesburg (SAST)</SelectItem>
-                        <SelectItem value="Africa/Nairobi">Africa/Nairobi (EAT)</SelectItem>
-                        <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="language"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Language</FormLabel>
-                    <Select
-                      name={field.name}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="ha">Hausa</SelectItem>
-                        <SelectItem value="yo">Yoruba</SelectItem>
-                        <SelectItem value="ig">Igbo</SelectItem>
-                        <SelectItem value="pcm">Nigerian Pidgin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormControl><Input {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -338,6 +433,7 @@ export function OrganizationSettingsForm() {
                     <FormControl>
                       <Textarea
                         rows={2}
+                        className="rounded-xl"
                         {...field}
                       />
                     </FormControl>
@@ -345,26 +441,6 @@ export function OrganizationSettingsForm() {
                   </FormItem>
                 )}
               />
-              {/* US-E02-006 — Portal session timeout */}
-              {/* ponytail: no API backing (parity port) — add to org settings defaults when the endpoint supports it */}
-              <div className="space-y-2">
-                <Label htmlFor="sessionTimeout">Portal Session Timeout</Label>
-                <Select defaultValue="60">
-                  <SelectTrigger id="sessionTimeout">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15 minutes</SelectItem>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="60">1 hour</SelectItem>
-                    <SelectItem value="240">4 hours</SelectItem>
-                    <SelectItem value="480">8 hours</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Inactive users are signed out after this period. Applies to all team members.
-                </p>
-              </div>
             </div>
 
             <div className="flex justify-end">
@@ -372,15 +448,85 @@ export function OrganizationSettingsForm() {
                 type="submit"
                 variant="gradient"
                 loading={updateMutation.isPending}
-                disabled={uploadMutation.isPending}
+                disabled={logoUploadMutation.isPending}
               >
-                <Save className="h-4 w-4" />
+                <Save className="h-4 w-4 mr-2" />
                 Save Changes
               </Button>
             </div>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </div>
+
+      <OrganizationAccountSecurityCard />
+
+      <div className={CARD_CLASS}>
+        <div className={CARD_HEADER_CLASS}>
+          <h3 className={`${CARD_TITLE_CLASS} flex items-center gap-2`}>
+            <Globe className="h-5 w-5 text-primary" />
+            Display Preferences
+          </h3>
+          <p className="text-sm text-muted-foreground">Time and language defaults used for charts, tables, and reports.</p>
+        </div>
+        <div className="p-6 pt-0">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="defaultTimezone">Default Timezone</Label>
+              <Select
+                value={timezone}
+                onValueChange={value => handleDisplayPreferenceChange(
+                  "timezone",
+                  value,
+                )}
+              >
+                <SelectTrigger
+                  id="defaultTimezone"
+                  className="h-10 rounded-xl px-3.5"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONE_OPTIONS.map(option => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="defaultLanguage">Default Language</Label>
+              <Select
+                value={language}
+                onValueChange={value => handleDisplayPreferenceChange(
+                  "language",
+                  value,
+                )}
+              >
+                <SelectTrigger
+                  id="defaultLanguage"
+                  className="h-10 rounded-xl px-3.5"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGE_OPTIONS.map(option => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

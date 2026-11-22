@@ -262,7 +262,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Billing", href: "/subscription", icon: CreditCard,
+    label: "Billing", href: "/subscription", icon: CreditCard, manualTitle: true,
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "OWNER_OPERATOR",
@@ -278,7 +278,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     // TRU-FE-7 § D — Settings is now visible to every tenant role so anyone can
     // manage their own 2FA at /settings/security. Non-admin tabs stay narrow via
     // per-tab `hasPermissions` in settingsNav.ts.
-    label: "Organization Settings", href: "/settings", icon: Settings,
+    label: "Organization Settings", href: "/settings", icon: Settings, manualTitle: true,
     labelByRole: {
       ENTERPRISE_ADMIN: "Settings",
       DISPATCHER: "Profile",

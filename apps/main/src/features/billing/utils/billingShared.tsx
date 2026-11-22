@@ -1,30 +1,149 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { BillingLine } from "@truckmoov/api/billing";
-import { AlertCircle } from "lucide-react";
-import { Badge } from "@/components/shadcn/badge";
+import {
+  AlertCircle, Download, Eye,
+} from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { DataTable } from "@/components/shadcn/data-table";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  TableCell, TableRow,
+} from "@/components/shadcn/table";
 import { cn } from "@/lib/utils";
 import {
   chargeCategory, ngn, planLineOf, taxRateLabel, TONE,
 } from "./billingHelpers";
 
+/**
+ * The design app's billing pill: its Badge base with `rounded-full font-medium`
+ * and a tone. A plain div because the shared Badge base is `rounded-md px-2`.
+ */
 export function StatusPill({
   label, tone,
 }: {
   label: string; tone: keyof typeof TONE;
 }) {
   return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "rounded-full font-medium",
-        TONE[tone],
-      )}
+    <div className={cn(
+      "inline-flex items-center border px-2.5 py-0.5 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full font-medium",
+      TONE[tone],
+    )}
     >
       {label}
-    </Badge>
+    </div>
+  );
+}
+
+/** The design app's billing card surface (its Card base + `surface-sleek rounded-2xl`). */
+export const BILLING_CARD = "surface-sleek text-card-foreground surface-sleek rounded-2xl";
+
+/** The design app's billing CardTitle. */
+export const BILLING_CARD_TITLE = "text-base font-semibold leading-none tracking-tight text-foreground font-display";
+
+/** The line every billing card carries under its title in the design app. */
+export const BILLING_CARD_SUBTITLE = "Account charges, billing records, and payment information.";
+
+/** Server page size for the billing tables; the pager stays hidden until a list outgrows it. */
+export const BILLING_PAGE_SIZE = 25;
+
+/**
+ * Loading / error / empty rows for the billing tables, so the table chrome
+ * stays the design app's while there are no data rows. Renders nothing once
+ * there are rows to show.
+ */
+export function TableStateRows({
+  colSpan, isLoading, isError, errorMessage, onRetry, isEmpty, emptyMessage,
+}: {
+  colSpan: number;
+  isLoading: boolean;
+  isError: boolean;
+  errorMessage: string;
+  onRetry: () => void;
+  isEmpty: boolean;
+  emptyMessage: string;
+}) {
+  if (isLoading) {
+    return [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+    ].map(row => (
+      <TableRow key={row}>
+        {Array.from(
+          { length: colSpan },
+          (_, j) => `${row}${j}`,
+        ).map(cell => (
+          <TableCell key={cell}>
+            <Skeleton className="h-4 w-full" />
+          </TableCell>
+        ))}
+      </TableRow>
+    ));
+  }
+  if (isError) {
+    return (
+      <TableRow>
+        <TableCell
+          colSpan={colSpan}
+          className="text-center py-8"
+        >
+          <p className="text-destructive">{errorMessage}</p>
+          <Button
+            variant="link"
+            className="mt-1"
+            onClick={onRetry}
+          >
+            Try again
+          </Button>
+        </TableCell>
+      </TableRow>
+    );
+  }
+  if (isEmpty) {
+    return (
+      <TableRow>
+        <TableCell
+          colSpan={colSpan}
+          className="text-center py-8 text-muted-foreground"
+        >
+          {emptyMessage}
+        </TableCell>
+      </TableRow>
+    );
+  }
+  return null;
+}
+
+/** The design app's row actions: a ghost "View" and an icon-only download. */
+export function RowActions({
+  onView, onDownload, downloadDisabled,
+}: {
+  onView: () => void; onDownload?: () => void; downloadDisabled?: boolean;
+}) {
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onView}
+      >
+        <Eye className="h-4 w-4 mr-1" />
+        View
+      </Button>
+      {onDownload && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={downloadDisabled}
+          onClick={onDownload}
+          aria-label="Download document"
+        >
+          <Download className="h-4 w-4" />
+        </Button>
+      )}
+    </>
   );
 }
 

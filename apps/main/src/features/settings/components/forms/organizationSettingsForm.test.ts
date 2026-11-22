@@ -4,6 +4,7 @@ import {
 
 import {
   isValidOrganizationImage,
+  isValidProfileImage,
   MAX_ORGANIZATION_IMAGE_SIZE,
   organizationSettingsSchema,
   organizationSettingsToFormValues,
@@ -23,6 +24,7 @@ describe(
             contactEmail: "ops@truckmoov.test",
             phoneNumber: "+2348000000000",
             address: "Lagos",
+            logoUrl: "https://cdn.test/logo.png",
             profilePictureUrl: "https://cdn.test/profile.png",
           },
           defaults: {
@@ -33,6 +35,7 @@ describe(
           contactEmail: "ops@truckmoov.test",
           phoneNumber: "+2348000000000",
           address: "Lagos",
+          logoUrl: "https://cdn.test/logo.png",
           profilePictureUrl: "https://cdn.test/profile.png",
           timezone: "Africa/Nairobi",
           language: "ha",
@@ -58,6 +61,7 @@ describe(
           contactEmail: "not-an-email",
           phoneNumber: "",
           address: "",
+          logoUrl: "",
           profilePictureUrl: "",
           timezone: "Africa/Lagos",
           language: "en",
@@ -93,6 +97,27 @@ describe(
     );
 
     it(
+      "accepts PNG, JPEG, SVG or WebP profile images up to 2 MB",
+      () => {
+        expect(isValidProfileImage(new File(
+          ["image"],
+          "photo.webp",
+          { type: "image/webp" },
+        ))).toBe(true);
+        expect(isValidProfileImage(new File(
+          ["image"],
+          "photo.gif",
+          { type: "image/gif" },
+        ))).toBe(false);
+        expect(isValidProfileImage(new File(
+          [new Uint8Array(MAX_ORGANIZATION_IMAGE_SIZE + 1)],
+          "large.svg",
+          { type: "image/svg+xml" },
+        ))).toBe(false);
+      },
+    );
+
+    it(
       "builds a supported PATCH payload without billing email",
       () => {
         const payload = organizationSettingsToPayload({
@@ -100,6 +125,7 @@ describe(
           contactEmail: "ops@truckmoov.test",
           phoneNumber: "+2348000000000",
           address: "Lagos",
+          logoUrl: "https://cdn.test/logo.png",
           profilePictureUrl: "https://cdn.test/profile.png",
           timezone: "Africa/Lagos",
           language: "en",
@@ -112,6 +138,7 @@ describe(
               contactEmail: "ops@truckmoov.test",
               phoneNumber: "+2348000000000",
               address: "Lagos",
+              logoUrl: "https://cdn.test/logo.png",
               profilePictureUrl: "https://cdn.test/profile.png",
             },
             defaults: {

@@ -1,5 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
-import type { TenantBillingActivity } from "@truckmoov/api/billing";
 import {
   useTenantBillingActivity, useTenantBillingOverview,
 } from "@truckmoov/api/billing";
@@ -8,23 +6,24 @@ import { useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 import { CurrentPlanCard } from "@/features/billing/components/ui/CurrentPlanCard";
 import { useDebouncedValue } from "@/features/data-bundle/utils/dataBundle";
+import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
+import { cn } from "@/lib/utils";
 import {
   formatDate, monthLabel, ngn,
 } from "../../utils/billingHelpers";
-import { SectionError } from "../../utils/billingShared";
-
-const PAGE_SIZE = 20;
+import {
+  BILLING_CARD, BILLING_CARD_SUBTITLE, BILLING_CARD_TITLE, BILLING_PAGE_SIZE, SectionError, TableStateRows,
+} from "../../utils/billingShared";
 
 const CATEGORY_COLORS = [
   "hsl(var(--primary))",
@@ -37,9 +36,11 @@ const CATEGORY_COLORS = [
 const thousands = (v: number) => `${Math.round(v / 1000)}k`;
 
 function ChartCard({
-  title, subtitle, height, state, isEmpty, className, children,
+  title, lead = BILLING_CARD_SUBTITLE, subtitle, height, state, isEmpty, className, children,
 }: {
   title: string;
+  /** The first muted line under the title (the design app repeats the card subtitle here). */
+  lead?: string;
   subtitle: string;
   height: string;
   state: {
@@ -66,13 +67,24 @@ function ChartCard({
   };
 
   return (
-    <Card className={`surface-sleek rounded-2xl ${className ?? ""}`}>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <div className={cn(
+      BILLING_CARD,
+      className,
+    )}
+    >
+      <div className="flex flex-col space-y-1.5 p-6 pb-4">
+        <h3 className={BILLING_CARD_TITLE}>{title}</h3>
+        <p className="text-sm text-muted-foreground mt-1.5">{lead}</p>
         <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
-      </CardHeader>
-      <CardContent className={height}>{body()}</CardContent>
-    </Card>
+      </div>
+      <div className={cn(
+        "p-6 pt-0",
+        height,
+      )}
+      >
+        {body()}
+      </div>
+    </div>
   );
 }
 
@@ -191,6 +203,7 @@ function BillingCharts() {
 
       <ChartCard
         title="Outstanding Balance Trend"
+        lead="Details and current information for outstanding balance trend."
         subtitle="Amount left unpaid on each invoice issued to your organization."
         height="h-[240px]"
         state={overview}
@@ -235,44 +248,13 @@ function BillingCharts() {
   );
 }
 
-const activityColumns: ColumnDef<TenantBillingActivity>[] = [
-  {
-    id: "date",
-    header: "Date",
-    enableSorting: false,
-    meta: { className: "whitespace-nowrap" },
-    cell: ({ row }) => formatDate(row.original.date),
-  },
-  {
-    accessorKey: "event",
-    header: "Event",
-    enableSorting: false,
-    meta: { className: "font-medium" },
-  },
-  {
-    accessorKey: "resource",
-    header: "Related resource",
-    enableSorting: false,
-    meta: { className: "text-muted-foreground" },
-  },
-  {
-    id: "impact",
-    header: "Financial impact",
-    enableSorting: false,
-    meta: { className: "text-right tabular-nums" },
-    cell: ({ row }) => {
-      const impact = row.original.impactNgn;
-      return impact === null
-        ? <span className="text-muted-foreground">No charge</span>
-        : (
-            <span className={impact < 0 ? "text-emerald-600" : ""}>
-              {impact < 0 ? "−" : "+"}
-              {ngn(Math.abs(impact))}
-            </span>
-          );
-    },
-  },
-];
+function Impact({ value }: { value: number | null }) {
+  if (value === null)
+    return <span className="text-muted-foreground">No charge</span>;
+  return value < 0
+    ? <span className="text-emerald-600">{`−${ngn(Math.abs(value))}`}</span>
+    : <span>{`+${ngn(value)}`}</span>;
+}
 
 function BillingActivity() {
   const [
@@ -291,15 +273,17 @@ function BillingActivity() {
 
   const activity = useTenantBillingActivity({
     params: {
-      q: q || undefined, event: eventFilter === "all" ? undefined : eventFilter, page, pageSize: PAGE_SIZE,
+      q: q || undefined, event: eventFilter === "all" ? undefined : eventFilter, page, pageSize: BILLING_PAGE_SIZE,
     },
   });
   const list = activity.data?.data;
+  const rows = list?.items ?? [];
 
   return (
-    <Card className="surface-sleek rounded-2xl">
-      <CardHeader className="space-y-4">
-        <CardTitle>Billing Activity</CardTitle>
+    <div className={BILLING_CARD}>
+      <div className="flex flex-col p-6 pb-4 space-y-4">
+        <h3 className={BILLING_CARD_TITLE}>Billing Activity</h3>
+        <p className="text-sm text-muted-foreground mt-1.5">{BILLING_CARD_SUBTITLE}</p>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -320,7 +304,7 @@ function BillingActivity() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-full sm:w-56 rounded-xl">
+            <SelectTrigger className="h-10 px-3.5 w-full sm:w-56 rounded-xl">
               <SelectValue placeholder="All events" />
             </SelectTrigger>
             <SelectContent>
@@ -336,27 +320,51 @@ function BillingActivity() {
             </SelectContent>
           </Select>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-6 pt-0">
         <div className="rounded-2xl border border-border overflow-x-auto">
-          <DataTable
-            columns={activityColumns}
-            data={list?.items ?? []}
-            isLoading={activity.isLoading}
-            isError={activity.isError}
-            errorMessage="Could not load your billing activity."
-            onRetry={() => activity.refetch()}
-            emptyState="No activity matches your filters."
-            pagination={list && {
-              page,
-              pageSize: PAGE_SIZE,
-              total: list.total,
-              onPageChange: setPage,
-            }}
-          />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Event</TableHead>
+                <TableHead>Related resource</TableHead>
+                <TableHead className="text-right">Financial impact</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableStateRows
+                colSpan={4}
+                isLoading={activity.isLoading}
+                isError={activity.isError}
+                errorMessage="Could not load your billing activity."
+                onRetry={() => activity.refetch()}
+                isEmpty={rows.length === 0}
+                emptyMessage="No activity matches your filters."
+              />
+              {!activity.isLoading && !activity.isError && rows.map(a => (
+                <TableRow key={a.id}>
+                  <TableCell className="whitespace-nowrap">{formatDate(a.date)}</TableCell>
+                  <TableCell className="font-medium">{a.event}</TableCell>
+                  <TableCell className="text-muted-foreground">{a.resource}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    <Impact value={a.impactNgn} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
-      </CardContent>
-    </Card>
+        {list && (
+          <FleetTablePager
+            page={page}
+            pageSize={BILLING_PAGE_SIZE}
+            total={list.total}
+            onPageChange={setPage}
+          />
+        )}
+      </div>
+    </div>
   );
 }
 

@@ -16,9 +16,6 @@ import { toast } from "sonner";
 import {
   Alert, AlertDescription, AlertTitle,
 } from "@/components/shadcn/alert";
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Switch } from "@/components/shadcn/switch";
 
@@ -62,6 +59,13 @@ const DELIVERY_CHANNELS: PreferenceRow[] = [
   },
 ];
 
+// The design app's card, verbatim. The shared shadcn `Card` adds a border,
+// shadow and different padding the reference doesn't have.
+const CARD = "rounded-2xl surface-sleek text-card-foreground bg-card/50 border-border/50";
+const CARD_HEADER = "flex flex-col space-y-1.5 p-6 pb-4";
+const CARD_TITLE = "text-base font-semibold leading-none tracking-tight text-foreground font-display";
+const CARD_CONTENT = "p-6 pt-0 space-y-4";
+
 function LoadingPanel() {
   return (
     <div
@@ -72,23 +76,23 @@ function LoadingPanel() {
         6,
         3,
       ].map(rowCount => (
-        <Card
+        <div
           key={rowCount}
-          className="bg-card/50 border-border/50"
+          className={CARD}
         >
-          <CardHeader>
+          <div className={CARD_HEADER}>
             <Skeleton className="h-6 w-48" />
             <Skeleton className="h-4 w-72 max-w-full" />
-          </CardHeader>
-          <CardContent className="space-y-4">
+          </div>
+          <div className={CARD_CONTENT}>
             {Array.from({ length: rowCount }).map((_, index) => (
               <Skeleton
                 key={index}
                 className="h-16 w-full"
               />
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -153,7 +157,7 @@ export function NotificationPreferencesPanel() {
     return (
       <div
         key={item.key}
-        className="flex items-center justify-between gap-4 py-3 border-b border-border/50 last:border-0"
+        className="flex items-center justify-between py-3 border-b border-border/50 last:border-0"
       >
         <div className={showIcons ? "flex items-center gap-3" : undefined}>
           {showIcons && Icon && (
@@ -181,26 +185,26 @@ export function NotificationPreferencesPanel() {
 
   return (
     <>
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
-          <CardTitle>Alert Preferences</CardTitle>
-          <CardDescription>Choose which events trigger notifications</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">{renderRows(ALERT_PREFERENCES)}</CardContent>
-      </Card>
+      <div className={CARD}>
+        <div className={CARD_HEADER}>
+          <h3 className={CARD_TITLE}>Alert Preferences</h3>
+          <p className="text-sm text-muted-foreground">Choose which events trigger notifications</p>
+        </div>
+        <div className={CARD_CONTENT}>{renderRows(ALERT_PREFERENCES)}</div>
+      </div>
 
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader>
-          <CardTitle>Delivery Channels</CardTitle>
-          <CardDescription>How you want to receive notifications</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className={CARD}>
+        <div className={CARD_HEADER}>
+          <h3 className={CARD_TITLE}>Delivery Channels</h3>
+          <p className="text-sm text-muted-foreground">How you want to receive notifications</p>
+        </div>
+        <div className={CARD_CONTENT}>
           {renderRows(
             DELIVERY_CHANNELS,
             true,
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </>
   );
 }
