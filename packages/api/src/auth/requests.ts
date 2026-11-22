@@ -139,6 +139,7 @@ import type {
   SystemLoginTwoFactorResponse,
   SystemInstallationJobsQuery,
   SystemInstallationJobsResponse,
+  SystemInstallationJobDetailResponse,
   SystemInstallerActionPayload,
   SystemInstallerResponse,
   SystemInstallersQuery,
@@ -434,6 +435,11 @@ import type {
   UploadOnboardingApplicationDocumentPayload,
   SuspendSystemDevicePayload,
   ReinstateSystemDevicePayload,
+  UpdateSystemDevicePayload,
+  AssignSystemDevicesPayload,
+  SystemDeviceWriteResponse,
+  AssignSystemInstallationPayload,
+  SystemInstallationAssignmentResponse,
   SystemDeviceActionResponse,
 } from './types'
 
@@ -829,6 +835,13 @@ export async function getSystemInstallationJobs(params?: SystemInstallationJobsQ
   return data
 }
 
+export async function getSystemInstallationJob({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemInstallationJobDetailResponse>(
+    `/auth/system/installation-orders/${id}`,
+  )
+  return data
+}
+
 export async function updateSystemInstaller({ id, data }: UpdateSystemInstallerPayload) {
   const { data: res } = await axiosInstance.patch<SystemInstallerResponse>(`/auth/system/installers/${id}`, data)
   return res
@@ -1087,6 +1100,24 @@ export async function suspendSystemDevice({ id, data: body }: SuspendSystemDevic
 // ⚠️ Returns assignable, not assigned — vehicle link was released on suspension.
 export async function reinstateSystemDevice({ id }: ReinstateSystemDevicePayload) {
   const { data } = await axiosInstance.post<SystemDeviceActionResponse>(`/auth/system/devices/${id}/reinstate`)
+  return data
+}
+
+export async function updateSystemDevice({ id, data: body }: UpdateSystemDevicePayload) {
+  const { data } = await axiosInstance.patch<SystemDeviceWriteResponse>(`/auth/system/devices/${id}`, body)
+  return data
+}
+
+export async function assignSystemDevices({ data: body }: AssignSystemDevicesPayload) {
+  const { data } = await axiosInstance.post<SystemDeviceWriteResponse>('/auth/system/devices/assign', body)
+  return data
+}
+
+export async function assignSystemInstallationOrder({ id, data: body }: AssignSystemInstallationPayload) {
+  const { data } = await axiosInstance.post<SystemInstallationAssignmentResponse>(
+    `/auth/system/installation-orders/${id}/assign`,
+    body,
+  )
   return data
 }
 

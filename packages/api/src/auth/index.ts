@@ -10,6 +10,8 @@ import {
   attachSupportTicketFiles,
   approveSystemDeviceSetupRequest,
   assignSystemDeviceSetupRequest,
+  assignSystemDevices,
+  assignSystemInstallationOrder,
   getSystemDeviceSetupSummary,
   approveSIMRequest,
   changeRole,
@@ -31,6 +33,7 @@ import {
   uploadInstallerEvidence,
   createSystemInstaller,
   getSystemInstallationJobs,
+  getSystemInstallationJob,
   getSystemInstallers,
   reactivateSystemInstaller,
   resendSystemInstallerInvite,
@@ -62,6 +65,7 @@ import {
   deleteDeviceCatalogEntry,
   suspendSystemDevice,
   reinstateSystemDevice,
+  updateSystemDevice,
   deleteOrganizationUser,
   deleteSystemAdmin,
   deleteSystemAdminInvite,
@@ -459,6 +463,7 @@ export const AUTH_QUERY_KEY = {
   systemAdmins: ['systemAdmins'],
   systemInstallers: ['systemInstallers'],
   systemInstallationJobs: (payload?: SystemInstallationJobsQuery) => ['systemInstallationJobs', payload],
+  systemInstallationJob: (id: string) => ['systemInstallationJob', id],
   systemInstallersList: (payload?: SystemInstallersQuery) => ['systemInstallers', 'list', payload],
   systemAdminInvites: ['systemAdminInvites'],
 
@@ -735,6 +740,14 @@ export function getSystemInstallersQueryOptions(payload?: SystemInstallersQuery)
     queryKey: AUTH_QUERY_KEY.systemInstallersList(payload),
     queryFn: () => getSystemInstallers(payload),
     placeholderData: keepPreviousData,
+  })
+}
+
+export function getSystemInstallationJobQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemInstallationJob(id),
+    queryFn: () => getSystemInstallationJob({ id }),
+    enabled: Boolean(id),
   })
 }
 
@@ -1512,6 +1525,36 @@ export function useReinstateSystemDevice() {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevice(id) })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
+    },
+  })
+}
+
+export function useUpdateSystemDevice() {
+  return useMutation({
+    mutationFn: updateSystemDevice,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevice(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
+    },
+  })
+}
+
+export function useAssignSystemDevices() {
+  return useMutation({
+    mutationFn: assignSystemDevices,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
+    },
+  })
+}
+
+export function useAssignSystemInstallationOrder() {
+  return useMutation({
+    mutationFn: assignSystemInstallationOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['systemInstallationJobs'] })
     },
   })
 }

@@ -534,6 +534,9 @@ export type SystemInstallationJob = {
   tenantId: string
   /** Organisation name, empty when the application is gone. */
   customer: string
+  customerEmail: string | null
+  /** enterprise or owner_operator; null when the application is gone. */
+  tenantType: 'enterprise' | 'owner_operator' | string | null
   siteContactName: string
   siteContactPhone: string
   firstVehicle: { registrationNumber: string, make: string, model: string } | null
@@ -546,12 +549,121 @@ export type SystemInstallationJob = {
   scheduledAt: string
   scheduledUntil: string
   status: InstallerJobStatus
+  createdAt: string
+  /** When the installer started work; null until then. */
+  startedAt: string | null
   /** When it was completed or cancelled. */
   completedAt: string | null
   installer: { id: string, code: string, fullName: string } | null
   /** Newest issue report, only while status is issue_reported. */
   issueTicket: { id: string, displayId: string } | null
 }
+
+export type SystemInstallationJobUnit = {
+  index: number
+  vehicle: {
+    registrationNumber: string
+    vehicleType: string | null
+    make: string
+    model: string
+    year: number | null
+    engineNumber: string | null
+    chassisNumber: string | null
+    colour: string | null
+    engineCapacity: string | null
+    odometer: number | null
+  } | null
+  device: {
+    id: string
+    name: string | null
+    imei: string
+    manufacturer: string
+    model: string
+    status: string
+    statusLabel: string
+    deviceType: string | null
+    verificationStatus: string | null
+  } | null
+  sim: {
+    iccid: string
+    imsi: string
+    msisdn: string
+    carrier: string
+    activationStatus: string
+    network: string | null
+  } | null
+}
+
+export type SystemInstallationChecklistItem = {
+  key: string
+  label: string
+  checked: boolean
+  checkedAt: string | null
+  gated?: string
+}
+
+export type SystemInstallationJobDetail = {
+  id: string
+  jobNumber: string
+  status: InstallerJobStatus
+  customer: {
+    customerName: string
+    customerType: string | null
+    phone: string
+    email: string | null
+    address: string
+    scheduledDate: string
+    scheduledAt: string
+    scheduledUntil: string
+  }
+  units: SystemInstallationJobUnit[]
+  checklist: {
+    groups: Array<{
+      key: string
+      label: string
+      items: SystemInstallationChecklistItem[]
+    }>
+    completed: number
+    total: number
+  }
+  evidence: Array<{
+    id: string
+    category: string
+    label: string
+    fileName: string
+    size: number
+    createdAt: string
+  }>
+  notes: string | null
+  completion: {
+    customer: string
+    vehicle: string | null
+    device: string | null
+    vehicles: string[]
+    devices: string[]
+    installationDate: string
+    installer: string
+    checklist: string
+    evidenceCount: number
+    notes: string | null
+  }
+  actions: {
+    canAccept: boolean
+    canStart: boolean
+    canComplete: boolean
+    canEditNotes: boolean
+    canUploadEvidence: boolean
+    canTick: boolean
+  }
+  offerRejections: Array<{
+    installerId: string
+    installerName: string | null
+    reason: string
+    rejectedAt: string
+  }>
+}
+
+export type SystemInstallationJobDetailResponse = ServerResponse<SystemInstallationJobDetail>
 
 export type SystemInstallationJobsQuery = {
   status?: InstallerJobStatus
@@ -2709,6 +2821,55 @@ export type SystemDeviceInventoryList = {
   devices: SystemDeviceInventoryItem[]
   generatedAt: string
 }
+
+export type SystemDeviceUpdate = {
+  manufacturer?: string
+  model?: string
+  firmwareVersion?: string
+  protocol?: string
+  lifecycleStatus?: string
+  status?: string
+}
+
+export type UpdateSystemDevicePayload = {
+  id: string
+  data: SystemDeviceUpdate
+}
+
+export type AssignSystemDevicesPayload = {
+  data: {
+    tenantId: string
+    deviceIds: string[]
+    notes?: string
+  }
+}
+
+export type SystemDeviceWriteResult = {
+  updated?: number
+  tenantId?: string
+} & Record<string, unknown>
+
+export type SystemDeviceWriteResponse = ServerResponse<SystemDeviceWriteResult>
+
+export type AssignSystemInstallationPayload = {
+  id: string
+  data: {
+    installerId: string
+  }
+}
+
+export type SystemInstallationAssignment = {
+  id: string
+  jobNumber: string
+  status: string
+  installer: {
+    id: string
+    code: string
+    fullName: string
+  }
+}
+
+export type SystemInstallationAssignmentResponse = ServerResponse<SystemInstallationAssignment>
 
 export type SystemDeviceDetail = {
   id: string

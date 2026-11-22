@@ -2,6 +2,7 @@ import type {
   FilterField, FilterValues,
 } from "@/components/shadcn/table-toolbar";
 import type { InstallationRecord } from "@/features/installers/utils/platformInstallations";
+import { useAssignSystemInstallationOrder } from "@truckmoov/api/auth";
 import {
   formatDateInTimezone, formatDateOnlyInTimezone,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -17,10 +18,10 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { ExportButton } from "@/components/shadcn/export-button";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";
+import { ExportButton } from "@/components/shadcn/export-button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
@@ -51,34 +52,14 @@ const HISTORY_STATUSES: InstallationRecord["status"][] = [
 
 /**
  * Fleetflow's `PlatformInstallationsTab`, live-wired to the installation orders
- * API. Fleetflow's "Installation Assignment" dialog opens from the details
- * dialog's Assigned Installer section; with no assign endpoint yet, a confirmed
- * assignment is kept in this tab's local state only.
+ * API. The "Installation Assignment" dialog opens from the details dialog's
+ * Assigned Installer section and persists through the platform assign route.
  */
 export function PlatformInstallationsTab() {
   const {
-    records: liveRecords, loading, error, liveInstallers: installers, refresh,
+    records, loading, error, liveInstallers: installers, refresh,
   } = usePlatformInstallations();
-  // ponytail: mock data from fleetflow parity port — wire to packages/api
-  // Session-only installer assignments (record key → installer id) until an assign endpoint exists.
-  const [
-    localAssignments,
-    setLocalAssignments,
-  ] = useState<Record<string, string>>({});
-  const records = useMemo(
-    () => liveRecords.map(r => localAssignments[r.key]
-      ? {
-          ...r,
-          installerId: localAssignments[r.key],
-          installerName: undefined,
-          status: r.status === "pending" ? "awaiting_assignment" as const : r.status,
-        }
-      : r),
-    [
-      liveRecords,
-      localAssignments,
-    ],
-  );
+  const assignOrder = useAssignSystemInstallationOrder();
   const allRecords = records;
   const { timezone } = usePreferences();
   const [
@@ -159,10 +140,6 @@ export function PlatformInstallationsTab() {
     installerId,
     setInstallerId,
   ] = useState("");
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
   const [
     assignmentError,
     setAssignmentError,
@@ -250,26 +227,28 @@ export function PlatformInstallationsTab() {
   const save = () => {
     if (!assignment)
       return;
-    setSaving(true);
     setAssignmentError("");
-    try {
-      if (!canChangeInstallationAssignment(assignment.status))
-        throw new Error("Assignment is locked after installation work begins.");
-      if (!candidate)
-        throw new Error("Choose an active installer with matching location and capabilities.");
-      setLocalAssignments(current => ({
-        ...current,
-        [assignment.key]: candidate.id,
-      }));
-      toast.success("Installation assignment saved");
-      setAssignmentKey(null);
+    if (!canChangeInstallationAssignment(assignment.status)) {
+      setAssignmentError("Assignment is locked after installation work begins.");
+      return;
     }
-    catch (e) {
-      setAssignmentError(e instanceof Error ? e.message : "Assignment could not be saved.");
+    if (!candidate) {
+      setAssignmentError("Choose an active installer with matching location and capabilities.");
+      return;
     }
-    finally {
-      setSaving(false);
-    }
+    assignOrder.mutate(
+      {
+        id: assignment.id, data: { installerId: candidate.id },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Installation assigned");
+          setAssignmentKey(null);
+          refresh();
+        },
+        onError: error => setAssignmentError(error.message),
+      },
+    );
   };
   /** Shows the recorded time when the value carries one; date-only values stay date-only. */
   const dateTime = (value: string) => !value ? "—" : value.includes("T") ? formatDateInTimezone(
@@ -569,7 +548,7 @@ export function PlatformInstallationsTab() {
               records={allRecords}
               selectedId={installerId}
               onSelect={setInstallerId}
-              disabled={saving}
+              disabled={assignOrder.isPending}
             />
           )}
           {assignmentError && (
@@ -589,9 +568,9 @@ export function PlatformInstallationsTab() {
             </Button>
             <Button
               onClick={save}
-              disabled={!candidate || saving}
+              disabled={!candidate || assignOrder.isPending}
             >
-              {saving ? "Saving…" : "Confirm Assignment"}
+              {assignOrder.isPending ? "Assigning…" : "Confirm Assignment"}
             </Button>
           </DialogFooter>
         </DialogContent>

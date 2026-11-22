@@ -23,6 +23,8 @@ const job: SystemInstallationJob = {
   jobNumber: "INS-0001",
   tenantId: "tenant-1",
   customer: "Marina Freight Services",
+  customerEmail: "ops@marina.example",
+  tenantType: "enterprise",
   siteContactName: "Site lead",
   siteContactPhone: "+2348000000000",
   firstVehicle: null,
@@ -36,6 +38,8 @@ const job: SystemInstallationJob = {
   scheduledAt: "2026-11-23T08:00:00Z",
   scheduledUntil: "2026-11-23T12:00:00Z",
   status: "scheduled",
+  createdAt: "2026-11-01T09:00:00Z",
+  startedAt: null,
   completedAt: null,
   installer: null,
   issueTicket: null,
@@ -117,7 +121,7 @@ describe(
     );
     it(
       "keeps unaccepted API offers awaiting assignment",
-      () => expect(jobInstallationStatus("assigned")).toBe("awaiting_assignment"),
+      () => expect(jobInstallationStatus("assigned")).toBe("assigned"),
     );
     it(
       "maps scheduled installations",

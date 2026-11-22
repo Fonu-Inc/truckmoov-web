@@ -6,6 +6,7 @@ import { INSTALLATION_STATUS_LABEL } from "@/features/installers/utils/platformI
 const variants: Record<InstallationStatus, BadgeProps["variant"]> = {
   pending: "installationAwaiting",
   awaiting_assignment: "installationAwaiting",
+  assigned: "installationScheduled",
   scheduled: "installationScheduled",
   in_progress: "installationProgress",
   completed: "installationCompleted",

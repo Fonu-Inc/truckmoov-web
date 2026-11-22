@@ -1,4 +1,6 @@
-import type { SystemInstallationJob, SystemInstaller } from "@truckmoov/api/auth";
+import type {
+  SystemInstallationJob, SystemInstaller,
+} from "@truckmoov/api/auth";
 
 /**
  * Platform installation records — fleetflow's `lib/platformInstallations`, live
@@ -7,10 +9,11 @@ import type { SystemInstallationJob, SystemInstaller } from "@truckmoov/api/auth
  * GET /auth/system/installation-orders, the way fleetflow maps its live
  * `installer_jobs` rows.
  */
-export type InstallationStatus = "pending" | "awaiting_assignment" | "scheduled" | "in_progress" | "completed" | "requires_attention" | "cancelled";
+export type InstallationStatus = "pending" | "awaiting_assignment" | "assigned" | "scheduled" | "in_progress" | "completed" | "requires_attention" | "cancelled";
 export const INSTALLATION_STATUS_LABEL: Record<InstallationStatus, string> = {
   pending: "Pending",
   awaiting_assignment: "Awaiting Assignment",
+  assigned: "Awaiting Acceptance",
   scheduled: "Scheduled",
   in_progress: "In Progress",
   completed: "Completed",
@@ -49,7 +52,8 @@ export type InstallationRecord = {
 export function jobInstallationStatus(status: string): InstallationStatus {
   switch (status) {
     case "created": case "pending": return "pending";
-    case "unassigned": case "assigned": case "awaiting_assignment": case "offered": return "awaiting_assignment";
+    case "unassigned": case "awaiting_assignment": case "offered": return "awaiting_assignment";
+    case "assigned": return "assigned";
     case "accepted": case "scheduled": return "scheduled";
     case "in_progress": return "in_progress";
     case "completed": case "active": return "completed";
@@ -66,15 +70,18 @@ export function fromSystemInstallationJob(job: SystemInstallationJob): Installat
     id: job.id,
     reference: job.jobNumber || job.id,
     customer: job.customer || "Customer not recorded",
+    customerEmail: job.customerEmail ?? undefined,
     fleet: "—",
     vehicleCount: job.vehicleCount,
     deviceCount: job.deviceCount,
-    // The API does not record the tenant type, creation time or start time yet.
-    tenantType: undefined,
-    createdAt: "",
+    tenantType: job.tenantType === "owner_operator"
+      ? "Owner-Operator"
+      : job.tenantType === "enterprise" ? "Enterprise" : undefined,
+    createdAt: job.createdAt,
     scheduledDate: job.scheduledDate,
     status,
-    completedAt: status === "completed" ? job.completedAt ?? undefined : undefined,
+    startedAt: job.startedAt ?? undefined,
+    completedAt: job.completedAt ?? undefined,
     installerId: job.installer?.id ?? null,
     installerName: job.installer?.fullName,
     liveDetails: {
@@ -202,6 +209,7 @@ export function canChangeInstallationAssignment(status: InstallationStatus) {
   return [
     "pending",
     "awaiting_assignment",
+    "assigned",
     "scheduled",
   ].includes(status);
 }

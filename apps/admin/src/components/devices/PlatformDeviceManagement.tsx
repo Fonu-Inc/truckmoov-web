@@ -15,16 +15,22 @@ import {
 import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
+  Activity,
   Building2,
   CheckCircle,
   Cpu,
   Download,
   Eye,
   MoreHorizontal,
+  Pencil,
+  PowerOff,
   Search,
   Signal,
   SignalLow,
   SignalZero,
+  UserCheck,
+  UserPlus,
+  UserX,
   XCircle,
 } from "lucide-react";
 import {
@@ -69,6 +75,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { PageActions } from "@/shared/components/layout/PageTitle";
 import { DeviceDetailSheet } from "./management/DeviceDetailSheet";
 import {
   formatLastSeen,
@@ -79,6 +86,8 @@ import {
   statusClasses,
   statusLabels,
 } from "./management/deviceStatus";
+import { EditDeviceDialog } from "./management/EditDeviceDialog";
+import { RecordDeviceAssignmentDialog } from "./management/RecordDeviceAssignmentDialog";
 
 const ONLINE_STATUSES = [
   "active",
@@ -129,6 +138,14 @@ export function PlatformDeviceManagement() {
   const [
     showDetailsSheet,
     setShowDetailsSheet,
+  ] = useState(false);
+  const [
+    editingDevice,
+    setEditingDevice,
+  ] = useState<PlatformDevice | null>(null);
+  const [
+    assignmentOpen,
+    setAssignmentOpen,
   ] = useState(false);
   const [
     isExporting,
@@ -260,332 +277,366 @@ export function PlatformDeviceManagement() {
     );
   }
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Cpu className="h-5 w-5 text-primary" />
-              Assigned Devices
-            </CardTitle>
-            <CardDescription>
-              Devices that have been assigned to tenants across the platform
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export Data
-            </Button>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
-          {[
-            {
-              label: "All Devices", value: stats.all, cls: "",
-            },
-            {
-              label: "Active", value: stats.active, cls: "text-success",
-            },
-            {
-              label: "Inactive", value: stats.inactive, cls: "text-muted-foreground",
-            },
-            {
-              label: "Assigned", value: stats.assigned, cls: "text-primary",
-            },
-            {
-              label: "Unassigned", value: stats.unassigned, cls: "text-warning",
-            },
-          ].map(k => (
-            <div
-              key={k.label}
-              className="rounded-lg border bg-card p-3"
-            >
-              <p className={`text-2xl font-bold ${k.cls}`}>{k.value}</p>
-              <p className="text-xs text-muted-foreground">{k.label}</p>
+    <>
+      <PageActions>
+        <Button
+          size="sm"
+          onClick={() => setAssignmentOpen(true)}
+        >
+          <UserPlus className="mr-2 h-4 w-4" />
+          Record Assignment
+        </Button>
+      </PageActions>
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Cpu className="h-5 w-5 text-primary" />
+                Assigned Devices
+              </CardTitle>
+              <CardDescription>
+                Devices that have been assigned to tenants across the platform
+              </CardDescription>
             </div>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search by ID, IMEI, or tenant..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={isExporting}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Data
+              </Button>
+            </div>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+            {[
+              {
+                label: "All Devices", value: stats.all, icon: Cpu, tone: "text-primary bg-primary/10",
+              },
+              {
+                label: "Active", value: stats.active, icon: Activity, tone: "text-success bg-success/10",
+              },
+              {
+                label: "Inactive", value: stats.inactive, icon: PowerOff, tone: "text-muted-foreground bg-muted",
+              },
+              {
+                label: "Assigned", value: stats.assigned, icon: UserCheck, tone: "text-info bg-info/10",
+              },
+              {
+                label: "Unassigned", value: stats.unassigned, icon: UserX, tone: "text-warning bg-warning/10",
+              },
+            ].map((k) => {
+              const Icon = k.icon;
+              return (
+                <div
+                  key={k.label}
+                  className="rounded-lg border bg-card p-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-md ${k.tone}`}>
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <p className="text-sm text-muted-foreground">{k.label}</p>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold">{k.value}</p>
+                </div>
+              );
+            })}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search by ID, IMEI, or tenant..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {lifecycleStatuses.map(s => (
+                  <SelectItem
+                    key={s.value}
+                    value={s.value}
+                  >
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <PlatformFilterPopover
+              entity="devices"
+              fields={[
+                {
+                  key: "lastSeen",
+                  label: "Last Seen",
+                  type: "select",
+                  options: [
+                    {
+                      value: "7d", label: "Last 7 days",
+                    },
+                    {
+                      value: "30d", label: "Last 30 days",
+                    },
+                    {
+                      value: "90d", label: "Last 90 days",
+                    },
+                  ],
+                },
+                {
+                  key: "tenant",
+                  label: "Tenant",
+                  type: "select",
+                  options: Array.from(
+                    new Set(devices.map(d => tenantName(d))),
+                  )
+                    .filter(n => n && n !== "Unknown tenant")
+                    .map(n => ({
+                      value: n, label: n,
+                    })),
+                },
+                {
+                  key: "manufacturer",
+                  label: "Manufacturer",
+                  type: "select",
+                  options: manufacturers
+                    .filter(m => m !== "all")
+                    .map(m => ({
+                      value: m, label: m,
+                    })),
+                },
+              ]}
+              value={filterDraft}
+              onApply={setFilterDraft}
+              onReset={() => setFilterDraft(buildEmptyDraft([]))}
             />
           </div>
-          <Select
-            value={statusFilter}
-            onValueChange={setStatusFilter}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              {lifecycleStatuses.map(s => (
-                <SelectItem
-                  key={s.value}
-                  value={s.value}
-                >
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <PlatformFilterPopover
-            entity="devices"
-            fields={[
-              {
-                key: "lastSeen",
-                label: "Last Seen",
-                type: "select",
-                options: [
-                  {
-                    value: "7d", label: "Last 7 days",
-                  },
-                  {
-                    value: "30d", label: "Last 30 days",
-                  },
-                  {
-                    value: "90d", label: "Last 90 days",
-                  },
-                ],
-              },
-              {
-                key: "tenant",
-                label: "Tenant",
-                type: "select",
-                options: Array.from(
-                  new Set(devices.map(d => tenantName(d))),
-                )
-                  .filter(n => n && n !== "Unknown tenant")
-                  .map(n => ({
-                    value: n, label: n,
-                  })),
-              },
-              {
-                key: "manufacturer",
-                label: "Manufacturer",
-                type: "select",
-                options: manufacturers
-                  .filter(m => m !== "all")
-                  .map(m => ({
-                    value: m, label: m,
-                  })),
-              },
-            ]}
-            value={filterDraft}
-            onApply={setFilterDraft}
-            onReset={() => setFilterDraft(buildEmptyDraft([]))}
-          />
-        </div>
 
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>IMEI</TableHead>
-                <TableHead>Manufacturer / Model</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>SIM Card</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Signal</TableHead>
-                <TableHead>Last Seen</TableHead>
-                <TableHead>Date Assigned</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {devicesQuery.isError
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={9}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        Unable to load devices.
-                        {" "}
-                        <Button
-                          variant="link"
-                          className="h-auto p-0"
-                          onClick={() => devicesQuery.refetch()}
-                        >
-                          Try again
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                : filteredDevices.length === 0
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>IMEI</TableHead>
+                  <TableHead>Manufacturer / Model</TableHead>
+                  <TableHead>Tenant</TableHead>
+                  <TableHead>SIM Card</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Signal</TableHead>
+                  <TableHead>Last Seen</TableHead>
+                  <TableHead>Date Assigned</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {devicesQuery.isError
                   ? (
                       <TableRow>
                         <TableCell
                           colSpan={9}
                           className="text-center py-8 text-muted-foreground"
                         >
-                          {devices.length === 0
-                            ? "No devices registered across tenants."
-                            : "No devices match your filters."}
+                          Unable to load devices.
+                          {" "}
+                          <Button
+                            variant="link"
+                            className="h-auto p-0"
+                            onClick={() => devicesQuery.refetch()}
+                          >
+                            Try again
+                          </Button>
                         </TableCell>
                       </TableRow>
                     )
-                  : (
-                      filteredDevices.map((device) => {
-                        const lifecycleStatus = device.lifecycleStatus || device.operationalStatus;
-                        const normalizedStatus = normalizeDeviceStatus(device);
-                        const sim = simByDevice[device.id];
-                        const isSuspended = device.operationalStatus === "suspended" || lifecycleStatus === "suspended";
+                  : filteredDevices.length === 0
+                    ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={9}
+                            className="text-center py-8 text-muted-foreground"
+                          >
+                            {devices.length === 0
+                              ? "No devices registered across tenants."
+                              : "No devices match your filters."}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : (
+                        filteredDevices.map((device) => {
+                          const lifecycleStatus = device.lifecycleStatus || device.operationalStatus;
+                          const normalizedStatus = normalizeDeviceStatus(device);
+                          const sim = simByDevice[device.id];
+                          const isSuspended = device.operationalStatus === "suspended" || lifecycleStatus === "suspended";
 
-                        return (
-                          <TableRow key={device.id}>
-                            <TableCell className="font-mono text-sm">{device.imei}</TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{device.manufacturer}</p>
-                                {device.model && (
-                                  <p className="text-xs text-muted-foreground">{device.model}</p>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                                {device.tenantId
+                          return (
+                            <TableRow key={device.id}>
+                              <TableCell className="font-mono text-sm">{device.imei}</TableCell>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{device.manufacturer}</p>
+                                  {device.model && (
+                                    <p className="text-xs text-muted-foreground">{device.model}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                                  {device.tenantId
+                                    ? (
+                                        <span
+                                          className="text-sm truncate max-w-[150px]"
+                                          title={device.tenantName ?? device.tenantId}
+                                        >
+                                          {tenantName(device)}
+                                        </span>
+                                      )
+                                    : (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs"
+                                        >
+                                          Unassigned
+                                        </Badge>
+                                      )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {sim
                                   ? (
-                                      <span
-                                        className="text-sm truncate max-w-[150px]"
-                                        title={device.tenantName ?? device.tenantId}
-                                      >
-                                        {tenantName(device)}
-                                      </span>
+                                      <div>
+                                        <p className="font-mono text-xs">{sim.iccid}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {[
+                                            sim.msisdn,
+                                            sim.carrier,
+                                          ].filter(Boolean).join(" · ") || "—"}
+                                        </p>
+                                      </div>
                                     )
                                   : (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        Unassigned
-                                      </Badge>
+                                      <span className="text-xs text-muted-foreground">No SIM linked</span>
                                     )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {sim
-                                ? (
-                                    <div>
-                                      <p className="font-mono text-xs">{sim.iccid}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {[
-                                          sim.msisdn,
-                                          sim.carrier,
-                                        ].filter(Boolean).join(" · ") || "—"}
-                                      </p>
-                                    </div>
-                                  )
-                                : (
-                                    <span className="text-xs text-muted-foreground">No SIM linked</span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={`border-transparent ${statusClasses[normalizedStatus]}`}
+                                >
+                                  {statusLabels[normalizedStatus]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getSignalIcon(
+                                    device.signalStrength,
+                                    lifecycleStatus,
                                   )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={`border-transparent ${statusClasses[normalizedStatus]}`}
-                              >
-                                {statusLabels[normalizedStatus]}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getSignalIcon(
-                                  device.signalStrength,
-                                  lifecycleStatus,
-                                )}
-                                {device.signalStrength !== null && (
-                                  <span className="text-sm">{`${device.signalStrength}%`}</span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatLastSeen(device.lastSeen)}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                              {device.tenantId
-                                ? formatWithPattern(
-                                    device.assignedAt,
-                                    "M/d/yyyy, h:mm:ss a",
-                                  )
-                                : "—"}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleViewDetails(device)}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  {device.tenantId && (
-                                    isSuspended
-                                      ? (
-                                          <DropdownMenuItem
-                                            className="text-success"
-                                            disabled={reinstateMutation.isPending}
-                                            onClick={() => handleReactivate(device)}
-                                          >
-                                            <CheckCircle className="h-4 w-4 mr-2" />
-                                            Reactivate
-                                          </DropdownMenuItem>
-                                        )
-                                      : (
-                                          <DropdownMenuItem
-                                            className="text-warning"
-                                            disabled={suspendMutation.isPending}
-                                            onClick={() => handleSuspend(device)}
-                                          >
-                                            <XCircle className="h-4 w-4 mr-2" />
-                                            Suspend Device
-                                          </DropdownMenuItem>
-                                        )
+                                  {device.signalStrength !== null && (
+                                    <span className="text-sm">{`${device.signalStrength}%`}</span>
                                   )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-            </TableBody>
-          </Table>
-        </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {formatLastSeen(device.lastSeen)}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                {device.tenantId
+                                  ? formatWithPattern(
+                                      device.assignedAt,
+                                      "M/d/yyyy, h:mm:ss a",
+                                    )
+                                  : "—"}
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleViewDetails(device)}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setEditingDevice(device)}>
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    {device.tenantId && (
+                                      isSuspended
+                                        ? (
+                                            <DropdownMenuItem
+                                              className="text-success"
+                                              disabled={reinstateMutation.isPending}
+                                              onClick={() => handleReactivate(device)}
+                                            >
+                                              <CheckCircle className="h-4 w-4 mr-2" />
+                                              Reactivate
+                                            </DropdownMenuItem>
+                                          )
+                                        : (
+                                            <DropdownMenuItem
+                                              className="text-warning"
+                                              disabled={suspendMutation.isPending}
+                                              onClick={() => handleSuspend(device)}
+                                            >
+                                              <XCircle className="h-4 w-4 mr-2" />
+                                              Suspend Device
+                                            </DropdownMenuItem>
+                                          )
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+              </TableBody>
+            </Table>
+          </div>
 
-      </CardContent>
+        </CardContent>
 
-      {/* Device Details Sheet */}
-      <DeviceDetailSheet
-        device={selectedDevice}
-        sim={selectedDevice ? simByDevice[selectedDevice.id] : undefined}
-        open={showDetailsSheet}
-        onOpenChange={setShowDetailsSheet}
+        {/* Device Details Sheet */}
+        <DeviceDetailSheet
+          device={selectedDevice}
+          sim={selectedDevice ? simByDevice[selectedDevice.id] : undefined}
+          open={showDetailsSheet}
+          onOpenChange={setShowDetailsSheet}
+        />
+      </Card>
+
+      <EditDeviceDialog
+        device={editingDevice}
+        open={!!editingDevice}
+        onOpenChange={open => !open && setEditingDevice(null)}
       />
-    </Card>
+      <RecordDeviceAssignmentDialog
+        devices={visibleDevices}
+        open={assignmentOpen}
+        onOpenChange={setAssignmentOpen}
+      />
+    </>
   );
 }
