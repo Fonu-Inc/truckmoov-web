@@ -35,6 +35,8 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Textarea } from "@/components/shadcn/textarea";
+import { InstallationGate } from "@/features/get-started/components/ui/InstallationGate";
+import { useInstallationPending } from "@/features/get-started/hooks/useInstallationPending";
 
 const schema = z.object({
   reason: z.string().trim().min(
@@ -102,6 +104,7 @@ export function UpgradeSettingsPanel() {
 
 function UpgradeForm({ onSubmitted }: { onSubmitted: () => void }) {
   const submit = useRequestOrganisationUpgrade();
+  const installationPending = useInstallationPending();
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { reason: "" },
@@ -147,13 +150,15 @@ function UpgradeForm({ onSubmitted }: { onSubmitted: () => void }) {
             )}
           />
           <div className="flex justify-end">
-            <Button
-              type="submit"
-              disabled={submit.isPending}
-            >
-              {submit.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit upgrade request
-            </Button>
+            <InstallationGate pending={installationPending}>
+              <Button
+                type="submit"
+                disabled={installationPending || submit.isPending}
+              >
+                {submit.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Submit upgrade request
+              </Button>
+            </InstallationGate>
           </div>
         </form>
       </Form>

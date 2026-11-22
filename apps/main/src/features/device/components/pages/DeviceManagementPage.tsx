@@ -93,6 +93,9 @@ import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDial
 import { DeviceProvisionBadge } from "@/features/device/components/ui/DeviceProvisionBadge";
 import { DeviceRequestsTracker } from "@/features/device/components/ui/DeviceRequestsTracker";
 import { RequestDeviceDialog } from "@/features/device/components/ui/RequestDeviceDialog";
+import { InstallationGate } from "@/features/get-started/components/ui/InstallationGate";
+import { useInstallationPending } from "@/features/get-started/hooks/useInstallationPending";
+import { onboardingInProgressMessage } from "@/features/get-started/utils/installationProgress";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
 
@@ -151,6 +154,7 @@ function toIoTDevice(device: FleetDevice): IoTDevice {
 
 export default function DeviceManagement() {
   const { requireSubscription } = useRequireSubscription();
+  const installationPending = useInstallationPending();
   // ponytail: single-role check inline; extract to a helper if a third role or fourth page needs it
   const isAggregatorAdmin = useAuthStore(s => s.user?.role) === "AGGREGATOR_ADMIN";
 
@@ -400,7 +404,7 @@ export default function DeviceManagement() {
       return result;
     }
     catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit device request");
+      toast.error(onboardingInProgressMessage(err) ?? (err instanceof Error ? err.message : "Failed to submit device request"));
       return null;
     }
   };
@@ -713,10 +717,15 @@ export default function DeviceManagement() {
         )}
 
         <div className="flex items-center justify-end">
-          <Button onClick={requireSubscription(() => setIsRequestDialogOpen(true))}>
-            <Plus className="mr-2 h-4 w-4" />
-            Request Device
-          </Button>
+          <InstallationGate pending={installationPending}>
+            <Button
+              disabled={installationPending}
+              onClick={requireSubscription(() => setIsRequestDialogOpen(true))}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Request Device
+            </Button>
+          </InstallationGate>
         </div>
 
         {!isAggregatorAdmin && (

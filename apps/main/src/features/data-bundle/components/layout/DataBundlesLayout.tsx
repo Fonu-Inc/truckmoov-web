@@ -34,6 +34,8 @@ import {
   useDataBundleCatalog,
 } from "@/features/data-bundle/utils/dataBundle";
 import { DATA_BUNDLE_TABS } from "@/features/data-bundle/utils/dataBundleNav";
+import { InstallationGate } from "@/features/get-started/components/ui/InstallationGate";
+import { useInstallationPending } from "@/features/get-started/hooks/useInstallationPending";
 import { cn } from "@/lib/utils";
 
 export type DataBundlesLayoutContext = {
@@ -46,6 +48,7 @@ export type DataBundlesLayoutContext = {
 // (useSaveDataBundleAutoTopup / useSaveDataBundleSpendingLimit) remain in packages/api.
 export function DataBundlesLayout() {
   const { catalog } = useDataBundleCatalog();
+  const installationPending = useInstallationPending();
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
   const carrierName = useCarrierName(carriersQuery.data?.data.carriers);
   const summaryQuery = useQuery(getDataBundleDashboardSummaryQueryOptions());
@@ -152,14 +155,17 @@ export function DataBundlesLayout() {
             <span className="text-muted-foreground">Wallet</span>
             <span className="font-semibold">{formatNgn(summary?.walletBalance ?? 0)}</span>
           </Link>
-          <Button
-            variant="gradient"
-            onClick={() => openTopUp()}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {" "}
-            Top Up Bundle
-          </Button>
+          <InstallationGate pending={installationPending}>
+            <Button
+              variant="gradient"
+              disabled={installationPending}
+              onClick={() => openTopUp()}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {" "}
+              Top Up Bundle
+            </Button>
+          </InstallationGate>
         </div>
       </div>
 

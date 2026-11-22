@@ -14,3 +14,13 @@ export function isInstallationPending(status: InstallationStatus | undefined): b
   const current = status?.progress.find(step => step.current);
   return Boolean(current && current.stage !== "fleet_ready");
 }
+
+export const INSTALLATION_PENDING_HINT = "Available once your installation is complete.";
+
+/** The server's message when it refused an action with 409 onboarding_in_progress. */
+export function onboardingInProgressMessage(error: unknown): string | undefined {
+  const body = error as {
+    code?: unknown; message?: unknown;
+  } | null;
+  return body?.code === "onboarding_in_progress" && typeof body.message === "string" ? body.message : undefined;
+}

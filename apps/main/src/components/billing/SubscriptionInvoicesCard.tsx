@@ -34,6 +34,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
+import {
+  InstallationGate, InstallationPendingNote,
+} from "@/features/get-started/components/ui/InstallationGate";
+import { useInstallationPending } from "@/features/get-started/hooks/useInstallationPending";
 import { formatCurrency } from "@/lib/currency";
 import {
   formatDay, payErrorMessage, useInvoiceCardPayment,
@@ -118,9 +122,10 @@ export function PayDialog({
   cardBusy?: boolean;
 }) {
   const wallet = usePayTenantInvoiceFromWallet();
+  const installationPending = useInstallationPending();
 
   const confirm = () => {
-    if (!invoice)
+    if (!invoice || installationPending)
       return;
     wallet.mutate(
       { id: invoice.id },
@@ -153,6 +158,7 @@ export function PayDialog({
               : ""}
           </DialogDescription>
         </DialogHeader>
+        {installationPending && <InstallationPendingNote />}
         <DialogFooter>
           <Button
             variant="outline"
@@ -164,7 +170,7 @@ export function PayDialog({
           {onCard && invoice && (
             <Button
               variant="outline"
-              disabled={wallet.isPending || cardBusy}
+              disabled={installationPending || wallet.isPending || cardBusy}
               onClick={() => onCard(invoice)}
             >
               <CreditCard className="h-4 w-4 mr-1.5" />
@@ -172,7 +178,7 @@ export function PayDialog({
             </Button>
           )}
           <Button
-            disabled={wallet.isPending || cardBusy}
+            disabled={installationPending || wallet.isPending || cardBusy}
             onClick={confirm}
           >
             {onCard && <Wallet className="h-4 w-4 mr-1.5" />}
@@ -185,9 +191,10 @@ export function PayDialog({
 }
 
 function invoiceColumns({
-  cardBusy, onWallet, onCard,
+  cardBusy, installationPending, onWallet, onCard,
 }: {
   cardBusy: boolean;
+  installationPending: boolean;
   onWallet: (i: TenantInvoice) => void;
   onCard: (i: TenantInvoice) => void;
 }): ColumnDef<TenantInvoice>[] {
@@ -240,24 +247,27 @@ function invoiceColumns({
       enableSorting: false,
       meta: { className: "text-right" },
       cell: ({ row }) => row.original.payable && (
-        <div className="flex justify-end gap-2">
-          <Button
-            size="sm"
-            onClick={() => onWallet(row.original)}
-          >
-            <Wallet className="h-3.5 w-3.5 mr-1.5" />
-            Pay from wallet
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={cardBusy}
-            onClick={() => onCard(row.original)}
-          >
-            <CreditCard className="h-3.5 w-3.5 mr-1.5" />
-            Pay now
-          </Button>
-        </div>
+        <InstallationGate pending={installationPending}>
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              disabled={installationPending}
+              onClick={() => onWallet(row.original)}
+            >
+              <Wallet className="h-3.5 w-3.5 mr-1.5" />
+              Pay from wallet
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={installationPending || cardBusy}
+              onClick={() => onCard(row.original)}
+            >
+              <CreditCard className="h-3.5 w-3.5 mr-1.5" />
+              Pay now
+            </Button>
+          </div>
+        </InstallationGate>
       ),
     },
   ];
@@ -281,6 +291,7 @@ export function SubscriptionInvoicesCard(_props: { tenantName?: string }) {
   });
   const licence = useTenantLicence();
   const card = useInvoiceCardPayment();
+  const installationPending = useInstallationPending();
   const [
     walletInvoice,
     setWalletInvoice,
@@ -335,7 +346,7 @@ export function SubscriptionInvoicesCard(_props: { tenantName?: string }) {
           {licence.data?.data && <LicenceSummary licence={licence.data.data} />}
           <DataTable
             columns={invoiceColumns({
-              cardBusy: card.isPending, onWallet: setWalletInvoice, onCard: card.payByCard,
+              cardBusy: card.isPending, installationPending, onWallet: setWalletInvoice, onCard: card.payByCard,
             })}
             data={items}
             isLoading={invoices.isPending}

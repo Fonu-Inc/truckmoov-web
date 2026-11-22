@@ -472,6 +472,8 @@ export type ServerErrorResponse = {
 }
 ```
 
+While a tenant's onboarding is not `fleet_ready`, purchases and device/SIM additions answer **409** `{ code: "onboarding_in_progress", message }`. In `apps/main`, gate those entry points with `useInstallationPending()` + `InstallationGate` (`features/get-started`) and read the message with `onboardingInProgressMessage(error)`.
+
 `query-client.ts` registers `ServerErrorResponse` as React Query's default error type. Mutation `onError` callbacks can use `error.message` directly for toasts without casting to `Error` or reading Axios internals. Forms can bind `error.field` via `react-hook-form`'s `setError`.
 
 ## `requests.ts`

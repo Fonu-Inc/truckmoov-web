@@ -5,6 +5,8 @@ import { useState } from "react";
 import { PayDialog } from "@/components/billing/SubscriptionInvoicesCard";
 import { useInvoiceCardPayment } from "@/components/billing/useInvoiceCardPayment";
 import { Button } from "@/components/shadcn/button";
+import { InstallationGate } from "@/features/get-started/components/ui/InstallationGate";
+import { useInstallationPending } from "@/features/get-started/hooks/useInstallationPending";
 
 /** Opens the wallet-or-card payment dialog for one payable invoice. */
 export function PayInvoiceButton({
@@ -17,17 +19,21 @@ export function PayInvoiceButton({
     setOpen,
   ] = useState(false);
   const card = useInvoiceCardPayment(() => setOpen(false));
+  const installationPending = useInstallationPending();
 
   return (
     <>
-      <Button
-        size="sm"
-        {...button}
-        onClick={() => setOpen(true)}
-      >
-        <Wallet className="h-4 w-4 mr-1.5" />
-        {label}
-      </Button>
+      <InstallationGate pending={installationPending}>
+        <Button
+          size="sm"
+          {...button}
+          disabled={installationPending || button.disabled}
+          onClick={() => setOpen(true)}
+        >
+          <Wallet className="h-4 w-4 mr-1.5" />
+          {label}
+        </Button>
+      </InstallationGate>
       <PayDialog
         invoice={open ? invoice : null}
         onClose={() => setOpen(false)}

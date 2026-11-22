@@ -27,6 +27,8 @@ import { Label } from "@/components/shadcn/label";
 import {
   formatBundleSize, formatMobile, formatNgn, isSimBlocked, useDebouncedValue,
 } from "@/features/data-bundle/utils/dataBundle";
+import { InstallationPendingNote } from "@/features/get-started/components/ui/InstallationGate";
+import { useInstallationPending } from "@/features/get-started/hooks/useInstallationPending";
 import { cn } from "@/lib/utils";
 
 type TopUpBundleDialogProps = {
@@ -81,6 +83,7 @@ export function TopUpBundleDialog({
     enabled: open,
   });
   const allocate = useAllocateDataBundle();
+  const installationPending = useInstallationPending();
   const purchaseRef = useRef({
     selection: "", key: "",
   });
@@ -148,7 +151,7 @@ export function TopUpBundleDialog({
   const short = plan && balance !== undefined && plan.price > balance;
 
   const submit = () => {
-    if (!plan || !sim || !carrier || allocate.isPending)
+    if (installationPending || !plan || !sim || !carrier || allocate.isPending)
       return;
     const selection = `${sim.id}:${plan.id}`;
     if (purchaseRef.current.selection !== selection) {
@@ -447,6 +450,8 @@ export function TopUpBundleDialog({
           )}
         </div>
 
+        {installationPending && <InstallationPendingNote />}
+
         <DialogFooter>
           <Button
             variant="outline"
@@ -457,7 +462,7 @@ export function TopUpBundleDialog({
           <Button
             variant="gradient"
             onClick={submit}
-            disabled={!sim || !plan || !carrier || short || allocate.isPending}
+            disabled={installationPending || !sim || !plan || !carrier || short || allocate.isPending}
           >
             <CreditCard className="h-4 w-4 mr-2" />
             {allocate.isPending ? "Processing..." : "Top Up Bundle"}

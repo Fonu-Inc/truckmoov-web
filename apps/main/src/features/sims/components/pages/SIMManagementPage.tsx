@@ -32,6 +32,8 @@ import {
 } from "@/components/shadcn/card";
 
 import { useAuthStore } from "@/features/auth/stores/authStore";
+import { InstallationGate } from "@/features/get-started/components/ui/InstallationGate";
+import { useInstallationPending } from "@/features/get-started/hooks/useInstallationPending";
 import { AssignSIMDialog } from "@/features/sims/components/ui/AssignSIMDialog";
 import { SIMBulkUploadDialog } from "@/features/sims/components/ui/SIMBulkUploadDialog";
 import { SIMDetailsSheet } from "@/features/sims/components/ui/SIMDetailsSheet";
@@ -45,6 +47,7 @@ import { cn } from "@/lib/utils";
 
 export default function SIMManagement() {
   const { requireSubscription } = useRequireSubscription();
+  const installationPending = useInstallationPending();
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const createSimRequestMutation = useCreateSimRequest();
@@ -477,26 +480,36 @@ export default function SIMManagement() {
 
         {/* Top-right actions */}
         <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsBulkUploadOpen(true)}
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            Bulk Import
-          </Button>
-          <Button
-            variant="outline"
-            onClick={requireSubscription(openRequestDialog)}
-            disabled={!canRequestSIM && !kycStatus.isLoading}
-            className={cn(!canRequestSIM && "opacity-60")}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Request SIM
-          </Button>
-          <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add SIM
-          </Button>
+          <InstallationGate pending={installationPending}>
+            <Button
+              variant="outline"
+              disabled={installationPending}
+              onClick={() => setIsBulkUploadOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Import
+            </Button>
+          </InstallationGate>
+          <InstallationGate pending={installationPending}>
+            <Button
+              variant="outline"
+              onClick={requireSubscription(openRequestDialog)}
+              disabled={installationPending || (!canRequestSIM && !kycStatus.isLoading)}
+              className={cn(!canRequestSIM && "opacity-60")}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Request SIM
+            </Button>
+          </InstallationGate>
+          <InstallationGate pending={installationPending}>
+            <Button
+              disabled={installationPending}
+              onClick={requireSubscription(() => setIsAddDialogOpen(true))}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add SIM
+            </Button>
+          </InstallationGate>
         </div>
 
         <SIMInventoryTable
