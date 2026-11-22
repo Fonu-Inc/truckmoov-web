@@ -183,6 +183,9 @@ type BundleFormState = {
   is_active: boolean;
 };
 
+// MTN-synced rows: the catalogue sync, not an admin, switches them on and off.
+const isCarrierManaged = (id?: string) => Boolean(id?.startsWith("bundle-mtn-m2m-"));
+
 const emptyForm: BundleFormState = {
   code: "",
   name: "",
@@ -642,14 +645,16 @@ export default function PlatformDataBundles() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => void handleToggle(b)}
-                                title={b.is_active ? "Deactivate" : "Activate"}
-                              >
-                                <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
-                              </Button>
+                              {!isCarrierManaged(b.id) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => void handleToggle(b)}
+                                  title={b.is_active ? "Deactivate" : "Activate"}
+                                >
+                                  <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -771,19 +776,27 @@ export default function PlatformDataBundles() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <p className="text-sm font-medium">Active</p>
-                <p className="text-xs text-muted-foreground">Inactive bundles are hidden from tenants.</p>
-              </div>
-              <Switch
-                checked={form.is_active}
-                onCheckedChange={v => setForm(f => ({
-                  ...f,
-                  is_active: v,
-                }))}
-              />
-            </div>
+            {form.id && isCarrierManaged(form.id)
+              ? (
+                  <p className="rounded-md border p-3 text-xs text-muted-foreground">
+                    MTN decides when this bundle is on sale. It follows the MTN catalogue sync.
+                  </p>
+                )
+              : (
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <div>
+                      <p className="text-sm font-medium">Active</p>
+                      <p className="text-xs text-muted-foreground">Inactive bundles are hidden from tenants.</p>
+                    </div>
+                    <Switch
+                      checked={form.is_active}
+                      onCheckedChange={v => setForm(f => ({
+                        ...f,
+                        is_active: v,
+                      }))}
+                    />
+                  </div>
+                )}
           </div>
 
           <DialogFooter>

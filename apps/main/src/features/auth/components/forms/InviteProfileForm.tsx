@@ -1,9 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRegisterInvited } from "@truckmoov/api/auth";
+import {
+  useRegisterInvited, useValidateInvite,
+} from "@truckmoov/api/auth";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
   Mail, User,
 } from "lucide-react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -54,6 +57,8 @@ export function InviteProfileForm({
   const registerInvited = useRegisterInvited();
   const signedInUser = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
+  // The name on the application or installer record; the server uses it and ignores a typed one.
+  const knownName = useValidateInvite(inviteToken).data?.data.fullName ?? null;
 
   const form = useForm<InvitePasswordFormValues>({
     resolver: zodResolver(invitePasswordSchema),
@@ -64,6 +69,22 @@ export function InviteProfileForm({
     },
   });
 
+  useEffect(
+    () => {
+      if (knownName) {
+        form.setValue(
+          "fullName",
+          knownName,
+          { shouldValidate: true },
+        );
+      }
+    },
+    [
+      knownName,
+      form,
+    ],
+  );
+
   function onSubmit(values: InvitePasswordFormValues) {
     // Accepting creates a different account; the old session must not outlive it in this browser.
     if (signedInUser)
@@ -72,7 +93,7 @@ export function InviteProfileForm({
       {
         data: {
           inviteToken,
-          fullName: values.fullName.trim(),
+          fullName: knownName ? undefined : values.fullName.trim(),
           password: values.newPassword,
         },
       },
@@ -128,6 +149,7 @@ export function InviteProfileForm({
                     placeholder="Jane Doe"
                     autoComplete="name"
                     className="pl-10"
+                    readOnly={Boolean(knownName)}
                     {...field}
                   />
                 </FormControl>
