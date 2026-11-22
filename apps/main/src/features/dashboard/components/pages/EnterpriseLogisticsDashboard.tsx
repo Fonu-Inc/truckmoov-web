@@ -77,8 +77,9 @@ const PERIODS = [
 
 type PeriodValue = (typeof PERIODS)[number]["value"];
 
-/** The design app's Recent Activity card lists up to eight events. */
+/** The design app lists eight events for an operator, five for an enterprise account. */
 const ACTIVITY_LIMIT = 8;
+const ENTERPRISE_ACTIVITY_LIMIT = 5;
 
 /** Recent events shown in the violations lists; stats come from the server totals. */
 const VIOLATION_EVENTS_LIMIT = 100;
@@ -110,6 +111,22 @@ function activityTime(item: {
     item.occurredAt,
     "MMM d, h:mm a",
   );
+}
+
+/** "6 min ago", "1 hr ago", "3 hrs ago", "2 days ago". */
+function timeAgo(iso: string) {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (Number.isNaN(minutes))
+    return "—";
+  if (minutes < 1)
+    return "just now";
+  if (minutes < 60)
+    return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24)
+    return `${hours} ${hours === 1 ? "hr" : "hrs"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? "day" : "days"} ago`;
 }
 
 export default function EnterpriseLogisticsDashboard() {
@@ -235,10 +252,13 @@ export default function EnterpriseLogisticsDashboard() {
           a.entityType,
           a.action,
         ),
-        time: activityTime(a),
+        time: isOwnerOperator ? activityTime(a) : timeAgo(a.occurredAt),
       }));
     },
-    [overview],
+    [
+      isOwnerOperator,
+      overview,
+    ],
   );
 
   // The heading stays put while the overview loads or fails: the top bar no
@@ -312,7 +332,7 @@ export default function EnterpriseLogisticsDashboard() {
 
         <RecentActivityCard items={recentActivity.slice(
           0,
-          ACTIVITY_LIMIT,
+          isOwnerOperator ? ACTIVITY_LIMIT : ENTERPRISE_ACTIVITY_LIMIT,
         )}
         />
 
