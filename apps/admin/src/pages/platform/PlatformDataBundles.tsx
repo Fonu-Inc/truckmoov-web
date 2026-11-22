@@ -1,6 +1,10 @@
-import type { BundleAdoptionItem } from "@truckmoov/api/auth";
+import type {
+  BundleAdoptionItem,
+  BundleType,
+} from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
+  getBundleAdoptionExportQueryOptions,
   getBundleAdoptionQueryOptions,
   getBundleCatalogExportQueryOptions,
   getBundleCatalogQueryOptions,
@@ -28,6 +32,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -139,11 +144,11 @@ function toTenantAdoption(item: BundleAdoptionItem): TenantAdoption {
   for (const line of item.lines) {
     if (line.status !== "active" || !line.kind)
       continue;
-    // ponytail: adoption lines carry the vehicle id only, so no vehicle is shown until the API resolves the plate.
     const sim = byNumber.get(line.mobileNumber) ?? {
       msisdn: line.mobileNumber,
       iccid: line.iccid ?? "—",
       carrier: line.carrier ?? "",
+      vehicle: line.vehicleLabel ?? undefined,
       bundles: [],
     };
     sim.bundles.push({
@@ -207,7 +212,6 @@ export default function PlatformDataBundles() {
     },
   }));
   const summaryQuery = useQuery(getBundleSummaryQueryOptions());
-  const adoptionQuery = useQuery(getBundleAdoptionQueryOptions());
   const summary = summaryQuery.data?.data;
   const figure = (value: number | undefined) => summaryQuery.isError || value === undefined ? "—" : value;
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
@@ -234,11 +238,6 @@ export default function PlatformDataBundles() {
     })),
     [catalogQuery.data],
   );
-  const adoption = useMemo(
-    () => (adoptionQuery.data?.data.items ?? []).map(toTenantAdoption),
-    [adoptionQuery.data],
-  );
-
   const [
     search,
     setSearch,
@@ -624,11 +623,7 @@ export default function PlatformDataBundles() {
 
         {/* TENANT ADOPTION */}
         <TabsContent value="adoption">
-          <TenantAdoptionTable
-            data={adoption}
-            loading={adoptionQuery.isPending}
-            failed={adoptionQuery.isError}
-          />
+          <TenantAdoptionTable />
         </TabsContent>
       </Tabs>
 
@@ -766,15 +761,7 @@ export default function PlatformDataBundles() {
 
 /* ─────────────── Tenant Adoption (per-SIM) ─────────────── */
 
-function TenantAdoptionTable({
-  data,
-  loading,
-  failed,
-}: {
-  data: TenantAdoption[];
-  loading: boolean;
-  failed: boolean;
-}) {
+function TenantAdoptionTable() {
   const { format: fmtCurrency } = useCurrency();
   const [
     search,
@@ -807,84 +794,58 @@ function TenantAdoptionTable({
       [tenant]: !s[tenant],
     }));
 
-  const matchSim = (sim: TenantSim) => {
-    if (typeEnabled && appliedType !== "all" && !sim.bundles.some(b => b.type === appliedType))
-      return false;
-    return true;
-  };
-
-  const filtered = useMemo(
+  // The server searches and filters; the search waits for a pause in typing.
+  const [
+    appliedSearch,
+    setAppliedSearch,
+  ] = useState("");
+  useEffect(
     () => {
-      const q = search.trim().toLowerCase();
-      return data
-        .map((t) => {
-          const sims = t.sims.filter((sim) => {
-            if (!matchSim(sim))
-              return false;
-            if (!q)
-              return true;
-            return (
-              t.tenant.toLowerCase().includes(q)
-              || sim.msisdn.toLowerCase().includes(q)
-              || sim.iccid.toLowerCase().includes(q)
-              || (sim.vehicle ?? "").toLowerCase().includes(q)
-              || sim.bundles.some(b => b.name.toLowerCase().includes(q))
-            );
-          });
-          return {
-            ...t,
-            sims,
-          };
-        })
-        .filter(t => t.sims.length > 0);
+      const timer = setTimeout(
+        () => setAppliedSearch(search.trim()),
+        400,
+      );
+      return () => clearTimeout(timer);
     },
-    [
-      data,
-      search,
-      typeEnabled,
-      appliedType,
-    ],
+    [search],
   );
+  const bundleType: BundleType | undefined = typeEnabled && appliedType !== "all"
+    ? (appliedType === "top-up" ? "top_up" : "subscription")
+    : undefined;
+  const adoptionParams = {
+    search: appliedSearch || undefined,
+    bundleType,
+  };
+  const adoptionQuery = useQuery(getBundleAdoptionQueryOptions({ params: adoptionParams }));
+  const filtered = useMemo(
+    () => (adoptionQuery.data?.data.items ?? [])
+      .map(toTenantAdoption)
+      .filter(t => t.sims.length > 0),
+    [adoptionQuery.data],
+  );
+  const hasFilters = !!adoptionParams.search || !!bundleType;
 
   const tenantSpend = (t: TenantAdoption) => t.monthlySpendNgn;
 
-  const exportCsv = () => {
-    const rows: string[][] = [
-      [
-        "Tenant",
-        "Mobile Number",
-        "ICCID",
-        "Vehicle",
-        "Bundle",
-        "Type",
-        "Price (NGN)",
-        "Expires (days)",
-      ],
-    ];
-    filtered.forEach(t =>
-      t.sims.forEach(sim =>
-        sim.bundles.forEach(b =>
-          rows.push([
-            t.tenant,
-            sim.msisdn,
-            sim.iccid,
-            sim.vehicle ?? "",
-            b.name,
-            b.type,
-            String(b.price_ngn),
-            String(b.expires_in_days),
-          ]))));
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
-    const blob = new Blob(
-      [csv],
-      { type: "text/csv" },
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `tenant-adoption-${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      downloadBlob(
+        await queryClient.fetchQuery(getBundleAdoptionExportQueryOptions({ params: adoptionParams })),
+        "tenant-adoption.csv",
+      );
+      toast.success("Tenant adoption exported");
+    }
+    catch {
+      toast.error("Export failed");
+    }
+    finally {
+      setIsExporting(false);
+    }
   };
 
   const applyFilters = () => {
@@ -913,7 +874,8 @@ function TenantAdoptionTable({
             <Button
               variant="outline"
               size="sm"
-              onClick={exportCsv}
+              onClick={handleExport}
+              disabled={isExporting}
             >
               <Download className="h-4 w-4 mr-2" />
               {" "}
@@ -1020,13 +982,13 @@ function TenantAdoptionTable({
                         colSpan={5}
                         className="text-center py-6 text-muted-foreground"
                       >
-                        {loading
+                        {adoptionQuery.isPending
                           ? "Loading tenant adoption…"
-                          : failed
+                          : adoptionQuery.isError
                             ? "Couldn't load tenant adoption"
-                            : data.length === 0
-                              ? "No tenant has a bundle yet"
-                              : "No tenants match the current filters"}
+                            : hasFilters
+                              ? "No tenants match the current filters"
+                              : "No tenant has a bundle yet"}
                       </TableCell>
                     </TableRow>
                   )

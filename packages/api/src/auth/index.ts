@@ -3141,6 +3141,13 @@ export function getBundleAdoptionQueryOptions(payload?: BundleAdoptionQuery) {
   })
 }
 
+export function getBundleAdoptionExportQueryOptions(payload?: BundleAdoptionQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.bundleAdoption(payload), 'export'],
+    queryFn: () => exportBundleAdoption(payload),
+  })
+}
+
 export function getBundleSummaryQueryOptions() {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.bundleSummary,

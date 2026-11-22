@@ -4475,8 +4475,9 @@ export type BundleAdoptionQuery = {
 export type BundleAdoptionLine = {
   mobileNumber: string
   iccid: string | null
-  /** The fleet vehicle id; the plate lives in the fleet service. */
   vehicleId: string | null
+  /** The vehicle's registration plate; null when there is no vehicle or fleet could not name it. */
+  vehicleLabel: string | null
   bundleId: string
   bundleName: string | null
   carrier: string | null

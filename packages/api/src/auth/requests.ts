@@ -2597,8 +2597,9 @@ export async function getSystemSimImportTemplate() {
   return data
 }
 
-export async function exportBundleAdoption() {
+export async function exportBundleAdoption(payload?: BundleAdoptionQuery) {
   const { data } = await axiosInstance.get<Blob>('/auth/system/bundle-adoption/export', {
+    params: payload?.params,
     responseType: 'blob',
   })
   return data
