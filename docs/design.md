@@ -56,8 +56,8 @@ Two consequences worth knowing:
   in-page heading (`h1` + description, actions on the right) themselves. The `label`
   still names the sidebar link. Admin pages render `<PageTitle>`; main pages render
   `<PageHeader>` (`apps/main/src/shared/components/layout/PageHeader.tsx`) — today `/`,
-  `/jobs` and every `/fleet` tab (the fleet layout keeps only the tab bar; each tab page
-  renders its own heading and actions under it).
+  `/jobs`, and every `/fleet` and `/drivers` tab (those layouts keep only the tab bar;
+  each tab page renders its own heading and actions under it).
 
 Visibility is `hasPermission`: a role sees an entry iff its key is listed, and
 `getEntriesForRole` drops groups whose children are all filtered out.
@@ -637,6 +637,9 @@ without being asked. What was removed, so it can be found again in git history:
   (`/settings/ai-usage`); admin's **AI** (`/settings/ai-providers`).
 - Drivers: the **Fatigue AI** tab (`/drivers/fatigue-ai`), the dispatcher's
   Fatigue AI tab, and the Fatigue tab / score in `DriverDetailsSheet`.
+  Exception: `/drivers/fatigue` ("Driver Fatigue Detection") is back because the
+  design app has it — it reads the recorded fatigue summary
+  (`useDriverFatigueSummary`) and has no AI generate/recommend actions.
 - Dispatch: `JobMatchingDialog` is manual-only (pick vehicle + driver);
   `AssignResourceDialog` lost its "AI Recommendation" ranking view.
 - Waybills: no "Extract with AI" and no AI confidence badges — fields are

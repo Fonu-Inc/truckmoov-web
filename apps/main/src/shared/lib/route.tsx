@@ -482,8 +482,24 @@ export const router = createBrowserRouter([
                 lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriversPage")).default }),
               },
               {
+                path: "violations",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriverViolationsPage")).default }),
+              },
+              {
                 path: "behaviour",
                 lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/BehaviourPage")).default }),
+              },
+              {
+                path: "fatigue",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/FatiguePage")).default }),
+              },
+              {
+                path: "groups",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriverGroupsPage")).default }),
+              },
+              {
+                path: "compliance",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriverCompliancePage")).default }),
               },
             ],
           },

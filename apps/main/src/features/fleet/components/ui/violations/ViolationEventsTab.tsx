@@ -1,4 +1,5 @@
 import type { DriverBehaviorEvent } from "@truckmoov/api/fleet";
+import type { ViolationVehicle } from "@/features/fleet/components/ui/violations/VehicleViolationsTab";
 import type { SeverityFilter } from "@/features/fleet/components/ui/violations/ViolationsSeverityFilter";
 import {
   Download, Eye, MapPin, Search,
@@ -18,11 +19,17 @@ function location(e: DriverBehaviorEvent) {
     : "—";
 }
 
-/** Violation Events sub-tab — one row per behaviour event. */
+/**
+ * Violation Events sub-tab — one row per behaviour event. Pass `vehicle` to
+ * add the driver page's Vehicle column (name + plate) after Driver, and
+ * `typeLabel` to override the violation-type wording.
+ */
 export function ViolationEventsTab({
   events,
   driverName,
   vehiclePlate,
+  vehicle,
+  typeLabel = violationTypeLabel,
   search,
   onSearchChange,
   isLoading,
@@ -32,6 +39,8 @@ export function ViolationEventsTab({
   events: DriverBehaviorEvent[];
   driverName: (id: string) => string;
   vehiclePlate: (id: string | null) => string;
+  vehicle?: (id: string) => ViolationVehicle;
+  typeLabel?: (type: string) => string;
   search: string;
   onSearchChange: (v: string) => void;
   isLoading: boolean;
@@ -69,7 +78,7 @@ export function ViolationEventsTab({
       e.id,
       driverName(e.driverId),
       vehiclePlate(e.vehicleId),
-      violationTypeLabel(e.type),
+      typeLabel(e.type),
       NO_ENDPOINT,
       recorded(e),
       NO_ENDPOINT,
@@ -118,6 +127,7 @@ export function ViolationEventsTab({
             <thead className={THEAD_CLASS}>
               <tr className={TR_CLASS}>
                 <th className={TH_CLASS}>Driver</th>
+                {vehicle && <th className={TH_CLASS}>Vehicle</th>}
                 <th className={TH_CLASS}>Violation Type</th>
                 <th className={TH_CLASS}>Trigger</th>
                 <th className={TH_CLASS}>Recorded</th>
@@ -130,7 +140,7 @@ export function ViolationEventsTab({
             </thead>
             <tbody className={TBODY_CLASS}>
               <ViolationsTableState
-                colSpan={9}
+                colSpan={vehicle ? 10 : 9}
                 isLoading={isLoading}
                 isError={isError}
                 onRetry={onRetry}
@@ -143,7 +153,19 @@ export function ViolationEventsTab({
                   className={TR_CLASS}
                 >
                   <td className={`${TD_CLASS} font-medium whitespace-nowrap`}>{driverName(e.driverId)}</td>
-                  <td className={TD_CLASS}>{violationTypeLabel(e.type)}</td>
+                  {vehicle && (
+                    <td className={TD_CLASS}>
+                      {e.vehicleId
+                        ? (
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{vehicle(e.vehicleId).name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{vehicle(e.vehicleId).plate}</p>
+                            </div>
+                          )
+                        : "—"}
+                    </td>
+                  )}
+                  <td className={TD_CLASS}>{typeLabel(e.type)}</td>
                   {/* Trigger and Threshold come from the violated rule — no rules endpoint yet. */}
                   <td className={`${TD_CLASS} text-sm`}>{NO_ENDPOINT}</td>
                   <td className={TD_CLASS}>{recorded(e)}</td>

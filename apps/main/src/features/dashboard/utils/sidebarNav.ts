@@ -126,7 +126,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
 
   // ─── Drivers ───────────────────────────────────────────────────
   {
-    label: "Drivers", href: "/drivers", icon: Users,
+    label: "Drivers", href: "/drivers", icon: Users, manualTitle: true,
     labelByRole: {
       ENTERPRISE_ADMIN: "My Drivers",
       OWNER_OPERATOR: "My Drivers",

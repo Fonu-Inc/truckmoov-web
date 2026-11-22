@@ -134,7 +134,7 @@ export function ViolationsCard({
       count={isLoading || isError ? undefined : stats.total}
       description={isDriver ? "Summary of all recorded driver violations" : "Summary of all recorded vehicle violations"}
       actionLabel="View All Violations"
-      actionHref="/drivers/behaviour"
+      actionHref={isDriver ? "/drivers/violations" : "/fleet/violations"}
       status={{
         isLoading, isError, onRetry, isEmpty: false,
       }}

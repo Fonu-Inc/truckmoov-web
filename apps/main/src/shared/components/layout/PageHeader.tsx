@@ -9,14 +9,17 @@ export function PageHeader({
   title,
   description,
   actions,
+  align = "center",
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
+  /** The design app tops-aligns the actions on some pages (e.g. Drivers, Driver Groups). */
+  align?: "center" | "start";
 }) {
   return (
     <div
-      className="mb-6 flex min-w-0 flex-col gap-4 text-left lg:flex-row lg:justify-between lg:items-center"
+      className={`mb-6 flex min-w-0 flex-col gap-4 text-left lg:flex-row lg:justify-between ${align === "start" ? "lg:items-start" : "lg:items-center"}`}
       data-page-header
     >
       <div className="min-w-0 flex-1">
