@@ -86,7 +86,7 @@ const FILTERS: {
 }[] = [
   {
     value: "all",
-    label: "All Telematics Numbers",
+    label: "All Telecom Master",
   },
   {
     value: "existing",
@@ -114,7 +114,7 @@ const FILTERS: {
   },
 ];
 
-/** Fleetflow's platform Telematics Numbers tab (Tenants → Telematics Numbers). */
+/** Fleetflow's platform Telecom Master tab (Tenants → Telecom Master). */
 export function TmNumbersPanel() {
   const [
     filter,
@@ -155,8 +155,8 @@ export function TmNumbersPanel() {
   return (
     <Card className="bg-card/50 border-border/50">
       <CardHeader>
-        <CardTitle>Telematics Numbers</CardTitle>
-        <CardDescription>Enterprise telematics numbers — existing MTN numbers and new Telematics SIM allocation requests. Device SIMs are managed under SIMs.</CardDescription>
+        <CardTitle>Telecom Master</CardTitle>
+        <CardDescription>Telecom Master — existing MTN numbers and new Telecom Master SIM allocation requests. Device SIMs are managed under SIMs.</CardDescription>
         <div className="flex flex-col gap-2 pt-2 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -191,7 +191,7 @@ export function TmNumbersPanel() {
             <TableRow>
               <TableHead>Tenant</TableHead>
               <TableHead>Number Type</TableHead>
-              <TableHead>Telematics Number</TableHead>
+              <TableHead>Telecom Master</TableHead>
               <TableHead>SIM Serial</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date Created</TableHead>
@@ -206,7 +206,7 @@ export function TmNumbersPanel() {
                       colSpan={7}
                       className="py-8 text-center text-muted-foreground"
                     >
-                      No telematics number records yet.
+                      No Telecom Master records yet.
                     </TableCell>
                   </TableRow>
                 )
@@ -268,13 +268,13 @@ export function TmNumbersPanel() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{open?.organization_name}</DialogTitle>
-            <DialogDescription>telematics number details and audit history for this enterprise account.</DialogDescription>
+            <DialogDescription>Telecom Master details and audit history for this enterprise account.</DialogDescription>
           </DialogHeader>
           {open && (
             <div className="space-y-4 text-sm">
               <dl className="grid grid-cols-2 gap-3">
                 <div>
-                  <dt className="text-xs text-muted-foreground">Telematics Number</dt>
+                  <dt className="text-xs text-muted-foreground">Telecom Master</dt>
                   <dd>{open.msisdn ? formatTmNumber(open.msisdn) : "Awaiting allocation"}</dd>
                 </div>
                 <div>

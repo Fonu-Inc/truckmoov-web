@@ -1,5 +1,5 @@
 /**
- * Telematics Number (enterprise account number) helpers. The Telematics Number belongs to the
+ * Telecom Master (enterprise account number) helpers. The Telecom Master belongs to the
  * enterprise account and is never a device SIM MSISDN.
  */
 export type TmNumberChoice = "existing" | "new" | "";
@@ -93,12 +93,12 @@ export function formatTmNumber(msisdn?: string | null) {
   )} ${msisdn.slice(9)}` : msisdn || "—";
 }
 
-/** Quotation line for a new Telematics SIM; null when not applicable. Included once. */
+/** Quotation line for a new Telecom Master SIM; null when not applicable. Included once. */
 export function tmSimQuotationLine(choice: TmNumberChoice, configuredCharge: number | null) {
   if (choice !== "new")
     return null;
   return {
-    label: "New Telematics SIM", amount: configuredCharge, priced: configuredCharge !== null && configuredCharge >= 0,
+    label: "New Telecom Master SIM", amount: configuredCharge, priced: configuredCharge !== null && configuredCharge >= 0,
   };
 }
 

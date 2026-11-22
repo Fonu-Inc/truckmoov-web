@@ -6,7 +6,7 @@ import {
 } from "@/features/tenants/utils/tmNumber";
 
 describe(
-  "telematics number rules",
+  "telecom master rules",
   () => {
     it(
       "accepts local and international MTN formats",
@@ -24,7 +24,7 @@ describe(
       },
     );
     it(
-      "adds the Telematics SIM charge only for a new telematics number",
+      "adds the Telecom Master SIM charge only for a new Telecom Master",
       () => {
         expect(tmSimQuotationLine(
           "existing",
@@ -34,7 +34,7 @@ describe(
           "new",
           5000,
         )).toEqual({
-          label: "New Telematics SIM", amount: 5000, priced: true,
+          label: "New Telecom Master SIM", amount: 5000, priced: true,
         });
         expect(tmSimQuotationLine(
           "new",
