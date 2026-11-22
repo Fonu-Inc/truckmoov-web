@@ -16,10 +16,8 @@ export function requestedDeviceTotal(application?: OnboardingApplication) {
 
 /**
  * Whether every document the design asks for is uploaded (`documentsForApplicant`): a
- * returning customer owes only the Customer Request Letter.
- *
- * ponytail: checked against the client list, not the server's `missingDocuments`, which
- * still includes Proof of Ownership, vehicle licences and the indemnity form.
+ * returning customer owes only the Customer Request Letter. Matches the server's
+ * `missingDocuments` once the application carries the returning flag.
  */
 export function documentsComplete(application?: OnboardingApplication, returning = false) {
   if (!application)

@@ -378,6 +378,11 @@ import type {
   AddOnboardingDeviceRequestResponse,
   AddOnboardingVehiclePayload,
   DeleteOnboardingDeviceRequestPayload,
+  UpdateOnboardingDeviceRequestPayload,
+  PickupLocationsResponse,
+  SetOnboardingFulfilmentPayload,
+  ContactEnquiryPayload,
+  ContactEnquiryResponse,
   DeleteOnboardingVehiclePayload,
   ImportOnboardingVehiclesPayload,
   ImportOnboardingVehiclesResponse,
@@ -2397,6 +2402,27 @@ export async function addOnboardingDeviceRequest({ id, data }: AddOnboardingDevi
 export async function deleteOnboardingDeviceRequest({ id, requestId }: DeleteOnboardingDeviceRequestPayload) {
   const { data } = await onboardingInstance.delete<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/device-requests/${requestId}`)
   return data
+}
+
+export async function updateOnboardingDeviceRequest({ id, requestId, data }: UpdateOnboardingDeviceRequestPayload) {
+  const { data: res } = await onboardingInstance.patch<AddOnboardingDeviceRequestResponse>(`${ONBOARDING}/${id}/device-requests/${requestId}`, data)
+  return res
+}
+
+export async function getPickupLocations() {
+  const { data } = await onboardingInstance.get<PickupLocationsResponse>(`${ONBOARDING}/pickup-locations`)
+  return data
+}
+
+export async function setOnboardingFulfilment({ id, data }: SetOnboardingFulfilmentPayload) {
+  const { data: res } = await onboardingInstance.put<OnboardingApplicationResponse>(`${ONBOARDING}/${id}/fulfilment`, data)
+  return res
+}
+
+/** The landing page contact form: stored and emailed to platform support. */
+export async function sendContactEnquiry({ data }: ContactEnquiryPayload) {
+  const { data: res } = await onboardingInstance.post<ContactEnquiryResponse>('/auth/contact', data)
+  return res
 }
 
 export async function sendOnboardingApplicationEmailVerification({ id }: { id: string }) {

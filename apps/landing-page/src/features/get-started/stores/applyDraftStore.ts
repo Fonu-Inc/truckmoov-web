@@ -5,7 +5,7 @@
  *
  * - `returning`: opened from "Apply as Returning Customer", i.e. an existing MTN customer.
  *   It narrows the documents asked for and changes the dialog's header copy.
- * - `fulfilment`: the Device Fulfilment choice on the fleet step (TODO(api): not sent yet).
+ * - `fulfilment`: the Device Fulfilment choice on the fleet step; saved to the application on Continue.
  * - `licence`: the plan picked before the details are saved, the name typed on the
  *   signature pad and the "I have reviewed it" tick.
  * - `pendingSignature`: a signature drawn before the application exists. It is uploaded
@@ -51,7 +51,7 @@ type ApplyDraftState = {
   /** Entered through "Apply as Returning Customer": an existing MTN customer. */
   returning: boolean;
   licence: LicenceAndIndemnity;
-  /** TODO(api): Device Fulfilment choice — kept here until the onboarding API takes it. */
+  /** Device Fulfilment choice; `store` holds the pickup location id. */
   fulfilment: DeviceFulfilment;
   pendingSignature: PendingSignature | null;
   installation: InstallationValues | null;

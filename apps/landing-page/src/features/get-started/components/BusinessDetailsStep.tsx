@@ -4,12 +4,15 @@ import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/get-started/schemas/applySchemas";
 import type { ApplicantCustomerType } from "@/features/get-started/utils/applyTypes";
-import { Envelope } from "@phosphor-icons/react/dist/ssr";
+import {
+  Envelope, FileText,
+} from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
 import { getOnboardingM2mPlansQueryOptions } from "@truckmoov/api/auth";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
+import { IndemnityDialog } from "@/features/get-started/components/IndemnityDialog";
 import {
   InfoRow,
   Notice,
@@ -21,6 +24,7 @@ import { SubDialog } from "@/features/get-started/components/SubDialog";
 import { useEmailAvailability } from "@/features/get-started/hooks/useEmailAvailability";
 import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
 import {
+  CARD_CLASS,
   FIELD_CLASS,
   LABEL_CLASS,
   LINK_CLASS,
@@ -41,8 +45,10 @@ import { SIGN_IN_URL } from "@/shared/utils/routes";
 
 const FORM_ID = "apply-business-details-form";
 
-/** The design's field label: every Customer Details field is required. The label is flex gap-2,
- * so -ml-1.5 sits the asterisk 2px from the text, as in the design. */
+/**
+ * The design's field label: every Customer Details field is required. The label is flex gap-2,
+ * so -ml-1.5 sits the asterisk 2px from the text, as in the design.
+ */
 function RequiredLabel({ children }: { children: ReactNode }) {
   return (
     <FormLabel className={LABEL_CLASS}>
@@ -55,17 +61,17 @@ function RequiredLabel({ children }: { children: ReactNode }) {
 type TextFieldName = Exclude<keyof BusinessDetailsValues, "identificationType">;
 
 /**
- * Customer details and the M2M licence plan (main app: BusinessDetailsStep), exactly the
- * design's fields. The plan is checked here, outside zod, because the server has no field
- * for it on the details body.
- *
- * ponytail: the design has no RC Number / TIN / ID fields and no indemnity signature, so
- * none are collected; the API's submit gate may refuse until it stops requiring them.
+ * Customer details, the M2M licence plan and the indemnity signature (main app:
+ * BusinessDetailsStep). The plan and indemnity are checked here, outside zod, because the
+ * server has no field for them on the details body. A signature drawn before the
+ * application exists is uploaded right after it is saved (see GetStartedDialog).
  */
 export function BusinessDetailsStep({
   form,
   customerType,
   submitting,
+  indemnitySigned: signedOnServer,
+  indemnityNotice,
   saveError,
   applicationId,
   emailConflict = 0,
@@ -75,6 +81,10 @@ export function BusinessDetailsStep({
   form: UseFormReturn<BusinessDetailsValues>;
   customerType: ApplicantCustomerType;
   submitting: boolean;
+  /** Whether the server already holds a signature for the current agreement. */
+  indemnitySigned: boolean;
+  /** Set when the agreement changed since the applicant signed. */
+  indemnityNotice?: string | null;
   /** Error from the last save that belongs to no single field. */
   saveError?: string | null;
   /** Lets the email check ignore the application being edited. */
@@ -91,8 +101,15 @@ export function BusinessDetailsStep({
   const isEnterprise = customerType === "enterprise";
   const licence = useApplyDraftStore(state => state.licence);
   const setLicence = useApplyDraftStore(state => state.setLicence);
+  const pendingSignature = useApplyDraftStore(state => state.pendingSignature);
+  const setPendingSignature = useApplyDraftStore(state => state.setPendingSignature);
   const plansQuery = useQuery(getOnboardingM2mPlansQueryOptions());
   const plans = plansQuery.data?.data.plans ?? [];
+  const indemnitySigned = signedOnServer || Boolean(pendingSignature);
+  const [
+    indemnityOpen,
+    setIndemnityOpen,
+  ] = useState(false);
   const [
     existingAccountOpen,
     setExistingAccountOpen,
@@ -123,6 +140,14 @@ export function BusinessDetailsStep({
     }
     if (!licence.licensePlan) {
       setSectionError("Select a license plan to continue.");
+      return;
+    }
+    if (!indemnitySigned) {
+      setSectionError("Review and electronically sign the indemnity form.");
+      return;
+    }
+    if (!licence.indemnityAccepted) {
+      setSectionError("Confirm that you have reviewed the indemnity form.");
       return;
     }
     setSectionError(null);
@@ -172,7 +197,7 @@ export function BusinessDetailsStep({
     >
       <StepHeading
         title="Customer Details"
-        description="Complete Your Customer Information And Select A License Plan."
+        description="Complete Your Customer Information, Select A License Plan, And Review The Indemnity Form."
       />
 
       <Form {...form}>
@@ -329,9 +354,94 @@ export function BusinessDetailsStep({
             </InfoRow>
           </section>
 
+          <section>
+            <SectionHeading
+              title="Indemnity Agreement"
+              description="Please review the indemnity form before completing your application."
+            />
+            <div className={cn(
+              CARD_CLASS,
+              "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
+            )}
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-brand-tint">
+                  <FileText className="size-5 text-brand-deep" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-heading">Fleet Pro Indemnity Form</p>
+                  <p className="text-xs text-muted-foreground">
+                    {signedOnServer
+                      ? "Electronically signed"
+                      : pendingSignature
+                        ? "Signed, saved with your details when you continue"
+                        : "Review and sign electronically"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={SECONDARY_BUTTON_CLASS}
+                onClick={() => setIndemnityOpen(true)}
+              >
+                {indemnitySigned ? "Review & Re-sign" : "View & Sign Form"}
+              </button>
+            </div>
+            <InfoRow className="mt-3 text-xs text-muted-foreground">
+              Review and electronically sign the form here. No separate upload is required.
+            </InfoRow>
+
+            <label className={cn(
+              "mt-4 flex items-start gap-3 rounded-[15px] border-[0.5px] border-border p-4 text-sm leading-5 text-heading",
+              indemnitySigned ? "cursor-pointer" : "cursor-not-allowed opacity-70",
+            )}
+            >
+              <input
+                type="checkbox"
+                className="mt-0.5 size-4 shrink-0 accent-brand-deep"
+                checked={licence.indemnityAccepted}
+                disabled={!indemnitySigned}
+                onChange={(event) => {
+                  setLicence({ indemnityAccepted: event.target.checked });
+                  setSectionError(null);
+                }}
+              />
+              {indemnitySigned
+                ? "I confirm that I have reviewed the indemnity form and agree to its terms."
+                : "Sign the indemnity form before confirming your agreement."}
+            </label>
+          </section>
+
+          {indemnityNotice && !pendingSignature && <Notice>{indemnityNotice}</Notice>}
           {(sectionError || saveError) && <Notice>{sectionError ?? saveError}</Notice>}
         </form>
       </Form>
+
+      <IndemnityDialog
+        open={indemnityOpen}
+        onOpenChange={setIndemnityOpen}
+        initialName={licence.indemnitySignatureName}
+        notice={indemnityNotice}
+        onSigned={({
+          method,
+          name,
+          image,
+          version,
+        }) => {
+          setPendingSignature({
+            method,
+            name,
+            image,
+            version,
+          });
+          // Re-signing clears the confirmation, matching the main app.
+          setLicence({
+            indemnitySignatureName: name,
+            indemnityAccepted: false,
+          });
+          setSectionError(null);
+        }}
+      />
 
       <SubDialog
         open={accountDialogOpen}

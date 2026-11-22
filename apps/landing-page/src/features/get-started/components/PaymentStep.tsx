@@ -209,7 +209,7 @@ export function PaymentStep({
               label="Installation"
               value={formatCurrency(order.installationNgn)}
             />
-            {/* TODO(api): shown once the order endpoint sends these quotation lines. */}
+            {/* No delivery fee is priced today (the admin Delivery Price is hidden), so this stays hidden. */}
             {(order.deliveryFeeNgn ?? 0) > 0 && (
               <Line
                 label="Delivery / fulfilment fee"

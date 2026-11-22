@@ -7,6 +7,8 @@ import {
   Storefront,
   Truck,
 } from "@phosphor-icons/react/dist/ssr";
+import { useQuery } from "@tanstack/react-query";
+import { getPickupLocationsQueryOptions } from "@truckmoov/api/auth";
 import { NIGERIAN_STATES } from "@/features/get-started/schemas/applySchemas";
 import {
   CARD_CLASS,
@@ -30,19 +32,14 @@ const METHODS = [
   },
 ] as const;
 
-// TODO(api): MTN Connect Store / Service Centre locations — areas per state and stores per
-// area. Until the endpoint lands these lists are empty, so the pickup selects stay disabled.
-const PICKUP_AREAS: Record<string, string[]> = {};
-const PICKUP_STORES: Record<string, string[]> = {};
-
 /**
  * How the requested devices reach the applicant (main app: DeviceFulfilmentCard). Owner
  * Operators always collect from a store, so their method is derived as "pickup" here (and
  * set in the draft store when the customer type is chosen); Enterprise customers pick
  * pickup or delivery.
  *
- * TODO(api): the choice isn't sent anywhere yet — it lives in the apply draft store until
- * the onboarding API takes a fulfilment method.
+ * Pickup points come from `GET …/pickup-locations` (state → area → store); `store` holds the
+ * location id. The choice is saved to the application when the fleet step continues.
  */
 export function DeviceFulfilmentCard({
   value,
@@ -54,8 +51,9 @@ export function DeviceFulfilmentCard({
   isOwnerOperator: boolean;
 }) {
   const method = isOwnerOperator ? "pickup" : value.method;
-  const areas = PICKUP_AREAS[value.state] ?? [];
-  const stores = PICKUP_STORES[`${value.state}|${value.area}`] ?? [];
+  const locations = useQuery(getPickupLocationsQueryOptions()).data?.data ?? [];
+  const areas = [...new Set(locations.filter(location => location.state === value.state).map(location => location.area))];
+  const stores = locations.filter(location => location.state === value.state && location.area === value.area);
 
   return (
     <section className={CARD_CLASS}>
@@ -179,11 +177,11 @@ export function DeviceFulfilmentCard({
               <option value="">{value.area ? "Select location" : "Select an area first"}</option>
               {stores.map(store => (
                 <option
-                  key={store}
-                  value={store}
+                  key={store.id}
+                  value={store.id}
                   className="text-heading"
                 >
-                  {store}
+                  {store.name}
                 </option>
               ))}
             </select>
