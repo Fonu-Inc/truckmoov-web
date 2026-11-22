@@ -1,3 +1,4 @@
+import type { SupportResponseHours } from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -26,9 +27,10 @@ import { PageActions } from "@/shared/components/layout/PageTitle";
 
 const supportPreferencesSchema = z.object({
   supportEmail: z.string().trim().email("Enter a valid email address."),
-  // ponytail: no API field — wire to packages/api
-  supportPhone: z.string(),
-  // ponytail: no API field — wire to packages/api
+  supportPhone: z.string().trim().max(
+    32,
+    "Phone number is too long.",
+  ),
   responseTime: z.enum([
     "4",
     "24",
@@ -49,8 +51,7 @@ const DEFAULT_SUPPORT_PREFERENCES: SupportPreferencesFormValues = {
 /**
  * `/settings/support` — fleetflow's Support Preferences card. Support Contact
  * Email is system settings `supportEmail` (the same value Platform Profile
- * edits). Support Phone and Response Time Commitment have no API field and
- * stay in this page's state — Save sends only the email.
+ * edits); Support Phone and Response Time Commitment are `support`.
  */
 export function SupportPreferencesPanel() {
   const systemSettingsQuery = useQuery(getSystemSettingsQueryOptions());
@@ -67,7 +68,9 @@ export function SupportPreferencesPanel() {
       if (!systemSettings)
         return;
       form.reset({
-        ...form.getValues(), supportEmail: systemSettings.supportEmail ?? "",
+        supportEmail: systemSettings.supportEmail ?? "",
+        supportPhone: systemSettings.support?.phone ?? "",
+        responseTime: String(systemSettings.support?.responseTimeHours ?? 24) as SupportPreferencesFormValues["responseTime"],
       });
     },
     [
@@ -78,7 +81,15 @@ export function SupportPreferencesPanel() {
 
   const handleSave = (values: SupportPreferencesFormValues) => {
     updateSettings.mutate(
-      { data: { supportEmail: values.supportEmail } },
+      {
+        data: {
+          supportEmail: values.supportEmail,
+          support: {
+            phone: values.supportPhone,
+            responseTimeHours: Number(values.responseTime) as SupportResponseHours,
+          },
+        },
+      },
       {
         onSuccess: () => toast.success("Support preferences saved"),
         onError: error => toast.error(error.message),

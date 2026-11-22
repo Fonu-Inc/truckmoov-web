@@ -64,13 +64,14 @@ import {
 } from "@/components/shadcn/table";
 import { RoleBadge } from "@/features/settings/components/ui/RoleBadge";
 import { UserPermissionsDialog } from "@/features/settings/components/ui/UserPermissionsDialog";
-import { usePlatformRolesStore } from "@/features/settings/stores/platformRolesStore";
+import { useStaffAccess } from "@/features/settings/hooks/useStaffAccess";
 import { useAuthStore } from "@/stores/authStore";
 
 type AdminUser = {
   userId: string;
   email: string;
   role: string;
+  customRoleId?: string | null;
   accountStatus: "enabled" | "disabled" | string;
   status: "active" | "inactive" | string;
   /** Not in the typed response; read when the server sends it. */
@@ -83,8 +84,8 @@ type AdminUser = {
   };
 };
 
-/** Fleetflow's invite default; its role catalogue (the store) has no such entry, so the label falls back. */
-const DEFAULT_ROLE = "platform_admin";
+/** The invite default, as on the server. */
+const DEFAULT_ROLE = "SYSTEM_ADMIN";
 const EMAIL_RE = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
 
 function getAdminDisplayName(admin: AdminUser): string {
@@ -96,28 +97,29 @@ function getAdminDisplayName(admin: AdminUser): string {
  * team card: search + filter (role, date added), User · Role · Added · Actions
  * (Permissions, trash), Invite Team Member dialog, Remove confirmation.
  *
- * Live: the team list (`GET /auth/system/admins`), invite (email only — the API
- * takes no name or role) and delete.
- *
- * ponytail: the invite's Full Name and Role and each member's role are local
- * (`usePlatformRolesStore().userRoles`, keyed by email) — the API has a single
- * admin role. The Added column reads `createdAt` when the server sends it and
+ * Live: the team list with each member's staff role (`GET /auth/system/admins`),
+ * invite with a predefined staff role, delete, and per-person permissions
+ * (saved as their personal role). The Full Name in the invite is not stored by
+ * the API. The Added column reads `createdAt` when the server sends it and
  * shows "—" otherwise; nothing is invented for real admins.
  */
 export function PlatformAdminsPanel() {
   const { user } = useAuthStore();
-  const roles = usePlatformRolesStore(s => s.roles);
-  const userGrants = usePlatformRolesStore(s => s.userGrants);
-  const userRoles = usePlatformRolesStore(s => s.userRoles);
-  const setUserRole = usePlatformRolesStore(s => s.setUserRole);
+  const {
+    roles, hasPersonalRole,
+  } = useStaffAccess();
   const platformRoles = roles.map(r => ({
     value: r.key, label: r.label, description: r.description,
   }));
-  const roleKeyFor = (admin: AdminUser) => userRoles[admin.email.toLowerCase()] ?? DEFAULT_ROLE;
+  const inviteRoles = roles.filter(r => r.builtIn).map(r => ({
+    value: r.key, label: r.label, description: r.description,
+  }));
+  /** A shared custom role when they hold one, else their predefined role. */
+  const roleKeyFor = (admin: AdminUser) =>
+    admin.customRoleId && roles.some(r => r.key === admin.customRoleId) ? admin.customRoleId : admin.role;
   const roleLabel = (role: string) =>
-    platformRoles.find(r => r.value === role)?.label ?? "Platform Admin";
-  const adminRoleLabel = (admin: AdminUser) =>
-    admin.role === "SUPER_ADMIN" ? "Super Admin" : roleLabel(roleKeyFor(admin));
+    platformRoles.find(r => r.value === role)?.label ?? role;
+  const adminRoleLabel = (admin: AdminUser) => roleLabel(roleKeyFor(admin));
 
   const adminsQuery = useQuery(getSystemAdminsQueryOptions());
   const rawAdmins = adminsQuery.data?.data as { users?: AdminUser[] } | undefined;
@@ -206,13 +208,13 @@ export function PlatformAdminsPanel() {
     }
     const email = inviteEmail.trim();
     createInvite.mutate(
-      { data: { email } },
+      {
+        data: {
+          email, role: inviteRole,
+        },
+      },
       {
         onSuccess: () => {
-          setUserRole(
-            email,
-            inviteRole,
-          );
           toast.success(`Invitation sent to ${email} as ${roleLabel(inviteRole)}`);
           setInviteEmail("");
           setInviteName("");
@@ -303,7 +305,7 @@ export function PlatformAdminsPanel() {
                           <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
                         <SelectContent>
-                          {platformRoles.map(r => (
+                          {inviteRoles.map(r => (
                             <SelectItem
                               key={r.value}
                               value={r.value}
@@ -314,7 +316,7 @@ export function PlatformAdminsPanel() {
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        {platformRoles.find(r => r.value === inviteRole)?.description}
+                        {inviteRoles.find(r => r.value === inviteRole)?.description}
                       </p>
                     </div>
                   </div>
@@ -473,7 +475,7 @@ export function PlatformAdminsPanel() {
                     <TableBody>
                       {filteredPlatformUsers.map((platformUser) => {
                         const displayName = getAdminDisplayName(platformUser);
-                        const extra = userGrants[platformUser.userId]?.length ?? 0;
+                        const personal = hasPersonalRole(platformUser.customRoleId);
                         return (
                           <TableRow key={platformUser.userId}>
                             <TableCell>
@@ -497,15 +499,12 @@ export function PlatformAdminsPanel() {
                                   roleKey={roleKeyFor(platformUser)}
                                   label={adminRoleLabel(platformUser)}
                                 />
-                                {extra > 0 && (
+                                {personal && (
                                   <Badge
                                     variant="secondary"
                                     className="rounded-full text-[10px] font-normal"
                                   >
-                                    +
-                                    {extra}
-                                    {" "}
-                                    extra
+                                    custom permissions
                                   </Badge>
                                 )}
                               </div>
@@ -560,7 +559,8 @@ export function PlatformAdminsPanel() {
           onOpenChange={o => !o && setPermissionsUser(null)}
           userId={permissionsUser.userId}
           userName={getAdminDisplayName(permissionsUser)}
-          roleKey={roleKeyFor(permissionsUser)}
+          roleKey={permissionsUser.role}
+          customRoleId={permissionsUser.customRoleId}
         />
       )}
 

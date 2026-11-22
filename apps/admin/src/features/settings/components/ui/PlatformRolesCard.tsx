@@ -9,15 +9,15 @@ import {
 } from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { PlatformRoleEditorDialog } from "@/features/settings/components/ui/PlatformRoleEditorDialog";
-import { usePlatformRolesStore } from "@/features/settings/stores/platformRolesStore";
+import { useStaffAccess } from "@/features/settings/hooks/useStaffAccess";
 
 /**
  * The Roles card from fleetflow's `PlatformTeamManagement` ("Roles (N)", View
  * all roles / Create New Role, one card per role) plus its editor dialogs.
- * ponytail: backed by the local `usePlatformRolesStore` — no roles API yet.
+ * Predefined staff roles are view-only; custom roles are edited on the server.
  */
 export function PlatformRolesCard() {
-  const roles = usePlatformRolesStore(s => s.roles);
+  const { roles } = useStaffAccess();
   const [
     isCreateRoleOpen,
     setIsCreateRoleOpen,
@@ -134,14 +134,16 @@ export function PlatformRolesCard() {
                         <Eye className="h-3.5 w-3.5 mr-1.5" />
                         View Details
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setRoleToEdit(role)}
-                        aria-label={`Edit ${role.label}`}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      {!role.builtIn && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setRoleToEdit(role)}
+                          aria-label={`Edit ${role.label}`}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );

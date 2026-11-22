@@ -1,4 +1,5 @@
 import type { PermissionKey } from "@/features/settings/utils/platformPermissions";
+import { useSetStaffMemberPermissions } from "@truckmoov/api/auth";
 import {
   KeyRound, Pencil, Search, Users,
 } from "lucide-react";
@@ -18,8 +19,7 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
-import { usePlatformRolesStore } from "@/features/settings/stores/platformRolesStore";
-import { PERMISSION_DOMAINS } from "@/features/settings/utils/platformPermissions";
+import { useStaffAccess } from "@/features/settings/hooks/useStaffAccess";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -27,21 +27,23 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   userId: string;
   userName: string;
+  /** The person's predefined staff role. */
   roleKey: string;
+  customRoleId?: string | null;
 };
 
 /**
- * Grant single capabilities to one person, on top of their role — fleetflow's
- * `UserPermissionsDialog`.
- * ponytail: grants persist to the local `usePlatformRolesStore`; nothing on the
- * API enforces them yet.
+ * Set exactly what one person can do — fleetflow's `UserPermissionsDialog`.
+ * Saved as their personal role (`PUT /auth/system/admins/:id/permissions`);
+ * matching their predefined role exactly returns them to it.
  */
 export function UserPermissionsDialog({
-  open, onOpenChange, userId, userName, roleKey,
+  open, onOpenChange, userId, userName, roleKey, customRoleId,
 }: Props) {
-  const roles = usePlatformRolesStore(s => s.roles);
-  const userGrants = usePlatformRolesStore(s => s.userGrants);
-  const setUserGrants = usePlatformRolesStore(s => s.setUserGrants);
+  const {
+    roles, domains: allDomains, effectivePermissions,
+  } = useStaffAccess();
+  const savePermissions = useSetStaffMemberPermissions();
   const role = roles.find(r => r.key === roleKey);
   const rolePermissions = useMemo(
     () => new Set(role?.permissions ?? []),
@@ -70,12 +72,9 @@ export function UserPermissionsDialog({
   if (shownFor !== resetKey) {
     setShownFor(resetKey);
     if (open) {
-      setExtra([
-        ...new Set([
-          ...(role?.permissions ?? []),
-          ...(userGrants[userId] ?? []),
-        ]),
-      ]);
+      setExtra(effectivePermissions({
+        role: roleKey, customRoleId,
+      }));
       setQuery("");
       setIsEditing(false);
     }
@@ -85,24 +84,39 @@ export function UserPermissionsDialog({
     () => {
       const q = query.trim().toLowerCase();
       if (!q)
-        return PERMISSION_DOMAINS;
-      return PERMISSION_DOMAINS.map(d => ({
+        return allDomains;
+      return allDomains.map(d => ({
         ...d,
         permissions: d.permissions.filter(
           p => p.label.toLowerCase().includes(q) || p.key.toLowerCase().includes(q),
         ),
       })).filter(d => d.permissions.length > 0);
     },
-    [query],
+    [
+      query,
+      allDomains,
+    ],
   );
 
   const save = () => {
-    setUserGrants(
-      userId,
-      extra,
+    const base = role?.permissions ?? [];
+    const sameAsRole = base.length === extra.length && base.every(k => extra.includes(k));
+    if (extra.length === 0) {
+      toast.error("Keep at least one permission, or change their role instead");
+      return;
+    }
+    savePermissions.mutate(
+      {
+        userId, permissions: sameAsRole ? [] : extra,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Permissions updated for ${userName}`);
+          onOpenChange(false);
+        },
+        onError: error => toast.error(error.message),
+      },
     );
-    toast.success(`Permissions updated for ${userName}`);
-    onOpenChange(false);
   };
 
   return (
@@ -255,6 +269,7 @@ export function UserPermissionsDialog({
             <Button
               variant="gradient"
               onClick={save}
+              disabled={savePermissions.isPending}
             >
               Save Permissions
             </Button>

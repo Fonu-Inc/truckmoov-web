@@ -2,6 +2,10 @@ import type {
   PermissionKey, PlatformRole,
 } from "@/features/settings/utils/platformPermissions";
 import {
+  useCreateStaffRole,
+  useUpdateStaffRole,
+} from "@truckmoov/api/auth";
+import {
   Search, ShieldCheck,
 } from "lucide-react";
 import {
@@ -22,11 +26,7 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
-import { usePlatformRolesStore } from "@/features/settings/stores/platformRolesStore";
-import {
-  PERMISSION_DOMAINS,
-  slugifyRoleKey,
-} from "@/features/settings/utils/platformPermissions";
+import { useStaffAccess } from "@/features/settings/hooks/useStaffAccess";
 
 type Props = {
   open: boolean;
@@ -39,13 +39,16 @@ type Props = {
 
 /**
  * Create / edit / view a platform role — fleetflow's `PlatformRoleEditorDialog`.
- * ponytail: saves to the local `usePlatformRolesStore` only; no roles API yet.
+ * Custom staff roles are saved to `/auth/system/roles`; the picker offers only
+ * the permissions the signed-in admin holds, as the server refuses the rest.
  */
 export function PlatformRoleEditorDialog({
   open, onOpenChange, role, readOnly = false,
 }: Props) {
-  const roles = usePlatformRolesStore(s => s.roles);
-  const upsertRole = usePlatformRolesStore(s => s.upsertRole);
+  const { domains: allDomains } = useStaffAccess();
+  const createRole = useCreateStaffRole();
+  const updateRole = useUpdateStaffRole();
+  const saving = createRole.isPending || updateRole.isPending;
   const [
     name,
     setName,
@@ -87,8 +90,8 @@ export function PlatformRoleEditorDialog({
     () => {
       const q = query.trim().toLowerCase();
       if (!q)
-        return PERMISSION_DOMAINS;
-      return PERMISSION_DOMAINS.map(d => ({
+        return allDomains;
+      return allDomains.map(d => ({
         ...d,
         permissions: d.permissions.filter(
           p =>
@@ -98,7 +101,10 @@ export function PlatformRoleEditorDialog({
         ),
       })).filter(d => d.permissions.length > 0);
     },
-    [query],
+    [
+      query,
+      allDomains,
+    ],
   );
 
   const toggle = (key: PermissionKey, on: boolean) =>
@@ -127,20 +133,32 @@ export function PlatformRoleEditorDialog({
       toast.error("Select at least one permission");
       return;
     }
-    const key = role?.key ?? slugifyRoleKey(name);
-    if (!role && roles.some(r => r.key === key)) {
-      toast.error("A role with that name already exists");
-      return;
-    }
-    upsertRole({
-      key,
-      label: name.trim(),
-      description: description.trim() || "Custom platform role.",
-      builtIn: role?.builtIn ?? false,
+    const body = {
+      name: name.trim(),
+      description: description.trim() || undefined,
       permissions: selected,
-    });
-    toast.success(role ? `${name.trim()} updated` : `${name.trim()} created`);
-    onOpenChange(false);
+    };
+    const done = {
+      onSuccess: () => {
+        toast.success(role ? `${body.name} updated` : `${body.name} created`);
+        onOpenChange(false);
+      },
+      onError: (error: { message?: string }) => toast.error(error.message || "Could not save the role"),
+    };
+    if (role) {
+      updateRole.mutate(
+        {
+          id: role.key, ...body,
+        },
+        done,
+      );
+    }
+    else {
+      createRole.mutate(
+        body,
+        done,
+      );
+    }
   };
 
   return (
@@ -279,6 +297,7 @@ export function PlatformRoleEditorDialog({
             <Button
               variant="gradient"
               onClick={handleSave}
+              disabled={saving}
             >
               {role ? "Save Changes" : "Create Role"}
             </Button>

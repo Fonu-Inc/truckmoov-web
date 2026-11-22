@@ -15,50 +15,25 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
-import { useAuthStore } from "@/stores/authStore";
-
-function readSessionTimeout(storageKey: string): string {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}") as { sessionTimeout?: string };
-    return parsed.sessionTimeout || "60";
-  }
-  catch {
-    // Keep safe defaults if locally saved settings are invalid.
-    return "60";
-  }
-}
 
 /**
  * Settings → Team & Access, under the team — fleetflow's `AccountSecurityCard`
- * (Two-Factor Authentication, Portal Session Timeout, Change Password).
+ * (Two-Factor Authentication, Change Password).
  *
  * - **Two-Factor** reflects the signed-in admin's real status
  *   (`useTwoFactor`). Turning it on or off needs an authenticator code, so the
  *   switch opens the shared `TwoFactorSetupCard` (TRU-FE-23) in a dialog
  *   instead of flipping a local flag as fleetflow does.
- * - **Portal Session Timeout** — ponytail: mock data from fleetflow parity port —
- *   wire to packages/api. Per-browser, as in fleetflow; the API's
- *   `security.sessionTimeoutMinutes` is platform-wide and has no 4-hour option.
  * - **Change Password** is `PATCH /auth/system/change-password`.
  */
 export function AccountSecurityCard({ className }: { className?: string }) {
-  const userId = useAuthStore(s => s.user?.id);
-  // App-prefixed: both dev servers share localhost storage (see sidebarStore).
-  const storageKey = `admin-platform-account-security-${userId ?? "default"}`;
   const twoFactor = useTwoFactor();
   const twoFactorEnabled = twoFactor.data?.data?.enrolled ?? false;
   const [
     twoFactorOpen,
     setTwoFactorOpen,
   ] = useState(false);
-  const [
-    sessionTimeout,
-    setSessionTimeout,
-  ] = useState(() => readSessionTimeout(storageKey));
   const changePasswordMutation = useSystemChangePassword();
   const [
     passwordOpen,
@@ -126,37 +101,6 @@ export function AccountSecurityCard({ className }: { className?: string }) {
               onCheckedChange={() => setTwoFactorOpen(true)}
               aria-label="Two-Factor Authentication"
             />
-          </SettingRow>
-          <SettingRow
-            label="Portal Session Timeout"
-            description="Automatically sign out after a period of inactivity."
-          >
-            <Select
-              value={sessionTimeout}
-              onValueChange={(value) => {
-                setSessionTimeout(value);
-                try {
-                  localStorage.setItem(
-                    storageKey,
-                    JSON.stringify({ sessionTimeout: value }),
-                  );
-                }
-                catch {
-                  // Storage blocked — the choice still holds for this visit.
-                }
-                toast.success("Session timeout updated");
-              }}
-            >
-              <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15">15 minutes</SelectItem>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="60">1 hour</SelectItem>
-                <SelectItem value="120">2 hours</SelectItem>
-                <SelectItem value="240">4 hours</SelectItem>
-                <SelectItem value="480">8 hours</SelectItem>
-              </SelectContent>
-            </Select>
           </SettingRow>
           <SettingRow
             label="Change Password"

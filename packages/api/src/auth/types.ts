@@ -1171,7 +1171,7 @@ export type UpdateFeatureFlagPayload = {
 // TRU-FE-7 § A — PATCH is section-wise. Send only the section you're editing; the
 // server leaves the other sections untouched (verified 2026-09-09).
 export type UpdateSystemSettingsPayload = {
-  data: Partial<Pick<AuthSystemSettings, 'platformName' | 'supportEmail' | 'defaults' | 'features' | 'retention' | 'security'>>
+  data: Partial<Pick<AuthSystemSettings, 'platformName' | 'supportEmail' | 'profile' | 'support' | 'defaults' | 'features' | 'retention' | 'security'>>
 }
 
 // ─── TRU-FE-7 § B — AI governance / usage / requests ─────────────────────────
@@ -1799,11 +1799,42 @@ export type OrganizationUser = {
   email: string
   tenantId: string
   role: UserRole
+  /** Staff only: a custom or personal role that overrides `role`'s permissions. */
+  customRoleId?: string | null
   accountStatus: string
   status: string
   lastActiveAt: string
   profile: UserProfile
 }
+
+// ─── Staff roles (admin portal) ───────────────────────────────────────────────
+
+export type StaffRoleName = 'SUPER_ADMIN' | 'SYSTEM_ADMIN' | 'PLATFORM_ADMIN' | 'GOVERNANCE_OFFICER'
+export type PredefinedStaffRole = { role: StaffRoleName, permissions: string[], editable: false }
+export type CustomStaffRole = {
+  id: string
+  name: string
+  description: string | null
+  permissions: string[]
+  editable: true
+  createdAt: string
+  updatedAt: string
+}
+/** One staff member's own permission set, stored as a role only they hold. */
+export type PersonalStaffRole = { id: string, userId: string, permissions: string[] }
+export type StaffRolesResponse = ServerResponse<{
+  predefined: PredefinedStaffRole[]
+  custom: CustomStaffRole[]
+  personal: PersonalStaffRole[]
+}>
+export type StaffPermission = { key: string, description: string }
+export type StaffPermissionsResponse = ServerResponse<{ permissions: StaffPermission[] }>
+export type StaffRoleBody = { name: string, description?: string, permissions: string[] }
+export type StaffRoleResponse = ServerResponse<CustomStaffRole>
+export type SetStaffMemberRolePayload = { userId: string, role: StaffRoleName }
+export type SetStaffMemberCustomRolePayload = { userId: string, customRoleId: string | null }
+export type SetStaffMemberPermissionsPayload = { userId: string, permissions: string[] }
+export type StaffMemberAccessResponse = ServerResponse<{ userId: string, customRoleId?: string | null, role?: string, permissions?: string[] }>
 
 export type OrganizationUsersData = {
   tenantId: string
@@ -1853,6 +1884,7 @@ export type UploadedMedia = {
 // TRU-FE-7 § A — one of six documented keys; unknown values are ignored on read.
 export type SystemDefaultTimeRange
   = | 'today'
+    | 'yesterday'
     | 'last_7_days'
     | 'last_30_days'
     | 'last_90_days'
@@ -1862,12 +1894,27 @@ export type SystemDefaultTimeRange
 // TRU-FE-7 § C — enforced (session-timeout is checked on every refresh); one of 15|30|60|120|480.
 export type SystemSessionTimeoutMinutes = 15 | 30 | 60 | 120 | 480
 
+export type SystemDateFormat = 'dd/MM/yyyy' | 'MM/dd/yyyy' | 'yyyy-MM-dd' | 'd MMM yyyy'
+export type SystemTimeFormat = '12h' | '24h'
+export type SupportResponseHours = 4 | 24 | 48
+
 export type AuthSystemSettings = {
   platformName?: string
   supportEmail?: string
+  profile?: {
+    contactPhone?: string
+    contactAddress?: string
+    logoUrl?: string | null
+  }
+  support?: {
+    phone?: string
+    responseTimeHours?: SupportResponseHours
+  }
   defaults?: {
     timezone?: string
     language?: string
+    dateFormat?: SystemDateFormat
+    timeFormat?: SystemTimeFormat
     defaultTimeRange?: SystemDefaultTimeRange
     complianceReminderDays?: number
     walletTopUpMinKobo?: number
@@ -3569,7 +3616,8 @@ export type SendMailResponse = ServerResponse<unknown>
 
 // ─── Platform Alerts ──────────────────────────────────────────────────────────
 
-export type PlatformAlertChannel = 'email' | 'sms' | 'slack' | 'webhook'
+/** `in_app` shows in the admin notification centre and needs no recipient. */
+export type PlatformAlertChannel = 'email' | 'sms' | 'slack' | 'webhook' | 'in_app'
 export type PlatformAlertSeverity = 'low' | 'medium' | 'high' | 'critical'
 
 export type PlatformAlertType =
@@ -3604,6 +3652,29 @@ export type UpdateAlertSettingPayload = {
 
 export type PlatformAlertSettingsResponse = ServerResponse<PlatformAlertSetting[]>
 export type PlatformAlertSettingResponse = ServerResponse<PlatformAlertSetting>
+
+export type SendTestAlertPayload = { data?: { alertType?: PlatformAlertType } }
+export type SendTestAlertResponse = ServerResponse<{ alertType: PlatformAlertType, channels: PlatformAlertChannel[] }>
+
+/** A platform alert in the admin notification centre; `readAt` is the caller's own. */
+export type AdminNotification = {
+  id: string
+  alertType: PlatformAlertType
+  severity: PlatformAlertSeverity
+  title: string
+  body: string
+  createdAt: string
+  readAt: string | null
+}
+export type AdminNotificationsQuery = { params?: { unreadOnly?: boolean, page?: number, limit?: number } }
+export type AdminNotificationsResponse = ServerResponse<{
+  items: AdminNotification[]
+  total: number
+  unread: number
+  page: number
+  limit: number
+}>
+export type AdminNotificationReadResponse = ServerResponse<{ unread: number }>
 
 // ─── Communication Pricing ────────────────────────────────────────────────────
 

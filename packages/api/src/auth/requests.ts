@@ -27,6 +27,19 @@ import type {
   OrganisationUpgradeResponse,
   PlatformAlertSettingResponse,
   PlatformAlertSettingsResponse,
+  SendTestAlertPayload,
+  SendTestAlertResponse,
+  StaffRolesResponse,
+  StaffPermissionsResponse,
+  StaffRoleBody,
+  StaffRoleResponse,
+  SetStaffMemberRolePayload,
+  SetStaffMemberCustomRolePayload,
+  SetStaffMemberPermissionsPayload,
+  StaffMemberAccessResponse,
+  AdminNotificationsQuery,
+  AdminNotificationsResponse,
+  AdminNotificationReadResponse,
   PlatformTopUpPayload,
   PlatformTopUpResponse,
   PlatformWalletCreditSettingsPayload,
@@ -879,6 +892,46 @@ export async function updateSystemAdminStatus({ id, data }: UpdateAdminStatusPay
 
 export async function deleteSystemAdmin({ id }: DeleteSystemAdminPayload) {
   const { data } = await axiosInstance.delete<RemoveOrganizationUserResponse>(`/auth/system/admins/${id}`)
+  return data
+}
+
+export async function getStaffRoles() {
+  const { data } = await axiosInstance.get<StaffRolesResponse>('/auth/system/roles')
+  return data
+}
+
+export async function getStaffPermissions() {
+  const { data } = await axiosInstance.get<StaffPermissionsResponse>('/auth/system/roles/permissions')
+  return data
+}
+
+export async function createStaffRole(body: StaffRoleBody) {
+  const { data } = await axiosInstance.post<StaffRoleResponse>('/auth/system/roles', body)
+  return data
+}
+
+export async function updateStaffRole({ id, ...body }: StaffRoleBody & { id: string }) {
+  const { data } = await axiosInstance.patch<StaffRoleResponse>(`/auth/system/roles/${id}`, body)
+  return data
+}
+
+export async function deleteStaffRole({ id }: { id: string }) {
+  const { data } = await axiosInstance.delete<ServerResponse<{ roleId: string }>>(`/auth/system/roles/${id}`)
+  return data
+}
+
+export async function setStaffMemberRole({ userId, role }: SetStaffMemberRolePayload) {
+  const { data } = await axiosInstance.patch<StaffMemberAccessResponse>(`/auth/system/admins/${userId}/role`, { role })
+  return data
+}
+
+export async function setStaffMemberCustomRole({ userId, customRoleId }: SetStaffMemberCustomRolePayload) {
+  const { data } = await axiosInstance.put<StaffMemberAccessResponse>(`/auth/system/admins/${userId}/custom-role`, { customRoleId })
+  return data
+}
+
+export async function setStaffMemberPermissions({ userId, permissions }: SetStaffMemberPermissionsPayload) {
+  const { data } = await axiosInstance.put<StaffMemberAccessResponse>(`/auth/system/admins/${userId}/permissions`, { permissions })
   return data
 }
 
@@ -2003,6 +2056,28 @@ export async function updatePlatformAlertSetting({ alertType, data: body }: Upda
     `/auth/system/alert-settings/${alertType}`,
     body,
   )
+  return data
+}
+
+export async function sendTestAlert(payload?: SendTestAlertPayload) {
+  const { data } = await axiosInstance.post<SendTestAlertResponse>('/auth/system/alert-settings/test', payload?.data ?? {})
+  return data
+}
+
+export async function getAdminNotifications(payload?: AdminNotificationsQuery) {
+  const { data } = await axiosInstance.get<AdminNotificationsResponse>('/auth/system/notifications', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function markAdminNotificationRead({ id }: { id: string }) {
+  const { data } = await axiosInstance.post<AdminNotificationReadResponse>(`/auth/system/notifications/${id}/read`)
+  return data
+}
+
+export async function markAllAdminNotificationsRead() {
+  const { data } = await axiosInstance.post<AdminNotificationReadResponse>('/auth/system/notifications/read-all')
   return data
 }
 

@@ -9,8 +9,8 @@ import { PlatformRolesMatrix } from "@/features/settings/components/ui/PlatformR
  * (Platform Team, Pending Invitations, Roles, the role matrix) followed by
  * `AccountSecurityCard`, exactly as fleetflow's tab.
  *
- * Team and invitations are live (`@truckmoov/api/auth`). Roles, the matrix and
- * per-user grants are the local roles store — ponytail: no roles API yet.
+ * All live (`@truckmoov/api/auth`): team, invitations, staff roles
+ * (`/auth/system/roles`) and per-person permissions (personal roles).
  */
 export default function TeamSettingsPage() {
   return (

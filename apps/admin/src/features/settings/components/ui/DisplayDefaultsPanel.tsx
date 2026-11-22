@@ -1,4 +1,6 @@
-import type { SystemDefaultTimeRange } from "@truckmoov/api/auth";
+import type {
+  SystemDateFormat, SystemDefaultTimeRange, SystemTimeFormat,
+} from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemSettingsQueryOptions,
@@ -30,12 +32,9 @@ const TIMEZONES: Array<{
   },
 ];
 
-/**
- * Fleetflow's `DATE_RANGE_OPTIONS`, mapped to the API's `defaultTimeRange`
- * keys. "Yesterday" has no API key, so it's kept per browser (ponytail below).
- */
+/** Fleetflow's `DATE_RANGE_OPTIONS`, mapped to the API's `defaultTimeRange` keys. */
 const DATE_RANGE_OPTIONS: Array<{
-  value: SystemDefaultTimeRange | "yesterday"; label: string;
+  value: SystemDefaultTimeRange; label: string;
 }> = [
   {
     value: "today", label: "Today",
@@ -60,56 +59,33 @@ const EXTRA_RANGE_LABELS: Partial<Record<SystemDefaultTimeRange, string>> = {
   this_year: "This Year",
 };
 
-// ponytail: mock data from fleetflow parity port — wire to packages/api
-// (no API field for date/time format or a "yesterday" default range; per browser).
-// App-prefixed: both dev servers share localhost storage (see sidebarStore).
-const LOCAL_KEY = "admin-platform-display-defaults";
-type LocalDisplay = {
-  dateFormat: string; timeFormat: string; yesterday?: boolean;
+type DisplayDefaults = {
+  timezone?: string;
+  defaultTimeRange?: SystemDefaultTimeRange;
+  dateFormat?: SystemDateFormat;
+  timeFormat?: SystemTimeFormat;
 };
-const DEFAULT_LOCAL: LocalDisplay = {
-  dateFormat: "dd/MM/yyyy", timeFormat: "24h",
-};
-
-function readLocal(): LocalDisplay {
-  try {
-    return {
-      ...DEFAULT_LOCAL, ...JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}"),
-    };
-  }
-  catch {
-    return DEFAULT_LOCAL;
-  }
-}
 
 /**
  * `/settings/display` — fleetflow's Display Defaults card: Default Timezone,
- * Default Reporting Range, Date Format, Time Format. Like fleetflow, every
- * select applies on change (no Save button).
- *
- * Timezone and reporting range are system settings `defaults` (live). Date and
- * Time Format — and the "Yesterday" range, which the API has no key for — are
- * per browser (ponytail).
+ * Default Reporting Range, Date Format, Time Format, all system settings
+ * `defaults`. Like fleetflow, every select applies on change (no Save button).
  */
 export function DisplayDefaultsPanel() {
   const systemSettingsQuery = useQuery(getSystemSettingsQueryOptions());
   const defaults = systemSettingsQuery.data?.data?.defaults;
   const updateSettings = useUpdateSystemSettings();
-  const [
-    local,
-    setLocal,
-  ] = useState<LocalDisplay>(readLocal);
   // Values picked on this visit — shown straight away, rolled back on error.
   const [
     pending,
     setPending,
-  ] = useState<{
-    timezone?: string; defaultTimeRange?: SystemDefaultTimeRange;
-  }>({});
+  ] = useState<DisplayDefaults>({});
 
   const timezone = pending.timezone ?? defaults?.timezone ?? "Africa/Lagos";
   const savedRange = pending.defaultTimeRange ?? defaults?.defaultTimeRange ?? "last_7_days";
-  const range = local.yesterday ? "yesterday" : savedRange;
+  const range = savedRange;
+  const dateFormat = pending.dateFormat ?? defaults?.dateFormat ?? "dd/MM/yyyy";
+  const timeFormat = pending.timeFormat ?? defaults?.timeFormat ?? "24h";
 
   const timezoneOptions = TIMEZONES.some(tz => tz.value === timezone)
     ? TIMEZONES
@@ -128,27 +104,7 @@ export function DisplayDefaultsPanel() {
         },
       ];
 
-  const saveLocal = (value: Partial<LocalDisplay>, message?: string) => {
-    const next = {
-      ...local, ...value,
-    };
-    setLocal(next);
-    try {
-      localStorage.setItem(
-        LOCAL_KEY,
-        JSON.stringify(next),
-      );
-    }
-    catch {
-      // Storage blocked — the choice still holds for this visit.
-    }
-    if (message)
-      toast.success(message);
-  };
-
-  const saveDefaults = (value: {
-    timezone?: string; defaultTimeRange?: SystemDefaultTimeRange;
-  }) => {
+  const saveDefaults = (value: DisplayDefaults, message?: string) => {
     setPending(p => ({
       ...p, ...value,
     }));
@@ -161,6 +117,10 @@ export function DisplayDefaultsPanel() {
         },
       },
       {
+        onSuccess: () => {
+          if (message)
+            toast.success(message);
+        },
         onError: (error) => {
           toast.error(error.message);
           setPending({});
@@ -169,15 +129,7 @@ export function DisplayDefaultsPanel() {
     );
   };
 
-  const handleRange = (v: string) => {
-    if (v === "yesterday") {
-      saveLocal({ yesterday: true });
-      return;
-    }
-    if (local.yesterday)
-      saveLocal({ yesterday: false });
-    saveDefaults({ defaultTimeRange: v as SystemDefaultTimeRange });
-  };
+  const handleRange = (v: string) => saveDefaults({ defaultTimeRange: v as SystemDefaultTimeRange });
 
   return (
     <div className="space-y-6">
@@ -232,9 +184,9 @@ export function DisplayDefaultsPanel() {
             <div className="space-y-2">
               <Label>Date Format</Label>
               <Select
-                value={local.dateFormat}
-                onValueChange={v => saveLocal(
-                  { dateFormat: v },
+                value={dateFormat}
+                onValueChange={v => saveDefaults(
+                  { dateFormat: v as SystemDateFormat },
                   "Date format updated",
                 )}
               >
@@ -250,9 +202,9 @@ export function DisplayDefaultsPanel() {
             <div className="space-y-2">
               <Label>Time Format</Label>
               <Select
-                value={local.timeFormat}
-                onValueChange={v => saveLocal(
-                  { timeFormat: v },
+                value={timeFormat}
+                onValueChange={v => saveDefaults(
+                  { timeFormat: v as SystemTimeFormat },
                   "Time format updated",
                 )}
               >

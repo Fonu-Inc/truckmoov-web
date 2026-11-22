@@ -1,4 +1,6 @@
-import type { PermissionDef } from "@/features/settings/utils/platformPermissions";
+import type {
+  PermissionDef, PermissionDomain,
+} from "@/features/settings/utils/platformPermissions";
 import {
   Check, Eye, Search, Shield, X,
 } from "lucide-react";
@@ -13,8 +15,7 @@ import { Input } from "@/components/shadcn/input";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/shadcn/tooltip";
-import { usePlatformRolesStore } from "@/features/settings/stores/platformRolesStore";
-import { PERMISSION_DOMAINS } from "@/features/settings/utils/platformPermissions";
+import { useStaffAccess } from "@/features/settings/hooks/useStaffAccess";
 import { cn } from "@/lib/utils";
 
 type Level = "full" | "view" | "none";
@@ -25,9 +26,9 @@ type MatrixRow = {
   isRead: boolean;
 };
 
-function buildRows(): MatrixRow[] {
+function buildRows(domains: PermissionDomain[]): MatrixRow[] {
   const rows: MatrixRow[] = [];
-  for (const domain of PERMISSION_DOMAINS) {
+  for (const domain of domains) {
     for (const perm of domain.permissions) {
       const action = perm.key.split(".").pop() ?? "";
       rows.push({
@@ -79,17 +80,19 @@ function LevelCell({ level }: { level: Level }) {
   );
 }
 
-/** "What each role can do" — fleetflow's `PlatformRolesMatrix`, reading the local roles store. */
+/** "What each role can do" — fleetflow's `PlatformRolesMatrix`, over the server's staff roles and catalog. */
 export function PlatformRolesMatrix() {
-  const roles = usePlatformRolesStore(s => s.roles);
+  const {
+    roles, domains,
+  } = useStaffAccess();
   const [
     search,
     setSearch,
   ] = useState("");
 
   const rows = useMemo(
-    () => buildRows(),
-    [],
+    () => buildRows(domains),
+    [domains],
   );
   const filtered = useMemo(
     () => {

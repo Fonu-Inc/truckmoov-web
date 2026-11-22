@@ -3,12 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getSystemSettingsQueryOptions,
   useUpdateSystemSettings,
+  useUploadMedia,
 } from "@truckmoov/api/auth";
 import {
   Building2, Camera, RefreshCw, Save,
 } from "lucide-react";
 import {
-  useEffect, useRef, useState,
+  useEffect, useRef,
 } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -34,10 +35,14 @@ const platformProfileSchema = z.object({
     "Platform name cannot be empty.",
   ),
   supportEmail: z.string().trim().email("Enter a valid email address."),
-  // ponytail: no API field — wire to packages/api
-  contactPhone: z.string(),
-  // ponytail: no API field — wire to packages/api
-  contactAddress: z.string(),
+  contactPhone: z.string().trim().max(
+    32,
+    "Phone number is too long.",
+  ),
+  contactAddress: z.string().trim().max(
+    300,
+    "Address is too long.",
+  ),
 });
 
 type PlatformProfileFormValues = z.infer<typeof platformProfileSchema>;
@@ -48,27 +53,21 @@ const DEFAULT_PLATFORM_PROFILE: PlatformProfileFormValues = {
   platformName: "",
   supportEmail: "",
   contactPhone: "",
-  contactAddress: "Lagos, Nigeria",
+  contactAddress: "",
 };
 
 /**
- * `/settings/platform-profile` — fleetflow's Platform Profile card.
- *
- * Platform Name and Support Email are system settings (`platformName`,
- * `supportEmail`; the email is shared with Support Preferences). Logo, Contact
- * Phone and Business Address have no API field and stay in this page's state —
- * Save sends only the wired pair.
+ * `/settings/platform-profile` — fleetflow's Platform Profile card, backed by
+ * system settings: `platformName`, `supportEmail` (shared with Support
+ * Preferences) and `profile` (contact phone, address, logo). A picked logo is
+ * uploaded and saved straight away; the form fields save with Save Profile.
  */
 export function PlatformProfilePanel() {
   const systemSettingsQuery = useQuery(getSystemSettingsQueryOptions());
   const systemSettings = systemSettingsQuery.data?.data;
   const updateSettings = useUpdateSystemSettings();
-
-  // ponytail: no API field — wire to packages/api
-  const [
-    platformLogo,
-    setPlatformLogo,
-  ] = useState<string | undefined>();
+  const uploadMedia = useUploadMedia();
+  const platformLogo = systemSettings?.profile?.logoUrl ?? undefined;
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<PlatformProfileFormValues>({
@@ -84,6 +83,8 @@ export function PlatformProfilePanel() {
         ...form.getValues(),
         platformName: systemSettings.platformName ?? "",
         supportEmail: systemSettings.supportEmail ?? "",
+        contactPhone: systemSettings.profile?.contactPhone ?? "",
+        contactAddress: systemSettings.profile?.contactAddress ?? "",
       });
     },
     [
@@ -103,16 +104,30 @@ export function PlatformProfilePanel() {
       toast.error("Image must be smaller than 2MB");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = ev => setPlatformLogo(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    uploadMedia.mutate(
+      file,
+      {
+        onSuccess: res => updateSettings.mutate(
+          { data: { profile: { logoUrl: res.data.url } } },
+          {
+            onSuccess: () => toast.success("Logo updated"),
+            onError: error => toast.error(error.message),
+          },
+        ),
+        onError: error => toast.error(error.message),
+      },
+    );
   };
 
   const handleSave = (values: PlatformProfileFormValues) => {
     updateSettings.mutate(
       {
         data: {
-          platformName: values.platformName, supportEmail: values.supportEmail,
+          platformName: values.platformName,
+          supportEmail: values.supportEmail,
+          profile: {
+            contactPhone: values.contactPhone, contactAddress: values.contactAddress,
+          },
         },
       },
       {
@@ -143,11 +158,14 @@ export function PlatformProfilePanel() {
             </Avatar>
             <button
               type="button"
+              disabled={uploadMedia.isPending}
               onClick={() => logoInputRef.current?.click()}
               className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow hover:opacity-90"
               aria-label="Change logo"
             >
-              <Camera className="h-3.5 w-3.5" />
+              {uploadMedia.isPending
+                ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                : <Camera className="h-3.5 w-3.5" />}
             </button>
             <input
               ref={logoInputRef}

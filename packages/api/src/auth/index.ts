@@ -283,6 +283,18 @@ import {
   sendMailboxMessage,
   getPlatformAlertSettings,
   updatePlatformAlertSetting,
+  sendTestAlert,
+  getStaffRoles,
+  getStaffPermissions,
+  createStaffRole,
+  updateStaffRole,
+  deleteStaffRole,
+  setStaffMemberRole,
+  setStaffMemberCustomRole,
+  setStaffMemberPermissions,
+  getAdminNotifications,
+  markAdminNotificationRead,
+  markAllAdminNotificationsRead,
   getCommunicationRates,
   updateCommunicationRates,
   getCommunicationRateHistory,
@@ -373,6 +385,7 @@ import {
   verifyOnboardingApplicationPhone,
 } from './requests'
 import type {
+  AdminNotificationsQuery,
   AIRequestsQuery,
   SystemInstallationJobsQuery,
   SystemInstallersQuery,
@@ -461,6 +474,8 @@ export const AUTH_QUERY_KEY = {
     payload ? ['supportTicketsExport', payload] : ['supportTicketsExport'],
 
   systemAdmins: ['systemAdmins'],
+  staffRoles: ['staffRoles'],
+  staffPermissions: ['staffPermissions'],
   systemInstallers: ['systemInstallers'],
   systemInstallationJobs: (payload?: SystemInstallationJobsQuery) => ['systemInstallationJobs', payload],
   systemInstallationJob: (id: string) => ['systemInstallationJob', id],
@@ -592,6 +607,7 @@ export const AUTH_QUERY_KEY = {
     ['mailboxAttachment', messageId, index],
 
   platformAlertSettings: ['platformAlertSettings'],
+  adminNotifications: ['adminNotifications'],
 
   communicationRates: ['communicationRates'],
   communicationRateHistory: (channel: CommunicationChannel) => ['communicationRateHistory', channel],
@@ -1243,6 +1259,43 @@ export function useDeleteSystemAdmin() {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemAdmins })
     },
   })
+}
+
+export function getStaffRolesQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.staffRoles, queryFn: getStaffRoles })
+}
+
+export function getStaffPermissionsQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.staffPermissions, queryFn: getStaffPermissions })
+}
+
+function invalidateStaffAccess() {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.staffRoles })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemAdmins })
+}
+
+export function useCreateStaffRole() {
+  return useMutation({ mutationFn: createStaffRole, onSuccess: invalidateStaffAccess })
+}
+
+export function useUpdateStaffRole() {
+  return useMutation({ mutationFn: updateStaffRole, onSuccess: invalidateStaffAccess })
+}
+
+export function useDeleteStaffRole() {
+  return useMutation({ mutationFn: deleteStaffRole, onSuccess: invalidateStaffAccess })
+}
+
+export function useSetStaffMemberRole() {
+  return useMutation({ mutationFn: setStaffMemberRole, onSuccess: invalidateStaffAccess })
+}
+
+export function useSetStaffMemberCustomRole() {
+  return useMutation({ mutationFn: setStaffMemberCustomRole, onSuccess: invalidateStaffAccess })
+}
+
+export function useSetStaffMemberPermissions() {
+  return useMutation({ mutationFn: setStaffMemberPermissions, onSuccess: invalidateStaffAccess })
 }
 
 export function useSystemChangePassword() {
@@ -2642,6 +2695,40 @@ export function useUpdatePlatformAlertSetting() {
     mutationFn: updatePlatformAlertSetting,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.platformAlertSettings })
+    },
+  })
+}
+
+export function useSendTestAlert() {
+  return useMutation({
+    mutationFn: sendTestAlert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.adminNotifications })
+    },
+  })
+}
+
+export function getAdminNotificationsQueryOptions(payload?: AdminNotificationsQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.adminNotifications, payload],
+    queryFn: () => getAdminNotifications(payload),
+  })
+}
+
+export function useMarkAdminNotificationRead() {
+  return useMutation({
+    mutationFn: markAdminNotificationRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.adminNotifications })
+    },
+  })
+}
+
+export function useMarkAllAdminNotificationsRead() {
+  return useMutation({
+    mutationFn: markAllAdminNotificationsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.adminNotifications })
     },
   })
 }

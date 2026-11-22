@@ -1,12 +1,41 @@
-import type { ActivityLog } from "@truckmoov/api/auth";
+import type {
+  ActivityLog, AdminNotification,
+} from "@truckmoov/api/auth";
 import type { PlatformNotification } from "@/features/dashboard/utils/notifications";
 import { useQuery } from "@tanstack/react-query";
-import { getSystemActivityLogQueryOptions } from "@truckmoov/api/auth";
+import {
+  getAdminNotificationsQueryOptions,
+  getSystemActivityLogQueryOptions,
+  useMarkAdminNotificationRead,
+  useMarkAllAdminNotificationsRead,
+} from "@truckmoov/api/auth";
 import {
   useCallback, useMemo, useState,
 } from "react";
 
 const FEED_LIMIT = 20;
+const ALERT_POLL_MS = 60_000;
+/** In-app alert ids are prefixed so they can never collide with activity ids. */
+const ALERT_PREFIX = "alert:";
+
+const ALERT_SEVERITY: Record<AdminNotification["severity"], PlatformNotification["severity"]> = {
+  critical: "error",
+  high: "error",
+  medium: "warning",
+  low: "info",
+};
+
+function alertToNotification(alert: AdminNotification): PlatformNotification {
+  return {
+    id: `${ALERT_PREFIX}${alert.id}`,
+    type: alert.alertType === "security_alerts" ? "security" : "alert",
+    title: alert.title,
+    message: alert.body || "Platform alert",
+    timestamp: alert.createdAt,
+    read: alert.readAt !== null,
+    severity: ALERT_SEVERITY[alert.severity] ?? "info",
+  };
+}
 
 function notificationType(activity: ActivityLog): PlatformNotification["type"] {
   const text = `${activity.service} ${activity.entityType} ${activity.action}`.toLowerCase();
@@ -51,8 +80,9 @@ function toNotification(activity: ActivityLog, read: boolean): PlatformNotificat
 }
 
 /**
- * The bell's state, from the live system activity log. Read and cleared state
- * is local; the feed itself is server-owned.
+ * The bell's state: platform alerts routed to the in-app channel (read state
+ * kept on the server, polled every minute) plus the live system activity log
+ * (read and cleared state local).
  */
 export function useRealtimeNotifications() {
   const [
@@ -66,15 +96,25 @@ export function useRealtimeNotifications() {
   const activityQuery = useQuery(
     getSystemActivityLogQueryOptions({ params: { limit: FEED_LIMIT } }),
   );
+  const alertsQuery = useQuery({
+    ...getAdminNotificationsQueryOptions({ params: { limit: FEED_LIMIT } }),
+    refetchInterval: ALERT_POLL_MS,
+  });
+  const markAlertRead = useMarkAdminNotificationRead();
+  const markAllAlertsRead = useMarkAllAdminNotificationsRead();
 
   const notifications = useMemo<PlatformNotification[]>(
-    () => (activityQuery.data?.data ?? [])
-      .filter(activity => !dismissed.has(activity.id))
-      .map(activity => toNotification(
+    () => [
+      ...(alertsQuery.data?.data.items ?? []).map(alertToNotification),
+      ...(activityQuery.data?.data ?? []).map(activity => toNotification(
         activity,
         read.has(activity.id),
       )),
+    ]
+      .filter(notification => !dismissed.has(notification.id))
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
     [
+      alertsQuery.data,
       activityQuery.data,
       dismissed,
       read,
@@ -83,17 +123,29 @@ export function useRealtimeNotifications() {
   const unreadCount = notifications.filter(notification => !notification.read).length;
 
   const markAsRead = useCallback(
-    (id: string) => setRead(prev => new Set(prev).add(id)),
-    [],
+    (id: string) => {
+      if (id.startsWith(ALERT_PREFIX))
+        markAlertRead.mutate({ id: id.slice(ALERT_PREFIX.length) });
+      else
+        setRead(prev => new Set(prev).add(id));
+    },
+    [markAlertRead],
   );
 
   const markAllAsRead = useCallback(
-    () => setRead((prev) => {
-      const next = new Set(prev);
-      for (const notification of notifications) next.add(notification.id);
-      return next;
-    }),
-    [notifications],
+    () => {
+      if (notifications.some(n => n.id.startsWith(ALERT_PREFIX) && !n.read))
+        markAllAlertsRead.mutate();
+      setRead((prev) => {
+        const next = new Set(prev);
+        for (const notification of notifications) next.add(notification.id);
+        return next;
+      });
+    },
+    [
+      notifications,
+      markAllAlertsRead,
+    ],
   );
 
   const clearNotifications = useCallback(

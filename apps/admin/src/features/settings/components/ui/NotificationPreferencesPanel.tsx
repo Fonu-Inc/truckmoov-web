@@ -4,6 +4,7 @@ import type {
 import { useQuery } from "@tanstack/react-query";
 import {
   getPlatformAlertSettingsQueryOptions,
+  useSendTestAlert,
   useUpdatePlatformAlertSetting,
 } from "@truckmoov/api/auth";
 import {
@@ -21,30 +22,6 @@ import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Switch } from "@/components/shadcn/switch";
 import { cn } from "@/lib/utils";
-
-/**
- * Local-only switches with no API equivalent, persisted per browser.
- * App-prefixed key: both dev servers share localhost storage (see sidebarStore).
- */
-const LOCAL_PREFS_KEY = "admin-platform-alert-prefs";
-type LocalPrefs = {
-  inApp: boolean; suspicious: boolean;
-};
-// ponytail: no API field — wire to packages/api (in-app channel; suspicious-activity split of security_alerts)
-const DEFAULT_LOCAL_PREFS: LocalPrefs = {
-  inApp: true, suspicious: false,
-};
-
-function readLocalPrefs(): LocalPrefs {
-  try {
-    return {
-      ...DEFAULT_LOCAL_PREFS, ...JSON.parse(localStorage.getItem(LOCAL_PREFS_KEY) || "{}"),
-    };
-  }
-  catch {
-    return DEFAULT_LOCAL_PREFS;
-  }
-}
 
 /** Fleetflow's event categories, each backed by one platform alert type. */
 const CATEGORIES: Array<{
@@ -73,6 +50,9 @@ const CHANNELS: Array<{
   {
     key: "sms", icon: MessageSquare, title: "SMS",
   },
+  {
+    key: "in_app", icon: Bell, title: "In-app (notifications bell)",
+  },
 ];
 
 /**
@@ -83,12 +63,13 @@ const CHANNELS: Array<{
  *   every type's `enabled`.
  * - **Recipient Email** is the first `recipients` entry, written to every type
  *   on blur.
- * - **Email / SMS** are on when every type routes to that channel; flipping
- *   adds or removes it from every type's `channels`.
+ * - **Email / SMS / In-app** are on when every type routes to that channel;
+ *   flipping adds or removes it from every type's `channels`. In-app alerts
+ *   land in the admin notification bell.
  * - Each **event category** is its alert type's `enabled`.
- *
- * ponytail: In-app channel, the Suspicious Activity split of `security_alerts`
- * and the Test button have no API — local / toast only.
+ * - **Suspicious Activity** lowers `security_alerts`' `minSeverity` from high
+ *   to low, so lower-severity security events are sent too.
+ * - **Test** raises a real alert through the configured routing.
  */
 export function NotificationPreferencesPanel() {
   const {
@@ -99,10 +80,7 @@ export function NotificationPreferencesPanel() {
     bulkPending,
     setBulkPending,
   ] = useState(false);
-  const [
-    localPrefs,
-    setLocalPrefs,
-  ] = useState<LocalPrefs>(readLocalPrefs);
+  const testAlert = useSendTestAlert();
 
   const rows: PlatformAlertSetting[] = data?.data ?? [];
   const byType = new Map(rows.map(row => [
@@ -128,21 +106,23 @@ export function NotificationPreferencesPanel() {
   const pendingType = mutation.isPending && !bulkPending ? mutation.variables?.alertType : undefined;
   const controlsDisabled = isLoading || bulkPending || !alertsEnabled;
 
-  const setLocalPref = (k: keyof LocalPrefs, v: boolean) => {
-    const next = {
-      ...localPrefs, [k]: v,
-    };
-    setLocalPrefs(next);
-    try {
-      localStorage.setItem(
-        LOCAL_PREFS_KEY,
-        JSON.stringify(next),
-      );
-    }
-    catch {
-      // Storage blocked — the switch still works for this visit.
-    }
-  };
+  const securityRow = byType.get("security_alerts");
+  const suspiciousOn = securityRow ? [
+    "low",
+    "medium",
+  ].includes(securityRow.minSeverity) : false;
+
+  function toggleSuspicious(on: boolean) {
+    mutation.mutate(
+      {
+        alertType: "security_alerts", data: { minSeverity: on ? "low" : "high" },
+      },
+      {
+        onSuccess: () => toast.success(on ? "Suspicious activity alerts on" : "Suspicious activity alerts off"),
+        onError: err => toast.error(err.message),
+      },
+    );
+  }
 
   /** PATCH every alert type, one request each (the API is per type). */
   async function updateAll(build: (row: PlatformAlertSetting) => UpdateAlertSettingPayload["data"], message: string) {
@@ -193,8 +173,16 @@ export function NotificationPreferencesPanel() {
   }
 
   function sendTestAlert() {
-    // ponytail: no test-alert endpoint — wire to packages/api
-    toast.info("Test alerts aren't available yet — nothing was sent.");
+    testAlert.mutate(
+      undefined,
+      {
+        onSuccess: res => toast.success(
+          "Test alert sent",
+          { description: `Routed as ${res.data.alertType} to ${res.data.channels.join(", ")}. Delivery can take a minute.` },
+        ),
+        onError: err => toast.error(err.message),
+      },
+    );
   }
 
   return (
@@ -248,7 +236,7 @@ export function NotificationPreferencesPanel() {
             <Button
               variant="outline"
               onClick={sendTestAlert}
-              disabled={!recipientEmail}
+              disabled={!alertsEnabled || testAlert.isPending}
             >
               <Send className="mr-2 h-4 w-4" />
               Test
@@ -290,21 +278,6 @@ export function NotificationPreferencesPanel() {
                 </label>
               );
             })}
-            <label className="flex items-center justify-between gap-2 rounded-lg border p-3">
-              <span className="flex items-center gap-2 text-sm">
-                <Bell className="h-4 w-4 text-muted-foreground" />
-                In-app (notifications bell)
-              </span>
-              <Switch
-                aria-label="In-app (notifications bell)"
-                checked={localPrefs.inApp}
-                onCheckedChange={v => setLocalPref(
-                  "inApp",
-                  v,
-                )}
-                disabled={controlsDisabled}
-              />
-            </label>
           </div>
         </div>
         <Separator />
@@ -354,12 +327,9 @@ export function NotificationPreferencesPanel() {
             </div>
             <Switch
               aria-label="Suspicious Activity"
-              checked={localPrefs.suspicious}
-              onCheckedChange={c => setLocalPref(
-                "suspicious",
-                c,
-              )}
-              disabled={controlsDisabled}
+              checked={suspiciousOn}
+              onCheckedChange={toggleSuspicious}
+              disabled={controlsDisabled || !securityRow || pendingType === "security_alerts"}
             />
           </div>
         </div>

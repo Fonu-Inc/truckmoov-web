@@ -39,12 +39,12 @@ Telephony · Notifications · Security. Target keeps route-based tabs (`Settings
 renders fleetflow's tab-list look).
 
 - [x] **1. My Profile** — name, email (read-only), phone, photo (2MB cap); wired to `getProfileQueryOptions`/`getMeQueryOptions`, `useUploadMedia` + `useUpdateProfile` — `MyProfileCard.tsx`; Change Password row wired to `useSystemChangePassword` — `AccountSecurityCard.tsx`
-- [x] **2. Platform Profile** — platform name + support email (wired via system settings); 🔌 logo, contact phone, business address
+- [x] **2. Platform Profile** — platform name + support email, and `profile` (contact phone, business address, logo uploaded via `useUploadMedia` and saved at once), all system settings
 - [x] **3. Platform Features** — Allow New Tenant Registration + Maintenance Mode are *saved* here (better than fleetflow's display-only). Enable Beta Features **left out — placebo** (`enableBetaFeatures` type comment)
-- [x] **4. Display Defaults** — default timezone + default reporting range (wired via `defaults`); fleetflow's date/time format skipped (no API, not in the document)
-- [x] **5. Team & Access** — admins + invites panels (wired); note pointing audit view/export to Audit & Compliance. 🔌 roles card, matrix, role editor and per-user permissions **ported with local mock store (ponytail)** — `features/settings/stores/platformRolesStore.ts`
-- [x] **6. Notifications** — existing alert settings + security alert email prefs (master switch, recipient email, channels, critical-security / suspicious-activity) mapped onto `PlatformAlertSetting`; 🔌 In-app channel, Suspicious Activity and the Test button stay local (ponytail)
-- [x] **7. Support Preferences** — support email (shared, wired); 🔌 support phone, response-time commitment
+- [x] **4. Display Defaults** — timezone, reporting range (incl. Yesterday), date format and time format, all system settings `defaults`
+- [x] **5. Team & Access** — admins + invites panels (invite carries a staff role); roles card, matrix and role editor on `/auth/system/roles` (predefined staff roles view-only, custom roles editable); per-person permissions saved as a personal role (`PUT /auth/system/admins/:id/permissions`) — `features/settings/hooks/useStaffAccess.ts`. Portal Session Timeout removed from the Account & Security card on request
+- [x] **6. Notifications** — alert settings mapped onto `PlatformAlertSetting`: master switch, recipient email, Email / SMS / In-app channels (in-app alerts land in the header bell via `/auth/system/notifications`), event categories, Suspicious Activity (`security_alerts.minSeverity` low vs high), Test button (`POST /auth/system/alert-settings/test`)
+- [x] **7. Support Preferences** — support email (shared), and `support` (support phone, response-time commitment), all system settings
 - [x] Remove Data Retention + Backup Frequency card
 - [x] Telephony off the settings tab bar (routes + components kept)
 - [x] AI — already absent from admin settings
