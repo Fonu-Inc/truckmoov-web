@@ -50,6 +50,10 @@ Two consequences worth knowing:
 - **A route with no entry has no top-bar title.** That is deliberate — the list is the
   nav. Pages off the nav (`/help`, the onboarding steps) name themselves in their
   own body.
+- `/get-started` (installation progress) is the one conditional link: `DashboardSidebar`
+  prepends it for ENTERPRISE_ADMIN / OWNER_OPERATOR while `GET /auth/installation/status`
+  says the booking has not reached `fleet_ready`, and sign-in lands there in that state
+  (`resolvePostLoginPath`). It is not in `SIDEBAR_ENTRIES`, so it names itself in its body.
 - `fullWidth: true` on an entry drops the `p-6` on `<main>` for full-bleed pages like
   `/map`. It replaced a per-page prop.
 - `manualTitle: true` blanks the top-bar title for pages that render the design app's

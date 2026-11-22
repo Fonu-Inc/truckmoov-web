@@ -339,9 +339,12 @@ import {
   startOnboardingPayment,
   verifyOnboardingPayment,
   getClickToCallCredentials,
+  getInstallationStatus,
+  confirmInstallation,
   scheduleOnboardingInstallation,
   verifyOnboardingBillingEmail,
   getOnboardingEmailAvailability,
+  verifyOnboardingTelecomMasterNumber,
   getOnboardingM2mPlans,
   getOnboardingVehicleImportColumns,
   getOnboardingVehicleImportTemplate,
@@ -3165,6 +3168,10 @@ export function useScheduleOnboardingInstallation() {
   })
 }
 
+export function useVerifyOnboardingTelecomMasterNumber() {
+  return useMutation({ mutationFn: verifyOnboardingTelecomMasterNumber })
+}
+
 export function useResumeOnboardingApplication() {
   return useMutation({ mutationFn: resumeOnboardingApplication })
 }
@@ -3651,5 +3658,24 @@ export function getClickToCallCredentialsQueryOptions() {
     queryFn: getClickToCallCredentials,
     staleTime: Infinity,
     retry: false,
+  })
+}
+
+const INSTALLATION_STATUS_KEY = ['installationStatus']
+
+export function getInstallationStatusQueryOptions() {
+  return queryOptions({
+    queryKey: INSTALLATION_STATUS_KEY,
+    queryFn: getInstallationStatus,
+  })
+}
+
+export function useConfirmInstallation() {
+  return useMutation({
+    mutationFn: confirmInstallation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INSTALLATION_STATUS_KEY })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingStatus })
+    },
   })
 }

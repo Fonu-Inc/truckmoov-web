@@ -94,7 +94,11 @@ export function ViolationsCard({
       actionLabel="View All Violations"
       actionHref={isDriver ? "/drivers/violations" : "/fleet/violations"}
       status={{
-        isLoading, isError, onRetry, isEmpty: false,
+        isLoading,
+        isError,
+        onRetry,
+        isEmpty: summary?.total === 0,
+        emptyText: `No ${isDriver ? "driver" : "vehicle"} violations recorded for this period.`,
       }}
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
@@ -109,40 +113,38 @@ export function ViolationsCard({
         ))}
       </div>
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Recent Violations</p>
-      {recent.length === 0
-        ? <p className="py-4 text-center text-sm text-muted-foreground">No violations recorded for this period.</p>
-        : recent.map((v) => {
-            const driver = driverName(v.driverId);
-            const plate = vehiclePlate(v.vehicleId);
-            const reading = v.recordedValue
-              ? (v.threshold ? `${v.recordedValue} (limit ${v.threshold})` : v.recordedValue)
-              : NO_ENDPOINT;
-            // Violations carry coordinates only, no place name.
-            const details = [
-              isDriver ? plate : driver,
-              NO_ENDPOINT,
-              format(
-                new Date(v.occurredAt),
-                "MMM d, h:mm a",
-              ),
-              reading,
-            ].join(" · ");
-            return (
-              <DashboardListRow
-                key={v.id}
-                title={`${isDriver ? driver : plate} · ${v.ruleName || typeLabel(v.type)}`}
-                subtitle={details}
-                right={(
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Violation Severity</span>
-                    <RowPill className={severityClasses[v.severity] ?? severityClasses.low}>
-                      {capitalize(v.severity)}
-                    </RowPill>
-                  </div>
-                )}
-              />
-            );
-          })}
+      {recent.map((v) => {
+        const driver = driverName(v.driverId);
+        const plate = vehiclePlate(v.vehicleId);
+        const reading = v.recordedValue
+          ? (v.threshold ? `${v.recordedValue} (limit ${v.threshold})` : v.recordedValue)
+          : NO_ENDPOINT;
+        // Violations carry coordinates only, no place name.
+        const details = [
+          isDriver ? plate : driver,
+          NO_ENDPOINT,
+          format(
+            new Date(v.occurredAt),
+            "MMM d, h:mm a",
+          ),
+          reading,
+        ].join(" · ");
+        return (
+          <DashboardListRow
+            key={v.id}
+            title={`${isDriver ? driver : plate} · ${v.ruleName || typeLabel(v.type)}`}
+            subtitle={details}
+            right={(
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Violation Severity</span>
+                <RowPill className={severityClasses[v.severity] ?? severityClasses.low}>
+                  {capitalize(v.severity)}
+                </RowPill>
+              </div>
+            )}
+          />
+        );
+      })}
     </DashboardListCard>
   );
 }

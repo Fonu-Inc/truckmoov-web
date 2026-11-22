@@ -2,7 +2,9 @@ import type {
   SidebarEntry, SidebarNavGroup, SidebarNavItem,
 } from "@/features/dashboard/utils/sidebarNav";
 import { useQuery } from "@tanstack/react-query";
-import { getOrganizationSettingsQueryOptions } from "@truckmoov/api/auth";
+import {
+  getInstallationStatusQueryOptions, getOrganizationSettingsQueryOptions,
+} from "@truckmoov/api/auth";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
   Avatar, AvatarFallback, AvatarImage,
@@ -11,11 +13,12 @@ import {
   Building2,
   ChevronDown,
   LogOut,
+  Rocket,
   Ticket,
   Truck,
 } from "lucide-react";
 import {
-  memo, useState,
+  memo, useMemo, useState,
 } from "react";
 import {
   NavLink, useLocation,
@@ -40,6 +43,9 @@ import {
   getEntriesForRoleWith,
   isNavGroup,
 } from "@/features/dashboard/utils/sidebarNav";
+import {
+  GET_STARTED_PATH, GET_STARTED_ROLES, isInstallationPending,
+} from "@/features/get-started/utils/installationProgress";
 import { useSupportAccess } from "@/features/help/hooks/useSupportAccess";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +69,9 @@ const FOOTER_ROW = "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm 
 
 /** Stable empty array for the pre-auth render, so `navItems` never changes identity. */
 const NO_ENTRIES: SidebarEntry[] = [];
+const GET_STARTED_ENTRY: SidebarNavItem = {
+  label: "Get Started", href: GET_STARTED_PATH, icon: Rocket,
+};
 
 /**
  * One nav row.
@@ -265,7 +274,7 @@ function DashboardSidebarBase() {
 
   // No `useMemo`: `getEntriesForRole` caches per role, so this is already a
   // stable array — memoising a cache lookup buys nothing.
-  const navItems = !role
+  const baseItems = !role
     ? NO_ENTRIES
     : billingAccess.canView
       ? getEntriesForRoleWith(
@@ -273,6 +282,22 @@ function DashboardSidebarBase() {
           "/subscription",
         )
       : getEntriesForRole(role);
+  const { data: installation } = useQuery({
+    ...getInstallationStatusQueryOptions(),
+    enabled: Boolean(role && GET_STARTED_ROLES.includes(role)),
+    staleTime: 60 * 1000,
+  });
+  const showGetStarted = isInstallationPending(installation?.data);
+  const navItems = useMemo(
+    () => (showGetStarted ? [
+      GET_STARTED_ENTRY,
+      ...baseItems,
+    ] : baseItems),
+    [
+      showGetStarted,
+      baseItems,
+    ],
+  );
 
   return (
     <TooltipProvider delayDuration={300}>

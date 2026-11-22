@@ -1,6 +1,11 @@
 import type { UserRole } from "@truckmoov/api/auth";
-import { getTwoFactorQueryOptions } from "@truckmoov/api/auth";
+import {
+  getInstallationStatusQueryOptions, getTwoFactorQueryOptions,
+} from "@truckmoov/api/auth";
 import { queryClient } from "@truckmoov/api/lib/query-client";
+import {
+  GET_STARTED_PATH, GET_STARTED_ROLES, isInstallationPending,
+} from "@/features/get-started/utils/installationProgress";
 
 export const ROLE_REDIRECT_MAP: Partial<Record<UserRole, string>> = {
   ENTERPRISE_ADMIN: "/",
@@ -29,5 +34,13 @@ export async function resolvePostLoginPath(role: UserRole): Promise<string> {
       return "/settings/security?enrol=required";
   }
   catch { /* fail open */ }
+  if (GET_STARTED_ROLES.includes(role)) {
+    try {
+      const status = await queryClient.fetchQuery(getInstallationStatusQueryOptions());
+      if (isInstallationPending(status.data))
+        return GET_STARTED_PATH;
+    }
+    catch { /* fail open */ }
+  }
   return getPostLoginRedirectPath(role);
 }

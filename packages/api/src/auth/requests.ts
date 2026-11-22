@@ -406,6 +406,7 @@ import type {
   StartOnboardingPaymentResponse,
   OnboardingIndemnityAgreementResponse,
   OnboardingEmailAvailabilityResponse,
+  VerifyOnboardingTelecomMasterNumberResponse,
   OnboardingM2mPlansResponse,
   OnboardingVehicleImportColumnsResponse,
   ResumeOnboardingApplicationPayload,
@@ -2352,6 +2353,14 @@ export async function getOnboardingEmailAvailability({ email, applicationId }: {
   return data
 }
 
+export async function verifyOnboardingTelecomMasterNumber(msisdn: string) {
+  const { data } = await onboardingInstance.post<VerifyOnboardingTelecomMasterNumberResponse>(
+    `${ONBOARDING}/telecom-master/verify`,
+    { msisdn },
+  )
+  return data
+}
+
 export async function getOnboardingIndemnityAgreement() {
   const { data } = await onboardingInstance.get<OnboardingIndemnityAgreementResponse>(`${ONBOARDING}/indemnity-agreement`)
   return data
@@ -2978,4 +2987,14 @@ export async function downloadSystemTenantExport({ id, exportId }: DownloadSyste
 export async function getClickToCallCredentials() {
   const { data } = await axiosInstance.get<ServerResponse<ClickToCallCredentials>>('/auth/telephony/click-to-call-credentials')
   return data.data
+}
+
+export async function getInstallationStatus() {
+  const { data } = await axiosInstance.get<import('./types').InstallationStatusResponse>('/auth/installation/status')
+  return data
+}
+
+export async function confirmInstallation() {
+  const { data } = await axiosInstance.post<import('./types').InstallationConfirmationResponse>('/auth/installation/confirm')
+  return data
 }

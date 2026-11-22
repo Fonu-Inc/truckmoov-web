@@ -24,6 +24,9 @@ import { DataBundlesLayout } from "@/features/data-bundle/components/layout/Data
 import { DriversLayout } from "@/features/drivers/components/layout/DriversLayout";
 import { FleetLayout } from "@/features/fleet/components/layout/FleetLayout";
 import { FLEET_TABS } from "@/features/fleet/utils/fleetNav";
+import {
+  GET_STARTED_PATH, GET_STARTED_ROLES,
+} from "@/features/get-started/utils/installationProgress";
 import { IntegrationsLayout } from "@/features/integration/components/layout/IntegrationsLayout";
 import { PayoutsInvoicingLayout } from "@/features/payouts-invoicing/components/layout/PayoutsInvoicingLayout";
 import { ReportsLayout } from "@/features/reports/components/layout/ReportsLayout";
@@ -365,6 +368,13 @@ export const router = createBrowserRouter([
         Component: DashboardLayout,
         children: [
           // Onboarding — no sidebar entry, no guard.
+          {
+            path: GET_STARTED_PATH,
+            lazy: guardedBy(
+              GET_STARTED_ROLES,
+              () => import("@/features/get-started/components/pages/GetStartedPage"),
+            ),
+          },
 
           // Role dashboards (each home has a single-role sidebar entry).
           // `/` is the shared overview for ENTERPRISE_ADMIN and OWNER_OPERATOR;
@@ -373,7 +383,7 @@ export const router = createBrowserRouter([
             index: true,
             lazy: guarded(
               "/",
-              () => import("@/features/dashboard/components/pages/EnterpriseLogisticsDashboard"),
+              () => import("@/features/get-started/components/pages/HomeGate"),
             ),
           },
           {

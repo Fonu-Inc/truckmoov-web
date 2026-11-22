@@ -4200,6 +4200,7 @@ export type OnboardingApplication = {
   }
   contact: { fullName: string, role: string | null }
   m2mPlanCode: string | null
+  telecomMaster?: { numberType: OnboardingTelecomMasterNumberType | null, msisdn: string | null }
   registry: {
     rcNumber: string | null
     taxIdentificationNumber: string | null
@@ -4245,6 +4246,9 @@ export type OnboardingApplicationDetails = {
   taxIdentificationNumber?: string
   identificationType?: OnboardingIdentificationType
   identificationNumber?: string
+  telecomMasterNumberType?: OnboardingTelecomMasterNumberType
+  /** Required when telecomMasterNumberType is 'existing'. */
+  telecomMasterMsisdn?: string
 }
 
 export type CreateOnboardingApplicationPayload = { data: OnboardingApplicationDetails }
@@ -4338,6 +4342,9 @@ export type OnboardingM2mPlan = {
 }
 export type OnboardingM2mPlansResponse = ServerResponse<{ plans: OnboardingM2mPlan[] }>
 export type OnboardingEmailAvailabilityResponse = ServerResponse<{ available: boolean }>
+export type OnboardingTelecomMasterNumberType = 'existing' | 'new'
+/** MTN prefix, not a live Telecom Master, not a device SIM. msisdn is 234XXXXXXXXXX. */
+export type VerifyOnboardingTelecomMasterNumberResponse = ServerResponse<{ msisdn: string }>
 
 export type OnboardingIndemnityAgreementResponse = ServerResponse<{
   version: string
@@ -4575,6 +4582,7 @@ export type SystemOnboardingApplicationRow = {
   contactFullName: string
   contactRole: string | null
   address: string
+  telecomMaster?: { numberType: OnboardingTelecomMasterNumberType | null, msisdn: string | null }
   status: OnboardingApplicationStatus
   stage: SystemOnboardingStage
   // ponytail: resolved server-side from (status, stage) — rendered as-is, never derived here.
@@ -5228,3 +5236,41 @@ export type ClickToCallCredentials = {
   origin?: string | { number?: string }
   originUuid?: string
 }
+
+/** GET /auth/installation/status — the signed-in customer's own installation. */
+export type InstallationStatus = {
+  order: {
+    orderNumber: string
+    scheduledDate: string
+    timeSlot: string
+    timeSlotLabel: string
+    scheduledAt: string
+    scheduledUntil: string
+    location: string
+    siteContactName: string
+    siteContactPhone: string
+    notes: string | null
+    status: string
+    completedAt: string | null
+    deviceCount: number
+  } | null
+  installer: {
+    fullName: string
+    team: string
+    phoneNumber: string
+    email: string
+    photoUrl: string | null
+  } | null
+  assignments: { deviceIndex: number; vehicleId: string }[]
+  progress: { stage: OnboardingApplicationStage; complete: boolean; current: boolean }[]
+}
+export type InstallationStatusResponse = ServerResponse<InstallationStatus>
+
+export type InstallationConfirmation = {
+  orderNumber: string
+  stage: 'connectivity_verification' | 'fleet_ready'
+  devicesChecked: number
+  devicesReporting: number
+  failures: { deviceId: string; imei: string | null; model: string; vehicleId: string | null; lastSeen: string | null; reason: string }[]
+}
+export type InstallationConfirmationResponse = ServerResponse<InstallationConfirmation>
