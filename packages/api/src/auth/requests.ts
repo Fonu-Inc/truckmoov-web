@@ -2998,3 +2998,8 @@ export async function confirmInstallation() {
   const { data } = await axiosInstance.post<import('./types').InstallationConfirmationResponse>('/auth/installation/confirm')
   return data
 }
+
+export async function cancelInstallation(body: { reason?: string } = {}) {
+  const { data } = await axiosInstance.post<import('./types').InstallationCancellationResponse>('/auth/installation/cancel', body)
+  return data
+}

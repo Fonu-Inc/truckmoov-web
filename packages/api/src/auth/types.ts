@@ -5274,3 +5274,6 @@ export type InstallationConfirmation = {
   failures: { deviceId: string; imei: string | null; model: string; vehicleId: string | null; lastSeen: string | null; reason: string }[]
 }
 export type InstallationConfirmationResponse = ServerResponse<InstallationConfirmation>
+
+export type InstallationCancellation = { orderNumber: string; status: 'cancelled'; cancelledAt: string | null }
+export type InstallationCancellationResponse = ServerResponse<InstallationCancellation>

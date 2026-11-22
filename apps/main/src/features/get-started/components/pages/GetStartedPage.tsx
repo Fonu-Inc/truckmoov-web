@@ -2,26 +2,38 @@ import type { InstallationConfirmation } from "@truckmoov/api/auth";
 import type { LucideIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  getInstallationStatusQueryOptions, useConfirmInstallation,
+  getInstallationStatusQueryOptions, useCancelInstallation, useConfirmInstallation,
 } from "@truckmoov/api/auth";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Calendar, Check, Clock, Cpu, Loader2, Mail, MapPin, Phone,
+  Calendar, Check, Clock, Cpu, Loader2, Mail, MapPin, Phone, Truck, XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent,
 } from "@/components/shadcn/card";
+import { Label } from "@/components/shadcn/label";
+import { Textarea } from "@/components/shadcn/textarea";
 import { WelcomeDialog } from "@/features/get-started/components/ui/WelcomeDialog";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
   {
-    key: "confirmed", label: "Installation schedule confirmed",
+    key: "confirmed", label: "Installation Schedule confirmed",
   },
   {
     key: "assigned", label: "Installer assigned",
@@ -53,8 +65,16 @@ const STATUS_LABEL: Record<string, string> = {
   overdue: "Overdue",
   issue_reported: "Issue reported",
   completed: "Installation completed",
-  cancelled: "Cancelled",
+  cancelled: "Installation cancelled",
 };
+
+const NOT_CANCELLABLE = [
+  "in_progress",
+  "completed",
+  "cancelled",
+];
+
+const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
 
 function Detail({
   icon: Icon, label, value,
@@ -84,6 +104,15 @@ export default function GetStartedPage() {
     result,
     setResult,
   ] = useState<InstallationConfirmation | null>(null);
+  const cancel = useCancelInstallation();
+  const [
+    cancelOpen,
+    setCancelOpen,
+  ] = useState(false);
+  const [
+    cancelReason,
+    setCancelReason,
+  ] = useState("");
 
   if (statusQuery.isLoading) {
     return (
@@ -96,8 +125,9 @@ export default function GetStartedPage() {
     return <p className="py-20 text-center text-sm text-destructive">{statusQuery.error.message}</p>;
 
   const {
-    order, installer, progress,
+    order, installer, assignments, progress,
   } = statusQuery.data!.data;
+  const vehicleCount = new Set(assignments.map(a => a.vehicleId)).size;
   const stage = progress.find(step => step.current)?.stage;
   const fleetReady = stage === "fleet_ready";
   const done = order ? STEPS_DONE[order.status] ?? 0 : 0;
@@ -122,9 +152,25 @@ export default function GetStartedPage() {
     },
   );
 
+  const onCancel = () => cancel.mutate(
+    { reason: cancelReason.trim() || undefined },
+    {
+      onSuccess: () => {
+        setCancelOpen(false);
+        setCancelReason("");
+        toast.success("Installation cancelled");
+      },
+      onError: error => toast.error(error.message),
+    },
+  );
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <WelcomeDialog />
+      <div>
+        <p className="text-base font-semibold text-foreground">Get Started</p>
+        <p className="text-xs text-muted-foreground">Track your installation</p>
+      </div>
       <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-6">
         <Badge
           variant="secondary"
@@ -218,6 +264,33 @@ export default function GetStartedPage() {
                 </CardContent>
               </Card>
 
+              {order.status === "cancelled" && (
+                <div className="flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
+                  <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                  <div>
+                    <p className="text-sm font-semibold text-destructive">Installation cancelled</p>
+                    <p className="text-sm text-muted-foreground">
+                      This installation was cancelled. Contact support to book a new one.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!fleetReady && !NOT_CANCELLABLE.includes(order.status) && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 p-4">
+                  <p className="text-sm text-muted-foreground">Need to stop this installation? You can cancel it before it is completed.</p>
+                  <Button
+                    variant="destructive"
+                    className="gap-2"
+                    onClick={() => setCancelOpen(true)}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    {" "}
+                    Cancel Installation
+                  </Button>
+                </div>
+              )}
+
               <Card className="overflow-hidden rounded-2xl">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-5 py-4">
                   <div>
@@ -237,7 +310,7 @@ export default function GetStartedPage() {
                     label="Installation date"
                     value={formatWithPattern(
                       order.scheduledAt,
-                      "EEE, MMM d, yyyy",
+                      "d MMM yyyy",
                     )}
                   />
                   <Detail
@@ -256,20 +329,21 @@ export default function GetStartedPage() {
                     value={`${order.siteContactName} · ${order.siteContactPhone}`}
                   />
                   <Detail
+                    icon={Truck}
+                    label="Vehicles"
+                    value={plural(
+                      vehicleCount,
+                      "vehicle",
+                    )}
+                  />
+                  <Detail
                     icon={Cpu}
                     label="Devices"
-                    value={`${order.deviceCount} device${order.deviceCount === 1 ? "" : "s"}`}
+                    value={plural(
+                      order.deviceCount,
+                      "device",
+                    )}
                   />
-                  {order.completedAt && (
-                    <Detail
-                      icon={Check}
-                      label="Completed"
-                      value={formatWithPattern(
-                        order.completedAt,
-                        "MMM d, yyyy 'at' HH:mm",
-                      )}
-                    />
-                  )}
                 </CardContent>
 
                 {installer && (
@@ -285,7 +359,10 @@ export default function GetStartedPage() {
                           )
                         : (
                             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">
-                              {installer.fullName.split(" ").map(p => p[0]).join("")}
+                              {installer.fullName.split(" ").map(p => p[0]).join("").slice(
+                                0,
+                                2,
+                              ).toUpperCase()}
                             </span>
                           )}
                       <div className="min-w-0 flex-1">
@@ -347,6 +424,48 @@ export default function GetStartedPage() {
               )}
             </>
           )}
+
+      <AlertDialog
+        open={cancelOpen}
+        onOpenChange={(open) => {
+          if (!cancel.isPending)
+            setCancelOpen(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to cancel this installation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The installer will be notified and this installation job will stop. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="cancel-reason">Reason for cancellation (optional)</Label>
+            <Textarea
+              id="cancel-reason"
+              rows={3}
+              maxLength={1000}
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              placeholder="e.g. The vehicle is no longer available on the scheduled date"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancel.isPending}>No, keep installation</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={cancel.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                onCancel();
+              }}
+            >
+              {cancel.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Yes, cancel installation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

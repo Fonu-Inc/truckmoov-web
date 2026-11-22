@@ -341,6 +341,7 @@ import {
   getClickToCallCredentials,
   getInstallationStatus,
   confirmInstallation,
+  cancelInstallation,
   scheduleOnboardingInstallation,
   verifyOnboardingBillingEmail,
   getOnboardingEmailAvailability,
@@ -3673,6 +3674,16 @@ export function getInstallationStatusQueryOptions() {
 export function useConfirmInstallation() {
   return useMutation({
     mutationFn: confirmInstallation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INSTALLATION_STATUS_KEY })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingStatus })
+    },
+  })
+}
+
+export function useCancelInstallation() {
+  return useMutation({
+    mutationFn: cancelInstallation,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: INSTALLATION_STATUS_KEY })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingStatus })
