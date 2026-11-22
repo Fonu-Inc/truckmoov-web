@@ -2,6 +2,7 @@ import type { ErrorInfo, ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
 import { Component } from "react";
 import { Button } from "@/components/shadcn/button";
+import { isChunkLoadError, reloadForNewVersion } from "../lib/chunkError";
 import { AppError } from "./pages/AppError";
 import { ErrorDetails } from "./pages/ErrorDetails";
 
@@ -33,6 +34,8 @@ export class ErrorBoundary extends Component<Props, State> {
       error,
     );
     this.setState({ componentStack: info.componentStack ?? undefined });
+    if (isChunkLoadError(error))
+      reloadForNewVersion();
   }
 
   render() {

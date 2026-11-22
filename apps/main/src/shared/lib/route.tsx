@@ -3,6 +3,7 @@ import type React from "react";
 import { RequireRole } from "@truckmoov/reusables/components/auth/RequireRole";
 import NotAuthorized from "@truckmoov/reusables/components/pages/NotAuthorized";
 import NotFound from "@truckmoov/reusables/components/pages/NotFound";
+import RouteError from "@truckmoov/reusables/components/pages/RouteError";
 import {
   createBrowserRouter, redirect,
 } from "react-router";
@@ -247,6 +248,7 @@ const GuardedIntegrationsLayout = withGuard(
 export const router = createBrowserRouter([
   {
     Component: App,
+    ErrorBoundary: RouteError,
     children: [
       // Auth screens that share the split branding panel. AuthLayout derives
       // the help mode from the pathname, so it wraps them rather than each

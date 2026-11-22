@@ -33,6 +33,9 @@
       "@truckmoov/reusables/hooks/*": [
         "../../packages/reusables/src/hooks/*"
       ],
+      "@truckmoov/reusables/lib/*": [
+        "../../packages/reusables/src/lib/*"
+      ],
       "@/*": [
         "./src/*"
       ],
