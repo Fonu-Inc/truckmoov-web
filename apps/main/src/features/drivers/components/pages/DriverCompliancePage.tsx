@@ -1,5 +1,7 @@
 import type { FleetDriver } from "@truckmoov/api/fleet";
-import { useDrivers } from "@truckmoov/api/fleet";
+import {
+  useDriverLicenceReminders, useDrivers,
+} from "@truckmoov/api/fleet";
 import {
   daysUntil, formatDate, formatDayMonth, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -36,6 +38,7 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
+import { SetLicenceReminderDialog } from "@/features/drivers/components/ui/compliance/SetLicenceReminderDialog";
 import { UpdateDriverLicenceDialog } from "@/features/drivers/components/ui/compliance/UpdateDriverLicenceDialog";
 import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
 import { useClientPage } from "@/features/fleet/utils/useClientPage";
@@ -139,6 +142,18 @@ export default function DriverCompliancePage() {
     editingDriver,
     setEditingDriver,
   ] = useState<FleetDriver | null>(null);
+  const [
+    reminderDriver,
+    setReminderDriver,
+  ] = useState<FleetDriver | null>(null);
+  const remindersQuery = useDriverLicenceReminders();
+  const reminderByDriver = useMemo(
+    () => new Map((remindersQuery.data?.data ?? []).map(r => [
+      r.driverId,
+      r,
+    ])),
+    [remindersQuery.data],
+  );
 
   const stats = useMemo(
     () => {
@@ -614,9 +629,9 @@ export default function DriverCompliancePage() {
                                     <Pencil className="h-4 w-4 mr-2" />
                                     Update Licence
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => toast.info("Licence renewal reminders are not available yet")}>
+                                  <DropdownMenuItem onClick={() => setReminderDriver(driver)}>
                                     <Bell className="h-4 w-4 mr-2" />
-                                    Send Renewal Reminder
+                                    {reminderByDriver.has(driver.id) ? "Edit Reminder" : "Set Reminders"}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -635,6 +650,14 @@ export default function DriverCompliancePage() {
         </div>
       </div>
 
+      <SetLicenceReminderDialog
+        driver={reminderDriver}
+        reminder={reminderDriver ? reminderByDriver.get(reminderDriver.id) : undefined}
+        onOpenChange={(open) => {
+          if (!open)
+            setReminderDriver(null);
+        }}
+      />
       <UpdateDriverLicenceDialog
         driver={editingDriver}
         onOpenChange={(open) => {

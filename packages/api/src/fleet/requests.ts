@@ -166,6 +166,12 @@ import type {
   FleetGroupResponse,
   CreateFleetGroupPayload,
   UpdateFleetGroupPayload,
+  DriverGroupListResponse,
+  DriverGroupResponse,
+  CreateDriverGroupPayload,
+  UpdateDriverGroupPayload,
+  DriverLicenceReminderListResponse,
+  SetDriverLicenceReminderPayload,
   SetFuelThresholdPayload,
   SimCarrierListResponse,
   SimDataBundleListResponse,
@@ -404,6 +410,41 @@ export async function updateFleetGroup({ id, data: body }: UpdateFleetGroupPaylo
 
 export async function deleteFleetGroup({ id }: { id: string }) {
   const { data } = await axiosInstance.delete<ServerResponse<unknown>>(`/fleet/fleets/${id}`)
+  return data
+}
+
+export async function getDriverGroups() {
+  const { data } = await axiosInstance.get<DriverGroupListResponse>('/fleet/driver-groups')
+  return data
+}
+
+export async function createDriverGroup({ data: body }: CreateDriverGroupPayload) {
+  const { data } = await axiosInstance.post<DriverGroupResponse>('/fleet/driver-groups', body)
+  return data
+}
+
+export async function updateDriverGroup({ id, data: body }: UpdateDriverGroupPayload) {
+  const { data } = await axiosInstance.patch<DriverGroupResponse>(`/fleet/driver-groups/${id}`, body)
+  return data
+}
+
+export async function deleteDriverGroup({ id }: { id: string }) {
+  const { data } = await axiosInstance.delete<ServerResponse<unknown>>(`/fleet/driver-groups/${id}`)
+  return data
+}
+
+export async function getDriverLicenceReminders() {
+  const { data } = await axiosInstance.get<DriverLicenceReminderListResponse>('/fleet/driver-licence-reminders')
+  return data
+}
+
+export async function setDriverLicenceReminder({ driverId, data: body }: SetDriverLicenceReminderPayload) {
+  const { data } = await axiosInstance.put<ServerResponse<unknown>>(`/fleet/driver-licence-reminders/${driverId}`, body)
+  return data
+}
+
+export async function deleteDriverLicenceReminder({ driverId }: { driverId: string }) {
+  const { data } = await axiosInstance.delete<ServerResponse<unknown>>(`/fleet/driver-licence-reminders/${driverId}`)
   return data
 }
 

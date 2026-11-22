@@ -181,6 +181,13 @@ import {
   createFleetGroup,
   updateFleetGroup,
   deleteFleetGroup,
+  getDriverGroups,
+  createDriverGroup,
+  updateDriverGroup,
+  deleteDriverGroup,
+  getDriverLicenceReminders,
+  setDriverLicenceReminder,
+  deleteDriverLicenceReminder,
 } from './requests'
 
 export type * from './types'
@@ -249,6 +256,8 @@ export const FLEET_QUERY_KEY = {
   geofencesRoot: ['fleet', 'geofences'] as const,
   geofences: (payload?: GeofencesQuery) => ['fleet', 'geofences', payload],
   fleetGroups: ['fleet', 'fleetGroups'],
+  driverGroups: ['fleet', 'driverGroups'],
+  driverLicenceReminders: ['fleet', 'driverLicenceReminders'],
   geofenceZone: (id: string) => ['fleet', 'geofences', id],
   devices: (payload?: DevicesQuery) => ['fleet', 'devices', payload],
   device: (id: string) => ['fleet', 'device', id],
@@ -2071,4 +2080,48 @@ export function useUpdateFleetGroup() {
 
 export function useDeleteFleetGroup() {
   return useMutation({ mutationFn: deleteFleetGroup, onSuccess: invalidateFleetGroups })
+}
+
+export function getDriverGroupsQueryOptions() {
+  return queryOptions({ queryKey: FLEET_QUERY_KEY.driverGroups, queryFn: getDriverGroups })
+}
+
+export function useDriverGroups() {
+  return useQuery(getDriverGroupsQueryOptions())
+}
+
+function invalidateDriverGroups() {
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driverGroups })
+}
+
+export function useCreateDriverGroup() {
+  return useMutation({ mutationFn: createDriverGroup, onSuccess: invalidateDriverGroups })
+}
+
+export function useUpdateDriverGroup() {
+  return useMutation({ mutationFn: updateDriverGroup, onSuccess: invalidateDriverGroups })
+}
+
+export function useDeleteDriverGroup() {
+  return useMutation({ mutationFn: deleteDriverGroup, onSuccess: invalidateDriverGroups })
+}
+
+export function getDriverLicenceRemindersQueryOptions() {
+  return queryOptions({ queryKey: FLEET_QUERY_KEY.driverLicenceReminders, queryFn: getDriverLicenceReminders })
+}
+
+export function useDriverLicenceReminders() {
+  return useQuery(getDriverLicenceRemindersQueryOptions())
+}
+
+function invalidateDriverLicenceReminders() {
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driverLicenceReminders })
+}
+
+export function useSetDriverLicenceReminder() {
+  return useMutation({ mutationFn: setDriverLicenceReminder, onSuccess: invalidateDriverLicenceReminders })
+}
+
+export function useDeleteDriverLicenceReminder() {
+  return useMutation({ mutationFn: deleteDriverLicenceReminder, onSuccess: invalidateDriverLicenceReminders })
 }

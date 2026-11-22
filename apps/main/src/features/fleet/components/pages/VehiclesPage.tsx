@@ -68,6 +68,9 @@ import {
 } from "@/features/fleet/components/ui/vehiclesFilter";
 import { VehiclesFilterDialog } from "@/features/fleet/components/ui/VehiclesFilterDialog";
 import { useClientPage } from "@/features/fleet/utils/useClientPage";
+import {
+  toVehicleFormValue, toVehicleUpdate,
+} from "@/features/fleet/utils/vehicleForm";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -190,25 +193,7 @@ export default function VehiclesPage() {
   const vehicles = vehiclesResp?.data ?? [];
 
   const selectedVehicleFormValue = useMemo<Vehicle | null>(
-    () => {
-      if (!selectedVehicle)
-        return null;
-
-      return {
-        id: selectedVehicle.id,
-        plateNumber: selectedVehicle.plateNumber ?? "",
-        vin: selectedVehicle.vin ?? "",
-        registrationNumber: selectedVehicle.registrationNumber,
-        make: selectedVehicle.make ?? "",
-        model: selectedVehicle.model,
-        year: selectedVehicle.year ?? new Date().getFullYear(),
-        type: (String(selectedVehicle.type) as Vehicle["type"]) || "truck",
-        status: (String(selectedVehicle.status) as Vehicle["status"]) || "active",
-        capacity: selectedVehicle.capacity || 0,
-        capacityUnit: (selectedVehicle.capacityUnit ?? undefined) as Vehicle["capacityUnit"],
-        currentDriver: selectedVehicle.assignedDriverName ?? selectedVehicle.assignedDriverId ?? undefined,
-      };
-    },
+    () => (selectedVehicle ? toVehicleFormValue(selectedVehicle) : null),
     [selectedVehicle],
   );
 
@@ -257,17 +242,7 @@ export default function VehiclesPage() {
     try {
       await updateVehicleMutation.mutateAsync({
         id: selectedVehicle.id,
-        data: {
-          plateNumber: updatedVehicle.plateNumber,
-          registrationNumber: updatedVehicle.registrationNumber,
-          vin: updatedVehicle.vin,
-          make: updatedVehicle.make,
-          model: updatedVehicle.model,
-          year: updatedVehicle.year,
-          type: updatedVehicle.type,
-          capacity: updatedVehicle.capacity,
-          capacityUnit: updatedVehicle.capacityUnit,
-        },
+        data: toVehicleUpdate(updatedVehicle),
       });
       toast.success("Vehicle updated");
       setIsEditDialogOpen(false);

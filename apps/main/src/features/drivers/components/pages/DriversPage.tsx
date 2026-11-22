@@ -1,11 +1,9 @@
-import type {
-  DriverCommunicationPreference, DriverInput, DriverStatus, FleetDriver,
-} from "@truckmoov/api/fleet";
+import type { DriverInput } from "@truckmoov/api/fleet";
 import type { DriverBulkUploadItem } from "@/components/drivers/DriverBulkUploadDialog";
 import type { DriverFormData } from "@/components/drivers/DriverFormDialog";
-import type { Driver } from "@/types";
+import type { DriverRow } from "@/features/drivers/utils/driverRows";
 import {
-  useCreateDriver, useDrivers, useDriversFilters, useDriversSummary, useImportDrivers, useReinstateDriver, useSuspendDriver, useUpdateDriver,
+  useCreateDriver, useDriverGroups, useDrivers, useDriversFilters, useDriversSummary, useImportDrivers, useReinstateDriver, useSuspendDriver, useUpdateDriver,
 } from "@truckmoov/api/fleet";
 import { useAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useSendNotifyMessage } from "@truckmoov/api/notification";
@@ -63,6 +61,9 @@ import {
 import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 import { getPerformanceBand } from "@/features/drivers/utils/driverPerformance";
+import {
+  COMMUNICATION_PREFERENCES, DRIVER_STATUSES, driverScore, formatScore, readEnum, toDriverRow, toLocalDriver,
+} from "@/features/drivers/utils/driverRows";
 import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
 import { useClientPage } from "@/features/fleet/utils/useClientPage";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -82,67 +83,12 @@ const LOADING_ROWS = [
   "e",
 ];
 
-const DRIVER_STATUSES: DriverStatus[] = [
-  "active",
-  "available",
-  "offline",
-  "suspended",
-];
-const COMMUNICATION_PREFERENCES: DriverCommunicationPreference[] = [
-  "whatsapp",
-  "sms",
-  "email",
-  "voice",
-];
-
 const statusColors: Record<string, string> = {
   active: "bg-primary/20 text-primary border-primary/30",
   available: "bg-success/20 text-success border-success/30",
   offline: "bg-muted text-muted-foreground border-muted",
   suspended: "bg-destructive/20 text-destructive border-destructive/30",
 };
-
-type DriverRow = Omit<FleetDriver, "status" | "communicationPreference"> & {
-  status?: DriverStatus;
-  communicationPreference?: DriverCommunicationPreference;
-};
-
-function readEnum<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
-  if (typeof value === "string" && allowed.includes(value as T))
-    return value as T;
-  if (!value || typeof value !== "object")
-    return undefined;
-
-  for (const key of [
-    "value",
-    "name",
-    "status",
-    "key",
-  ]) {
-    const candidate = (value as Record<string, unknown>)[key];
-    if (typeof candidate === "string" && allowed.includes(candidate.toLowerCase() as T))
-      return candidate.toLowerCase() as T;
-  }
-  return undefined;
-}
-
-function toDriverRow(driver: FleetDriver): DriverRow {
-  return {
-    ...driver,
-    name: driver.name || [
-      driver.firstName,
-      driver.lastName,
-    ].filter(Boolean).join(" "),
-    status: readEnum(
-      driver.status,
-      DRIVER_STATUSES,
-    ),
-    communicationPreference: readEnum(
-      driver.communicationPreference,
-      COMMUNICATION_PREFERENCES,
-    ),
-  };
-}
 
 function toDriverInput(data: DriverFormData): DriverInput {
   return {
@@ -157,46 +103,19 @@ function toDriverInput(data: DriverFormData): DriverInput {
   };
 }
 
-function formatScore(score: number | null) {
-  return score === null ? "Unscored" : `${Math.round(score)}%`;
-}
-
-/** Behaviour score (0–100, last 30 days of events); performanceScore is on-time delivery and is usually null. */
-function driverScore(row: DriverRow): number | null {
-  return row.behaviorScore ?? row.performanceScore ?? null;
-}
-
-// Legacy `Driver` shape for DriverDetailsSheet. Values come from the server only —
-// unscored drivers get rating 0 rather than an invented one.
-function toLocalDriver(row: DriverRow): Driver {
-  const score = driverScore(row);
-  const rating = score === null ? 0 : Math.max(
-    0,
-    Math.min(
-      5,
-      score / 20,
-    ),
-  ); // 0–100 → 0–5
-  const totalTrips = row.trips ?? 0;
-  return {
-    id: row.id,
-    name: row.name,
-    phone: row.phone,
-    email: row.email ?? undefined,
-    licenseNumber: row.licenseNumber,
-    licenseExpiry: row.licenseExpiryDate ? new Date(row.licenseExpiryDate) : new Date(),
-    status: (row.status ?? "available") as Driver["status"],
-    rating,
-    totalTrips,
-    communicationPreference: (row.preferredChannel ?? row.communicationPreference ?? "whatsapp") as Driver["communicationPreference"],
-  };
-}
-
 export default function DriversPage() {
   const { user } = useAuthStore();
   // TRU-FE-3 § 1 — pass the new server-side filter params. Client-side rating/trips
   // filters still run on the returned list until the bands land server-side.
   const driversQuery = useDrivers();
+  const driverGroupsQuery = useDriverGroups();
+  const groupNameByDriver = useMemo(
+    () => new Map((driverGroupsQuery.data?.data ?? []).flatMap(g => g.driverIds.map(id => [
+      id,
+      g.name,
+    ] as const))),
+    [driverGroupsQuery.data],
+  );
   // TRU-FE-3 § 2 / § 3 — pre-wired; render empty until BE ships. `useDriversFilters`
   // fires so the dropdowns can pick up server-provided bands once available; today
   // the response is 404 and the hardcoded DRIVER_STATUSES fallback covers the UI.
@@ -694,8 +613,7 @@ export default function DriversPage() {
         </TableCell>
         <TableCell>{driver.trips ?? "—"}</TableCell>
         <TableCell>
-          {/* ponytail: FleetDriver has no group field and packages/api has no driver-group endpoint */}
-          <span className="text-sm text-foreground">-</span>
+          <span className="text-sm text-foreground">{groupNameByDriver.get(driver.id) ?? "—"}</span>
         </TableCell>
         <TableCell>
           <span className="text-sm text-muted-foreground">
@@ -886,6 +804,9 @@ export default function DriversPage() {
                   },
                   {
                     header: "Trips", accessor: row => row.trips ?? "",
+                  },
+                  {
+                    header: "Group", accessor: row => groupNameByDriver.get(row.id) ?? "",
                   },
                   {
                     header: "Date Added", accessor: row => row.createdAt ?? "",

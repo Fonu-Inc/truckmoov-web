@@ -9,6 +9,7 @@ import {
 import {
   Boxes,
   Edit,
+  Eye,
   Layers,
   Plus,
   Search,
@@ -53,6 +54,7 @@ import {
 import { Switch } from "@/components/shadcn/switch";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useAuthStore } from "@/features/auth/stores/authStore";
+import { FleetDetailsDialog } from "@/features/fleet/components/ui/FleetDetailsDialog";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 
@@ -140,6 +142,10 @@ export default function FleetsPage() {
     deleteConfirmId,
     setDeleteConfirmId,
   ] = useState<string | null>(null);
+  const [
+    detailsFleetId,
+    setDetailsFleetId,
+  ] = useState<string | null>(null);
 
   const vehicleById = useMemo(
     () => new Map(vehicles.map(v => [
@@ -204,7 +210,12 @@ export default function FleetsPage() {
     setIsFormOpen(true);
   };
 
+  // A vehicle can only belong to one fleet; block vehicles already in another.
+  const fleetOf = (vehicleId: string) => fleets.find(f => f.id !== editingFleet?.id && f.vehicleIds.includes(vehicleId));
+
   const toggleVehicle = (id: string) => {
+    if (!vehicleIds.includes(id) && fleetOf(id))
+      return;
     setVehicleIds(prev => (prev.includes(id) ? prev.filter(v => v !== id) : [
       ...prev,
       id,
@@ -403,7 +414,7 @@ export default function FleetsPage() {
                       <th className="pb-3 pr-6 font-medium">Vehicles</th>
                       <th className="pb-3 pr-6 font-medium">Violations</th>
                       <th className="pb-3 pr-6 font-medium">Created</th>
-                      {mayManage && <th className="pb-3 font-medium text-right">Actions</th>}
+                      <th className="pb-3 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -435,30 +446,40 @@ export default function FleetsPage() {
                           </Badge>
                         </td>
                         <td className="py-4 pr-6 text-muted-foreground">{new Date(fleet.createdAt).toLocaleDateString()}</td>
-                        {mayManage && (
-                          <td className="py-4 text-right">
-                            <div className="flex justify-end gap-1.5">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                aria-label={`Edit ${fleet.name}`}
-                                onClick={() => openEdit(fleet)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                aria-label={`Delete ${fleet.name}`}
-                                onClick={() => setDeleteConfirmId(fleet.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        )}
+                        <td className="py-4 text-right">
+                          <div className="flex justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDetailsFleetId(fleet.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                            {mayManage && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  aria-label={`Edit ${fleet.name}`}
+                                  onClick={() => openEdit(fleet)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  aria-label={`Delete ${fleet.name}`}
+                                  onClick={() => setDeleteConfirmId(fleet.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -532,15 +553,17 @@ export default function FleetsPage() {
                   <label
                     key={v.id}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/40",
+                      "flex items-center gap-3 px-3 py-2",
+                      fleetOf(v.id) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:bg-muted/40",
                       vehicleIds.includes(v.id) && "bg-primary/5",
                     )}
                   >
                     <Checkbox
+                      disabled={Boolean(fleetOf(v.id))}
                       checked={vehicleIds.includes(v.id)}
                       onCheckedChange={() => toggleVehicle(v.id)}
                     />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{v.registrationNumber || v.plateNumber}</p>
                       <p className="text-xs text-muted-foreground truncate">
                         {[
@@ -550,6 +573,16 @@ export default function FleetsPage() {
                         {v.year ? ` (${v.year})` : ""}
                       </p>
                     </div>
+                    {fleetOf(v.id) && (
+                      <Badge
+                        variant="outline"
+                        className="rounded-full text-[10px] text-muted-foreground shrink-0"
+                      >
+                        In
+                        {" "}
+                        {fleetOf(v.id)?.name}
+                      </Badge>
+                    )}
                   </label>
                 ))}
                 {filteredPickerVehicles.length === 0 && (
@@ -585,6 +618,14 @@ export default function FleetsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <FleetDetailsDialog
+        fleet={fleets.find(f => f.id === detailsFleetId) ?? null}
+        fleets={fleets}
+        vehicles={vehicles}
+        mayManage={mayManage}
+        onClose={() => setDetailsFleetId(null)}
+      />
 
       <AlertDialog
         open={!!deleteConfirmId}

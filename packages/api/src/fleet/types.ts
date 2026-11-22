@@ -2496,7 +2496,7 @@ export type TrackingAlertFrame = {
 
 // ─── Fleets (vehicle groups) ──────────────────────────────────────────────────
 
-/** A named group of the account's vehicles. A vehicle may belong to several. */
+/** A named group of the account's vehicles. A vehicle belongs to one fleet at most. */
 export type FleetGroup = {
   id: string
   name: string
@@ -2518,3 +2518,46 @@ export type FleetGroupListResponse = ServerResponse<FleetGroup[]>
 export type FleetGroupResponse = ServerResponse<FleetGroup>
 export type CreateFleetGroupPayload = { data: FleetGroupBody }
 export type UpdateFleetGroupPayload = { id: string, data: Partial<FleetGroupBody> }
+
+// ─── Driver groups ────────────────────────────────────────────────────────────
+
+/** A named group of the account's drivers. A driver belongs to one group at most. */
+export type DriverGroup = {
+  id: string
+  name: string
+  description: string | null
+  /** Whether violations are tracked and reported for this group's drivers. */
+  violationsEnabled: boolean
+  driverIds: string[]
+  driverCount: number
+  createdAt: string
+  updatedAt: string
+}
+export type DriverGroupBody = {
+  name: string
+  description?: string | null
+  driverIds?: string[]
+  violationsEnabled?: boolean
+}
+export type DriverGroupListResponse = ServerResponse<DriverGroup[]>
+export type DriverGroupResponse = ServerResponse<DriverGroup>
+export type CreateDriverGroupPayload = { data: DriverGroupBody }
+export type UpdateDriverGroupPayload = { id: string, data: Partial<DriverGroupBody> }
+
+// ─── Driver licence reminders ─────────────────────────────────────────────────
+
+export type DriverLicenceReminderLeadDays = 7 | 14 | 30 | 60 | 90
+/** Mails one address when a driver's licence is within `leadDays` of expiring, once per expiry date. */
+export type DriverLicenceReminder = {
+  driverId: string
+  recipientEmail: string
+  leadDays: DriverLicenceReminderLeadDays
+  /** The expiry date the last mail was about. */
+  lastSentForExpiry: string | null
+  updatedAt: string
+}
+export type DriverLicenceReminderListResponse = ServerResponse<DriverLicenceReminder[]>
+export type SetDriverLicenceReminderPayload = {
+  driverId: string
+  data: { recipientEmail: string, leadDays: DriverLicenceReminderLeadDays }
+}
