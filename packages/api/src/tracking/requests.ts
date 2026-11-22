@@ -9,6 +9,8 @@ import type {
   DeviceTelemetryResponse,
   PublishTrackingAlertPayload,
   PublishTrackingAlertResponse,
+  TripStatsResponse,
+  TripWindow,
   VehicleLocationHistoryQuery,
   VehicleLocationHistoryResponse,
   VehicleLocationsResponse,
@@ -50,6 +52,11 @@ export async function getVehicleLocationHistory({ vehicleId, limit }: VehicleLoc
     `/tracking/vehicles/${vehicleId}/history`,
     { params: { limit } },
   )
+  return data.data
+}
+
+export async function getTripStats({ trips }: { trips: TripWindow[] }) {
+  const { data } = await axiosInstance.post<ServerResponse<TripStatsResponse>>('/tracking/trips/stats', { trips })
   return data.data
 }
 

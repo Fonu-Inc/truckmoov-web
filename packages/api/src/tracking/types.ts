@@ -171,3 +171,26 @@ export type VehicleLocationHistoryQuery = {
   vehicleId: string
   limit?: number
 }
+
+// POST /tracking/trips/stats — figures from a vehicle's recorded positions.
+export type TripWindow = {
+  /** Caller's key, e.g. the job id. */
+  id: string
+  vehicle_id: string
+  from: string
+  /** Defaults to now. */
+  to?: string
+}
+
+export type TripStats = {
+  id: string
+  vehicle_id: string
+  point_count: number
+  started_at?: string
+  ended_at?: string
+  distance_km?: number
+  duration_minutes?: number
+  avg_speed_kph?: number
+}
+
+export type TripStatsResponse = { trips: TripStats[] }

@@ -5,10 +5,12 @@ import {
   getDeviceFirmware,
   getDeviceOverview,
   getDeviceTelemetry,
+  getTripStats,
   getVehicleLocationHistory,
   getVehicleLocations,
   publishTrackingAlert,
 } from './requests'
+import type { TripWindow } from './types'
 
 export type * from './types'
 
@@ -21,6 +23,7 @@ export const TRACKING_QUERY_KEY = {
   deviceFirmware: (deviceId: string) => ['tracking', 'device', deviceId, 'firmware'],
   vehicleLocations: ['tracking', 'vehicles'],
   vehicleLocationHistory: (vehicleId: string, limit?: number) => ['tracking', 'vehicle', vehicleId, 'history', limit],
+  tripStats: (trips: TripWindow[]) => ['tracking', 'trips', 'stats', trips],
 } as const
 
 // ─── queryOptions factories ───────────────────────────────────────────────────
@@ -102,4 +105,17 @@ export function useVehicleLocationHistory(vehicleId: string, limit?: number) {
 
 export function usePublishTrackingAlert() {
   return useMutation({ mutationFn: publishTrackingAlert })
+}
+
+export function getTripStatsQueryOptions(trips: TripWindow[]) {
+  return queryOptions({
+    queryKey: TRACKING_QUERY_KEY.tripStats(trips),
+    queryFn: () => getTripStats({ trips }),
+    enabled: trips.length > 0,
+    staleTime: 60_000,
+  })
+}
+
+export function useTripStats(trips: TripWindow[]) {
+  return useQuery(getTripStatsQueryOptions(trips))
 }

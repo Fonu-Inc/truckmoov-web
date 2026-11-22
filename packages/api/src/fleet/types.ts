@@ -2488,3 +2488,28 @@ export type TrackingAlertFrame = {
   details?: Record<string, unknown> | null
   [key: string]: unknown
 }
+
+// ─── Fleets (vehicle groups) ──────────────────────────────────────────────────
+
+/** A named group of the account's vehicles. A vehicle may belong to several. */
+export type FleetGroup = {
+  id: string
+  name: string
+  description: string | null
+  /** Whether violations are tracked and reported for this fleet's vehicles. */
+  violationsEnabled: boolean
+  vehicleIds: string[]
+  vehicleCount: number
+  createdAt: string
+  updatedAt: string
+}
+export type FleetGroupBody = {
+  name: string
+  description?: string | null
+  vehicleIds?: string[]
+  violationsEnabled?: boolean
+}
+export type FleetGroupListResponse = ServerResponse<FleetGroup[]>
+export type FleetGroupResponse = ServerResponse<FleetGroup>
+export type CreateFleetGroupPayload = { data: FleetGroupBody }
+export type UpdateFleetGroupPayload = { id: string, data: Partial<FleetGroupBody> }

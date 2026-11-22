@@ -28,6 +28,7 @@ import {
 import {
   useEffect, useMemo, useState,
 } from "react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -83,7 +84,13 @@ const LOADING_ROWS = [
 export default function VehiclesPage() {
   const { requireSubscription } = useRequireSubscription();
   // ponytail: single-role check inline; extract to a helper if a third role or fourth page needs it
-  const isAggregatorAdmin = useAuthStore(s => s.user?.role) === "AGGREGATOR_ADMIN";
+  const role = useAuthStore(s => s.user?.role);
+  const isAggregatorAdmin = role === "AGGREGATOR_ADMIN";
+  const navigate = useNavigate();
+  const [
+    limitReachedOpen,
+    setLimitReachedOpen,
+  ] = useState(false);
   const [
     searchQuery,
     setSearchQuery,
@@ -171,6 +178,11 @@ export default function VehiclesPage() {
     data: vehiclesResp, isLoading,
   } = useVehicles({ params: vehicleQueryParams });
   const { data: vehiclesSummaryResp } = useVehiclesSummary();
+  // The server refuses vehicles past the plan's allowance; at the limit, Add and Upload
+  // open the upgrade prompt instead (the design app's 10-vehicle Owner-Operator cap).
+  const allowance = vehiclesSummaryResp?.data?.allowance;
+  const atVehicleLimit = Boolean(allowance && !allowance.unlimited && allowance.remaining === 0);
+  const whenUnderLimit = (open: () => void) => () => (atVehicleLimit ? setLimitReachedOpen(true) : open());
   const createVehicleMutation = useCreateVehicle();
   const updateVehicleMutation = useUpdateVehicle();
   const deleteVehicleMutation = useDeleteVehicle();
@@ -335,12 +347,12 @@ export default function VehiclesPage() {
           <>
             <Button
               variant="outline"
-              onClick={() => setIsBulkUploadOpen(true)}
+              onClick={whenUnderLimit(() => setIsBulkUploadOpen(true))}
             >
               <Upload className="mr-2 h-4 w-4" />
               Upload Vehicle
             </Button>
-            <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
+            <Button onClick={whenUnderLimit(requireSubscription(() => setIsAddDialogOpen(true)))}>
               <Plus className="mr-2 h-4 w-4" />
               Add Vehicle
             </Button>
@@ -665,6 +677,32 @@ export default function VehiclesPage() {
         open={isBulkUploadOpen}
         onOpenChange={setIsBulkUploadOpen}
       />
+
+      <AlertDialog
+        open={limitReachedOpen}
+        onOpenChange={setLimitReachedOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vehicle limit reached</AlertDialogTitle>
+            <AlertDialogDescription>
+              {role === "OWNER_OPERATOR"
+                ? `Owner Operator / Individual accounts can have a maximum of ${allowance?.limit ?? 10} vehicles. Upgrade to an Enterprise Customer account to add more than ${allowance?.limit ?? 10} vehicles.`
+                : `Your plan allows ${allowance?.limit ?? 0} active vehicles and all of them are in use. Upgrade your plan to add more.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not now</AlertDialogCancel>
+            <Button onClick={() => {
+              setLimitReachedOpen(false);
+              navigate("/settings/upgrade");
+            }}
+            >
+              Upgrade
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <GeofenceManagementDialog
         open={isGeofenceDialogOpen}

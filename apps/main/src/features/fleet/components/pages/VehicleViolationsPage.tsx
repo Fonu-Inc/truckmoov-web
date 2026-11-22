@@ -10,7 +10,6 @@ import {
 } from "react";
 import { VehicleViolationsTab } from "@/features/fleet/components/ui/violations/VehicleViolationsTab";
 import { ViolationEventsTab } from "@/features/fleet/components/ui/violations/ViolationEventsTab";
-import { ViolationRulesTab } from "@/features/fleet/components/ui/violations/ViolationRulesTab";
 import {
   CARD_CLASS, NO_ENDPOINT,
 } from "@/features/fleet/components/ui/violations/violationsUi";
@@ -64,7 +63,7 @@ export default function VehicleViolationsPage() {
   const [
     tab,
     setTab,
-  ] = useState("rules");
+  ] = useState("vehicles");
   const [
     eventsSearch,
     setEventsSearch,
@@ -165,12 +164,7 @@ export default function VehicleViolationsPage() {
             onValueChange={setTab}
           >
             <TabsPrimitive.List className="inline-flex items-center justify-center rounded-xl p-1 text-muted-foreground bg-muted/50 flex-wrap h-auto">
-              <TabsPrimitive.Trigger
-                value="rules"
-                className={TAB_TRIGGER_CLASS}
-              >
-                Violation Rules
-              </TabsPrimitive.Trigger>
+              {/* Violation Rules hidden until a rules backend exists (tech-debt TD-23); ViolationRulesTab is kept. */}
               <TabsPrimitive.Trigger
                 value="vehicles"
                 className={TAB_TRIGGER_CLASS}
@@ -184,12 +178,6 @@ export default function VehicleViolationsPage() {
                 Violation Events
               </TabsPrimitive.Trigger>
             </TabsPrimitive.List>
-            <TabsPrimitive.Content
-              value="rules"
-              className={`${TAB_CONTENT_CLASS} mt-4`}
-            >
-              <ViolationRulesTab />
-            </TabsPrimitive.Content>
             <TabsPrimitive.Content
               value="vehicles"
               className={`${TAB_CONTENT_CLASS} space-y-6 mt-4`}

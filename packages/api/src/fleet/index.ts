@@ -177,6 +177,10 @@ import {
   getTrackingLive,
   getTrackingVehicles,
   shareVehicleLocation,
+  getFleetGroups,
+  createFleetGroup,
+  updateFleetGroup,
+  deleteFleetGroup,
 } from './requests'
 
 export type * from './types'
@@ -244,6 +248,7 @@ export const FLEET_QUERY_KEY = {
   geofence: (vehicleId: string) => ['fleet', 'geofence', vehicleId],
   geofencesRoot: ['fleet', 'geofences'] as const,
   geofences: (payload?: GeofencesQuery) => ['fleet', 'geofences', payload],
+  fleetGroups: ['fleet', 'fleetGroups'],
   geofenceZone: (id: string) => ['fleet', 'geofences', id],
   devices: (payload?: DevicesQuery) => ['fleet', 'devices', payload],
   device: (id: string) => ['fleet', 'device', id],
@@ -2040,4 +2045,30 @@ export function usePublicTrack(token: string) {
     enabled: Boolean(token),
     retry: false,
   })
+}
+
+// ─── Fleets (vehicle groups) ──────────────────────────────────────────────────
+
+export function getFleetGroupsQueryOptions() {
+  return queryOptions({ queryKey: FLEET_QUERY_KEY.fleetGroups, queryFn: getFleetGroups })
+}
+
+export function useFleetGroups() {
+  return useQuery(getFleetGroupsQueryOptions())
+}
+
+function invalidateFleetGroups() {
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fleetGroups })
+}
+
+export function useCreateFleetGroup() {
+  return useMutation({ mutationFn: createFleetGroup, onSuccess: invalidateFleetGroups })
+}
+
+export function useUpdateFleetGroup() {
+  return useMutation({ mutationFn: updateFleetGroup, onSuccess: invalidateFleetGroups })
+}
+
+export function useDeleteFleetGroup() {
+  return useMutation({ mutationFn: deleteFleetGroup, onSuccess: invalidateFleetGroups })
 }

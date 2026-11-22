@@ -1,3 +1,4 @@
+import type { TripWindow } from "@truckmoov/api/tracking";
 import type {
   TripDetail, TripStatus,
 } from "@/features/fleet/components/ui/TripDetailsDialog";
@@ -5,6 +6,7 @@ import { useJobs } from "@truckmoov/api/dispatch";
 import {
   useDrivers, useVehicles,
 } from "@truckmoov/api/fleet";
+import { useTripStats } from "@truckmoov/api/tracking";
 import { format } from "date-fns";
 import {
   CircleCheckBig, Download, MapPin, Route, Search, SlidersHorizontal, Truck,
@@ -21,8 +23,11 @@ import {
 import { TripDetailsDialog } from "@/features/fleet/components/ui/TripDetailsDialog";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 
-/** Shown where no endpoint returns the value yet. */
-const NO_ENDPOINT = "-";
+/** Shown when too few positions were recorded to tell. */
+const NO_DATA = "-";
+
+// shortcut: stats cover the newest 100 trips (the endpoint's batch limit); page them when the list grows past that.
+const MAX_TRIP_STATS = 100;
 
 // A trip is a dispatch job seen from the vehicle's side. Progress follows the
 // driver-reported dispatch status (used by the details dialog).
@@ -63,7 +68,17 @@ type TripRow = TripDetail & {
   vehicleName: string;
   plate: string;
   endedAt?: string;
+  /** When the vehicle set off: the job's first move to en-route, else its acknowledgement. */
+  startedAt?: string;
 };
+
+function formatDuration(minutes?: number) {
+  if (minutes == null)
+    return NO_DATA;
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
 // Class strings copied verbatim from the design app's Trips tab.
 const CARD_CLASS = "rounded-2xl surface-sleek text-card-foreground surface-sleek border-border/50";
@@ -191,6 +206,10 @@ export function TripsTab() {
             deadline: j.deadline,
             completedAt: status === "completed" ? j.delivered_at ?? j.updated_at : undefined,
             endedAt: j.delivered_at,
+            startedAt: status === "scheduled" || status === "cancelled"
+              ? undefined
+              : j.timeline?.find(e => e.type === "job_status_updated" && e.metadata?.to_status === "en-route")?.occurred_at
+                ?? j.acknowledged_at,
             notes: j.notes?.map(n => n.text).filter(Boolean).join("\n") || undefined,
           };
         });
@@ -201,6 +220,32 @@ export function TripsTab() {
       driversQuery.data?.data,
     ],
   );
+
+  const tripWindows = useMemo<TripWindow[]>(
+    () => trips
+      .filter(t => t.vehicleId && t.startedAt)
+      .slice(
+        0,
+        MAX_TRIP_STATS,
+      )
+      .map(t => ({
+        id: t.id,
+        vehicle_id: t.vehicleId as string,
+        from: t.startedAt as string,
+        to: t.status === "completed" ? t.endedAt : undefined,
+      })),
+    [trips],
+  );
+  const tripStatsQuery = useTripStats(tripWindows);
+  const statsById = useMemo(
+    () => new Map((tripStatsQuery.data?.trips ?? []).map(s => [
+      s.id,
+      s,
+    ])),
+    [tripStatsQuery.data],
+  );
+  const km = (v?: number) => (v == null ? NO_DATA : `${v} km`);
+  const kph = (v?: number) => (v == null ? NO_DATA : `${v} km/h`);
 
   const vehicleOptions = useMemo(
     () => [
@@ -232,11 +277,11 @@ export function TripsTab() {
       t.delivery.address || "—",
       t.stops.length,
       t.driver || "—",
-      NO_ENDPOINT,
-      NO_ENDPOINT,
-      NO_ENDPOINT,
+      km(statsById.get(t.id)?.distance_km),
+      kph(statsById.get(t.id)?.avg_speed_kph),
+      formatDuration(statsById.get(t.id)?.duration_minutes),
       t.status,
-      NO_ENDPOINT,
+      formatTripDate(statsById.get(t.id)?.started_at ?? t.startedAt),
       formatTripDate(t.endedAt),
     ]);
     const csv = [
@@ -455,17 +500,16 @@ export function TripsTab() {
                               {t.driver || "Unassigned"}
                             </span>
                           </td>
-                          {/* Distance, average speed, duration and start time need trip telemetry — no endpoint yet. */}
-                          <td className={TD_NUM_CLASS}>{NO_ENDPOINT}</td>
-                          <td className={TD_NUM_CLASS}>{NO_ENDPOINT}</td>
-                          <td className={TD_NUM_CLASS}>{NO_ENDPOINT}</td>
+                          <td className={TD_NUM_CLASS}>{km(statsById.get(t.id)?.distance_km)}</td>
+                          <td className={TD_NUM_CLASS}>{kph(statsById.get(t.id)?.avg_speed_kph)}</td>
+                          <td className={TD_NUM_CLASS}>{formatDuration(statsById.get(t.id)?.duration_minutes)}</td>
                           <td className={TD_CLASS}>
                             <div className="inline-flex items-center rounded-full border py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 capitalize text-[11px] px-1.5">
                               {t.status}
                             </div>
                           </td>
                           <td className={`${TD_CLASS} text-sm`}>
-                            <span className="block">{NO_ENDPOINT}</span>
+                            <span className="block">{formatTripDate(statsById.get(t.id)?.started_at ?? t.startedAt)}</span>
                           </td>
                           <td className={`${TD_CLASS} text-sm`}>
                             <span className="block">{formatTripDate(t.endedAt)}</span>

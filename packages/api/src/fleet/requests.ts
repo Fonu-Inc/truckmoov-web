@@ -1,5 +1,6 @@
 import { requireBackendUrl } from '../lib/env'
 import { axiosInstance } from '../lib/axios-instance'
+import type { ServerResponse } from '../lib/types'
 
 import type {
   AccessLogListResponse,
@@ -161,6 +162,10 @@ import type {
   RenewComplianceDocumentPayload,
   ReportLocationPayload,
   SetGeofenceVehiclesPayload,
+  FleetGroupListResponse,
+  FleetGroupResponse,
+  CreateFleetGroupPayload,
+  UpdateFleetGroupPayload,
   SetFuelThresholdPayload,
   SimCarrierListResponse,
   SimDataBundleListResponse,
@@ -379,6 +384,26 @@ export async function archiveGeofence({ id }: { id: string }) {
 
 export async function setGeofenceVehicles({ id, data: body }: SetGeofenceVehiclesPayload) {
   const { data } = await axiosInstance.put<GeofenceResponse>(`/fleet/geofences/${id}/vehicles`, body)
+  return data
+}
+
+export async function getFleetGroups() {
+  const { data } = await axiosInstance.get<FleetGroupListResponse>('/fleet/fleets')
+  return data
+}
+
+export async function createFleetGroup({ data: body }: CreateFleetGroupPayload) {
+  const { data } = await axiosInstance.post<FleetGroupResponse>('/fleet/fleets', body)
+  return data
+}
+
+export async function updateFleetGroup({ id, data: body }: UpdateFleetGroupPayload) {
+  const { data } = await axiosInstance.patch<FleetGroupResponse>(`/fleet/fleets/${id}`, body)
+  return data
+}
+
+export async function deleteFleetGroup({ id }: { id: string }) {
+  const { data } = await axiosInstance.delete<ServerResponse<unknown>>(`/fleet/fleets/${id}`)
   return data
 }
 

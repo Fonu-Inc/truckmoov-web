@@ -44,7 +44,8 @@ export const FLEET_TABS: FleetTab[] = [
     to: "/fleet/maintenance", label: "Maintenance", icon: Wrench, end: true,
   },
   {
-    to: "/fleet/fuel", label: "Fuel", icon: Fuel, end: true,
+    // Hidden for Owner-Operators as in the design app; fuel is manual records only (TD-1).
+    to: "/fleet/fuel", label: "Fuel", icon: Fuel, end: true, hiddenFor: ["OWNER_OPERATOR"],
   },
   {
     to: "/fleet/compliance", label: "Compliance", icon: Shield, end: true, hiddenFor: ["FINANCE_VIEWER"],
