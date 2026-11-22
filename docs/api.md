@@ -368,17 +368,17 @@ See [data-bundles-verification.md](data-bundles-verification.md) for endpoint ev
 
 ## Public onboarding-applications flow
 
-> **One consumer:** the landing page's Get Started dialog
-> (`apps/landing-page/src/features/get-started/`). `apps/main` no longer has an
-> `/apply` route; its sign-in page links to the landing site (`VITE_LANDING_URL`
-> + `/?apply=1`).
+> **Two consumers, same flow and calls:** the main app's public `/apply` page
+> (`apps/main/src/features/apply/`, linked from the sign-in page's "Apply for one")
+> and the landing page's Get Started dialog (`apps/landing-page/src/features/get-started/`,
+> also opened by `/?apply=1`). Change both together.
 
 The tenant-onboarding landing page uses a separate axios instance, `onboardingInstance`, defined in `packages/api/src/lib/onboarding-instance.ts`. It has its own auth model and does not read the auth store:
 
 - No JWT. `POST /auth/onboarding/applications` returns an `applicationToken` once. Every subsequent call carries it as `X-Application-Token`.
 - `useCreateOnboardingApplication()` persists the token via `setOnboardingToken` on success.
 - The token is kept in memory and mirrored to web storage under the key `truckmoov_onboarding_token`, never in a URL or cookie. If it is lost, the application cannot be resumed.
-  - By default that storage is `sessionStorage` (per tab).
+  - By default that storage is `sessionStorage` (per tab), which is what the main app's `/apply` uses.
   - `setOnboardingTokenStorage("local")` switches it to `localStorage`. Call it once, before the first request. The landing page does this in `GetStartedHost`, so a saved application can resume days later. The app that opts in owns clearing the token (`setOnboardingToken(null)`) when the flow ends.
 - A wrong or missing token returns **404 deliberately** — do not treat it as "not found" in the UI. The `admin request-changes` flow re-issues a fresh token by email; the app's resume route should call `setOnboardingToken` with the token from the query string.
 - The onboarding-applications endpoints are the only ones that go through `onboardingInstance`. Everything else (including admin review at `/auth/system/onboarding/applications/*`) still goes through `axiosInstance` with a bearer.

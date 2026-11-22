@@ -132,10 +132,13 @@ The site should not render anything it doesn't need to:
 
 ## Apply wizard (Get Started)
 
-`features/get-started/` is the "Apply for Account Creation" dialog: the **only** apply flow.
-`apps/main` has no `/apply` route. Its sign-in page links to `VITE_LANDING_URL` +
-`/?apply=1`, which `DialogHost` turns into an open wizard (intent `"new"`) and strips from the
-URL.
+`features/get-started/` is the "Apply for Account Creation" dialog. `/?apply=1` opens it too:
+`DialogHost` turns the param into an open wizard (intent `"new"`) and strips it from the URL.
+
+The main app has the same flow as a public page, `/apply` (`apps/main/src/features/apply/`),
+which its sign-in page's "Apply for one" links to. Both run the same steps, fields and
+onboarding-applications calls, so **change both apps together**: `schemas/applySchemas.ts` and
+`utils/applyTypes.ts` here are copies of main's `utils/applySchemas.ts` and `utils/applyTypes.ts`.
 
 ### Flow
 
@@ -152,9 +155,8 @@ It runs the onboarding-applications API calls (`@truckmoov/api/auth`). The steps
 9. payment
 10. installation scheduling
 
-The orchestrator is `GetStartedDialog.tsx`. It was ported from the main app's former
-`ApplyForAccount.tsx` (in git history), which is why some step components still name a
-"main" counterpart. The look follows the Figma Get Started dialog:
+The orchestrator is `GetStartedDialog.tsx`, a port of main's `ApplyForAccount.tsx`; each
+step component names the main component it mirrors. The look follows the Figma Get Started dialog:
 - `StepLayout` + `DialogFooter` for each step
 - `SubDialog` for nested dialogs
 - the class recipes in `utils/getStartedContent.ts`
@@ -202,7 +204,8 @@ Cleanup:
 ### Returning customers
 
 The wizard follows the design app's two entries: **Apply for Account Creation** (new) and
-**Returning Customers**, meaning an existing MTN customer (`intent: "returning"`).
+**Returning Customers**, meaning an existing MTN customer (`intent: "returning"` here,
+`/apply?returning=1` in main).
 
 - The flag is persisted with the draft (`returning` in the draft store). A reload or a
   resume link keeps it.

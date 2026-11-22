@@ -1,17 +1,13 @@
 import { useLoginTwoFactor } from "@truckmoov/api/auth";
 import { TwoFactorCodeForm } from "@truckmoov/reusables/components/auth/TwoFactorCodeForm";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import {
+  Link, useNavigate,
+} from "react-router";
 
 import { SignInForm } from "@/features/auth/components/forms/SignInForm";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { resolvePostLoginPath } from "@/features/auth/utils/authRedirect";
-
-/** The landing site, where new customers apply. Without it the apply link is hidden. */
-const LANDING_URL = import.meta.env.VITE_LANDING_URL?.replace(
-  /\/+$/,
-  "",
-);
 
 /** Rendered inside AuthLayout, which supplies the branding panel and mobile logo. */
 export default function AuthPage() {
@@ -58,19 +54,18 @@ export default function AuthPage() {
           )
         : <SignInForm onChallenge={setChallengeToken} />}
 
-      {/* Applications live on the landing site; `?apply=1` opens its Get Started dialog. */}
-      {challengeToken || !LANDING_URL
+      {challengeToken
         ? null
         : (
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?
               {" "}
-              <a
-                href={`${LANDING_URL}/?apply=1`}
+              <Link
+                to="/apply"
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
                 Apply for one
-              </a>
+              </Link>
             </p>
           )}
     </div>

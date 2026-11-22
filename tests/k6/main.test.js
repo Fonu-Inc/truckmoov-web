@@ -58,8 +58,9 @@ const PUBLIC_PAGES = [
   ["P3 invite without token", "/auth/invite", byText("This invitation link is incomplete", { exact: false })],
   ["P4 verify email without token", "/auth/verify-email", byText("Verification link is invalid", { exact: false })],
   ["P5 complete profile without token", "/auth/complete-profile", byText("This profile link is invalid", { exact: false })],
+  ["P6 apply for an account", "/apply", byText("Apply for a Fleet Pro account", { exact: false })],
   [
-    "P6 unknown tracking link",
+    "P7 unknown tracking link",
     "/track/k6-not-a-real-token",
     "//h1[contains(normalize-space(.), \"We couldn't load this tracking link\") or contains(normalize-space(.), \"no longer available\")]",
   ],
