@@ -134,6 +134,8 @@ export type QuotationRow = {
   id: string
   number: string
   customerName: string
+  productName: string | null
+  deviceCount: number
   customerType: string
   billingEmail: string
   status: QuotationStatus
@@ -181,6 +183,8 @@ export type InvoiceRow = {
   number: string
   quotationId: string | null
   quotationNumber: string | null
+  productName: string | null
+  deviceCount: number
   customerName: string
   customerType: string
   status: InvoiceStatus

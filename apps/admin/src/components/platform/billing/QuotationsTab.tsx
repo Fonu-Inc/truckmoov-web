@@ -17,8 +17,9 @@ import {
   formatIsoDate,
   formatNgn,
   ListErrorBanner,
-  NO_ENDPOINT,
+  NONE,
   PaymentCompleteBadge,
+  ProductChip,
   TableStateRows,
 } from "@/components/platform/billing/billingUi";
 import { QuotationDetailsDialog } from "@/components/platform/billing/QuotationDetailsDialog";
@@ -42,7 +43,6 @@ const PAGE_SIZE = 10;
 
 type Filters = { paymentStatus: "all" | QuotationPaymentStatusFilter };
 
-// Product and Devices Requested aren't on the quotation list endpoint yet.
 const EXPORT_COLUMNS = [
   {
     header: "Quotation Number", accessor: "number" as const,
@@ -51,13 +51,13 @@ const EXPORT_COLUMNS = [
     header: "Customer / Organization", accessor: "customerName" as const,
   },
   {
-    header: "Product", accessor: () => NO_ENDPOINT,
+    header: "Product", accessor: (row: QuotationRow) => row.productName || NONE,
   },
   {
     header: "Date", accessor: (row: QuotationRow) => formatIsoDate(row.createdAt),
   },
   {
-    header: "Devices Requested", accessor: () => NO_ENDPOINT,
+    header: "Devices Requested", accessor: (row: QuotationRow) => (row.deviceCount > 0 ? row.deviceCount : NONE),
   },
   {
     header: "Total Amount (NGN)", accessor: "totalNgn" as const,
@@ -193,9 +193,13 @@ export function QuotationsTab() {
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.number}</TableCell>
                     <TableCell>{row.customerName}</TableCell>
-                    <TableCell>{NO_ENDPOINT}</TableCell>
+                    <TableCell>
+                      {row.productName
+                        ? <ProductChip>{row.productName}</ProductChip>
+                        : <span className="text-muted-foreground">{NONE}</span>}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatIsoDate(row.createdAt)}</TableCell>
-                    <TableCell className="font-medium">{NO_ENDPOINT}</TableCell>
+                    <TableCell className="font-medium">{row.deviceCount > 0 ? row.deviceCount : NONE}</TableCell>
                     <TableCell className="font-medium">{formatNgn(row.totalNgn)}</TableCell>
                     <TableCell>{formatNgn(row.paidNgn)}</TableCell>
                     <TableCell>

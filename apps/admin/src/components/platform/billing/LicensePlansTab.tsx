@@ -22,7 +22,7 @@ import {
   PlanStatusBadge,
   TableStateRows,
 } from "@/components/platform/billing/billingUi";
-import { DeliveryPriceCard } from "@/components/platform/billing/DeliveryPriceCard";
+// import { DeliveryPriceCard } from "@/components/platform/billing/DeliveryPriceCard"; // hidden per request
 import { InstallationPriceCard } from "@/components/platform/billing/InstallationPriceCard";
 import { PlanDetailsDialog } from "@/components/platform/billing/PlanDetailsDialog";
 import { PlanFormDialog } from "@/components/platform/billing/PlanFormDialog";
@@ -320,7 +320,7 @@ export function LicensePlansTab() {
       </BillingCard>
 
       <InstallationPriceCard />
-      <DeliveryPriceCard />
+      {/* <DeliveryPriceCard /> hidden per request — component kept */}
 
       <PlanFormDialog
         open={adding}

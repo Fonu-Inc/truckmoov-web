@@ -19,8 +19,8 @@ import {
   INVOICE_STATUS_LABEL,
   InvoiceStatusBadge,
   ListErrorBanner,
-  NO_ENDPOINT,
   NONE,
+  ProductChip,
   TableStateRows,
 } from "@/components/platform/billing/billingUi";
 import { InvoiceDetailsDialog } from "@/components/platform/billing/InvoiceDetailsDialog";
@@ -49,7 +49,6 @@ function deliveryText(row: InvoiceRow) {
   return row.emailedAt ? `Emailed ${formatIsoDateTime(row.emailedAt)}` : PENDING_EMAIL;
 }
 
-// Product and Devices Requested aren't on the invoice list endpoint yet.
 const EXPORT_COLUMNS = [
   {
     header: "Invoice Number", accessor: "number" as const,
@@ -58,7 +57,7 @@ const EXPORT_COLUMNS = [
     header: "Customer", accessor: "customerName" as const,
   },
   {
-    header: "Product", accessor: () => NO_ENDPOINT,
+    header: "Product", accessor: (row: InvoiceRow) => row.productName || NONE,
   },
   {
     header: "Linked Quotation", accessor: (row: InvoiceRow) => row.quotationNumber ?? NONE,
@@ -70,7 +69,7 @@ const EXPORT_COLUMNS = [
     header: "Due Date", accessor: (row: InvoiceRow) => formatDateOnly(row.dueDate),
   },
   {
-    header: "Devices Requested", accessor: () => NO_ENDPOINT,
+    header: "Devices Requested", accessor: (row: InvoiceRow) => (row.deviceCount > 0 ? row.deviceCount : NONE),
   },
   {
     header: "Total (NGN)", accessor: "totalNgn" as const,
@@ -207,11 +206,15 @@ export function InvoicesTab() {
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.number}</TableCell>
                     <TableCell>{row.customerName}</TableCell>
-                    <TableCell>{NO_ENDPOINT}</TableCell>
+                    <TableCell>
+                      {row.productName
+                        ? <ProductChip>{row.productName}</ProductChip>
+                        : <span className="text-muted-foreground">{NONE}</span>}
+                    </TableCell>
                     <TableCell>{row.quotationNumber ?? NONE}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDateOnly(row.issueDate)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDateOnly(row.dueDate)}</TableCell>
-                    <TableCell className="font-medium">{NO_ENDPOINT}</TableCell>
+                    <TableCell className="font-medium">{row.deviceCount > 0 ? row.deviceCount : NONE}</TableCell>
                     <TableCell className="font-medium">{formatNgn(row.totalNgn)}</TableCell>
                     <TableCell>{formatNgn(row.outstandingNgn)}</TableCell>
                     <TableCell>
