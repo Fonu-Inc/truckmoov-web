@@ -431,6 +431,8 @@ export type DriversQuery = {
     scoreBand?: DriverScoreBand
     tripBand?: DriverTripBand
     preferredChannel?: DriverCommunicationPreference
+    page?: number
+    limit?: number
   }
 }
 

@@ -3,12 +3,12 @@ import type {
 } from "../ui/OverviewSections";
 import {
   useDevicesSummary,
-  useDriverBehaviorEvents,
   useDrivers,
   useFleetOverview,
   useMaintenanceProfiles,
   useMaintenanceRecords,
   useVehicles,
+  useViolations,
 } from "@truckmoov/api/fleet";
 import {
   CalendarRange, Cpu, Package, Truck, Users,
@@ -41,36 +41,19 @@ import {
 } from "../ui/VehicleStatusListCard";
 import { ViolationsCard } from "../ui/ViolationsCard";
 
-/**
- * The period filter drives the violations cards — the behaviour-events
- * endpoint is the only one here that takes a period (`period_days`). The
- * overview, maintenance and device endpoints have no period parameter yet.
- * Calendar periods are approximated as day windows ending today.
- */
+/** Only the violations cards take a period; `/fleet/violations` accepts 1..365 days. */
 const PERIODS = [
-  {
-    value: "overall", label: "Overall", days: undefined,
-  },
   {
     value: "today", label: "Today", days: 1,
   },
   {
-    value: "yesterday", label: "Yesterday", days: 2,
+    value: "last_7_days", label: "Last 7 days", days: 7,
   },
   {
-    value: "this_week", label: "This Week", days: 7,
+    value: "last_30_days", label: "Last 30 days", days: 30,
   },
   {
-    value: "last_week", label: "Last Week", days: 14,
-  },
-  {
-    value: "this_month", label: "This Month", days: 30,
-  },
-  {
-    value: "last_six_months", label: "Last Six Months", days: 180,
-  },
-  {
-    value: "this_year", label: "This Year", days: 365,
+    value: "last_12_months", label: "Last 12 months", days: 365,
   },
 ] as const;
 
@@ -79,8 +62,8 @@ type PeriodValue = (typeof PERIODS)[number]["value"];
 /** One shared feed size: the endpoint is the same for every role. */
 const ACTIVITY_LIMIT = 8;
 
-/** Recent events shown in the violations lists; stats come from the server totals. */
-const VIOLATION_EVENTS_LIMIT = 100;
+// shortcut: the drivers list caps a page at 100, so names past that show "—"; page through if tenants outgrow it.
+const DRIVER_LOOKUP_LIMIT = 100;
 
 const ACTIVITY_DESCRIPTIONS: Record<string, string> = {
   job: "A job was created or updated for your fleet.",
@@ -121,23 +104,24 @@ export default function EnterpriseLogisticsDashboard() {
   const [
     period,
     setPeriod,
-  ] = useState<PeriodValue>("overall");
-  const periodDays = PERIODS.find(p => p.value === period)?.days;
+  ] = useState<PeriodValue>("last_30_days");
+  const periodDays = PERIODS.find(p => p.value === period)?.days ?? 30;
 
   const {
     data, isLoading, isError, refetch,
   } = useFleetOverview();
   const devicesSummary = useDevicesSummary();
-  const violations = useDriverBehaviorEvents({
-    params: {
-      period_days: periodDays, limit: VIOLATION_EVENTS_LIMIT,
-    },
+  const driverViolations = useViolations({
+    entity: "drivers", periodDays,
+  });
+  const vehicleViolations = useViolations({
+    entity: "vehicles", periodDays,
   });
   const maintenanceProfiles = useMaintenanceProfiles();
   const maintenanceRecords = useMaintenanceRecords();
   // Name/plate lookups for the id-only rows (violations, maintenance profiles).
   const vehicles = useVehicles();
-  const drivers = useDrivers();
+  const drivers = useDrivers({ params: { limit: DRIVER_LOOKUP_LIMIT } });
 
   const overview = data?.data;
 
@@ -155,8 +139,8 @@ export default function EnterpriseLogisticsDashboard() {
     ])),
     [drivers.data],
   );
-  const vehiclePlate = (id: string | null) => (id && plateById.get(id)) || "Unknown vehicle";
-  const driverName = (id: string) => nameById.get(id) || "Unknown driver";
+  const vehiclePlate = (id: string | null) => (id && plateById.get(id)) || "—";
+  const driverName = (id: string | null) => (id && nameById.get(id)) || "—";
 
   const {
     dueProfiles, overdueProfiles,
@@ -174,7 +158,11 @@ export default function EnterpriseLogisticsDashboard() {
   );
 
   const openMaintenanceRecords = useMemo(
-    () => (maintenanceRecords.data?.data ?? []).filter(r => r.status === "in_progress" || r.status === "scheduled"),
+    () => {
+      const now = Date.now();
+      return (maintenanceRecords.data?.data ?? []).filter(r =>
+        r.status === "in_progress" || (r.status === "scheduled" && r.scheduledDate !== null && Date.parse(r.scheduledDate) <= now));
+    },
     [maintenanceRecords.data],
   );
 
@@ -244,9 +232,9 @@ export default function EnterpriseLogisticsDashboard() {
     [overview],
   );
 
-  // The heading stays put while the overview loads or fails: the top bar no
-  // longer carries the title for this route.
-  if (isLoading || isError || !overview) {
+  // The heading stays put while the overview loads: the top bar no longer
+  // carries the title for this route.
+  if (isLoading) {
     return (
       <>
         <OverviewHeader
@@ -254,24 +242,19 @@ export default function EnterpriseLogisticsDashboard() {
           onPeriodChange={setPeriod}
           isOwnerOperator={isOwnerOperator}
         />
-        {isLoading
-          ? <EnterpriseLogisticsDashboardSkeleton />
-          : <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />}
+        <EnterpriseLogisticsDashboardSkeleton />
       </>
     );
   }
 
-  const violationEvents = violations.data?.data.items ?? [];
-  const violationProps = {
-    events: violationEvents,
-    total: violations.data?.data.total ?? violationEvents.length,
-    criticalCount: violations.data?.data.criticalCount ?? 0,
+  const violationState = (q: typeof driverViolations) => ({
+    summary: q.data?.data,
     driverName,
     vehiclePlate,
-    isLoading: violations.isLoading,
-    isError: violations.isError,
-    onRetry: () => violations.refetch(),
-  };
+    isLoading: q.isLoading,
+    isError: q.isError,
+    onRetry: () => q.refetch(),
+  });
 
   const maintenanceProfilesState = {
     vehiclePlate,
@@ -293,17 +276,17 @@ export default function EnterpriseLogisticsDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Vehicles"
-            value={overview.cards.totalVehicles}
+            value={overview?.cards.totalVehicles ?? "—"}
             icon={Truck}
           />
           <StatCard
             title="Total Jobs"
-            value={overview.cards.totalJobs}
+            value={overview?.cards.totalJobs ?? "—"}
             icon={Package}
           />
           <StatCard
             title="Total Drivers"
-            value={overview.cards.totalDrivers}
+            value={overview?.cards.totalDrivers ?? "—"}
             icon={Users}
           />
           <StatCard
@@ -313,20 +296,24 @@ export default function EnterpriseLogisticsDashboard() {
           />
         </div>
 
-        <RecentActivityCard items={recentActivity.slice(
-          0,
-          ACTIVITY_LIMIT,
-        )}
-        />
+        {overview
+          ? (
+              <RecentActivityCard items={recentActivity.slice(
+                0,
+                ACTIVITY_LIMIT,
+              )}
+              />
+            )
+          : <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />}
 
         <div className="space-y-6">
           <ViolationsCard
             mode="driver"
-            {...violationProps}
+            {...violationState(driverViolations)}
           />
           <ViolationsCard
             mode="vehicle"
-            {...violationProps}
+            {...violationState(vehicleViolations)}
           />
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -341,9 +328,9 @@ export default function EnterpriseLogisticsDashboard() {
               {...maintenanceProfilesState}
             />
             <VehiclesInOperationCard
-              vehicles={overview.vehiclesInOperation?.items ?? []}
+              vehicles={overview?.vehiclesInOperation?.items ?? []}
               isLoading={false}
-              isError={false}
+              isError={isError || !overview}
               onRetry={() => refetch()}
             />
             <VehiclesInMaintenanceCard
@@ -356,21 +343,25 @@ export default function EnterpriseLogisticsDashboard() {
           </div>
         </div>
 
-        <JobsOverviewCard
-          jobs={overviewJobs}
-          jobsHref="/jobs"
-        />
+        {overview && (
+          <>
+            <JobsOverviewCard
+              jobs={overviewJobs}
+              jobsHref="/jobs"
+            />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <VehiclesOverviewCard
-            vehicles={overviewVehicles}
-            vehiclesHref="/fleet"
-          />
-          <DriversOverviewCard
-            drivers={overviewDrivers}
-            driversHref="/drivers"
-          />
-        </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <VehiclesOverviewCard
+                vehicles={overviewVehicles}
+                vehiclesHref="/fleet"
+              />
+              <DriversOverviewCard
+                drivers={overviewDrivers}
+                driversHref="/drivers"
+              />
+            </div>
+          </>
+        )}
       </div>
     </>
   );
@@ -394,7 +385,7 @@ function OverviewHeader({
         ? "Monitor your fleet performance, vehicle activities, driver operations, and key fleet insights."
         : "Enterprise-wide job monitoring & provider performance"}
       actions={(
-        <div className="flex">
+        <div className="flex flex-col items-end gap-1">
           <Select
             value={period}
             onValueChange={v => onPeriodChange(v as PeriodValue)}
@@ -414,6 +405,7 @@ function OverviewHeader({
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">Period applies to violations</p>
         </div>
       )}
     />

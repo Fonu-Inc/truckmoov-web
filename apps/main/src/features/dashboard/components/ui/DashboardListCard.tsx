@@ -34,7 +34,7 @@ export const SLEEK_HEADER = "p-6 pb-4 flex flex-col items-start justify-between 
 export const SLEEK_TITLE = "font-semibold tracking-tight text-foreground font-display text-base";
 
 /** Shown where no endpoint returns the data yet. */
-export const NO_ENDPOINT = "-";
+export const NO_ENDPOINT = "—";
 
 type QueryStatus = {
   isLoading?: boolean;
