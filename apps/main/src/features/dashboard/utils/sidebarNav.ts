@@ -212,10 +212,10 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
         label: "Messaging Center", href: "/inbox", icon: Inbox,
       },
     ],
-    // Not ENTERPRISE_ADMIN: the design app's enterprise sidebar has no Communications.
+    // Not ENTERPRISE_ADMIN or OWNER_OPERATOR: the design app's sidebars for
+    // those roles have no Communications.
     hasPermission: [
       "AGGREGATOR_ADMIN",
-      "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
     ],
   },
