@@ -91,7 +91,6 @@ function PlanBody({ plan }: { plan: TenantLicence }) {
             icon={Cpu}
             label="Devices purchased"
             value={`${plan.deviceCount} devices`}
-            hint={plan.devicesInUse === null ? undefined : `${plan.devicesInUse} in use`}
           />
           <Fact
             icon={Wallet}
