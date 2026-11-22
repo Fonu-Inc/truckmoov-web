@@ -91,7 +91,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
   // ─── Jobs & dispatch ───────────────────────────────────────────
   {
-    label: "Shipments", href: "/jobs", icon: Package,
+    label: "Shipments", href: "/jobs", icon: Package, manualTitle: true,
     labelByRole: {
       ENTERPRISE_ADMIN: "Jobs",
       OWNER_OPERATOR: "Jobs",
@@ -212,8 +212,8 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
         label: "Messaging Center", href: "/inbox", icon: Inbox,
       },
     ],
+    // Not ENTERPRISE_ADMIN: the design app's enterprise sidebar has no Communications.
     hasPermission: [
-      "ENTERPRISE_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",

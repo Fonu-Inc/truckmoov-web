@@ -25,6 +25,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { MaintenanceListCard } from "../ui/MaintenanceListCard";
 import {
   DriversOverviewCard,
@@ -375,43 +376,33 @@ function OverviewHeader({
   period: PeriodValue; onPeriodChange: (period: PeriodValue) => void;
 }) {
   return (
-    <div
-      className="mb-6 flex min-w-0 flex-col gap-4 text-left lg:flex-row lg:justify-between lg:items-center"
-      data-page-header
-    >
-      <div className="min-w-0 flex-1">
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">Overview</h1>
-        <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">Enterprise-wide job monitoring & provider performance</p>
-      </div>
-      <div
-        className="min-w-0 shrink-0 empty:hidden lg:max-w-[50%]"
-        data-page-actions
-      >
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex">
-            <Select
-              value={period}
-              onValueChange={v => onPeriodChange(v as PeriodValue)}
-            >
-              <SelectTrigger className="px-3.5 w-[160px] rounded-xl">
-                <CalendarRange className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIODS.map(p => (
-                  <SelectItem
-                    key={p.value}
-                    value={p.value}
-                  >
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <PageHeader
+      title="Overview"
+      description="Enterprise-wide job monitoring & provider performance"
+      actions={(
+        <div className="flex">
+          <Select
+            value={period}
+            onValueChange={v => onPeriodChange(v as PeriodValue)}
+          >
+            <SelectTrigger className="px-3.5 w-[160px] rounded-xl">
+              <CalendarRange className="h-4 w-4 mr-2 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIODS.map(p => (
+                <SelectItem
+                  key={p.value}
+                  value={p.value}
+                >
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      </div>
-    </div>
+      )}
+    />
   );
 }
 

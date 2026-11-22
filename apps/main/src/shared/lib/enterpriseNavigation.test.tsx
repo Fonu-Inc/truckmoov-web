@@ -79,7 +79,6 @@ it(
       "My Devices",
       "Live Tracking",
       "M2M IoT Bundles",
-      "Communications",
       "Reports",
       "Analytics",
       "Billing",

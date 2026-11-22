@@ -1,4 +1,3 @@
-import type { ColumnDef } from "@tanstack/react-table";
 import type {
   DispatchJob, DispatchJobPriority, JobsQuery,
 } from "@truckmoov/api/dispatch";
@@ -7,6 +6,7 @@ import type { AssignResourceKind } from "@/features/jobs/components/ui/AssignRes
 import type {
   JobsFilterBounds, JobsFilterValue,
 } from "@/features/jobs/components/ui/JobsFilterDialog";
+import type { JobStatusTone } from "@/features/jobs/utils/jobStatus";
 import {
   useAddJobAttachment,
   useAssignJob,
@@ -21,6 +21,7 @@ import {
 import {
   useDrivers, useVehicles,
 } from "@truckmoov/api/fleet";
+import { format } from "date-fns";
 import {
   ArrowRight,
   Ban,
@@ -59,16 +60,13 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent,
-} from "@/components/shadcn/card";
-import { DataTable } from "@/components/shadcn/data-table";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
   Select,
@@ -77,8 +75,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
+import {
+  Tabs, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { useAuthStore } from "@/features/auth/stores/authStore";
+import {
+  matchNavEntry, resolveLabel,
+} from "@/features/dashboard/utils/sidebarNav";
 import { AssignResourceDialog } from "@/features/jobs/components/ui/AssignResourceDialog";
 import { CancelJobDialog } from "@/features/jobs/components/ui/CancelJobDialog";
 import { JobDetailsDialog } from "@/features/jobs/components/ui/JobDetailsDialog";
@@ -97,31 +104,95 @@ import {
 import {
   jobStatusLabel, jobStatusTone, PRIORITY_BADGE, STATUS_BADGE,
 } from "@/features/jobs/utils/jobStatus";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 
 type JobStatusFilter = NonNullable<NonNullable<JobsQuery["params"]>["status"]>;
 
-const JOB_STATUS_OPTIONS: Array<{
+/** The design app splits the list: open work under "Jobs", finished work under "Job History". */
+type JobsTab = "jobs" | "history";
+
+const TAB_TONES: Record<JobsTab, JobStatusTone[]> = {
+  jobs: [
+    "created",
+    "assigned",
+    "in_progress",
+  ],
+  history: [
+    "completed",
+    "cancelled",
+  ],
+};
+
+const TAB_CARD: Record<JobsTab, {
+  title: string; description: string;
+}> = {
+  jobs: {
+    title: "All Jobs", description: "Unassigned, assigned and in-progress jobs on your account.",
+  },
+  history: {
+    title: "Job History", description: "Completed and cancelled jobs on your account.",
+  },
+};
+
+const JOB_STATUS_OPTIONS: Record<JobsTab, Array<{
   value: JobStatusFilter; label: string;
-}> = [
-  {
-    value: "all", label: "All Statuses",
-  },
-  {
-    value: "created", label: "Unassigned",
-  },
-  {
-    value: "assigned", label: "Assigned",
-  },
-  {
-    value: "in_progress", label: "In Progress",
-  },
-  {
-    value: "completed", label: "Completed",
-  },
-  {
-    value: "cancelled", label: "Cancelled",
-  },
-];
+}>> = {
+  jobs: [
+    {
+      value: "all", label: "All Statuses",
+    },
+    {
+      value: "created", label: "Unassigned",
+    },
+    {
+      value: "assigned", label: "Assigned",
+    },
+    {
+      value: "in_progress", label: "In Progress",
+    },
+  ],
+  history: [
+    {
+      value: "all", label: "All Statuses",
+    },
+    {
+      value: "completed", label: "Completed",
+    },
+    {
+      value: "cancelled", label: "Cancelled",
+    },
+  ],
+};
+
+/** Shown where no endpoint returns the data yet (vehicles carry no fleet name). */
+const NO_ENDPOINT = "-";
+
+/** "Dec 11, 2024 8:30 AM" — the design app's start date and deadline cells. */
+function formatScheduleDate(iso?: string | null) {
+  if (!iso)
+    return "—";
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "—" : format(
+    date,
+    "MMM d, yyyy h:mm a",
+  );
+}
+
+/** "11 Dec 2024, 08:30" — the design app's Date Created cell. */
+function formatCreatedDate(iso?: string | null) {
+  if (!iso)
+    return "—";
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "—" : format(
+    date,
+    "dd MMM yyyy, HH:mm",
+  );
+}
+
+function stopsLabel(job: DispatchJob) {
+  const n = job.stops?.length ?? 0;
+  return n > 0 ? `${n} stop${n === 1 ? "" : "s"}` : null;
+}
 
 const KPI_TONE = {
   primary: [
@@ -230,11 +301,21 @@ function mapToLegacyJob(job: DispatchJob, driverName?: string) {
 }
 
 export default function JobsPage() {
-  const { format: formatCurrency } = useCurrency();
-  const isAggregatorAdmin = useAuthStore(s => s.user?.role) === "AGGREGATOR_ADMIN";
-  // ponytail: fleetflow switches to "Recommend" for enterprise/aggregator org types; this
-  // tenant app has no org-type context yet, so every role assigns directly.
-  const recommendOnly = false;
+  const role = useAuthStore(s => s.user?.role);
+  const isAggregatorAdmin = role === "AGGREGATOR_ADMIN";
+  // The design app labels the enterprise admin's assign actions "Recommend …".
+  // Wording only: AssignResourceDialog still assigns the driver/vehicle directly.
+  const recommendOnly = role === "ENTERPRISE_ADMIN";
+  const navEntry = matchNavEntry("/jobs");
+  const pageTitle = navEntry ? resolveLabel(
+    navEntry,
+    role,
+  ) : "Jobs";
+
+  const [
+    tab,
+    setTab,
+  ] = useState<JobsTab>("jobs");
 
   const [
     searchQuery,
@@ -311,7 +392,16 @@ export default function JobsPage() {
   const driversQuery = useDrivers();
   const vehiclesQuery = useVehicles();
   const selectedJobDetailsQuery = useJob(isFormOpen ? selectedJob?.id ?? "" : "");
-  const jobs = jobsQuery.data?.data ?? [];
+  const allJobs = jobsQuery.data?.data;
+  // The API takes one status at a time, so "All Statuses" fetches everything
+  // and each tab keeps only its own stages.
+  const jobs = useMemo(
+    () => (allJobs ?? []).filter(j => TAB_TONES[tab].includes(jobStatusTone(j.status || "created"))),
+    [
+      allJobs,
+      tab,
+    ],
+  );
 
   // The job only carries assigned_* ids — names and plates come from the fleet lists.
   const driverById = useMemo(
@@ -539,256 +629,147 @@ export default function JobsPage() {
 
   const assignLabel = recommendOnly ? "Recommend" : "Assign";
 
-  const columns = useMemo<ColumnDef<DispatchJob>[]>(
-    () => [
-      {
-        id: "reference",
-        header: "Job ID",
-        meta: { className: "min-w-[130px]" },
-        cell: ({ row }) => (
-          <span className="font-mono text-xs font-medium">{row.original.reference || row.original.id}</span>
-        ),
-      },
-      {
-        id: "status",
-        header: "Status",
-        cell: ({ row }) => {
-          const status = row.original.status || "created";
-          const reports = pendingReports(row.original);
-          return (
-            <div className="space-y-1">
-              <Badge className={STATUS_BADGE[jobStatusTone(status)]}>{jobStatusLabel(status)}</Badge>
-              {reports.length > 0 && (
-                <button
-                  type="button"
-                  className="block text-left"
-                  onClick={() => openDetails(row.original)}
-                >
-                  <Badge className="bg-warning/20 text-warning border-warning/30 cursor-pointer">
-                    {`Driver says: ${stepLabel(reports[0].request.requested_status).toLowerCase()}`}
-                  </Badge>
-                </button>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        id: "priority",
-        header: "Priority",
-        cell: ({ row }) => {
-          const p = row.original.priority;
-          return p
-            ? <Badge className={PRIORITY_BADGE[p] ?? PRIORITY_BADGE.normal}>{p.toUpperCase()}</Badge>
-            : <span className="text-xs text-muted-foreground">—</span>;
-        },
-      },
-      {
-        id: "locations",
-        header: "Locations",
-        meta: { className: "min-w-[260px]" },
-        cell: ({ row }) => {
-          const job = row.original;
-          const stops = job.stops?.length ?? 0;
-          return (
-            <div className="space-y-1 text-xs max-w-[320px]">
-              <p className="flex items-start gap-1.5">
-                <MapPin className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
-                <span className="truncate">{job.pickup?.address || "—"}</span>
-              </p>
-              {stops > 0 && (
-                <p className="text-[11px] text-muted-foreground pl-5">
-                  +
-                  {stops}
-                  {" "}
-                  intermediate stop
-                  {stops > 1 ? "s" : ""}
-                </p>
-              )}
-              <p className="flex items-start gap-1.5">
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
-                <span className="truncate">{job.dropoff?.address || "—"}</span>
-              </p>
-            </div>
-          );
-        },
-      },
-      {
-        id: "driver",
-        header: "Driver",
-        meta: { className: "min-w-[180px]" },
-        cell: ({ row }) => {
-          const job = row.original;
-          const driver = job.assigned_driver_id ? driverById.get(job.assigned_driver_id) : undefined;
-          const name = driver?.name ?? job.assigned_driver_name;
-          if (job.assigned_driver_id && name) {
-            return (
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-primary" />
-                  {name}
-                </p>
-                <p className="font-mono text-[11px] text-muted-foreground">
-                  {job.assigned_driver_id.slice(
-                    0,
-                    8,
-                  )}
-                </p>
-              </div>
-            );
-          }
-          if (job.assigned_driver_id || isAggregatorAdmin || jobStatusTone(job.status || "created") === "cancelled")
-            return <span className="text-xs text-muted-foreground">—</span>;
-          return (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs"
-              onClick={() => openMatching(
-                job,
-                "driver",
-              )}
-            >
-              <Users className="h-3.5 w-3.5 mr-1.5" />
-              {assignLabel}
-              {" "}
-              Driver
-            </Button>
-          );
-        },
-      },
-      {
-        id: "vehicle",
-        header: "Vehicle",
-        meta: { className: "min-w-[180px]" },
-        cell: ({ row }) => {
-          const job = row.original;
-          const vehicle = job.assigned_vehicle_id ? vehicleById.get(job.assigned_vehicle_id) : undefined;
-          const plate = vehicle?.plateNumber ?? job.assigned_vehicle_reg;
-          if (job.assigned_vehicle_id && plate) {
-            return (
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium flex items-center gap-1.5">
-                  <Truck className="h-3.5 w-3.5 text-primary" />
-                  {plate}
-                </p>
-                <p className="font-mono text-[11px] text-muted-foreground">
-                  {job.assigned_vehicle_id.slice(
-                    0,
-                    8,
-                  )}
-                </p>
-              </div>
-            );
-          }
-          if (job.assigned_vehicle_id || isAggregatorAdmin || jobStatusTone(job.status || "created") === "cancelled")
-            return <span className="text-xs text-muted-foreground">—</span>;
-          return (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs"
-              onClick={() => openMatching(
-                job,
-                "vehicle",
-              )}
-            >
-              <Truck className="h-3.5 w-3.5 mr-1.5" />
-              {assignLabel}
-              {" "}
-              Vehicle
-            </Button>
-          );
-        },
-      },
-      {
-        id: "amount",
-        header: () => <span className="block text-right">Amount</span>,
-        cell: ({ row }) => (
-          <span className="block text-right text-sm font-medium">{formatCurrency(row.original.amount_ngn || 0)}</span>
-        ),
-      },
-      {
-        id: "actions",
-        header: () => <span className="block text-right">Actions</span>,
-        meta: { className: "w-[60px]" },
-        cell: ({ row }) => {
-          const job = row.original;
-          const tone = jobStatusTone(job.status || "created");
-          return (
-            <div className="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => openDetails(job)}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Details
-                  </DropdownMenuItem>
-                  {!isAggregatorAdmin && tone !== "cancelled" && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => (tone === "completed" ? setDeleteTarget(job) : setCancelTarget(job))}
-                      >
-                        {tone === "completed"
-                          ? <Trash2 className="h-4 w-4 mr-2" />
-                          : <Ban className="h-4 w-4 mr-2" />}
-                        {tone === "completed" ? "Delete Job Record" : "Cancel Job"}
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-        },
-      },
-    ],
-    [
-      isAggregatorAdmin,
-      formatCurrency,
-      driverById,
-      vehicleById,
-      assignLabel,
-    ],
-  );
+  // Ref menu: View Details always; Cancel Job only while unassigned/assigned;
+  // Delete Job Record once completed. In-progress and cancelled jobs are view-only.
+  const renderActions = (job: DispatchJob) => {
+    const tone = jobStatusTone(job.status || "created");
+    const canCancel = !isAggregatorAdmin && (tone === "created" || tone === "assigned");
+    const canDelete = !isAggregatorAdmin && tone === "completed";
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Job actions"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => openDetails(job)}>
+            <Eye className="h-4 w-4 mr-2" />
+            View Details
+          </DropdownMenuItem>
+          {(canCancel || canDelete) && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => (canDelete ? setDeleteTarget(job) : setCancelTarget(job))}
+              >
+                {canDelete
+                  ? <Trash2 className="h-4 w-4 mr-2" />
+                  : <Ban className="h-4 w-4 mr-2" />}
+                {canDelete ? "Delete Job Record" : "Cancel Job"}
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  // An unassigned side shows the assign/recommend button, as in the design app
+  // (aggregators only watch jobs, so they get a dash).
+  const renderAssignButton = (job: DispatchJob, kind: AssignResourceKind) => {
+    if (isAggregatorAdmin)
+      return <span className="text-xs text-muted-foreground">—</span>;
+    const Icon = kind === "driver" ? Users : Truck;
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-8 text-xs"
+        onClick={() => openMatching(
+          job,
+          kind,
+        )}
+      >
+        <Icon className="h-3.5 w-3.5 mr-1.5" />
+        {`${assignLabel} ${kind === "driver" ? "Driver" : "Vehicle"}`}
+      </Button>
+    );
+  };
+
+  const driverNameFor = (job: DispatchJob) => {
+    const driver = job.assigned_driver_id ? driverById.get(job.assigned_driver_id) : undefined;
+    return driver?.name ?? job.assigned_driver_name ?? null;
+  };
+  const vehiclePlateFor = (job: DispatchJob) => {
+    const vehicle = job.assigned_vehicle_id ? vehicleById.get(job.assigned_vehicle_id) : undefined;
+    return vehicle?.plateNumber ?? job.assigned_vehicle_reg ?? null;
+  };
+
+  const exportColumns = [
+    {
+      header: "Pickup Address", accessor: (j: DispatchJob) => j.pickup?.address || "—",
+    },
+    {
+      header: "Delivery Address", accessor: (j: DispatchJob) => j.dropoff?.address || "—",
+    },
+    {
+      header: "Stops", accessor: (j: DispatchJob) => stopsLabel(j) ?? "—",
+    },
+    {
+      header: "Assigned Driver", accessor: (j: DispatchJob) => driverNameFor(j) ?? "—",
+    },
+    {
+      header: "Assigned Vehicle", accessor: (j: DispatchJob) => vehiclePlateFor(j) ?? "—",
+    },
+    {
+      header: "Priority", accessor: (j: DispatchJob) => j.priority?.toUpperCase() ?? "—",
+    },
+    {
+      header: "Status", accessor: (j: DispatchJob) => jobStatusLabel(j.status || "created"),
+    },
+    {
+      header: "Start Date", accessor: (j: DispatchJob) => formatScheduleDate(j.time_window?.pickup_start),
+    },
+    {
+      header: "Deadline", accessor: (j: DispatchJob) => formatScheduleDate(j.deadline || j.time_window?.dropoff_end),
+    },
+    {
+      header: "Date Created", accessor: (j: DispatchJob) => formatCreatedDate(j.created_at),
+    },
+  ];
+
+  const hasActiveFilters = Boolean(debouncedSearchQuery) || statusFilter !== "all" || activeFilterCount > 0;
 
   const selectedDriverName = selectedJob?.assigned_driver_id ? driverById.get(selectedJob.assigned_driver_id)?.name : undefined;
   const formJob = selectedJobDetailsQuery.data?.data ?? selectedJob;
 
   return (
     <>
+      <PageHeader
+        title={pageTitle}
+        description="Create and dispatch your own jobs"
+        actions={isAggregatorAdmin
+          ? undefined
+          : (
+              <Button
+                variant="gradient"
+                onClick={() => {
+                  setSelectedJob(null);
+                  setIsFormOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Job
+              </Button>
+            )}
+      />
       <div className="space-y-6">
-        {!isAggregatorAdmin && (
-          <div className="flex justify-end">
-            <Button
-              variant="gradient"
-              onClick={() => {
-                setSelectedJob(null);
-                setIsFormOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Job
-            </Button>
-          </div>
-        )}
-
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {kpis.map(({
             label, value, icon: Icon, tone,
           }) => (
-            <Card key={label}>
-              <CardContent className="p-4 flex items-center gap-3">
+            <div
+              key={label}
+              className="rounded-2xl surface-sleek text-card-foreground"
+            >
+              <div className="p-4 flex items-center gap-3">
                 <div className={KPI_TONE[tone][0]}>
                   <Icon className={KPI_TONE[tone][1]} />
                 </div>
@@ -796,82 +777,259 @@ export default function JobsPage() {
                   <p className="text-xs text-muted-foreground truncate">{label}</p>
                   <p className="font-bold truncate text-xl">{value}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by reference, pickup, or delivery..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10 bg-card/50 border-border/50"
-            />
-            {jobsQuery.isFetching && !jobsQuery.isLoading && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-            )}
-          </div>
-          <Select
-            value={statusFilter}
-            onValueChange={value => setStatusFilter(value as JobStatusFilter)}
-          >
-            <SelectTrigger className="w-full sm:w-[170px] bg-card/50 border-border/50">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              {JOB_STATUS_OPTIONS.map(option => (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                >
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <JobsFilterDialog
-            open={isFilterOpen}
-            onOpenChange={setIsFilterOpen}
-            bounds={NO_BOUNDS}
-            value={filterValue}
-            onApply={value => setFilterValue(value)}
-            onReset={() => setFilterValue(buildDefaultFilterValue(NO_BOUNDS))}
-            trigger={(
-              <Button
-                variant="outline"
-                className="bg-card/50 border-border/50 relative"
-              >
-                <SlidersHorizontal className="h-4 w-4 mr-2" />
-                Filter
-                {activeFilterCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="ml-2 h-5 min-w-5 px-1.5 text-[10px] bg-primary/20 text-primary border border-primary/30"
-                  >
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
-            )}
-          />
-        </div>
+        <Tabs
+          value={tab}
+          onValueChange={(value) => {
+            setTab(value as JobsTab);
+            setStatusFilter("all");
+          }}
+        >
+          <TabsList className="inline-flex h-10 rounded-xl">
+            <TabsTrigger
+              value="jobs"
+              className="rounded-lg px-3.5"
+            >
+              Jobs
+            </TabsTrigger>
+            <TabsTrigger
+              value="history"
+              className="rounded-lg px-3.5"
+            >
+              Job History
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        <div className="rounded-2xl border border-border/50 bg-card/50 overflow-x-auto">
-          <DataTable
-            columns={columns}
-            data={jobs}
-            rowClassName={() => "align-top"}
-            isLoading={jobsQuery.isLoading}
-            isError={jobsQuery.isError}
-            errorMessage={jobsQuery.error?.message ?? "Unable to load jobs"}
-            onRetry={() => void jobsQuery.refetch()}
-            hasActiveFilters={Boolean(debouncedSearchQuery) || statusFilter !== "all" || activeFilterCount > 0}
-            emptyState="No jobs yet. Create your first job to start dispatching deliveries."
-            filteredEmptyState="No jobs found. Try adjusting your search or filter."
-          />
+        <div className="rounded-2xl surface-sleek text-card-foreground min-w-0">
+          <div className="flex flex-col p-6 pb-4 space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display">{TAB_CARD[tab].title}</h3>
+                <p className="text-sm text-muted-foreground mt-1.5">{TAB_CARD[tab].description}</p>
+              </div>
+              <ExportButton
+                rows={jobs}
+                columns={exportColumns}
+                filename={tab === "jobs" ? "jobs" : "job-history"}
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by reference, pickup, or delivery..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-card/50 border-border/50"
+                />
+                {jobsQuery.isFetching && !jobsQuery.isLoading && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <Select
+                value={statusFilter}
+                onValueChange={value => setStatusFilter(value as JobStatusFilter)}
+              >
+                <SelectTrigger className="h-10 px-3.5 rounded-xl w-full sm:w-[170px] bg-card/50 border-border/50">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  {JOB_STATUS_OPTIONS[tab].map(option => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <JobsFilterDialog
+                open={isFilterOpen}
+                onOpenChange={setIsFilterOpen}
+                bounds={NO_BOUNDS}
+                value={filterValue}
+                onApply={value => setFilterValue(value)}
+                onReset={() => setFilterValue(buildDefaultFilterValue(NO_BOUNDS))}
+                trigger={(
+                  <Button
+                    variant="outline"
+                    className="bg-card/50 border-border/50 relative"
+                  >
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filter
+                    {activeFilterCount > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-2 h-5 min-w-5 px-1.5 text-[10px] bg-primary/20 text-primary border border-primary/30"
+                      >
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </Button>
+                )}
+              />
+            </div>
+          </div>
+          <div className="p-6 pt-0 min-w-0 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[200px]">Pickup Address</TableHead>
+                  <TableHead className="min-w-[200px]">Delivery Address</TableHead>
+                  <TableHead>Stops</TableHead>
+                  <TableHead className="min-w-[180px]">Assigned Driver</TableHead>
+                  <TableHead className="min-w-[180px]">Assigned Vehicle</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>Deadline</TableHead>
+                  <TableHead className="whitespace-nowrap">Date Created</TableHead>
+                  <TableHead className="w-[60px] text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {jobsQuery.isLoading
+                  ? Array.from(
+                      { length: 5 },
+                      (_, i) => (
+                        <TableRow key={i}>
+                          <TableCell colSpan={11}>
+                            <Skeleton className="h-6 w-full" />
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )
+                  : jobsQuery.isError
+                    ? (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell
+                            colSpan={11}
+                            className="py-10 text-center text-sm"
+                          >
+                            <p className="text-destructive">{jobsQuery.error?.message ?? "Unable to load jobs"}</p>
+                            <Button
+                              variant="link"
+                              onClick={() => void jobsQuery.refetch()}
+                            >
+                              Try again
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : jobs.length === 0
+                      ? (
+                          <TableRow className="hover:bg-transparent">
+                            <TableCell
+                              colSpan={11}
+                              className="py-10 text-center text-sm text-muted-foreground"
+                            >
+                              {hasActiveFilters
+                                ? "No jobs found. Try adjusting your search or filter."
+                                : tab === "jobs"
+                                  ? "No jobs yet. Create your first job to start dispatching deliveries."
+                                  : "No completed or cancelled jobs yet."}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      : jobs.map((job) => {
+                          const status = job.status || "created";
+                          const reports = pendingReports(job);
+                          const stops = stopsLabel(job);
+                          const driverName = driverNameFor(job);
+                          const plate = vehiclePlateFor(job);
+                          return (
+                            <TableRow
+                              key={job.id}
+                              className="align-top"
+                            >
+                              <TableCell>
+                                <p className="flex items-start gap-1.5 text-xs max-w-[240px]">
+                                  <MapPin className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
+                                  <span className="truncate">{job.pickup?.address || "—"}</span>
+                                </p>
+                              </TableCell>
+                              <TableCell>
+                                <p className="flex items-start gap-1.5 text-xs max-w-[240px]">
+                                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
+                                  <span className="truncate">{job.dropoff?.address || "—"}</span>
+                                </p>
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {stops ? <span>{stops}</span> : <span className="text-muted-foreground">—</span>}
+                              </TableCell>
+                              <TableCell>
+                                {job.assigned_driver_id && driverName
+                                  ? (
+                                      <p className="text-sm font-medium flex items-center gap-1.5">
+                                        <User className="h-3.5 w-3.5 text-primary" />
+                                        {driverName}
+                                      </p>
+                                    )
+                                  : job.assigned_driver_id
+                                    ? <span className="text-xs text-muted-foreground">—</span>
+                                    : renderAssignButton(
+                                        job,
+                                        "driver",
+                                      )}
+                              </TableCell>
+                              <TableCell>
+                                {job.assigned_vehicle_id && plate
+                                  ? (
+                                      <div className="space-y-0.5">
+                                        <p className="text-sm font-medium flex items-center gap-1.5">
+                                          <Truck className="h-3.5 w-3.5 text-primary" />
+                                          {plate}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground break-words">{`Fleet: ${NO_ENDPOINT}`}</p>
+                                      </div>
+                                    )
+                                  : job.assigned_vehicle_id
+                                    ? <span className="text-xs text-muted-foreground">—</span>
+                                    : renderAssignButton(
+                                        job,
+                                        "vehicle",
+                                      )}
+                              </TableCell>
+                              <TableCell>
+                                {job.priority
+                                  ? <Badge className={`rounded-full px-2.5 ${PRIORITY_BADGE[job.priority] ?? PRIORITY_BADGE.normal}`}>{job.priority.toUpperCase()}</Badge>
+                                  : <span className="text-xs text-muted-foreground">—</span>}
+                              </TableCell>
+                              <TableCell>
+                                {reports.length > 0
+                                  ? (
+                                      // A pending driver report stacks a second badge under the status.
+                                      <div className="space-y-1">
+                                        <Badge className={`rounded-full px-2.5 ${STATUS_BADGE[jobStatusTone(status)]}`}>{jobStatusLabel(status)}</Badge>
+                                        <button
+                                          type="button"
+                                          className="block text-left"
+                                          onClick={() => openDetails(job)}
+                                        >
+                                          <Badge className="bg-warning/20 text-warning border-warning/30 cursor-pointer">
+                                            {`Driver says: ${stepLabel(reports[0].request.requested_status).toLowerCase()}`}
+                                          </Badge>
+                                        </button>
+                                      </div>
+                                    )
+                                  : <Badge className={`rounded-full px-2.5 ${STATUS_BADGE[jobStatusTone(status)]}`}>{jobStatusLabel(status)}</Badge>}
+                              </TableCell>
+                              <TableCell className="text-xs whitespace-nowrap">{formatScheduleDate(job.time_window?.pickup_start)}</TableCell>
+                              <TableCell className="text-xs whitespace-nowrap">{formatScheduleDate(job.deadline || job.time_window?.dropoff_end)}</TableCell>
+                              <TableCell className="text-xs whitespace-nowrap">{formatCreatedDate(job.created_at)}</TableCell>
+                              <TableCell className="text-right">{renderActions(job)}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
 
