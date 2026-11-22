@@ -295,7 +295,7 @@ export function JobsOverviewCard({
                       <p className="font-medium text-sm">
                         {job.created_at ? format(
                           new Date(job.created_at),
-                          "d MMM, h:mm aaa",
+                          "MMM d, h:mm aaa",
                         ) : "—"}
                       </p>
                     </div>

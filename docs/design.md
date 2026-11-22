@@ -203,7 +203,7 @@ markup. Roles:
 |------|------|----------------|
 | `ENTERPRISE_ADMIN` | `/` | Overview, Jobs, My Vehicles, My Drivers, My Devices, Live Tracking, M2M IoT Bundles, Communications, Payouts & Invoicing, Reports, Analytics, Billing, Settings |
 | `AGGREGATOR_ADMIN` | `/aggregator` | Network Overview, Jobs, Fleet, Drivers |
-| `OWNER_OPERATOR` | `/owner-operator` | My Overview, My Jobs, My Vehicles (single-user) |
+| `OWNER_OPERATOR` | `/` | Overview, Jobs, My Vehicles, My Drivers, My Devices, Live Tracking, M2M IoT Bundles, Reports, Analytics, Billing, Settings |
 | `OPERATIONS_MANAGER` | see config | Operations subset |
 | `DISPATCHER` | see config | Dispatch subset |
 | `FINANCE_VIEWER` | `/fleet/analytics` | Read-only financial subset; `/fleet` shows only Maintenance, Fuel, Financials, Analytics (`hiddenFor` in `fleetNav.ts`) |

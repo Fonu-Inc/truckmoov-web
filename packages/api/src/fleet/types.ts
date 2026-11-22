@@ -640,6 +640,8 @@ export type DriverBehaviorEvent = {
   speedKph: number | null
   latitude: number | null
   longitude: number | null
+  /** Nearest known region for the fix; null when the coordinates fall outside them. */
+  location?: string | null
   occurredAt: string
 }
 export type DriverBehaviorEventsResult = {
@@ -2285,6 +2287,18 @@ export type FleetOverviewVehicleItem = {
   status: string
 }
 
+export type FleetOverviewOperationalVehicle = {
+  vehicleId: string
+  plateNumber: string
+  driverId: string | null
+  driverName: string | null
+  jobId: string | null
+  jobReference: string | null
+  pickupAddress: string | null
+  dropoffAddress: string | null
+  status: string
+}
+
 export type FleetOverviewDriverItem = {
   id: string
   name: string
@@ -2320,6 +2334,10 @@ export type FleetOverviewActivityItem = {
   entityId: string
   summary: string
   occurredAt: string
+  /** Display-ready heading; older backends may only send `summary`. */
+  title?: string
+  /** Display-ready supporting line, e.g. the job route or vehicle model. */
+  description?: string | null
 }
 
 export type FleetOverviewChatItem = {
@@ -2336,6 +2354,7 @@ export type FleetOverview = {
   map: FleetOverviewMap
   jobs: { total: number; items: FleetOverviewJobItem[] }
   vehicles: { total: number; items: FleetOverviewVehicleItem[] }
+  vehiclesInOperation: { total: number; items: FleetOverviewOperationalVehicle[] }
   drivers: { total: number; items: FleetOverviewDriverItem[] }
   fleetUtilization: FleetOverviewUtilizationRegion[]
   alerts: {
