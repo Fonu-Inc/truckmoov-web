@@ -1,4 +1,6 @@
-import type { DriverBehaviorEvent } from "@truckmoov/api/fleet";
+import type {
+  FleetViolation, ViolationSubject,
+} from "@truckmoov/api/fleet";
 import type { SeverityFilter } from "@/features/fleet/components/ui/violations/ViolationsSeverityFilter";
 import {
   Download, Eye, Search,
@@ -7,35 +9,26 @@ import {
   useMemo, useState,
 } from "react";
 import { driverViolationTypeLabel } from "@/features/drivers/components/ui/violations/driverViolationsUi";
+import { ViolationQuotaCell } from "@/features/fleet/components/ui/violations/ViolationQuotaCell";
 import { ViolationsSeverityFilter } from "@/features/fleet/components/ui/violations/ViolationsSeverityFilter";
 import { ViolationsTableState } from "@/features/fleet/components/ui/violations/ViolationsTableState";
 import {
-  CARD_CLASS, downloadViolationsCsv, EXPORT_BUTTON_CLASS, formatViolationDate, GHOST_ROW_BUTTON_CLASS, INPUT_CLASS, NO_ENDPOINT, PILL_SHADOW_CLASS, SEARCH_ICON_CLASS, SEVERITY_CLASS, TABLE_CLASS, TBODY_CLASS, TD_CLASS, TH_CLASS, TH_RIGHT_CLASS, THEAD_CLASS, TR_CLASS,
+  CARD_CLASS, downloadViolationsCsv, EXPORT_BUTTON_CLASS, formatViolationDate, GHOST_ROW_BUTTON_CLASS, INPUT_CLASS, PILL_SHADOW_CLASS, quotaText, SEARCH_ICON_CLASS, SEVERITY_CLASS, TABLE_CLASS, TBODY_CLASS, TD_CLASS, TH_CLASS, TH_RIGHT_CLASS, THEAD_CLASS, TR_CLASS,
 } from "@/features/fleet/components/ui/violations/violationsUi";
 
-type DriverRow = {
-  driverId: string;
-  name: string;
-  total: number;
-  critical: number;
-  mostFrequent: string;
-  lastAt: string;
-};
-
-/**
- * Driver Violations sub-tab — one row per driver, grouped from the behaviour
- * events (there is no per-driver violations endpoint).
- */
+/** Driver Violations sub-tab — one row per driver from the violations summary. */
 export function DriverViolationsTab({
-  events,
+  subjects,
+  items,
   driverName,
   isLoading,
   isError,
   onRetry,
   onViewDetails,
 }: {
-  events: DriverBehaviorEvent[];
-  driverName: (id: string) => string;
+  subjects: ViolationSubject[];
+  items: FleetViolation[];
+  driverName: (id: string | null) => string;
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
@@ -50,49 +43,22 @@ export function DriverViolationsTab({
     setSeverity,
   ] = useState<SeverityFilter>("all");
 
-  const rows = useMemo<DriverRow[]>(
+  const rows = useMemo(
     () => {
-      const byDriver = new Map<string, DriverBehaviorEvent[]>();
-      for (const e of events) {
-        if (!e.driverId || (severity !== "all" && e.severity !== severity))
-          continue;
-        byDriver.set(
-          e.driverId,
-          [
-            ...(byDriver.get(e.driverId) ?? []),
-            e,
-          ],
-        );
-      }
-      return [...byDriver].map(([
-        driverId,
-        list,
-      ]) => {
-        const typeCounts = new Map<string, number>();
-        for (const e of list) {
-          const label = driverViolationTypeLabel(e.type);
-          typeCounts.set(
-            label,
-            (typeCounts.get(label) ?? 0) + 1,
-          );
-        }
-        const mostFrequent = [...typeCounts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-        const lastAt = list.reduce(
-          (max, e) => (e.occurredAt > max ? e.occurredAt : max),
-          "",
-        );
-        return {
-          driverId,
-          name: driverName(driverId),
-          total: list.length,
-          critical: list.filter(e => e.severity === "critical").length,
-          mostFrequent,
-          lastAt,
-        };
-      }).sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+      const withSeverity = severity === "all"
+        ? null
+        : new Set(items.filter(i => i.severity === severity).map(i => i.driverId));
+      return subjects
+        .filter(s => !withSeverity || withSeverity.has(s.subjectId))
+        .map(s => ({
+          ...s,
+          name: driverName(s.subjectId),
+          mostFrequent: driverViolationTypeLabel(s.mostFrequent),
+        }));
     },
     [
-      events,
+      subjects,
+      items,
       severity,
       driverName,
     ],
@@ -116,7 +82,7 @@ export function DriverViolationsTab({
       r.total,
       r.critical,
       r.mostFrequent,
-      NO_ENDPOINT,
+      quotaText(r.quota),
       r.lastAt ? formatViolationDate(r.lastAt) : "—",
     ]),
   );
@@ -179,7 +145,7 @@ export function DriverViolationsTab({
               />
               {!isLoading && !isError && filtered.map(r => (
                 <tr
-                  key={r.driverId}
+                  key={r.subjectId}
                   className={TR_CLASS}
                 >
                   <td className={`${TD_CLASS} whitespace-nowrap`}>
@@ -193,18 +159,7 @@ export function DriverViolationsTab({
                   </td>
                   <td className={TD_CLASS}>{r.mostFrequent}</td>
                   <td className={TD_CLASS}>
-                    {/* Quota needs a violation-rules endpoint. */}
-                    <div className="w-28 space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>{NO_ENDPOINT}</span>
-                      </div>
-                      <div className="relative w-full overflow-hidden rounded-full bg-secondary h-1.5">
-                        <div
-                          className="h-full w-full flex-1 transition-all duration-300 bg-primary"
-                          style={{ transform: "translateX(-100%)" }}
-                        />
-                      </div>
-                    </div>
+                    <ViolationQuotaCell quota={r.quota} />
                   </td>
                   <td className={`${TD_CLASS} whitespace-nowrap`}>{r.lastAt ? formatViolationDate(r.lastAt) : "—"}</td>
                   <td className={`${TD_CLASS} text-right`}>

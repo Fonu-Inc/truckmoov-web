@@ -1,8 +1,7 @@
-import type { DriverBehaviorSeverity } from "@truckmoov/api/fleet";
+import type {
+  DriverBehaviorSeverity, ViolationQuotaPeriod, ViolationSubject, ViolationType,
+} from "@truckmoov/api/fleet";
 import { format } from "date-fns";
-
-/** Shown where no endpoint returns the value yet. */
-export const NO_ENDPOINT = "-";
 
 // Class strings copied verbatim from the design app's Violations tab.
 export const CARD_CLASS = "rounded-2xl surface-sleek text-card-foreground";
@@ -41,6 +40,24 @@ const TYPE_LABELS: Record<string, string> = {
   hard_accel: "Harsh Acceleration",
   sharp_turn: "Sharp Turn",
   harsh_cornering: "Sharp Turn",
+  restricted_hours: "Restricted Driving Hours",
+};
+
+export const VIOLATION_TYPES: ViolationType[] = [
+  "overspeeding",
+  "harsh_braking",
+  "harsh_acceleration",
+  "harsh_cornering",
+  "restricted_hours",
+];
+
+export const quotaText = (q: ViolationSubject["quota"]) => (q ? `${q.used} of ${q.quota}` : "—");
+
+/** "10 / month" */
+export const QUOTA_PERIOD_UNIT: Record<ViolationQuotaPeriod, string> = {
+  daily: "day",
+  weekly: "week",
+  monthly: "month",
 };
 
 /** Behaviour-event type → the design app's violation-type wording. */

@@ -2561,3 +2561,119 @@ export type SetDriverLicenceReminderPayload = {
   driverId: string
   data: { recipientEmail: string, leadDays: DriverLicenceReminderLeadDays }
 }
+
+// ─── Violation rules and violations (TD-23) ───────────────────────────────────
+
+export type ViolationType = 'overspeeding' | 'harsh_braking' | 'harsh_acceleration' | 'harsh_cornering' | 'restricted_hours'
+export type ViolationSeverity = 'low' | 'medium' | 'high' | 'critical'
+export type ViolationRuleEntity = 'drivers' | 'vehicles'
+export type ViolationRuleScope = 'all_drivers' | 'selected_drivers' | 'all_vehicles' | 'selected_vehicles'
+export type ViolationQuotaPeriod = 'daily' | 'weekly' | 'monthly'
+export type ViolationRuleStatus = 'active' | 'inactive'
+export type ViolationStatus = 'open' | 'under_review' | 'resolved'
+export type WeekDay = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun'
+
+/** Only the fields for the rule's type are kept. Harsh-driving `thresholdG` is shown but not enforced: trackers report the event, not the force. */
+export type ViolationRuleTrigger = {
+  speedKph?: number
+  minDurationSeconds?: number
+  thresholdG?: number
+  restrictedStart?: string
+  restrictedEnd?: string
+  restrictedDays?: WeekDay[]
+}
+
+/** Times are Lagos time. */
+export type ViolationRuleSchedule =
+  | { mode: 'always' }
+  | { mode: 'scheduled', days: WeekDay[], start: string, end: string }
+
+export type ViolationRule = {
+  id: string
+  entity: ViolationRuleEntity
+  name: string
+  description: string | null
+  type: ViolationType
+  trigger: ViolationRuleTrigger
+  /** The trigger as the rules table shows it, e.g. "100 km/h". */
+  threshold: string
+  scope: ViolationRuleScope
+  scopeIds: string[]
+  schedule: ViolationRuleSchedule
+  severity: ViolationSeverity
+  quota: number
+  quotaPeriod: ViolationQuotaPeriod
+  repeatThreshold: number
+  notify: boolean
+  status: ViolationRuleStatus
+  /** Violations this rule has raised. */
+  violationCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type ViolationRuleBody = {
+  entity: ViolationRuleEntity
+  name: string
+  description?: string | null
+  type: ViolationType
+  trigger?: ViolationRuleTrigger
+  scope: ViolationRuleScope
+  scopeIds?: string[]
+  schedule?: ViolationRuleSchedule
+  severity: ViolationSeverity
+  quota?: number
+  quotaPeriod?: ViolationQuotaPeriod
+  repeatThreshold?: number
+  notify?: boolean
+  status?: ViolationRuleStatus
+}
+
+export type FleetViolation = {
+  id: string
+  ruleId: string
+  ruleName: string
+  entity: ViolationRuleEntity
+  type: ViolationType
+  driverId: string | null
+  vehicleId: string | null
+  /** e.g. "112 km/h", "Driving at 23:40", "Reported by device". */
+  recordedValue: string
+  threshold: string
+  severity: ViolationSeverity
+  latitude: number | null
+  longitude: number | null
+  occurredAt: string
+  status: ViolationStatus
+}
+
+export type ViolationSubject = {
+  /** Driver id on the drivers page, vehicle id on the vehicles page. */
+  subjectId: string
+  total: number
+  critical: number
+  mostFrequent: ViolationType
+  lastAt: string
+  /** Use of the quota of the rule they last broke. */
+  quota: { ruleId: string, used: number, quota: number, period: ViolationQuotaPeriod, exceeded: boolean } | null
+  repeatOffender: boolean
+}
+
+export type ViolationSummary = {
+  total: number
+  criticalCount: number
+  subjectsWithViolations: number
+  repeatOffenders: number
+  subjects: ViolationSubject[]
+  /** Newest first, at most 500. */
+  items: FleetViolation[]
+}
+
+export type ViolationRuleListResponse = ServerResponse<ViolationRule[]>
+export type ViolationRuleResponse = ServerResponse<ViolationRule>
+export type ViolationSummaryResponse = ServerResponse<ViolationSummary>
+export type ViolationResponse = ServerResponse<FleetViolation>
+export type CreateViolationRulePayload = { data: ViolationRuleBody }
+export type UpdateViolationRulePayload = { id: string, data: Partial<ViolationRuleBody> }
+export type ViolationsQuery = { entity: ViolationRuleEntity, periodDays?: number }
+export type SetViolationStatusPayload = { id: string, status: ViolationStatus }

@@ -172,6 +172,15 @@ import type {
   UpdateDriverGroupPayload,
   DriverLicenceReminderListResponse,
   SetDriverLicenceReminderPayload,
+  ViolationRuleListResponse,
+  ViolationRuleResponse,
+  ViolationSummaryResponse,
+  ViolationResponse,
+  CreateViolationRulePayload,
+  UpdateViolationRulePayload,
+  ViolationRuleEntity,
+  ViolationsQuery,
+  SetViolationStatusPayload,
   SetFuelThresholdPayload,
   SimCarrierListResponse,
   SimDataBundleListResponse,
@@ -445,6 +454,36 @@ export async function setDriverLicenceReminder({ driverId, data: body }: SetDriv
 
 export async function deleteDriverLicenceReminder({ driverId }: { driverId: string }) {
   const { data } = await axiosInstance.delete<ServerResponse<unknown>>(`/fleet/driver-licence-reminders/${driverId}`)
+  return data
+}
+
+export async function getViolationRules(entity?: ViolationRuleEntity) {
+  const { data } = await axiosInstance.get<ViolationRuleListResponse>('/fleet/violation-rules', { params: { entity } })
+  return data
+}
+
+export async function createViolationRule({ data: body }: CreateViolationRulePayload) {
+  const { data } = await axiosInstance.post<ViolationRuleResponse>('/fleet/violation-rules', body)
+  return data
+}
+
+export async function updateViolationRule({ id, data: body }: UpdateViolationRulePayload) {
+  const { data } = await axiosInstance.patch<ViolationRuleResponse>(`/fleet/violation-rules/${id}`, body)
+  return data
+}
+
+export async function deleteViolationRule({ id }: { id: string }) {
+  const { data } = await axiosInstance.delete<ServerResponse<unknown>>(`/fleet/violation-rules/${id}`)
+  return data
+}
+
+export async function getViolations({ entity, periodDays }: ViolationsQuery) {
+  const { data } = await axiosInstance.get<ViolationSummaryResponse>('/fleet/violations', { params: { entity, period_days: periodDays } })
+  return data
+}
+
+export async function setViolationStatus({ id, status }: SetViolationStatusPayload) {
+  const { data } = await axiosInstance.patch<ViolationResponse>(`/fleet/violations/${id}/status`, { status })
   return data
 }
 

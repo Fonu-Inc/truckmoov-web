@@ -188,6 +188,12 @@ import {
   getDriverLicenceReminders,
   setDriverLicenceReminder,
   deleteDriverLicenceReminder,
+  getViolationRules,
+  createViolationRule,
+  updateViolationRule,
+  deleteViolationRule,
+  getViolations,
+  setViolationStatus,
 } from './requests'
 
 export type * from './types'
@@ -196,6 +202,8 @@ export type * from './types'
 
 import type {
   AlertsQuery,
+  ViolationRuleEntity,
+  ViolationsQuery,
   AuditLogQuery,
   ComplianceDocumentHistoryQuery,
   DeviceSetupRequestsQuery,
@@ -258,6 +266,8 @@ export const FLEET_QUERY_KEY = {
   fleetGroups: ['fleet', 'fleetGroups'],
   driverGroups: ['fleet', 'driverGroups'],
   driverLicenceReminders: ['fleet', 'driverLicenceReminders'],
+  violationRules: ['fleet', 'violationRules'],
+  violations: ['fleet', 'violations'],
   geofenceZone: (id: string) => ['fleet', 'geofences', id],
   devices: (payload?: DevicesQuery) => ['fleet', 'devices', payload],
   device: (id: string) => ['fleet', 'device', id],
@@ -2124,4 +2134,43 @@ export function useSetDriverLicenceReminder() {
 
 export function useDeleteDriverLicenceReminder() {
   return useMutation({ mutationFn: deleteDriverLicenceReminder, onSuccess: invalidateDriverLicenceReminders })
+}
+
+export function getViolationRulesQueryOptions(entity?: ViolationRuleEntity) {
+  return queryOptions({ queryKey: [...FLEET_QUERY_KEY.violationRules, entity ?? 'all'], queryFn: () => getViolationRules(entity) })
+}
+
+export function useViolationRules(entity?: ViolationRuleEntity) {
+  return useQuery(getViolationRulesQueryOptions(entity))
+}
+
+function invalidateViolationRules() {
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.violationRules })
+}
+
+export function useCreateViolationRule() {
+  return useMutation({ mutationFn: createViolationRule, onSuccess: invalidateViolationRules })
+}
+
+export function useUpdateViolationRule() {
+  return useMutation({ mutationFn: updateViolationRule, onSuccess: invalidateViolationRules })
+}
+
+export function useDeleteViolationRule() {
+  return useMutation({ mutationFn: deleteViolationRule, onSuccess: invalidateViolationRules })
+}
+
+export function getViolationsQueryOptions(query: ViolationsQuery) {
+  return queryOptions({ queryKey: [...FLEET_QUERY_KEY.violations, query.entity, query.periodDays ?? 30], queryFn: () => getViolations(query) })
+}
+
+export function useViolations(query: ViolationsQuery) {
+  return useQuery(getViolationsQueryOptions(query))
+}
+
+export function useSetViolationStatus() {
+  return useMutation({
+    mutationFn: setViolationStatus,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.violations }),
+  })
 }

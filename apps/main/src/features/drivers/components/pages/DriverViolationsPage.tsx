@@ -1,6 +1,6 @@
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import {
-  useDriverBehaviorEvents, useDrivers, useVehicles,
+  useDrivers, useVehicles, useViolations,
 } from "@truckmoov/api/fleet";
 import {
   Repeat, ShieldAlert, TriangleAlert, Users,
@@ -14,9 +14,6 @@ import { ViolationEventsTab } from "@/features/fleet/components/ui/violations/Vi
 import { ViolationRulesTab } from "@/features/fleet/components/ui/violations/ViolationRulesTab";
 import { CARD_CLASS } from "@/features/fleet/components/ui/violations/violationsUi";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
-
-/** Recent behaviour events the tables group and list; the KPI totals come from the server. */
-const VIOLATION_EVENTS_LIMIT = 100;
 
 const TAB_TRIGGER_CLASS = "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium ring-offset-background transition-all duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-primary hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 const TAB_CONTENT_CLASS = "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
@@ -57,7 +54,7 @@ function Kpi({
 
 /** `/drivers/violations` — the design app's driver Violations tab. */
 export default function DriverViolationsPage() {
-  const eventsQuery = useDriverBehaviorEvents({ params: { limit: VIOLATION_EVENTS_LIMIT } });
+  const violationsQuery = useViolations({ entity: "drivers" });
   const vehiclesQuery = useVehicles();
   const driversQuery = useDrivers();
   const [
@@ -69,9 +66,14 @@ export default function DriverViolationsPage() {
     setEventsSearch,
   ] = useState("");
 
-  const events = useMemo(
-    () => eventsQuery.data?.data.items ?? [],
-    [eventsQuery.data?.data.items],
+  const summary = violationsQuery.data?.data;
+  const subjects = useMemo(
+    () => summary?.subjects ?? [],
+    [summary?.subjects],
+  );
+  const items = useMemo(
+    () => summary?.items ?? [],
+    [summary?.items],
   );
 
   const vehiclesById = useMemo(
@@ -109,29 +111,15 @@ export default function DriverViolationsPage() {
     [vehicle],
   );
   const driverName = useCallback(
-    (id: string) => driversById.get(id) || "—",
+    (id: string | null) => (id && driversById.get(id)) || "—",
     [driversById],
   );
 
-  const loading = eventsQuery.isLoading;
-  const total = eventsQuery.data?.data.total ?? 0;
-  const critical = eventsQuery.data?.data.criticalCount ?? 0;
-  const perDriver = new Map<string, number>();
-  for (const e of events) {
-    if (e.driverId) {
-      perDriver.set(
-        e.driverId,
-        (perDriver.get(e.driverId) ?? 0) + 1,
-      );
-    }
-  }
-  const driversWithViolations = perDriver.size;
-  // Same definition as the dashboard's Violations card: more than one violation.
-  const repeatOffenders = [...perDriver.values()].filter(n => n > 1).length;
+  const loading = violationsQuery.isLoading;
   const queryState = {
     isLoading: loading,
-    isError: eventsQuery.isError,
-    onRetry: () => void eventsQuery.refetch(),
+    isError: violationsQuery.isError,
+    onRetry: () => void violationsQuery.refetch(),
   };
 
   return (
@@ -146,25 +134,25 @@ export default function DriverViolationsPage() {
             <Kpi
               icon={TriangleAlert}
               label="Total Violations"
-              value={loading ? "…" : `${total}`}
+              value={loading ? "…" : `${summary?.total ?? 0}`}
               tint="primary"
             />
             <Kpi
               icon={ShieldAlert}
               label="Critical Violations"
-              value={loading ? "…" : `${critical}`}
+              value={loading ? "…" : `${summary?.criticalCount ?? 0}`}
               tint="destructive"
             />
             <Kpi
               icon={Users}
               label="Drivers With Violations"
-              value={loading ? "…" : `${driversWithViolations}`}
+              value={loading ? "…" : `${summary?.subjectsWithViolations ?? 0}`}
               tint="warning"
             />
             <Kpi
               icon={Repeat}
               label="Repeat Offenders"
-              value={loading ? "…" : `${repeatOffenders}`}
+              value={loading ? "…" : `${summary?.repeatOffenders ?? 0}`}
               tint="accent"
             />
           </div>
@@ -197,14 +185,15 @@ export default function DriverViolationsPage() {
               value="rules"
               className={`${TAB_CONTENT_CLASS} mt-4`}
             >
-              <ViolationRulesTab />
+              <ViolationRulesTab entity="drivers" />
             </TabsPrimitive.Content>
             <TabsPrimitive.Content
               value="drivers"
               className={`${TAB_CONTENT_CLASS} space-y-6 mt-4`}
             >
               <DriverViolationsTab
-                events={events}
+                subjects={subjects}
+                items={items}
                 driverName={driverName}
                 {...queryState}
                 onViewDetails={(name) => {
@@ -218,7 +207,7 @@ export default function DriverViolationsPage() {
               className={`${TAB_CONTENT_CLASS} mt-4`}
             >
               <ViolationEventsTab
-                events={events}
+                items={items}
                 driverName={driverName}
                 vehiclePlate={vehiclePlate}
                 vehicle={vehicle}

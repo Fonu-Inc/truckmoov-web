@@ -1,6 +1,6 @@
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import {
-  useDriverBehaviorEvents, useDrivers, useVehicles,
+  useDrivers, useVehicles, useViolations,
 } from "@truckmoov/api/fleet";
 import {
   Repeat, ShieldAlert, TriangleAlert, Truck,
@@ -10,13 +10,9 @@ import {
 } from "react";
 import { VehicleViolationsTab } from "@/features/fleet/components/ui/violations/VehicleViolationsTab";
 import { ViolationEventsTab } from "@/features/fleet/components/ui/violations/ViolationEventsTab";
-import {
-  CARD_CLASS, NO_ENDPOINT,
-} from "@/features/fleet/components/ui/violations/violationsUi";
+import { ViolationRulesTab } from "@/features/fleet/components/ui/violations/ViolationRulesTab";
+import { CARD_CLASS } from "@/features/fleet/components/ui/violations/violationsUi";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
-
-/** Recent behaviour events the tables group and list; the KPI totals come from the server. */
-const VIOLATION_EVENTS_LIMIT = 100;
 
 const TAB_TRIGGER_CLASS = "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium ring-offset-background transition-all duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-primary hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 const TAB_CONTENT_CLASS = "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
@@ -57,21 +53,26 @@ function Kpi({
 
 /** `/fleet/violations` — the design app's Violations tab. */
 export default function VehicleViolationsPage() {
-  const eventsQuery = useDriverBehaviorEvents({ params: { limit: VIOLATION_EVENTS_LIMIT } });
+  const violationsQuery = useViolations({ entity: "vehicles" });
   const vehiclesQuery = useVehicles();
   const driversQuery = useDrivers();
   const [
     tab,
     setTab,
-  ] = useState("vehicles");
+  ] = useState("rules");
   const [
     eventsSearch,
     setEventsSearch,
   ] = useState("");
 
-  const events = useMemo(
-    () => eventsQuery.data?.data.items ?? [],
-    [eventsQuery.data?.data.items],
+  const summary = violationsQuery.data?.data;
+  const subjects = useMemo(
+    () => summary?.subjects ?? [],
+    [summary?.subjects],
+  );
+  const items = useMemo(
+    () => summary?.items ?? [],
+    [summary?.items],
   );
 
   const vehiclesById = useMemo(
@@ -109,18 +110,15 @@ export default function VehicleViolationsPage() {
     [vehicle],
   );
   const driverName = useCallback(
-    (id: string) => driversById.get(id) || "—",
+    (id: string | null) => (id && driversById.get(id)) || "—",
     [driversById],
   );
 
-  const loading = eventsQuery.isLoading;
-  const total = eventsQuery.data?.data.total ?? 0;
-  const critical = eventsQuery.data?.data.criticalCount ?? 0;
-  const vehiclesWithViolations = new Set(events.map(e => e.vehicleId).filter(Boolean)).size;
+  const loading = violationsQuery.isLoading;
   const queryState = {
     isLoading: loading,
-    isError: eventsQuery.isError,
-    onRetry: () => void eventsQuery.refetch(),
+    isError: violationsQuery.isError,
+    onRetry: () => void violationsQuery.refetch(),
   };
 
   return (
@@ -135,26 +133,25 @@ export default function VehicleViolationsPage() {
             <Kpi
               icon={TriangleAlert}
               label="Total Violations"
-              value={loading ? "…" : `${total}`}
+              value={loading ? "…" : `${summary?.total ?? 0}`}
               tint="primary"
             />
             <Kpi
               icon={ShieldAlert}
               label="Critical Violations"
-              value={loading ? "…" : `${critical}`}
+              value={loading ? "…" : `${summary?.criticalCount ?? 0}`}
               tint="destructive"
             />
             <Kpi
               icon={Truck}
               label="Vehicles With Violations"
-              value={loading ? "…" : `${vehiclesWithViolations}`}
+              value={loading ? "…" : `${summary?.subjectsWithViolations ?? 0}`}
               tint="warning"
             />
-            {/* Repeat violations needs rule quotas — no endpoint yet. */}
             <Kpi
               icon={Repeat}
               label="Repeat Violations"
-              value={NO_ENDPOINT}
+              value={loading ? "…" : `${summary?.repeatOffenders ?? 0}`}
               tint="accent"
             />
           </div>
@@ -164,7 +161,12 @@ export default function VehicleViolationsPage() {
             onValueChange={setTab}
           >
             <TabsPrimitive.List className="inline-flex items-center justify-center rounded-xl p-1 text-muted-foreground bg-muted/50 flex-wrap h-auto">
-              {/* Violation Rules hidden until a rules backend exists (tech-debt TD-23); ViolationRulesTab is kept. */}
+              <TabsPrimitive.Trigger
+                value="rules"
+                className={TAB_TRIGGER_CLASS}
+              >
+                Violation Rules
+              </TabsPrimitive.Trigger>
               <TabsPrimitive.Trigger
                 value="vehicles"
                 className={TAB_TRIGGER_CLASS}
@@ -179,11 +181,18 @@ export default function VehicleViolationsPage() {
               </TabsPrimitive.Trigger>
             </TabsPrimitive.List>
             <TabsPrimitive.Content
+              value="rules"
+              className={`${TAB_CONTENT_CLASS} mt-4`}
+            >
+              <ViolationRulesTab entity="vehicles" />
+            </TabsPrimitive.Content>
+            <TabsPrimitive.Content
               value="vehicles"
               className={`${TAB_CONTENT_CLASS} space-y-6 mt-4`}
             >
               <VehicleViolationsTab
-                events={events}
+                subjects={subjects}
+                items={items}
                 vehicle={vehicle}
                 {...queryState}
                 onViewDetails={(plate) => {
@@ -197,7 +206,7 @@ export default function VehicleViolationsPage() {
               className={`${TAB_CONTENT_CLASS} mt-4`}
             >
               <ViolationEventsTab
-                events={events}
+                items={items}
                 driverName={driverName}
                 vehiclePlate={vehiclePlate}
                 search={eventsSearch}

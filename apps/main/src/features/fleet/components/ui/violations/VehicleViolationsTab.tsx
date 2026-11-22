@@ -1,4 +1,6 @@
-import type { DriverBehaviorEvent } from "@truckmoov/api/fleet";
+import type {
+  FleetViolation, ViolationSubject,
+} from "@truckmoov/api/fleet";
 import type { SeverityFilter } from "@/features/fleet/components/ui/violations/ViolationsSeverityFilter";
 import {
   Download, Eye, Search,
@@ -6,39 +8,29 @@ import {
 import {
   useMemo, useState,
 } from "react";
+import { ViolationQuotaCell } from "@/features/fleet/components/ui/violations/ViolationQuotaCell";
 import { ViolationsSeverityFilter } from "@/features/fleet/components/ui/violations/ViolationsSeverityFilter";
 import { ViolationsTableState } from "@/features/fleet/components/ui/violations/ViolationsTableState";
 import {
-  CARD_CLASS, downloadViolationsCsv, EXPORT_BUTTON_CLASS, formatViolationDate, GHOST_ROW_BUTTON_CLASS, INPUT_CLASS, NO_ENDPOINT, PILL_SHADOW_CLASS, SEARCH_ICON_CLASS, SEVERITY_CLASS, TABLE_CLASS, TBODY_CLASS, TD_CLASS, TH_CLASS, TH_RIGHT_CLASS, THEAD_CLASS, TR_CLASS, violationTypeLabel,
+  CARD_CLASS, downloadViolationsCsv, EXPORT_BUTTON_CLASS, formatViolationDate, GHOST_ROW_BUTTON_CLASS, INPUT_CLASS, PILL_SHADOW_CLASS, quotaText, SEARCH_ICON_CLASS, SEVERITY_CLASS, TABLE_CLASS, TBODY_CLASS, TD_CLASS, TH_CLASS, TH_RIGHT_CLASS, THEAD_CLASS, TR_CLASS, violationTypeLabel,
 } from "@/features/fleet/components/ui/violations/violationsUi";
 
 export type ViolationVehicle = {
   name: string; plate: string;
 };
 
-type VehicleRow = {
-  vehicleId: string;
-  name: string;
-  plate: string;
-  total: number;
-  critical: number;
-  mostFrequent: string;
-  lastAt: string;
-};
-
-/**
- * Vehicle Violations sub-tab — one row per vehicle, grouped from the
- * behaviour events (there is no per-vehicle violations endpoint).
- */
+/** Vehicle Violations sub-tab — one row per vehicle from the violations summary. */
 export function VehicleViolationsTab({
-  events,
+  subjects,
+  items,
   vehicle,
   isLoading,
   isError,
   onRetry,
   onViewDetails,
 }: {
-  events: DriverBehaviorEvent[];
+  subjects: ViolationSubject[];
+  items: FleetViolation[];
   vehicle: (id: string) => ViolationVehicle;
   isLoading: boolean;
   isError: boolean;
@@ -54,49 +46,22 @@ export function VehicleViolationsTab({
     setSeverity,
   ] = useState<SeverityFilter>("all");
 
-  const rows = useMemo<VehicleRow[]>(
+  const rows = useMemo(
     () => {
-      const byVehicle = new Map<string, DriverBehaviorEvent[]>();
-      for (const e of events) {
-        if (!e.vehicleId || (severity !== "all" && e.severity !== severity))
-          continue;
-        byVehicle.set(
-          e.vehicleId,
-          [
-            ...(byVehicle.get(e.vehicleId) ?? []),
-            e,
-          ],
-        );
-      }
-      return [...byVehicle].map(([
-        vehicleId,
-        list,
-      ]) => {
-        const typeCounts = new Map<string, number>();
-        for (const e of list) {
-          const label = violationTypeLabel(e.type);
-          typeCounts.set(
-            label,
-            (typeCounts.get(label) ?? 0) + 1,
-          );
-        }
-        const mostFrequent = [...typeCounts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-        const lastAt = list.reduce(
-          (max, e) => (e.occurredAt > max ? e.occurredAt : max),
-          "",
-        );
-        return {
-          vehicleId,
-          ...vehicle(vehicleId),
-          total: list.length,
-          critical: list.filter(e => e.severity === "critical").length,
-          mostFrequent,
-          lastAt,
-        };
-      }).sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+      const withSeverity = severity === "all"
+        ? null
+        : new Set(items.filter(i => i.severity === severity).map(i => i.vehicleId));
+      return subjects
+        .filter(s => !withSeverity || withSeverity.has(s.subjectId))
+        .map(s => ({
+          ...s,
+          ...vehicle(s.subjectId),
+          mostFrequent: violationTypeLabel(s.mostFrequent),
+        }));
     },
     [
-      events,
+      subjects,
+      items,
       severity,
       vehicle,
     ],
@@ -124,7 +89,7 @@ export function VehicleViolationsTab({
       r.total,
       r.critical,
       r.mostFrequent,
-      NO_ENDPOINT,
+      quotaText(r.quota),
       r.lastAt ? formatViolationDate(r.lastAt) : "—",
     ]),
   );
@@ -187,7 +152,7 @@ export function VehicleViolationsTab({
               />
               {!isLoading && !isError && filtered.map(r => (
                 <tr
-                  key={r.vehicleId}
+                  key={r.subjectId}
                   className={TR_CLASS}
                 >
                   <td className={`${TD_CLASS} whitespace-nowrap`}>
@@ -204,18 +169,7 @@ export function VehicleViolationsTab({
                   </td>
                   <td className={TD_CLASS}>{r.mostFrequent}</td>
                   <td className={TD_CLASS}>
-                    {/* Quota needs a violation-rules endpoint. */}
-                    <div className="w-28 space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>{NO_ENDPOINT}</span>
-                      </div>
-                      <div className="relative w-full overflow-hidden rounded-full bg-secondary h-1.5">
-                        <div
-                          className="h-full w-full flex-1 transition-all duration-300 bg-primary"
-                          style={{ transform: "translateX(-100%)" }}
-                        />
-                      </div>
-                    </div>
+                    <ViolationQuotaCell quota={r.quota} />
                   </td>
                   <td className={`${TD_CLASS} whitespace-nowrap`}>{r.lastAt ? formatViolationDate(r.lastAt) : "—"}</td>
                   <td className={`${TD_CLASS} text-right`}>

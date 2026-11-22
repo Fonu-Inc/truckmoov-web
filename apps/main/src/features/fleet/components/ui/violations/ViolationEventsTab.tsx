@@ -1,31 +1,32 @@
-import type { DriverBehaviorEvent } from "@truckmoov/api/fleet";
+import type { FleetViolation } from "@truckmoov/api/fleet";
 import type { ViolationVehicle } from "@/features/fleet/components/ui/violations/VehicleViolationsTab";
 import type { SeverityFilter } from "@/features/fleet/components/ui/violations/ViolationsSeverityFilter";
 import {
   Download, Eye, MapPin, Search,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 import { ViolationsSeverityFilter } from "@/features/fleet/components/ui/violations/ViolationsSeverityFilter";
 import { ViolationsTableState } from "@/features/fleet/components/ui/violations/ViolationsTableState";
 import {
-  capitalize, CARD_CLASS, downloadViolationsCsv, EXPORT_BUTTON_CLASS, formatViolationDate, GHOST_ROW_BUTTON_CLASS, INPUT_CLASS, NO_ENDPOINT, PILL_SHADOW_CLASS, SEARCH_ICON_CLASS, SEVERITY_CLASS, TABLE_CLASS, TBODY_CLASS, TD_CLASS, TH_CLASS, TH_RIGHT_CLASS, THEAD_CLASS, TR_CLASS, violationTypeLabel,
+  capitalize, CARD_CLASS, downloadViolationsCsv, EXPORT_BUTTON_CLASS, formatViolationDate, GHOST_ROW_BUTTON_CLASS, INPUT_CLASS, PILL_SHADOW_CLASS, SEARCH_ICON_CLASS, SEVERITY_CLASS, TABLE_CLASS, TBODY_CLASS, TD_CLASS, TH_CLASS, TH_RIGHT_CLASS, THEAD_CLASS, TR_CLASS, violationTypeLabel,
 } from "@/features/fleet/components/ui/violations/violationsUi";
 
-const recorded = (e: DriverBehaviorEvent) => (e.speedKph != null ? `${Math.round(e.speedKph)} km/h` : "—");
-function location(e: DriverBehaviorEvent) {
+function location(e: FleetViolation) {
   return e.latitude != null && e.longitude != null
     ? `${e.latitude.toFixed(4)}, ${e.longitude.toFixed(4)}`
     : "—";
 }
 
 /**
- * Violation Events sub-tab — one row per behaviour event. Pass `vehicle` to
+ * Violation Events sub-tab — one row per violation. Pass `vehicle` to
  * add the driver page's Vehicle column (name + plate) after Driver, and
  * `typeLabel` to override the violation-type wording.
  */
 export function ViolationEventsTab({
-  events,
+  items,
   driverName,
   vehiclePlate,
   vehicle,
@@ -36,8 +37,8 @@ export function ViolationEventsTab({
   isError,
   onRetry,
 }: {
-  events: DriverBehaviorEvent[];
-  driverName: (id: string) => string;
+  items: FleetViolation[];
+  driverName: (id: string | null) => string;
   vehiclePlate: (id: string | null) => string;
   vehicle?: (id: string) => ViolationVehicle;
   typeLabel?: (type: string) => string;
@@ -48,12 +49,16 @@ export function ViolationEventsTab({
   onRetry: () => void;
 }) {
   const [
+    selected,
+    setSelected,
+  ] = useState<FleetViolation | null>(null);
+  const [
     severity,
     setSeverity,
   ] = useState<SeverityFilter>("all");
 
   const q = search.trim().toLowerCase();
-  const filtered = events.filter(e => (severity === "all" || e.severity === severity)
+  const filtered = items.filter(e => (severity === "all" || e.severity === severity)
     && (!q || [
       driverName(e.driverId),
       vehiclePlate(e.vehicleId),
@@ -79,9 +84,9 @@ export function ViolationEventsTab({
       driverName(e.driverId),
       vehiclePlate(e.vehicleId),
       typeLabel(e.type),
-      NO_ENDPOINT,
-      recorded(e),
-      NO_ENDPOINT,
+      e.ruleName,
+      e.recordedValue,
+      e.threshold,
       capitalize(e.severity),
       location(e),
       formatViolationDate(e.occurredAt),
@@ -166,10 +171,9 @@ export function ViolationEventsTab({
                     </td>
                   )}
                   <td className={TD_CLASS}>{typeLabel(e.type)}</td>
-                  {/* Trigger and Threshold come from the violated rule — no rules endpoint yet. */}
-                  <td className={`${TD_CLASS} text-sm`}>{NO_ENDPOINT}</td>
-                  <td className={TD_CLASS}>{recorded(e)}</td>
-                  <td className={TD_CLASS}>{NO_ENDPOINT}</td>
+                  <td className={`${TD_CLASS} text-sm`}>{e.ruleName}</td>
+                  <td className={TD_CLASS}>{e.recordedValue}</td>
+                  <td className={TD_CLASS}>{e.threshold}</td>
                   <td className={TD_CLASS}>
                     <div className={`${PILL_SHADOW_CLASS} ${SEVERITY_CLASS[e.severity]}`}>{capitalize(e.severity)}</div>
                   </td>
@@ -184,7 +188,7 @@ export function ViolationEventsTab({
                     <button
                       type="button"
                       className={GHOST_ROW_BUTTON_CLASS}
-                      onClick={() => toast.info("Event details aren't available yet.")}
+                      onClick={() => setSelected(e)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       View Event
@@ -196,6 +200,73 @@ export function ViolationEventsTab({
           </table>
         </div>
       </div>
+      <Dialog
+        open={!!selected}
+        onOpenChange={open => !open && setSelected(null)}
+      >
+        <DialogContent className="sm:max-w-[760px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Violation Event Details</DialogTitle>
+            <DialogDescription>Incident details and the location at the time of the violation.</DialogDescription>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4 text-sm min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold">{typeLabel(selected.type)}</h3>
+                <div className={`${PILL_SHADOW_CLASS} ${SEVERITY_CLASS[selected.severity]}`}>{capitalize(selected.severity)}</div>
+              </div>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-3">
+                {[
+                  [
+                    "Vehicle",
+                    selected.vehicleId && vehicle
+                      ? [
+                          vehicle(selected.vehicleId).name,
+                          vehicle(selected.vehicleId).plate,
+                        ].filter(v => v !== "—").join(" · ")
+                      : vehiclePlate(selected.vehicleId),
+                  ],
+                  [
+                    "Driver at time of incident",
+                    driverName(selected.driverId),
+                  ],
+                  [
+                    "Date & Time",
+                    formatViolationDate(selected.occurredAt),
+                  ],
+                  [
+                    "Triggered Rule",
+                    selected.ruleName,
+                  ],
+                  [
+                    "Recorded Value",
+                    selected.recordedValue,
+                  ],
+                  [
+                    "Rule Threshold",
+                    selected.threshold,
+                  ],
+                  [
+                    "Location",
+                    location(selected),
+                  ],
+                ].map(([
+                  label,
+                  value,
+                ]) => (
+                  <div
+                    key={label}
+                    className="min-w-0"
+                  >
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd className="font-medium break-words mt-1">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
