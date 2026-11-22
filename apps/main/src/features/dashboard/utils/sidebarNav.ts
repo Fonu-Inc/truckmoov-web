@@ -365,6 +365,43 @@ export function getEntriesForRole(role: UserRole): SidebarEntry[] {
   return visible;
 }
 
+const hrefsOf = (entry: SidebarEntry) => (isNavGroup(entry) ? entry.items.map(i => i.href) : [entry.href]);
+const withEntryByRole = new Map<string, SidebarEntry[]>();
+
+/**
+ * `getEntriesForRole` plus one entry the role is not listed on but reaches by
+ * permission (Billing for an owner operator's operations manager), in its
+ * `SIDEBAR_ENTRIES` place. Cached the same way, for the same reason.
+ */
+export function getEntriesForRoleWith(role: UserRole, href: string): SidebarEntry[] {
+  const key = `${role}:${href}`;
+  const cached = withEntryByRole.get(key);
+  if (cached)
+    return cached;
+  const base = getEntriesForRole(role);
+  const index = SIDEBAR_ENTRIES.findIndex(e => !isNavGroup(e) && e.href === href);
+  if (index < 0 || base.some(e => hrefsOf(e).includes(href)))
+    return base;
+  const rank = (entry: SidebarEntry) => SIDEBAR_ENTRIES.findIndex(s => hrefsOf(s).some(h => hrefsOf(entry).includes(h)));
+  const at = base.findIndex(e => rank(e) > index);
+  const entries = at < 0 ? [
+    ...base,
+    SIDEBAR_ENTRIES[index],
+  ] : [
+    ...base.slice(
+      0,
+      at,
+    ),
+    SIDEBAR_ENTRIES[index],
+    ...base.slice(at),
+  ];
+  withEntryByRole.set(
+    key,
+    entries,
+  );
+  return entries;
+}
+
 /**
  * Deepest entry whose href matches this pathname — exact match wins, else the
  * longest href prefix. Group children are matched, groups themselves are not

@@ -4,7 +4,6 @@ import {
   ArrowUpCircle,
   Bell,
   Building2,
-  CreditCard,
   FileCheck,
   FileText,
   HardDrive,
@@ -48,8 +47,8 @@ const ORG_SETTINGS_ROLES: UserRole[] = [
  *
  * `hasPermissions` is now both the tab-bar filter and the input to the route
  * guard in `shared/lib/route.tsx`: an empty array still means "every role that
- * reaches this app", but a filled one locks the URL too. Invoices is no
- * longer a top-level tab — it lives inside Subscription as a sub-tab.
+ * reaches this app", but a filled one locks the URL too. Subscription
+ * moved to Billing (`/subscription`); its old URLs redirect there.
  */
 export const SETTINGS_TABS: SettingsTab[] = [
   // The bar matches the design app: Organization, Storage, Invoicing, Fleet,
@@ -85,9 +84,6 @@ export const SETTINGS_TABS: SettingsTab[] = [
   },
   {
     to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
-  },
-  {
-    to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,
   },
   {
     to: "/settings/kyc", label: "KYC", icon: FileCheck, hasPermissions: ORG_SETTINGS_ROLES, hidden: true,

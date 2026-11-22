@@ -8,6 +8,7 @@ import {
   Download, Search,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -39,11 +40,7 @@ function PaymentStatus({ status }: { status: TenantPaymentStatus }) {
 }
 
 function receipt(p: TenantPayment) {
-  const doc = receiptDocument(p);
-  downloadDocument(
-    doc.filename,
-    doc.lines,
-  );
+  downloadDocument(receiptDocument(p)).catch(() => toast.error("Could not prepare the download. Try again."));
 }
 
 function PaymentDialog({

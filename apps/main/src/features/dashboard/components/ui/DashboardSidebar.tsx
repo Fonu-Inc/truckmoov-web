@@ -33,9 +33,11 @@ import {
 } from "@/components/shadcn/tooltip";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getRoleShortLabel } from "@/features/auth/utils/role-label";
+import { useBillingAccess } from "@/features/billing/hooks/useBillingAccess";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
 import {
   getEntriesForRole,
+  getEntriesForRoleWith,
   isNavGroup,
 } from "@/features/dashboard/utils/sidebarNav";
 import { useSupportAccess } from "@/features/help/hooks/useSupportAccess";
@@ -246,6 +248,7 @@ function DashboardSidebarBase() {
   const role = useAuthStore(s => s.user?.role);
   const logout = useAuthStore(s => s.logout);
   const supportAccess = useSupportAccess();
+  const billingAccess = useBillingAccess();
   const collapsed = useSidebarStore(s => s.collapsed);
 
   // Branding is effectively static for a session — without a staleTime this
@@ -262,7 +265,14 @@ function DashboardSidebarBase() {
 
   // No `useMemo`: `getEntriesForRole` caches per role, so this is already a
   // stable array — memoising a cache lookup buys nothing.
-  const navItems = role ? getEntriesForRole(role) : NO_ENTRIES;
+  const navItems = !role
+    ? NO_ENTRIES
+    : billingAccess.canView
+      ? getEntriesForRoleWith(
+          role,
+          "/subscription",
+        )
+      : getEntriesForRole(role);
 
   return (
     <TooltipProvider delayDuration={300}>

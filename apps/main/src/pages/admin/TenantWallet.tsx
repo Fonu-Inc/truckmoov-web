@@ -1,13 +1,21 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import type { DataBundleLedgerEntry } from "@truckmoov/api/auth";
+import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getCommunicationsWalletRatesQueryOptions,
+  getDataBundleAutoTopupQueryOptions,
+  getDataBundleWalletBalanceQueryOptions,
+  getDataBundleWalletLedgerQueryOptions,
+  useTopUpDataBundleWallet,
+} from "@truckmoov/api/auth";
 import {
   formatDate, formatTime,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, CreditCard, Download, FileText, SlidersHorizontal as Filter, History, MessageCircle, MessageSquare, Phone, Plus, RefreshCw, Search, Smartphone, TrendingUp, Wallet,
 } from "lucide-react";
-import {
-  useEffect, useState,
-} from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { SubscriptionInvoicesCard } from "@/components/billing/SubscriptionInvoicesCard";
 import { Badge } from "@/components/shadcn/badge";
@@ -233,17 +241,63 @@ type Rate = {
   rate_unit: string;
 };
 
+type ServerRate = {
+  channel: string; unit: string; rateKobo: number; enabled: boolean;
+};
+
+const CHANNEL_BY_CATEGORY: Record<string, string> = {
+  sms: "sms", whatsapp: "whatsapp", voice: "call",
+};
+
+function toTransaction(entry: DataBundleLedgerEntry): Transaction {
+  const debit = entry.direction === "debit";
+  return {
+    id: entry.id,
+    transaction_type: debit ? "debit" : entry.category === "top_up" ? "topup" : "credit",
+    communication_type: CHANNEL_BY_CATEGORY[entry.category] ?? null,
+    quantity: entry.quantity || null,
+    unit_rate_ngn: entry.unitRate || null,
+    amount_ngn: entry.amount,
+    balance_before_ngn: debit ? entry.balanceAfter + entry.amount : entry.balanceAfter - entry.amount,
+    balance_after_ngn: entry.balanceAfter,
+    description: entry.reason,
+    created_at: entry.createdAt,
+  };
+}
+
+function toRate(rate: ServerRate): Rate {
+  return {
+    communication_type: CHANNEL_BY_CATEGORY[rate.channel] ?? rate.channel,
+    rate_ngn: rate.rateKobo / 100,
+    rate_unit: rate.unit,
+  };
+}
+
+// shortcut: the latest 100 ledger lines (the endpoint's page cap) feed every figure here; page through when history matters.
+const LEDGER_QUERY = { params: { limit: 100 } };
+
 export default function TenantWallet() {
   const { user } = useAuthStore();
   const tenantId = user?.tenantId || "default";
 
-  const [walletInfo] = useState<WalletInfo | null>(null);
-  const [transactions] = useState<Transaction[]>([]);
-  const [rates] = useState<Rate[]>([]);
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const balanceQuery = useQuery(getDataBundleWalletBalanceQueryOptions());
+  const ledgerQuery = useQuery(getDataBundleWalletLedgerQueryOptions(LEDGER_QUERY));
+  const ratesQuery = useQuery(getCommunicationsWalletRatesQueryOptions());
+  const autoTopupQuery = useQuery(getDataBundleAutoTopupQueryOptions());
+  const topUp = useTopUpDataBundleWallet();
+  const loading = balanceQuery.isPending;
+  const walletInfo: WalletInfo | null = balanceQuery.data
+    ? {
+        balance: balanceQuery.data.data.balance,
+        credit_enabled: false,
+        credit_limit: 0,
+        low_balance_threshold: autoTopupQuery.data?.data.thresholdAmount ?? 0,
+      }
+    : null;
+  const transactions = (ledgerQuery.data?.data.items ?? []).map(toTransaction);
+  const rates = ((ratesQuery.data?.data ?? []) as ServerRate[])
+    .filter(r => r.enabled && r.channel !== "iot_sim")
+    .map(toRate);
   const [
     topupDialogOpen,
     setTopupDialogOpen,
@@ -256,7 +310,7 @@ export default function TenantWallet() {
     phoneNumber,
     setPhoneNumber,
   ] = useState("");
-  const [topupLoading] = useState(false);
+  const topupLoading = topUp.isPending;
   const [
     usageRange,
     setUsageRange,
@@ -413,37 +467,38 @@ export default function TenantWallet() {
     setFilterPopoverOpen(false);
   };
 
-  const fetchWallet = async () => {
-    // Coming soon
+  const fetchData = () => {
+    void balanceQuery.refetch();
+    void ledgerQuery.refetch();
+    void autoTopupQuery.refetch();
   };
 
-  const fetchTransactions = async () => {
-    // Coming soon
-  };
-
-  const fetchRates = async () => {
-    // Coming soon
-  };
-
-  const fetchData = async () => {
-    setLoading(true);
-    await Promise.all([
-      fetchWallet(),
-      fetchTransactions(),
-      fetchRates(),
-    ]);
-    setLoading(false);
-  };
-
-  useEffect(
-    () => {
-      fetchData();
-    },
-    [tenantId],
-  );
-
-  const handleTopup = async () => {
-    toast.info("Coming soon");
+  const handleTopup = () => {
+    const amount = Number.parseFloat(topupAmount);
+    if (!(amount > 0)) {
+      toast.error("Enter an amount to top up");
+      return;
+    }
+    topUp.mutate(
+      {
+        data: {
+          amount, mobileMoneyProvider: "mtn_momo", mobileNumber: phoneNumber.trim(),
+        },
+      },
+      {
+        onSuccess: (res) => {
+          if (res.data.authorizationUrl) {
+            window.location.assign(res.data.authorizationUrl);
+            return;
+          }
+          void ledgerQuery.refetch();
+          toast.success(`₦${amount.toLocaleString()} added to your wallet`);
+          setTopupDialogOpen(false);
+          setTopupAmount("");
+        },
+        onError: err => toast.error((err as Partial<ServerErrorResponse> | undefined)?.message ?? "Top-up could not be started. Try again."),
+      },
+    );
   };
 
   const getTypeIcon = (commType: string | null) => {
@@ -972,7 +1027,7 @@ export default function TenantWallet() {
           <PostpaidUsageDashboard tenantId={tenantId} />
 
           {/* Subscription Invoices & Receipts */}
-          <SubscriptionInvoicesCard tenantName={user?.name || "Your Organization"} />
+          <SubscriptionInvoicesCard />
 
           {/* Transaction History */}
           <Card>

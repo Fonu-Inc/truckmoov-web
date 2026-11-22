@@ -1,6 +1,7 @@
 import type {
   BillingLine, TenantInvoiceStatus, TenantPaymentMethod, TenantPaymentStatus, TenantQuotationStatus,
 } from "@truckmoov/api/billing";
+import type { ReceiptData } from "@/lib/receiptPdf";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { formatCurrency } from "@/lib/currency";
 
@@ -115,17 +116,7 @@ export function taxRateLabel(taxRateBp: number) {
   return (taxRateBp / 100).toFixed(1);
 }
 
-export function downloadDocument(filename: string, lines: string[]) {
-  const blob = new Blob(
-    [lines.join("\n")],
-    { type: "text/plain;charset=utf-8" },
-  );
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+export async function downloadDocument(data: ReceiptData) {
+  const { downloadReceiptPDF } = await import("@/lib/receiptPdf");
+  downloadReceiptPDF(data);
 }

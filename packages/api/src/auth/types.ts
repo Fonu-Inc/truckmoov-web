@@ -2438,6 +2438,8 @@ export type DataBundleWalletTopup = {
   status: string
   paymentProvider: string
   mobileNumber: string
+  /** Hosted checkout to send the customer to; null when the top-up settled at once. */
+  authorizationUrl?: string | null
   createdAt: string
 }
 
@@ -3833,8 +3835,19 @@ export type RejectKycDocumentPayload = { id: string; data: { reason: string } }
 // ─── Data Bundles (ledger) ────────────────────────────────────────────────────
 
 export type DataBundleLedgerQuery = { params?: { page?: number; limit?: number } }
-// ponytail: spec ships no ledger row schema
-export type DataBundleLedgerResponse = ServerResponse<unknown[]>
+export type DataBundleLedgerEntry = {
+  id: string
+  direction: 'debit' | 'credit'
+  category: string
+  amount: number
+  balanceAfter: number
+  unitRate: number
+  quantity: number
+  reason: string
+  reference: string | null
+  createdAt: string
+}
+export type DataBundleLedgerResponse = ServerResponse<{ items: DataBundleLedgerEntry[], total: number }>
 
 // ─── Platform Wallets ─────────────────────────────────────────────────────────
 

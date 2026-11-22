@@ -30,6 +30,7 @@ import {
   BILLING_CARD, BILLING_CARD_SUBTITLE, BILLING_CARD_TITLE, BILLING_PAGE_SIZE, ChargeBreakdown, DialogSkeleton, LabelValue, PlanSummary, RowActions, SectionError, StatusPill, TableStateRows,
 } from "../../utils/billingShared";
 import { useBillingDownload } from "../../utils/useBillingDownload";
+import { PayInvoiceButton } from "./PayInvoiceButton";
 
 function InvoiceStatus({ invoice }: { invoice: TenantInvoice }) {
   const key = invoiceStatusKey(invoice.status);
@@ -126,7 +127,15 @@ function InvoiceDialog({
                 )}
               </div>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              {invoice.payable && (
+                <PayInvoiceButton
+                  invoice={invoice}
+                  label="Pay invoice"
+                  size="default"
+                  className="rounded-xl"
+                />
+              )}
               <Button
                 variant="outline"
                 className="rounded-xl"
@@ -278,6 +287,12 @@ export function BillingInvoicesTab() {
                     <InvoiceStatus invoice={inv} />
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
+                    {inv.payable && (
+                      <PayInvoiceButton
+                        invoice={inv}
+                        className="mr-1"
+                      />
+                    )}
                     <RowActions
                       onView={() => setSelectedId(inv.id)}
                       onDownload={() => download(inv.id)}

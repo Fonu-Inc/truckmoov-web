@@ -1,7 +1,9 @@
+import { Loader2 } from "lucide-react";
 import {
   Navigate, NavLink, Outlet, useLocation,
 } from "react-router";
 import { useAuthStore } from "@/features/auth/stores/authStore";
+import { useBillingAccess } from "@/features/billing/hooks/useBillingAccess";
 import {
   BILLING_TABS, canSeeTab,
 } from "@/features/billing/utils/billingNav";
@@ -20,10 +22,27 @@ import { PageHeader } from "@/shared/components/layout/PageHeader";
 export function BillingLayout() {
   const role = useAuthStore(s => s.user?.role);
   const { pathname } = useLocation();
+  const access = useBillingAccess();
   const visibleTabs = BILLING_TABS.filter(tab => canSeeTab(
     tab,
     role,
   ));
+
+  if (access.isLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!access.canView) {
+    return (
+      <Navigate
+        to="/not-authorized"
+        replace
+      />
+    );
+  }
 
   // If the index tab (Overview) is hidden for this role, redirect to the
   // first visible tab so /subscription doesn't render an empty Outlet.

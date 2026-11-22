@@ -411,6 +411,9 @@ export function usePayTenantInvoiceFromWallet() {
     onSuccess: () => {
       invalidateTenantBilling()
       queryClient.invalidateQueries({ queryKey: ['dataBundleWalletBalance'] })
+      queryClient.invalidateQueries({ queryKey: ['dataBundleDashboardSummary'] })
+      queryClient.invalidateQueries({ queryKey: ['dataBundleTransactions'] })
+      queryClient.invalidateQueries({ queryKey: ['dataBundleLedger'] })
     },
   })
 }

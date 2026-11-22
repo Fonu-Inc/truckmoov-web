@@ -1,7 +1,17 @@
 import type { Currency } from "@/lib/currency";
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatCurrency } from "@/lib/currency";
+import { CURRENCIES } from "@/lib/currency";
+
+// The PDF's built-in fonts have no naira glyph, so amounts carry the currency code.
+function formatCurrency(amount: number, currency: Currency) {
+  return `${CURRENCIES[currency].code} ${amount.toLocaleString(
+    "en-NG",
+    {
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
+    },
+  )}`;
+}
 
 export type ReceiptItem = {
   description: string;
@@ -17,17 +27,29 @@ export type ReceiptData = {
   plan: string;
   period: string;
   issueDate: string;
-  paidDate: string;
-  dueDate: string;
-  paymentMethod: string;
+  paidDate?: string;
+  dueDate?: string;
+  paymentMethod?: string;
   paymentReference?: string;
   items: ReceiptItem[];
   subtotal: number;
+  discount?: number;
   tax?: number;
+  /** VAT rate as shown, e.g. "7.5". */
+  taxRate?: string;
   amount: number;
   currency: Currency;
   brandName?: string;
   brandTagline?: string;
+  /** Defaults to a paid receipt: "PAYMENT RECEIPT", a PAID stamp and "TOTAL PAID". */
+  title?: string;
+  stamp?: string | null;
+  totalLabel?: string;
+  /** Rows printed under the total, e.g. amount paid and outstanding. */
+  afterTotal?: {
+    label: string; amount: number;
+  }[];
+  filename?: string;
 };
 
 const MTN_YELLOW: [number, number, number] = [
@@ -91,7 +113,7 @@ export function generateReceiptPDF(data: ReceiptData): JsPDF {
   );
   doc.setFontSize(20);
   doc.text(
-    "PAYMENT RECEIPT",
+    data.title ?? "PAYMENT RECEIPT",
     pageWidth - margin,
     16,
     { align: "right" },
@@ -109,36 +131,39 @@ export function generateReceiptPDF(data: ReceiptData): JsPDF {
   );
 
   // ---------- PAID stamp ----------
-  doc.setDrawColor(
-    34,
-    197,
-    94,
-  );
-  doc.setLineWidth(1.2);
-  doc.roundedRect(
-    pageWidth - margin - 38,
-    36,
-    38,
-    12,
-    2,
-    2,
-  );
-  doc.setTextColor(
-    34,
-    197,
-    94,
-  );
-  doc.setFont(
-    "helvetica",
-    "bold",
-  );
-  doc.setFontSize(14);
-  doc.text(
-    "PAID",
-    pageWidth - margin - 19,
-    44,
-    { align: "center" },
-  );
+  const stamp = data.stamp === undefined ? "PAID" : data.stamp;
+  if (stamp) {
+    doc.setDrawColor(
+      34,
+      197,
+      94,
+    );
+    doc.setLineWidth(1.2);
+    doc.roundedRect(
+      pageWidth - margin - 38,
+      36,
+      38,
+      12,
+      2,
+      2,
+    );
+    doc.setTextColor(
+      34,
+      197,
+      94,
+    );
+    doc.setFont(
+      "helvetica",
+      "bold",
+    );
+    doc.setFontSize(14);
+    doc.text(
+      stamp,
+      pageWidth - margin - 19,
+      44,
+      { align: "center" },
+    );
+  }
 
   // ---------- Bill to / Meta ----------
   let y = 42;
@@ -178,7 +203,10 @@ export function generateReceiptPDF(data: ReceiptData): JsPDF {
   }
   doc.setTextColor(...MUTED);
   doc.text(
-    `${data.plan} Plan · ${data.period}`,
+    [
+      data.plan && `${data.plan} Plan`,
+      data.period,
+    ].filter(Boolean).join(" · "),
     margin,
     y + 16,
   );
@@ -216,18 +244,24 @@ export function generateReceiptPDF(data: ReceiptData): JsPDF {
     "Issue date",
     data.issueDate,
   );
-  metaRow(
-    "Due date",
-    data.dueDate,
-  );
-  metaRow(
-    "Paid on",
-    data.paidDate,
-  );
-  metaRow(
-    "Method",
-    data.paymentMethod,
-  );
+  if (data.dueDate) {
+    metaRow(
+      "Due date",
+      data.dueDate,
+    );
+  }
+  if (data.paidDate) {
+    metaRow(
+      "Paid on",
+      data.paidDate,
+    );
+  }
+  if (data.paymentMethod) {
+    metaRow(
+      "Method",
+      data.paymentMethod,
+    );
+  }
   if (data.paymentReference) {
     metaRow(
       "Reference",
@@ -331,9 +365,18 @@ export function generateReceiptPDF(data: ReceiptData): JsPDF {
       data.currency,
     ),
   );
+  if (data.discount) {
+    totalsRow(
+      "Discount",
+      `-${formatCurrency(
+        data.discount,
+        data.currency,
+      )}`,
+    );
+  }
   if (data.tax) {
     totalsRow(
-      "Tax (VAT 7.5%)",
+      `Tax (VAT ${data.taxRate ?? "7.5"}%)`,
       formatCurrency(
         data.tax,
         data.currency,
@@ -356,13 +399,22 @@ export function generateReceiptPDF(data: ReceiptData): JsPDF {
   ty += 2;
 
   totalsRow(
-    "TOTAL PAID",
+    data.totalLabel ?? "TOTAL PAID",
     formatCurrency(
       data.amount,
       data.currency,
     ),
     true,
   );
+  for (const row of data.afterTotal ?? []) {
+    totalsRow(
+      row.label,
+      formatCurrency(
+        row.amount,
+        data.currency,
+      ),
+    );
+  }
 
   // ---------- Footer ----------
   const footerY = doc.internal.pageSize.getHeight() - 20;
@@ -384,7 +436,7 @@ export function generateReceiptPDF(data: ReceiptData): JsPDF {
   );
   doc.setFontSize(8);
   doc.text(
-    "Thank you for your business. This receipt is electronically generated and is valid without signature.",
+    `Thank you for your business. This ${(data.title ?? "receipt").toLowerCase()} is electronically generated and is valid without signature.`,
     margin,
     footerY,
   );
@@ -400,5 +452,5 @@ export function generateReceiptPDF(data: ReceiptData): JsPDF {
 
 export function downloadReceiptPDF(data: ReceiptData): void {
   const doc = generateReceiptPDF(data);
-  doc.save(`Download-${data.invoiceNumber}.pdf`);
+  doc.save(data.filename ?? `Download-${data.invoiceNumber}.pdf`);
 }

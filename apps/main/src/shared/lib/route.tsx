@@ -192,11 +192,6 @@ const GuardedAnalyticsLayout = withGuard(
   AnalyticsLayout,
 );
 
-const GuardedBillingLayout = withGuard(
-  getRolesForHref("/subscription") ?? [],
-  BillingLayout,
-);
-
 /**
  * ReportsLayout wrapped in the sidebar's `/reports` role list. Same pattern:
  * `/reports` renders the Daily Summary, `weekly` and `vehicle-activity` are
@@ -323,10 +318,6 @@ export const router = createBrowserRouter([
       // No dashboard shell of their own: a bare redirect, a print-only
       // preview, and a scratch page.
       {
-        path: "/subscription-invoices",
-        lazy: async () => ({ Component: (await import("@/pages/admin/SubscriptionInvoices")).default }),
-      },
-      {
         path: "/fleet/pl-statement",
         lazy: async () => ({ Component: (await import("@/pages/admin/VehiclePLStatementPreview")).default }),
       },
@@ -348,6 +339,18 @@ export const router = createBrowserRouter([
       {
         path: "/compliance",
         loader: () => redirect("/fleet/compliance"),
+      },
+      {
+        path: "/subscription-invoices",
+        loader: () => redirect("/subscription/invoices"),
+      },
+      {
+        path: "/settings/subscription",
+        loader: () => redirect("/subscription"),
+      },
+      {
+        path: "/settings/subscription/invoices",
+        loader: () => redirect("/subscription/invoices"),
       },
 
       // Everything inside the dashboard shell. Pages render their own content
@@ -579,7 +582,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/subscription",
-            Component: GuardedBillingLayout,
+            Component: BillingLayout,
             children: [
               {
                 index: true, lazy: async () => ({ Component: (await import("@/features/billing/components/ui/BillingOverviewTab")).BillingOverviewTab }),
@@ -684,8 +687,13 @@ export const router = createBrowserRouter([
           },
           {
             path: "/wallet",
-            lazy: guarded(
-              "/wallet",
+            // Owners reach the shared wallet from Billing and M2M IoT Bundles, not the sidebar.
+            lazy: guardedBy(
+              [
+                ...getRolesForHref("/wallet") ?? [],
+                "ENTERPRISE_ADMIN",
+                "OWNER_OPERATOR",
+              ],
               () => import("@/pages/admin/TenantWallet"),
             ),
           },
@@ -871,23 +879,6 @@ export const router = createBrowserRouter([
                   () => import("@/features/settings/components/ui/OrgDocumentsPanel"),
                   "OrgDocumentsPanel",
                 ),
-              },
-              {
-                path: "subscription",
-                lazy: guardedBy(
-                  settingsTabRoles("/settings/subscription") ?? [],
-                  () => import("@/features/settings/components/pages/SubscriptionSettingsPage"),
-                ),
-                children: [
-                  {
-                    index: true,
-                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantSubscriptionCard")).TenantSubscriptionCard }),
-                  },
-                  {
-                    path: "invoices",
-                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SubscriptionInvoicesPanel")).SubscriptionInvoicesPanel }),
-                  },
-                ],
               },
               {
                 path: "storage",

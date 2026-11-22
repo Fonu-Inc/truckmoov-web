@@ -372,7 +372,7 @@ canonical example (a filtered members table with row actions and dialogs).
 
 `/settings` in both apps is the pattern to copy for a tabbed screen:
 `SettingsLayout` is a **pathful layout route** owning the tab bar and the
-`Outlet`, and every tab is a child route — `/settings`, `/settings/subscription`,
+`Outlet`, and every tab is a child route — `/settings`, `/settings/storage`,
 `/settings/users`. The bar is a `<nav>` of `NavLink`s wearing `TabsTrigger`'s
 classes (`isActive` in place of `data-[state=active]`), not Radix `Tabs`: a tab
 is a page, so it gets a real anchor, back/forward, middle-click and a URL you
@@ -389,10 +389,11 @@ Three consequences worth copying:
   so there is no wrapper page. Only tabs needing props, or holding more than one
   panel, have a file in `components/pages/`. See
   [file-structure.md](file-structure.md#a-panel-that-is-exactly-one-route).
-- A tab that itself holds several routes nests one more layout the same way.
-  `/settings/subscription` in `apps/main` is `SubscriptionSettingsPage`, a
-  mini layout with Plan (`index`) and Invoices (`/settings/subscription/invoices`)
-  sub-tabs. Copy the pattern when the parent tab needs its own bar.
+- A tab that itself holds several routes nests one more layout the same way
+  (Billing at `/subscription` is one: `BillingLayout` with Overview, Quotations,
+  Invoices and Payments children). The old `/settings/subscription`,
+  `/settings/subscription/invoices` and `/subscription-invoices` URLs now
+  redirect to Billing.
 
 `apps/admin`'s bar is fleetflow's seven `PlatformSettings` tabs, in its order
 and with its labels, kept as routes: My Profile (`/settings`), Platform Profile

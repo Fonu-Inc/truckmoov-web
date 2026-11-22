@@ -438,6 +438,7 @@ export type TenantInvoicePayment = {
 
 export type TenantInvoiceDetail = TenantInvoice & {
   subtotalNgn: number
+  discountNgn: number
   taxNgn: number
   taxRateBp: number
   lines: TenantInvoiceLine[]

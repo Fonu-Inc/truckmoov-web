@@ -1,5 +1,7 @@
 import type { TenantLicence } from "@truckmoov/api/billing";
-import { useTenantLicence } from "@truckmoov/api/billing";
+import {
+  useTenantInvoice, useTenantLicence,
+} from "@truckmoov/api/billing";
 import {
   addDays, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -12,6 +14,7 @@ import {
 } from "@/features/billing/utils/billingHelpers";
 import { SectionError } from "@/features/billing/utils/billingShared";
 import { cn } from "@/lib/utils";
+import { PayInvoiceButton } from "./PayInvoiceButton";
 
 const STATUS_LABEL: Record<TenantLicence["status"], string> = {
   active: "Active",
@@ -50,6 +53,19 @@ function validityHint(days: number | null) {
   return `Valid for ${Math.round(days / 30.4375)} months from purchase`;
 }
 
+function RenewNow({ invoiceId }: { invoiceId: string }) {
+  const invoice = useTenantInvoice(invoiceId).data?.data;
+  if (!invoice?.payable)
+    return null;
+  return (
+    <PayInvoiceButton
+      invoice={invoice}
+      label="Renew now"
+      className="mt-3 rounded-xl"
+    />
+  );
+}
+
 function PlanBody({ plan }: { plan: TenantLicence }) {
   const price = plan.pricePerDeviceNgn;
   return (
@@ -83,6 +99,7 @@ function PlanBody({ plan }: { plan: TenantLicence }) {
               {price === null ? "—" : ngn(price)}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">per device</p>
+            {plan.renewalInvoiceId && <RenewNow invoiceId={plan.renewalInvoiceId} />}
           </div>
         </div>
 
@@ -96,7 +113,7 @@ function PlanBody({ plan }: { plan: TenantLicence }) {
             icon={Wallet}
             label="Total amount paid"
             value={plan.totalPaidNgn === null ? "—" : ngn(plan.totalPaidNgn)}
-            hint={price === null ? undefined : `${plan.deviceCount} × ${ngn(price)}`}
+            hint={plan.totalPaidNgn === null ? undefined : "Including VAT and installation"}
           />
           <Fact
             icon={CalendarClock}

@@ -2,14 +2,12 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type {
   TenantInvoice, TenantLicence,
 } from "@truckmoov/api/billing";
-import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import {
   keepPreviousData, useQuery,
 } from "@tanstack/react-query";
 import {
   BILLING_QUERY_KEY,
   getTenantInvoicesQueryOptions,
-  usePayTenantInvoiceByCard,
   usePayTenantInvoiceFromWallet,
   useTenantLicence,
 } from "@truckmoov/api/billing";
@@ -37,37 +35,12 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { formatCurrency } from "@/lib/currency";
-
-function formatDay(date: string) {
-  return new Date(`${date.slice(
-    0,
-    10,
-  )}T00:00:00Z`).toLocaleDateString(
-    "en-NG",
-    {
-      timeZone: "UTC",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    },
-  );
-}
+import {
+  formatDay, payErrorMessage, useInvoiceCardPayment,
+} from "./useInvoiceCardPayment";
 
 function plural(n: number, word: string) {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
-
-function payErrorMessage(err: unknown) {
-  const e = err as Partial<ServerErrorResponse> | undefined;
-  if (e?.shortfallNgn) {
-    return `Your wallet balance is ${formatCurrency(
-      e.shortfallNgn,
-      "NGN",
-    )} short. Top up the wallet and try again.`;
-  }
-  if (e?.code === "INVOICE_NOT_PAYABLE")
-    return "This invoice can no longer be paid. Refresh to see its latest status.";
-  return e?.message ?? "Payment could not be completed. Try again.";
 }
 
 function StatusBadge({ invoice }: { invoice: TenantInvoice }) {
@@ -135,10 +108,14 @@ function LicenceSummary({ licence }: { licence: TenantLicence }) {
   );
 }
 
-function PayDialog({
-  invoice, onClose,
+export function PayDialog({
+  invoice, onClose, onCard, cardBusy,
 }: {
-  invoice: TenantInvoice | null; onClose: () => void;
+  invoice: TenantInvoice | null;
+  onClose: () => void;
+  /** Offers a card checkout next to the wallet. */
+  onCard?: (invoice: TenantInvoice) => void;
+  cardBusy?: boolean;
 }) {
   const wallet = usePayTenantInvoiceFromWallet();
 
@@ -166,13 +143,13 @@ function PayDialog({
     >
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Pay from wallet</DialogTitle>
+          <DialogTitle>{onCard ? "Pay invoice" : "Pay from wallet"}</DialogTitle>
           <DialogDescription>
             {invoice
               ? `${formatCurrency(
                 invoice.outstandingNgn,
                 "NGN",
-              )} will be taken from your wallet to pay invoice ${invoice.number}.`
+              )} will be taken from your wallet to pay invoice ${invoice.number}.${onCard ? " Or pay by card instead." : ""}`
               : ""}
           </DialogDescription>
         </DialogHeader>
@@ -184,11 +161,22 @@ function PayDialog({
           >
             Cancel
           </Button>
+          {onCard && invoice && (
+            <Button
+              variant="outline"
+              disabled={wallet.isPending || cardBusy}
+              onClick={() => onCard(invoice)}
+            >
+              <CreditCard className="h-4 w-4 mr-1.5" />
+              {cardBusy ? "Opening checkout..." : "Pay by card"}
+            </Button>
+          )}
           <Button
-            disabled={wallet.isPending}
+            disabled={wallet.isPending || cardBusy}
             onClick={confirm}
           >
-            {wallet.isPending ? "Paying..." : "Confirm payment"}
+            {onCard && <Wallet className="h-4 w-4 mr-1.5" />}
+            {wallet.isPending ? "Paying..." : onCard ? "Pay from wallet" : "Confirm payment"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -292,7 +280,7 @@ export function SubscriptionInvoicesCard(_props: { tenantName?: string }) {
     placeholderData: keepPreviousData,
   });
   const licence = useTenantLicence();
-  const card = usePayTenantInvoiceByCard();
+  const card = useInvoiceCardPayment();
   const [
     walletInvoice,
     setWalletInvoice,
@@ -311,25 +299,6 @@ export function SubscriptionInvoicesCard(_props: { tenantName?: string }) {
     },
     [],
   );
-
-  const payByCard = (invoice: TenantInvoice) =>
-    card.mutate(
-      { id: invoice.id },
-      {
-        onSuccess: (res) => {
-          if (res.data.authorizationUrl) {
-            window.location.assign(res.data.authorizationUrl);
-            return;
-          }
-          // Demo checkout settles on the server, so refresh the invoice list.
-          refetchTenantBilling();
-          toast.success(res.data.newPeriodEnd
-            ? `Paid. Your licence now runs until ${formatDay(res.data.newPeriodEnd)}.`
-            : "Paid. Thank you.");
-        },
-        onError: err => toast.error(payErrorMessage(err)),
-      },
-    );
 
   const list = invoices.data?.data;
   const items = list?.items ?? [];
@@ -366,7 +335,7 @@ export function SubscriptionInvoicesCard(_props: { tenantName?: string }) {
           {licence.data?.data && <LicenceSummary licence={licence.data.data} />}
           <DataTable
             columns={invoiceColumns({
-              cardBusy: card.isPending, onWallet: setWalletInvoice, onCard: payByCard,
+              cardBusy: card.isPending, onWallet: setWalletInvoice, onCard: card.payByCard,
             })}
             data={items}
             isLoading={invoices.isPending}
