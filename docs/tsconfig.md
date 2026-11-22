@@ -77,3 +77,11 @@ alias plus path mappings for the `@truckmoov/api` TypeScript sources. `next buil
 with it. To check by hand, run `npx tsc --noEmit -p .` from the app.
 
 When adding a new app, start from the shared base when possible, then add only the path aliases, framework types, and stricter app-specific checks that the app needs.
+
+## Typecheck script and CI
+
+Each app has a `typecheck` script (`tsc --noEmit` over its `tsconfig.app.json` and
+`tsconfig.node.json`; the landing page over its single config). Each app workflow runs
+`pnpm turbo lint` and `pnpm turbo typecheck` for that app before its build (the landing page
+type-checks after `next build`, which writes the `next-env.d.ts` its config includes), and
+main/admin run their vitest suites in a separate Test job that deploy waits on.

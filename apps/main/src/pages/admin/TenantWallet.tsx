@@ -3,14 +3,19 @@ import type { DataBundleLedgerEntry } from "@truckmoov/api/auth";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import { useQuery } from "@tanstack/react-query";
 import {
+  exportDataBundleWalletLedger,
   getCommunicationsWalletRatesQueryOptions,
+  getCommunicationsWalletSpendBreakdownQueryOptions,
   getDataBundleAutoTopupQueryOptions,
   getDataBundleWalletBalanceQueryOptions,
   getDataBundleWalletLedgerQueryOptions,
   useTopUpDataBundleWallet,
 } from "@truckmoov/api/auth";
 import {
-  formatDate, formatTime,
+  downloadBlob, escapeHtml as esc,
+} from "@truckmoov/app-core/utils/general-utils";
+import {
+  formatDate, formatTime, startOfMonth, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, CreditCard, Download, FileText, SlidersHorizontal as Filter, History, MessageCircle, MessageSquare, Phone, Plus, RefreshCw, Search, Smartphone, TrendingUp, Wallet,
@@ -273,8 +278,12 @@ function toRate(rate: ServerRate): Rate {
   };
 }
 
-// shortcut: the latest 100 ledger lines (the endpoint's page cap) feed every figure here; page through when history matters.
+// The table, chart and PDF show the latest 100 ledger lines (the endpoint's page cap); totals and CSV come from the server.
 const LEDGER_QUERY = { params: { limit: 100 } };
+
+const BREAKDOWN_CHANNEL: Record<string, string> = {
+  voice: "call", data_bundle: "data bundles",
+};
 
 export default function TenantWallet() {
   const { user } = useAuthStore();
@@ -282,6 +291,32 @@ export default function TenantWallet() {
 
   const balanceQuery = useQuery(getDataBundleWalletBalanceQueryOptions());
   const ledgerQuery = useQuery(getDataBundleWalletLedgerQueryOptions(LEDGER_QUERY));
+  const [
+    {
+      monthStart, today,
+    },
+  ] = useState(() => {
+    const now = new Date();
+    return {
+      monthStart: startOfMonth(now)!.toISOString(), today: toDateParam(now),
+    };
+  });
+  const monthSpendQuery = useQuery(getCommunicationsWalletSpendBreakdownQueryOptions({
+    params: {
+      range: "custom", startDate: toDateParam(monthStart), endDate: today,
+    },
+  }));
+  const monthDebitsQuery = useQuery(getDataBundleWalletLedgerQueryOptions({
+    params: {
+      direction: "debit", from: monthStart, limit: 1,
+    },
+  }));
+  // shortcut: sums at most 100 top-ups in a month; add a server sum if a tenant tops up more often.
+  const monthTopupsQuery = useQuery(getDataBundleWalletLedgerQueryOptions({
+    params: {
+      category: "top_up", from: monthStart, limit: 100,
+    },
+  }));
   const ratesQuery = useQuery(getCommunicationsWalletRatesQueryOptions());
   const autoTopupQuery = useQuery(getDataBundleAutoTopupQueryOptions());
   const topUp = useTopUpDataBundleWallet();
@@ -471,6 +506,9 @@ export default function TenantWallet() {
     void balanceQuery.refetch();
     void ledgerQuery.refetch();
     void autoTopupQuery.refetch();
+    void monthSpendQuery.refetch();
+    void monthDebitsQuery.refetch();
+    void monthTopupsQuery.refetch();
   };
 
   const handleTopup = () => {
@@ -563,91 +601,38 @@ export default function TenantWallet() {
     100000,
   ];
 
-  // Calculate usage stats (this-month for KPIs at the top)
-  const thisMonthTransactions = transactions.filter((tx) => {
-    const txDate = new Date(tx.created_at);
-    const now = new Date();
-    return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
-  });
+  const totalSpentThisMonth = monthSpendQuery.data?.data.total ?? 0;
+  const monthTopups = monthTopupsQuery.data?.data.items ?? [];
 
-  const totalSpentThisMonth = thisMonthTransactions
-    .filter(tx => tx.transaction_type === "debit")
-    .reduce(
-      (sum, tx) => sum + tx.amount_ngn,
-      0,
-    );
-
-  // Range-filtered usage breakdown (driven by date dropdown on the Usage card)
   const usageRangeBounds = getUsageRangeBounds(usageRange);
-  const usageByType = transactions
-    .filter((tx) => {
-      if (tx.transaction_type !== "debit" || !tx.communication_type)
-        return false;
-      const d = new Date(tx.created_at);
-      return d >= usageRangeBounds.start && d <= usageRangeBounds.end;
-    })
-    .reduce(
-      (acc, tx) => {
-        const type = tx.communication_type!;
-        if (!acc[type]) {
-          acc[type] = {
-            count: 0, amount: 0,
-          };
-        }
-        acc[type].count += tx.quantity || 1;
-        acc[type].amount += tx.amount_ngn;
-        return acc;
-      },
-      {} as Record<string, {
-        count: number; amount: number;
-      }>,
-    );
+  const usageQuery = useQuery(getCommunicationsWalletSpendBreakdownQueryOptions({
+    params: {
+      range: "custom", startDate: toDateParam(usageRangeBounds.start), endDate: toDateParam(usageRangeBounds.end),
+    },
+  }));
+  const usageByType = (usageQuery.data?.data.breakdown ?? []).filter(b => b.amount > 0);
   const usageRangeLabel = USAGE_RANGE_OPTIONS.find(o => o.value === usageRange)?.label.toLowerCase();
 
-  const exportToCSV = () => {
-    if (transactions.length === 0) {
-      toast.error("No transactions to export");
-      return;
+  const exportToCSV = async () => {
+    const channel = txChannelEnabled && txChannelValue !== "all" ? txChannelValue : null;
+    const category = txTypeEnabled && txTypeValue === "topup"
+      ? "top_up"
+      : channel === "call" ? "voice" : channel === "sms" || channel === "whatsapp" ? channel : undefined;
+    try {
+      downloadBlob(
+        await exportDataBundleWalletLedger({
+          category,
+          direction: txTypeEnabled && txTypeValue !== "all" ? (txTypeValue === "debit" ? "debit" : "credit") : undefined,
+          from: dateFrom?.toISOString(),
+          to: dateTo?.toISOString(),
+        }),
+        `wallet-transactions-${toDateParam(new Date())}.csv`,
+      );
+      toast.success("CSV exported successfully");
     }
-
-    const headers = [
-      "Date",
-      "Time",
-      "Type",
-      "Channel",
-      "Quantity",
-      "Rate (₦)",
-      "Amount (₦)",
-      "Balance After (₦)",
-      "Description",
-    ];
-    const rows = transactions.map(tx => [
-      formatDate(tx.created_at),
-      formatTime(tx.created_at),
-      tx.transaction_type,
-      tx.communication_type || "",
-      tx.quantity || "",
-      tx.unit_rate_ngn || "",
-      tx.amount_ngn,
-      tx.balance_after_ngn,
-      tx.description || "",
-    ]);
-
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(",")),
-    ].join("\n");
-
-    const blob = new Blob(
-      [csvContent],
-      { type: "text/csv;charset=utf-8;" },
-    );
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `wallet-transactions-${new Date().toISOString().split("T")[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast.success("CSV exported successfully");
+    catch {
+      toast.error("CSV export failed. Try again.");
+    }
   };
 
   const exportToPDF = () => {
@@ -690,20 +675,20 @@ export default function TenantWallet() {
         </head>
         <body>
           <h1>Wallet Transaction History</h1>
-          <p style="color: #64748b;">Generated on ${new Date().toLocaleString()}</p>
+          <p style="color: #64748b;">Generated on ${esc(new Date().toLocaleString())}</p>
           
           <div class="summary">
             <div class="summary-card">
               <h3>Current Balance</h3>
-              <p>₦${(walletInfo?.balance || 0).toLocaleString()}</p>
+              <p>₦${esc((walletInfo?.balance || 0).toLocaleString())}</p>
             </div>
             <div class="summary-card">
               <h3>Total Spent</h3>
-              <p class="debit">₦${totalDebits.toLocaleString()}</p>
+              <p class="debit">₦${esc(totalDebits.toLocaleString())}</p>
             </div>
             <div class="summary-card">
               <h3>Total Top-ups</h3>
-              <p class="credit">₦${totalCredits.toLocaleString()}</p>
+              <p class="credit">₦${esc(totalCredits.toLocaleString())}</p>
             </div>
           </div>
           
@@ -721,14 +706,14 @@ export default function TenantWallet() {
             <tbody>
               ${transactions.map(tx => `
                 <tr>
-                  <td>${new Date(tx.created_at).toLocaleString()}</td>
-                  <td>${tx.transaction_type}</td>
-                  <td>${tx.communication_type || "-"}</td>
-                  <td>${tx.quantity ? `${tx.quantity} ${tx.communication_type === "call" ? "min" : "msg"}` : ""} ${tx.description || ""}</td>
+                  <td>${esc(new Date(tx.created_at).toLocaleString())}</td>
+                  <td>${esc(tx.transaction_type)}</td>
+                  <td>${esc(tx.communication_type || "-")}</td>
+                  <td>${tx.quantity ? `${esc(tx.quantity)} ${tx.communication_type === "call" ? "min" : "msg"}` : ""} ${esc(tx.description)}</td>
                   <td class="text-right ${tx.transaction_type === "debit" ? "debit" : "credit"}">
-                    ${tx.transaction_type === "debit" ? "-" : "+"}₦${tx.amount_ngn.toLocaleString()}
+                    ${tx.transaction_type === "debit" ? "-" : "+"}₦${esc(tx.amount_ngn.toLocaleString())}
                   </td>
-                  <td class="text-right">₦${tx.balance_after_ngn.toLocaleString()}</td>
+                  <td class="text-right">₦${esc(tx.balance_after_ngn.toLocaleString())}</td>
                 </tr>
               `).join("")}
             </tbody>
@@ -817,7 +802,7 @@ export default function TenantWallet() {
                   {totalSpentThisMonth.toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {thisMonthTransactions.filter(tx => tx.transaction_type === "debit").length}
+                  {monthDebitsQuery.data?.data.total ?? 0}
                   {" "}
                   transactions
                 </p>
@@ -831,16 +816,15 @@ export default function TenantWallet() {
               <CardContent>
                 <p className="text-2xl font-bold text-success">
                   ₦
-                  {thisMonthTransactions
-                    .filter(tx => tx.transaction_type === "topup")
+                  {monthTopups
                     .reduce(
-                      (sum, tx) => sum + tx.amount_ngn,
+                      (sum, tx) => sum + tx.amount,
                       0,
                     )
                     .toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {thisMonthTransactions.filter(tx => tx.transaction_type === "topup").length}
+                  {monthTopupsQuery.data?.data.total ?? 0}
                   {" "}
                   top-ups
                 </p>
@@ -889,45 +873,39 @@ export default function TenantWallet() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {Object.entries(usageByType).length === 0
+                  {usageByType.length === 0
                     ? (
                         <p className="text-muted-foreground text-center py-4">No usage for the selected range</p>
                       )
                     : (
-                        Object.entries(usageByType).map(([
-                          type,
-                          data,
-                        ]) => (
-                          <div
-                            key={type}
-                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-lg ${
-                                type === "call"
-                                  ? "bg-info/10 text-info"
-                                  : type === "sms"
-                                    ? "bg-success/10 text-success"
-                                    : "bg-success/10 text-success"
-                              }`}
-                              >
-                                {getTypeIcon(type)}
+                        usageByType.map(({
+                          channel, amount, percentage,
+                        }) => {
+                          const type = BREAKDOWN_CHANNEL[channel] ?? channel;
+                          return (
+                            <div
+                              key={channel}
+                              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${type === "call" ? "bg-info/10 text-info" : "bg-success/10 text-success"}`}>
+                                  {channel === "data_bundle" ? <Smartphone className="h-4 w-4" /> : getTypeIcon(type)}
+                                </div>
+                                <div>
+                                  <p className="font-medium capitalize">{type}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {percentage}
+                                    % of spend
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium capitalize">{type}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {data.count}
-                                  {" "}
-                                  {type === "call" ? "minutes" : "messages"}
-                                </p>
-                              </div>
+                              <p className="font-semibold">
+                                ₦
+                                {amount.toLocaleString()}
+                              </p>
                             </div>
-                            <p className="font-semibold">
-                              ₦
-                              {data.amount.toLocaleString()}
-                            </p>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                 </div>
               </CardContent>
@@ -1038,7 +1016,7 @@ export default function TenantWallet() {
                     <History className="h-5 w-5 text-primary" />
                     Transaction History
                   </CardTitle>
-                  <CardDescription>Your wallet activity and usage logs</CardDescription>
+                  <CardDescription>Latest 100 entries. Export as CSV for the full history.</CardDescription>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

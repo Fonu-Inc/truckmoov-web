@@ -1,6 +1,7 @@
 import type {
   Geofence, TrackingStatus, TrackingVehicle,
 } from "@truckmoov/api/fleet";
+import { escapeHtml as esc } from "@truckmoov/app-core/utils/general-utils";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   MAP_ATTRIBUTION, MAP_TILES_LIGHT,
@@ -58,14 +59,6 @@ function vehicleIcon(status: TrackingStatus, heading: number | null, selected: b
       size / 2,
     ],
   });
-}
-
-// Tooltips and popups take HTML; plates, names and addresses are tenant-typed text.
-function esc(value: unknown) {
-  return String(value ?? "").replace(
-    /[&<>"']/g,
-    c => `&#${c.charCodeAt(0)};`,
-  );
 }
 
 function vehicleLabel(v: TrackingVehicle) {

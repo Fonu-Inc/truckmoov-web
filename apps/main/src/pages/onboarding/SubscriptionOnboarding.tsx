@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  getOnboardingExchangeRateQueryOptions,
   getOnboardingPlansQueryOptions,
   getOnboardingSubscriptionCapsQueryOptions,
   useCreatePaymentIntent,
@@ -21,8 +20,6 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { EnterpriseEnquiryDialog } from "@/components/onboarding/EnterpriseEnquiryDialog";
 import { Button } from "@/components/shadcn/button";
-import { Label } from "@/components/shadcn/label";
-import { Switch } from "@/components/shadcn/switch";
 import { cn } from "@/lib/utils";
 import { OnboardingLayout } from "./OnboardingLayout";
 
@@ -36,17 +33,12 @@ function formatCurrentCap(value: number | null): string {
 export default function SubscriptionOnboarding() {
   const navigate = useNavigate();
   const plansQuery = useQuery(getOnboardingPlansQueryOptions());
-  const exchangeRateQuery = useQuery(getOnboardingExchangeRateQueryOptions());
   const capsQuery = useQuery(getOnboardingSubscriptionCapsQueryOptions());
 
   const [
     billing,
     setBilling,
   ] = useState<"monthly" | "yearly">("monthly");
-  const [
-    currencyUsd,
-    setCurrencyUsd,
-  ] = useState(false);
   const [
     pickedTier,
     setPickedTier,
@@ -59,7 +51,6 @@ export default function SubscriptionOnboarding() {
 
   const plans = plansQuery.data?.data.plans ?? [];
   const picked = plans.find(plan => plan.tier === pickedTier) ?? null;
-  const ngnPerUsd = exchangeRateQuery.data?.data.ngnPerUsd ?? 0;
 
   const getPrice = (monthlyPrice: number | null, yearlyMonthlyPrice: number | null) => {
     if (monthlyPrice === null)
@@ -67,16 +58,7 @@ export default function SubscriptionOnboarding() {
     return billing === "yearly" ? (yearlyMonthlyPrice ?? monthlyPrice) * 12 : monthlyPrice;
   };
 
-  const formatPrice = (ngn: number) => {
-    if (currencyUsd) {
-      const usd = ngn / ngnPerUsd;
-      return `$${usd.toLocaleString(
-        undefined,
-        { maximumFractionDigits: 0 },
-      )}`;
-    }
-    return `₦${ngn.toLocaleString()}`;
-  };
+  const formatPrice = (ngn: number) => `₦${ngn.toLocaleString()}`;
 
   const handlePay = async () => {
     if (!picked)
@@ -321,42 +303,6 @@ export default function SubscriptionOnboarding() {
             })}
           </dl>
         </div>
-      )}
-
-      <div className="mt-6 inline-flex w-fit items-center gap-3 self-start rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
-        <Label
-          htmlFor="currency-toggle"
-          className={cn(
-            "text-xs font-semibold transition-colors",
-            !currencyUsd ? "text-foreground" : "text-muted-foreground",
-          )}
-        >
-          Naira (₦)
-        </Label>
-        <Switch
-          id="currency-toggle"
-          checked={currencyUsd}
-          onCheckedChange={setCurrencyUsd}
-          aria-label="Toggle currency between Naira and USD"
-        />
-        <Label
-          htmlFor="currency-toggle"
-          className={cn(
-            "text-xs font-semibold transition-colors",
-            currencyUsd ? "text-foreground" : "text-muted-foreground",
-          )}
-        >
-          USD ($)
-        </Label>
-      </div>
-
-      {exchangeRateQuery.data && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          {`1 USD = ₦${ngnPerUsd.toLocaleString(
-            undefined,
-            { maximumFractionDigits: 4 },
-          )} (${exchangeRateQuery.data.data.source})`}
-        </p>
       )}
 
       <div className="mt-8 flex justify-end border-t border-border/60 pt-6">

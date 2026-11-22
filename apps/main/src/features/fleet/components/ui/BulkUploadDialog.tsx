@@ -2,10 +2,14 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type {
   BulkImportSkipped, VehicleImportColumn,
 } from "@truckmoov/api/fleet";
+import { useQuery } from "@tanstack/react-query";
 import {
+  downloadDriverImportTemplate,
   downloadVehicleImportTemplate,
+  getDriverImportColumnsQueryOptions,
+  getVehicleImportColumnsQueryOptions,
+  useImportDrivers,
   useImportVehicles,
-  useVehicleImportColumns,
 } from "@truckmoov/api/fleet";
 import {
   AlertCircle, CheckCircle, Download, FileText, Upload, X,
@@ -28,7 +32,19 @@ import { cn } from "@/lib/utils";
 type BulkUploadDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  kind?: "vehicle" | "driver";
 };
+
+const KINDS = {
+  vehicle: {
+    title: "Bulk Import Vehicles",
+    downloadTemplate: downloadVehicleImportTemplate,
+  },
+  driver: {
+    title: "Bulk Import Drivers",
+    downloadTemplate: downloadDriverImportTemplate,
+  },
+} as const;
 
 type ImportOutcome = {
   created: number;
@@ -82,8 +98,9 @@ const skippedColumns: ColumnDef<BulkImportSkipped>[] = [
 ];
 
 export function BulkUploadDialog({
-  open, onOpenChange,
+  open, onOpenChange, kind = "vehicle",
 }: BulkUploadDialogProps) {
+  const config = KINDS[kind];
   const [
     isDragging,
     setIsDragging,
@@ -98,8 +115,18 @@ export function BulkUploadDialog({
   ] = useState<ImportOutcome | null>(null);
   // One key per selected file: retrying the same file reuses it, a new file rotates it.
   const idempotencyKey = useRef("");
-  const importMutation = useImportVehicles();
-  const { data: columnsResp } = useVehicleImportColumns();
+  const importVehicles = useImportVehicles();
+  const importDrivers = useImportDrivers();
+  const importMutation = kind === "driver" ? importDrivers : importVehicles;
+  const vehicleColumns = useQuery({
+    ...getVehicleImportColumnsQueryOptions(),
+    enabled: open && kind === "vehicle",
+  });
+  const driverColumns = useQuery({
+    ...getDriverImportColumnsQueryOptions(),
+    enabled: open && kind === "driver",
+  });
+  const columnsResp = kind === "driver" ? driverColumns.data : vehicleColumns.data;
 
   const handleFile = useCallback(
     (selectedFile: File) => {
@@ -169,17 +196,17 @@ export function BulkUploadDialog({
     }
     catch (error) {
       const err = error as { message?: string };
-      toast.error(err?.message ?? "Vehicle import failed");
+      toast.error(err?.message ?? `${kind === "driver" ? "Driver" : "Vehicle"} import failed`);
     }
   };
 
   const downloadTemplate = async () => {
     try {
-      const blob = await downloadVehicleImportTemplate();
+      const blob = await config.downloadTemplate();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "vehicle_import_template.csv";
+      a.download = `${kind}_import_template.csv`;
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -201,7 +228,7 @@ export function BulkUploadDialog({
     >
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Bulk Import Vehicles</DialogTitle>
+          <DialogTitle>{config.title}</DialogTitle>
           <DialogDescription>
             Upload a CSV file — the server validates it and imports what it can.
           </DialogDescription>

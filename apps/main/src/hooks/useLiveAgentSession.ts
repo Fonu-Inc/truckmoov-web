@@ -45,11 +45,13 @@ export type LiveChatTopic = {
 /** Tickets raised from the chat widget carry this otherChannel so the widget can find them again. */
 const LIVE_CHAT_CHANNEL = "live chat";
 const ENDED_KEY = "support-chat:ended-ticket";
+const ACTIVE_KEY = "support-chat:active-ticket";
 const SEEN_KEY = "support-chat:last-seen-reply";
 const ENDED_STATUSES = new Set([
   "resolved",
   "closed",
 ]);
+const OPEN_STATUSES = "open,in_progress,waiting_on_tenant,escalated";
 
 const TOPIC_CATEGORY: Record<string, SupportTicketCategory> = {
   activation: "onboarding",
@@ -69,12 +71,17 @@ function readStorage(key: string) {
   }
 }
 
-function writeStorage(key: string, value: string) {
+function writeStorage(key: string, value: string | null) {
   try {
-    localStorage.setItem(
-      key,
-      value,
-    );
+    if (value === null) {
+      localStorage.removeItem(key);
+    }
+    else {
+      localStorage.setItem(
+        key,
+        value,
+      );
+    }
   }
   catch {}
 }
@@ -90,10 +97,26 @@ function errorMessage(error: unknown, fallback: string) {
 export function useLiveAgentSession({ open }: { open: boolean }) {
   const queryClient = useQueryClient();
   const userId = useAuthStore(s => s.user?.id);
+  // Per user: tickets are shared account-wide, so another user's chat must not reopen here.
+  const activeKey = `${ACTIVE_KEY}:${userId ?? ""}`;
   const [
     ticketId,
     setTicketId,
   ] = useState<string | null>(null);
+  const [
+    stored,
+    setStored,
+  ] = useState(() => ({
+    key: activeKey,
+    id: readStorage(activeKey),
+  }));
+  if (stored.key !== activeKey) {
+    setStored({
+      key: activeKey,
+      id: readStorage(activeKey),
+    });
+  }
+  const storedId = userId && stored.key === activeKey ? stored.id : null;
   const [
     endedId,
     setEndedId,
@@ -103,24 +126,20 @@ export function useLiveAgentSession({ open }: { open: boolean }) {
     setLastSeenId,
   ] = useState(() => readStorage(SEEN_KEY));
 
+  // Only when nothing is stored: the caller's newest open chat ticket.
   const list = useQuery({
-    ...getSupportTicketsQueryOptions(),
-    enabled: !!userId && !ticketId,
+    ...getSupportTicketsQueryOptions({
+      params: {
+        createdBy: "me",
+        channel: LIVE_CHAT_CHANNEL,
+        status: OPEN_STATUSES,
+        limit: 1,
+      },
+    }),
+    enabled: !!userId && !ticketId && !storedId,
   });
-  const restoredId = useMemo(
-    () => (list.data?.data.tickets ?? [])
-      .filter(t => t.createdBy === userId
-        && t.otherChannel?.toLowerCase() === LIVE_CHAT_CHANNEL
-        && !ENDED_STATUSES.has(t.status)
-        && t.id !== endedId)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
-      ?.id ?? null,
-    [
-      list.data,
-      userId,
-      endedId,
-    ],
-  );
+  const listedId = list.data?.data.tickets[0]?.id ?? null;
+  const restoredId = storedId ?? (listedId !== endedId ? listedId : null);
   const activeId = ticketId ?? restoredId;
 
   // Agent replies arrive over the realtime socket; the slow poll only covers a dropped connection.
@@ -132,6 +151,18 @@ export function useLiveAgentSession({ open }: { open: boolean }) {
   });
 
   const ticket = detail.data?.data.ticket;
+  // A stored chat that is gone or already over is forgotten, as the list lookup would skip it.
+  if (!ticketId && storedId && activeId === storedId
+    && ((detail.error as { statusCode?: number } | null)?.statusCode === 404 || (ticket && ENDED_STATUSES.has(ticket.status)))) {
+    writeStorage(
+      activeKey,
+      null,
+    );
+    setStored({
+      key: activeKey,
+      id: null,
+    });
+  }
   const messages = useMemo<LiveMessage[]>(
     () => {
       const data = detail.data?.data;
@@ -242,6 +273,14 @@ export function useLiveAgentSession({ open }: { open: boolean }) {
       });
       const id = res.data.id;
       setTicketId(id);
+      writeStorage(
+        activeKey,
+        id,
+      );
+      setStored({
+        key: activeKey,
+        id,
+      });
       toast.success("Chat started. A support agent will reply here.");
       await uploadFiles(
         id,
@@ -307,6 +346,14 @@ export function useLiveAgentSession({ open }: { open: boolean }) {
       ENDED_KEY,
       activeId,
     );
+    writeStorage(
+      activeKey,
+      null,
+    );
+    setStored({
+      key: activeKey,
+      id: null,
+    });
     setTicketId(null);
   };
 

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getOnboardingOrderQueryOptions,
   useStartOnboardingPayment,
+  useVerifyOnboardingPayment,
 } from "@truckmoov/api/auth";
 import {
   AlertCircle,
@@ -31,6 +32,34 @@ type PaymentStepProps = {
 export const PAYMENT_RETURN_PARAM = "payment";
 const POLL_MS = 5000;
 const POLL_LIMIT_MS = 2 * 60 * 1000;
+const VERIFY_MS = 30_000;
+// Survives the redirect to the provider, so the window runs from when payment started.
+const startKey = (id: string) => `truckmoov_payment_started_${id}`;
+
+function readPaymentStart(id: string) {
+  try {
+    const value = Number(window.sessionStorage.getItem(startKey(id)));
+    return value > 0 ? value : null;
+  }
+  catch {
+    return null;
+  }
+}
+
+function savePaymentStart(id: string, at: number | null) {
+  try {
+    if (at) {
+      window.sessionStorage.setItem(
+        startKey(id),
+        String(at),
+      );
+    }
+    else {
+      window.sessionStorage.removeItem(startKey(id));
+    }
+  }
+  catch {}
+}
 const STAGES_AFTER_PAYMENT = [
   "installation_scheduling",
   "installation",
@@ -63,23 +92,81 @@ export function PaymentStep({
 }: PaymentStepProps) {
   // Returning from the provider: confirm by polling until the webhook lands.
   const [
-    confirming,
-    setConfirming,
-  ] = useState(() => new URLSearchParams(window.location.search).has(PAYMENT_RETURN_PARAM));
-  const [pollStartedAt] = useState(() => Date.now());
+    pollStartedAt,
+    setPollStartedAt,
+  ] = useState<number | null>(() => (new URLSearchParams(window.location.search).has(PAYMENT_RETURN_PARAM)
+    ? readPaymentStart(applicationId) ?? Date.now()
+    : null));
+  const confirming = pollStartedAt !== null;
+  const [
+    windowEnded,
+    setWindowEnded,
+  ] = useState(false);
   const orderQuery = useQuery({
     ...getOnboardingOrderQueryOptions(applicationId),
     refetchInterval: query => (confirming
       && query.state.data?.data.payment?.status === "pending"
-      && Date.now() - pollStartedAt < POLL_LIMIT_MS
+      && !windowEnded
       ? POLL_MS
       : false),
   });
+  const verifyPayment = useVerifyOnboardingPayment();
+  const verify = verifyPayment.mutate;
   const orderData = orderQuery.data?.data;
   const order = orderData?.order;
   const payment = orderData?.payment ?? null;
   // Paid, or the stage has already moved past payment (the webhook landed).
   const paid = payment?.status === "paid" || STAGES_AFTER_PAYMENT.includes(orderData?.stage ?? "");
+  const pending = payment?.status === "pending";
+
+  // Ask the provider directly in case its webhook is late, then every so often until the window ends.
+  useEffect(
+    () => {
+      if (pollStartedAt === null)
+        return;
+      verify({ id: applicationId });
+      const remaining = Math.max(
+        0,
+        pollStartedAt + POLL_LIMIT_MS - Date.now(),
+      );
+      const interval = setInterval(
+        verify,
+        VERIFY_MS,
+        { id: applicationId },
+      );
+      const end = setTimeout(
+        () => {
+          clearInterval(interval);
+          setWindowEnded(true);
+        },
+        remaining,
+      );
+      return () => {
+        clearInterval(interval);
+        clearTimeout(end);
+      };
+    },
+    [
+      applicationId,
+      pollStartedAt,
+      verify,
+    ],
+  );
+
+  useEffect(
+    () => {
+      if (paid) {
+        savePaymentStart(
+          applicationId,
+          null,
+        );
+      }
+    },
+    [
+      applicationId,
+      paid,
+    ],
+  );
 
   const startPayment = useStartOnboardingPayment();
   const [
@@ -106,6 +193,11 @@ export function PaymentStep({
 
   async function pay() {
     setPayError(null);
+    const startedAt = Date.now();
+    savePaymentStart(
+      applicationId,
+      startedAt,
+    );
     try {
       const res = await startPayment.mutateAsync({
         id: applicationId,
@@ -127,7 +219,8 @@ export function PaymentStep({
         return;
       }
       // No hosted page to visit: wait for the webhook here instead.
-      setConfirming(true);
+      setWindowEnded(false);
+      setPollStartedAt(startedAt);
     }
     catch (error) {
       setPayError(paymentError(error));
@@ -163,8 +256,8 @@ export function PaymentStep({
     );
   }
 
-  const waitingForWebhook = confirming && payment?.status === "pending";
-  const pollTimedOut = waitingForWebhook && !orderQuery.isFetching && Date.now() - pollStartedAt >= POLL_LIMIT_MS;
+  const waitingForWebhook = confirming && pending;
+  const pollTimedOut = waitingForWebhook && windowEnded;
 
   return (
     <div className="space-y-6">
@@ -289,12 +382,12 @@ export function PaymentStep({
       )}
       {pollTimedOut && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
-          <span>We haven't received confirmation yet. If you completed the payment, it can take a few minutes.</span>
+          <span>We're still confirming your payment. We'll email you once it's confirmed — don't pay again.</span>
           <Button
             variant="outline"
             size="sm"
-            loading={orderQuery.isFetching}
-            onClick={() => void orderQuery.refetch()}
+            loading={verifyPayment.isPending}
+            onClick={() => verify({ id: applicationId })}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Check again

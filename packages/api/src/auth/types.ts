@@ -671,9 +671,22 @@ export type SystemInstallationJobDetail = {
 export type SystemInstallationJobDetailResponse = ServerResponse<SystemInstallationJobDetail>
 
 export type SystemInstallationJobsQuery = {
-  status?: InstallerJobStatus
+  /** One status, or several comma-separated. */
+  status?: string
   installerId?: string
   search?: string
+  tenantType?: 'enterprise' | 'owner_operator'
+  assignment?: 'assigned' | 'unassigned'
+  /** Inclusive YYYY-MM-DD bounds. */
+  scheduledFrom?: string
+  scheduledTo?: string
+  startedFrom?: string
+  startedTo?: string
+  completedFrom?: string
+  completedTo?: string
+  createdFrom?: string
+  createdTo?: string
+  sort?: 'newest' | 'scheduled' | 'completion'
   page?: number
   limit?: number
 }
@@ -683,6 +696,8 @@ export type SystemInstallationJobsResponse = ServerResponse<{
   page: number
   limit: number
   total: number
+  /** Jobs per status under the same filters, status aside. */
+  countsByStatus: Record<InstallerJobStatus, number>
 }>
 
 export type RefreshPayload = {
@@ -1320,10 +1335,17 @@ export type SupportTicketChannel = 'device' | 'sim' | 'vehicle' | 'messaging' | 
 
 export type SupportTicketsQuery = {
   params?: {
-    status?: SupportTicketStatus
+    /** One status or a comma-separated list. */
+    status?: string
     category?: string
     priority?: SupportTicketPriority
     search?: string
+    createdBy?: 'me'
+    /** Matches channel, or otherChannel case-insensitively. */
+    channel?: string
+    /** Omit page and limit to get up to 500 tickets. */
+    page?: number
+    limit?: number
   }
 }
 
@@ -1385,6 +1407,8 @@ export type SupportTicketsListResponse = ServerResponse<{
   tickets: SupportTicket[]
   countsByStatus: SupportTicketCountsByStatus
   total: number
+  page?: number
+  limit?: number
 }>
 
 export type SupportTicketResponse = ServerResponse<SupportTicket>
@@ -2078,12 +2102,6 @@ export type UpdateSubscriptionPlanPricePayload = {
     monthlyPriceNgn?: number
     yearlyMonthlyEquivalentNgn?: number
   }
-}
-
-export type OnboardingExchangeRate = {
-  ngnPerUsd: number
-  source: string
-  fetchedAt: string
 }
 
 export type OnboardingSubscriptionCaps = {
@@ -3292,7 +3310,6 @@ export type SystemSimBatchResponse = ServerResponse<SystemSimBatch>
 export type SystemSimBatchesSummaryResponse = ServerResponse<SystemSimBatchesSummary>
 export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]; generatedAt: string }>
 export type OnboardingPlansResponse = ServerResponse<{ plans: SubscriptionPlan[] }>
-export type OnboardingExchangeRateResponse = ServerResponse<OnboardingExchangeRate>
 export type OnboardingSubscriptionCapsResponse = ServerResponse<OnboardingSubscriptionCaps>
 export type OnboardingStatusResponse = ServerResponse<OnboardingStatus>
 export type OnboardingBusinessInfoResponse = ServerResponse<OnboardingBusinessInfo>
@@ -3866,7 +3883,14 @@ export type RejectKycDocumentPayload = { id: string; data: { reason: string } }
 
 // ─── Data Bundles (ledger) ────────────────────────────────────────────────────
 
-export type DataBundleLedgerQuery = { params?: { page?: number; limit?: number } }
+export type DataBundleLedgerFilters = {
+  category?: string
+  direction?: 'debit' | 'credit'
+  /** ISO 8601 instants, inclusive. */
+  from?: string
+  to?: string
+}
+export type DataBundleLedgerQuery = { params?: DataBundleLedgerFilters & { page?: number; limit?: number } }
 export type DataBundleLedgerEntry = {
   id: string
   direction: 'debit' | 'credit'
@@ -4815,7 +4839,11 @@ export type CommunicationsWalletRangeQuery = {
 // ponytail: response data shapes not declared in the current spec.
 export type CommunicationsWalletRatesResponse = ServerResponse<unknown>
 export type CommunicationsWalletSpendTrendResponse = ServerResponse<unknown>
-export type CommunicationsWalletSpendBreakdownResponse = ServerResponse<unknown>
+/** Wallet spend per channel; data_bundle is included because bundles and comms share one wallet. */
+export type CommunicationsWalletSpendBreakdownResponse = ServerResponse<{
+  breakdown: { channel: 'sms' | 'whatsapp' | 'voice' | 'ai' | 'data_bundle', amount: number, percentage: number }[]
+  total: number
+}>
 
 // ─── System Billing — bundle adoption + bundle catalog list ──────────────────
 
@@ -5188,3 +5216,15 @@ export type SystemTenantExportResponse = ServerResponse<SystemTenantExport>
 export type SystemTenantExportsResponse = ServerResponse<{ items: SystemTenantExport[] }>
 export type RequestSystemTenantExportPayload = { id: string; data: { scope: SystemTenantExportScope } }
 export type DownloadSystemTenantExportPayload = { id: string; exportId: string }
+
+/** Fonu clickToCall block from GET /auth/telephony/click-to-call-credentials. */
+export type ClickToCallCredentials = {
+  enabled?: boolean
+  extension?: string | number
+  domain?: string
+  password?: string
+  wss_url?: string
+  destination?: string
+  origin?: string | { number?: string }
+  originUuid?: string
+}

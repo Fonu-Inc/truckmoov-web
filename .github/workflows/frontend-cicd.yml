@@ -86,6 +86,12 @@ jobs:
         env:
           MAIN_ENV: ${{ github.event_name != 'pull_request' && secrets.MAIN_ENV || '' }}
 
+      - name: Lint
+        run: pnpm turbo lint --filter main
+
+      - name: Typecheck
+        run: pnpm turbo typecheck --filter main
+
       - name: Build
         run: pnpm turbo build --filter main
 
@@ -104,11 +110,38 @@ jobs:
           path: ${{ env.RELEASE_ARCHIVE }}
           if-no-files-found: error
 
+  test:
+    name: Test
+    needs: affected
+    if: needs.affected.outputs.affected == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # main... also runs the suites of the workspace packages it depends on (app-core).
+      - name: Test
+        run: pnpm turbo test --filter 'main...'
+
   # Out-of-order finishes: if a newer commit on main also changes this app, its
   # run deploys a build that already contains this one, so this one stands down.
   latest:
     name: Newest for this app
-    needs: [affected, validate]
+    needs: [affected, validate, test]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.affected.outputs.affected == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -134,7 +167,7 @@ jobs:
     name: Deploy
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.affected.outputs.affected == 'true' && needs.latest.outputs.superseded != 'true'
     runs-on: ubuntu-latest
-    needs: [affected, validate, latest]
+    needs: [affected, validate, test, latest]
     concurrency:
       group: deploy-truckmoov-web
       cancel-in-progress: false

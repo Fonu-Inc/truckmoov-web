@@ -37,14 +37,14 @@ function App() {
           <PreferencesProvider>
             <BrandingProvider>
               <Sonner />
-              <FonuCallProvider>
-                <AuthGuard>
+              <AuthGuard>
+                <FonuCallProvider>
                   <ErrorBoundary variant="page">
                     <Outlet />
                   </ErrorBoundary>
                   <GlobalSupportChat />
-                </AuthGuard>
-              </FonuCallProvider>
+                </FonuCallProvider>
+              </AuthGuard>
             </BrandingProvider>
           </PreferencesProvider>
         </CurrencyProvider>

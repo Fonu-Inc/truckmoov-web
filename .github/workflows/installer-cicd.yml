@@ -84,6 +84,12 @@ jobs:
         env:
           INSTALLER_ENV: ${{ github.event_name != 'pull_request' && secrets.INSTALLER_ENV || '' }}
 
+      - name: Lint
+        run: pnpm turbo lint --filter installer
+
+      - name: Typecheck
+        run: pnpm turbo typecheck --filter installer
+
       - name: Build installer
         run: pnpm turbo build --filter installer
 

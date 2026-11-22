@@ -122,6 +122,10 @@ export function adoptResumeLink() {
   const id = params.get("applicationId") ?? params.get("id");
   if (!token || !id)
     return false;
+  // A link for another application must not inherit this one's signature, plan or devices.
+  const storedId = readDraft("applicationId");
+  if (storedId && storedId !== id)
+    clearApplyDraft();
   setOnboardingToken(token);
   writeDraft(
     "applicationId",

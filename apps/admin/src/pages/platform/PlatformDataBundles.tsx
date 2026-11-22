@@ -94,6 +94,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   PageActions, PageTitle,
 } from "@/shared/components/layout/PageTitle";
+import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 
 type BundleCatalogItem = {
   id: string;
@@ -267,6 +268,22 @@ export default function PlatformDataBundles() {
     editing,
     setEditing,
   ] = useState(false);
+  const [
+    originalPrice,
+    setOriginalPrice,
+  ] = useState<number | null>(null);
+  const [
+    showErrors,
+    setShowErrors,
+  ] = useState(false);
+  const {
+    confirm, confirmDialog,
+  } = useConfirmAction();
+  const fieldErrors = {
+    data_mb: form.data_mb > 0 ? undefined : "Enter a data size above 0",
+    validity_days: form.validity_days > 0 ? undefined : "Enter a validity above 0",
+    price_ngn: form.price_ngn > 0 ? undefined : "Enter a price above 0",
+  };
 
   const carriers = useMemo(
     () => Array.from(new Set(catalog.map(b => b.carrier))).sort(),
@@ -311,6 +328,8 @@ export default function PlatformDataBundles() {
       billing_cycle: b.billing_cycle === "yearly" ? "yearly" : "monthly",
       is_active: b.is_active,
     });
+    setOriginalPrice(b.price_ngn);
+    setShowErrors(false);
     setEditing(true);
     setFormOpen(true);
   };
@@ -328,11 +347,7 @@ export default function PlatformDataBundles() {
     }
   };
 
-  const handleSave = async () => {
-    if (!form.code || !form.name) {
-      toast.error("Code and name are required");
-      return;
-    }
+  const saveBundle = async () => {
     const fields = {
       name: form.name,
       dataAmountGb: Number(form.data_mb) / 1024,
@@ -365,6 +380,28 @@ export default function PlatformDataBundles() {
       toast.error((e as Error).message);
     }
   };
+
+  const handleSave = () => {
+    if (!form.code || !form.name) {
+      toast.error("Code and name are required");
+      return;
+    }
+    setShowErrors(true);
+    if (Object.values(fieldErrors).some(Boolean))
+      return;
+    if (editing && originalPrice !== null && originalPrice !== form.price_ngn) {
+      confirm({
+        title: "Change bundle price?",
+        description: `${fmtCurrency(originalPrice)} → ${fmtCurrency(form.price_ngn)}`,
+        confirmLabel: "Change price",
+        destructive: false,
+        onConfirm: saveBundle,
+      });
+      return;
+    }
+    void saveBundle();
+  };
+
   const isSaving = createBundle.isPending || updateBundle.isPending;
 
   const [
@@ -450,6 +487,8 @@ export default function PlatformDataBundles() {
                 setForm({
                   ...emptyForm, carrier: defaultCarrierId,
                 });
+                setOriginalPrice(null);
+                setShowErrors(false);
                 setEditing(false);
                 setFormOpen(true);
               }}
@@ -692,34 +731,43 @@ export default function PlatformDataBundles() {
                 <Label>Data (MB)</Label>
                 <Input
                   type="number"
+                  min={1}
                   value={form.data_mb}
+                  aria-invalid={showErrors && !!fieldErrors.data_mb}
                   onChange={e => setForm(f => ({
                     ...f,
                     data_mb: Number(e.target.value),
                   }))}
                 />
+                {showErrors && fieldErrors.data_mb && <p className="text-xs text-destructive">{fieldErrors.data_mb}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Validity (days)</Label>
                 <Input
                   type="number"
+                  min={1}
                   value={form.validity_days}
+                  aria-invalid={showErrors && !!fieldErrors.validity_days}
                   onChange={e => setForm(f => ({
                     ...f,
                     validity_days: Number(e.target.value),
                   }))}
                 />
+                {showErrors && fieldErrors.validity_days && <p className="text-xs text-destructive">{fieldErrors.validity_days}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Price (NGN)</Label>
                 <Input
                   type="number"
+                  min={1}
                   value={form.price_ngn}
+                  aria-invalid={showErrors && !!fieldErrors.price_ngn}
                   onChange={e => setForm(f => ({
                     ...f,
                     price_ngn: Number(e.target.value),
                   }))}
                 />
+                {showErrors && fieldErrors.price_ngn && <p className="text-xs text-destructive">{fieldErrors.price_ngn}</p>}
               </div>
             </div>
 
@@ -755,6 +803,7 @@ export default function PlatformDataBundles() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

@@ -29,9 +29,6 @@ export default defineConfig(({ mode }) => ({
         __dirname,
         "./src",
       ),
-      // Workaround: the published fonu-sdk package points module to a missing ESM bundle.
-      // Force Vite to use the published CJS build instead.
-      "fonu-sdk": "fonu-sdk/dist/fonu-sdk.js",
     },
     // Prevent duplicate React/react-query instances causing hooks/QueryClient errors
     dedupe: [

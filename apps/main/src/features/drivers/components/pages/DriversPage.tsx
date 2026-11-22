@@ -1,9 +1,8 @@
 import type { DriverInput } from "@truckmoov/api/fleet";
-import type { DriverBulkUploadItem } from "@/components/drivers/DriverBulkUploadDialog";
 import type { DriverFormData } from "@/components/drivers/DriverFormDialog";
 import type { DriverRow } from "@/features/drivers/utils/driverRows";
 import {
-  useCreateDriver, useDriverGroups, useDrivers, useDriversFilters, useDriversSummary, useImportDrivers, useReinstateDriver, useSuspendDriver, useUpdateDriver,
+  useCreateDriver, useDriverGroups, useDrivers, useDriversFilters, useDriversSummary, useReinstateDriver, useSuspendDriver, useUpdateDriver,
 } from "@truckmoov/api/fleet";
 import { useAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useSendNotifyMessage } from "@truckmoov/api/notification";
@@ -21,7 +20,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
-import { DriverBulkUploadDialog } from "@/components/drivers/DriverBulkUploadDialog";
 import { DriverDetailsSheet } from "@/components/drivers/DriverDetailsSheet";
 import { DriverFormDialog } from "@/components/drivers/DriverFormDialog";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
@@ -62,8 +60,9 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 import { getPerformanceBand } from "@/features/drivers/utils/driverPerformance";
 import {
-  COMMUNICATION_PREFERENCES, DRIVER_STATUSES, driverScore, formatScore, readEnum, toDriverRow, toLocalDriver,
+  DRIVER_STATUSES, driverScore, formatScore, toDriverRow, toLocalDriver,
 } from "@/features/drivers/utils/driverRows";
+import { BulkUploadDialog } from "@/features/fleet/components/ui/BulkUploadDialog";
 import { FleetTablePager } from "@/features/fleet/components/ui/FleetTablePager";
 import { useClientPage } from "@/features/fleet/utils/useClientPage";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -130,7 +129,6 @@ export default function DriversPage() {
     driverPendingSuspend,
     setDriverPendingSuspend,
   ] = useState<DriverRow | null>(null);
-  const importDrivers = useImportDrivers();
   const sendMessage = useSendNotifyMessage();
   const {
     startCall, endCall, status: callStatus, durationSeconds,
@@ -300,35 +298,6 @@ export default function DriversPage() {
     catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to save driver");
       return false;
-    }
-  };
-
-  const handleBulkUpload = async (uploadedDrivers: DriverBulkUploadItem[]) => {
-    try {
-      await importDrivers.mutateAsync({
-        data: {
-          items: uploadedDrivers.map(driver => ({
-            name: driver.name,
-            phone: driver.phone,
-            email: driver.email || undefined,
-            licenseNumber: driver.licenseNumber,
-            licenseExpiryDate: driver.licenseExpiry,
-            status: readEnum(
-              driver.status,
-              DRIVER_STATUSES,
-            ) ?? "available",
-            communicationPreference: readEnum(
-              driver.communicationPreference,
-              COMMUNICATION_PREFERENCES,
-            ) ?? "whatsapp",
-          })),
-        },
-      });
-      toast.success(`Imported ${uploadedDrivers.length} drivers`);
-    }
-    catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to import drivers");
-      throw error;
     }
   };
 
@@ -1027,10 +996,10 @@ export default function DriversPage() {
         onSubmit={handleFormSubmit}
         isSubmitting={createDriver.isPending || updateDriver.isPending}
       />
-      <DriverBulkUploadDialog
+      <BulkUploadDialog
+        kind="driver"
         open={isBulkUploadOpen}
         onOpenChange={setIsBulkUploadOpen}
-        onUpload={handleBulkUpload}
       />
 
       <DriverDetailsSheet

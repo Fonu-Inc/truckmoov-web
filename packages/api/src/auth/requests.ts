@@ -8,12 +8,14 @@ import type {
   ActivityLogResponse,
   ActivityLogVerifyResponse,
   ApproveSIMRequestPayload,
+  ClickToCallCredentials,
   AssignSystemSupportTicketPayload,
   AttachSupportTicketFilesPayload,
   CommunicationRateHistoryPayload,
   CommunicationRateHistoryResponse,
   CommunicationRatesResponse,
   DataBundleLedgerQuery,
+  DataBundleLedgerFilters,
   DataBundleLedgerResponse,
   MailboxAttachmentLinkResponse,
   MailboxAttachmentPayload,
@@ -182,7 +184,6 @@ import type {
   MeResponse,
   NotificationPreferencesResponse,
   OnboardingBusinessInfoResponse,
-  OnboardingExchangeRateResponse,
   OnboardingKycDocumentsResponse,
   TenantStorageUsageResponse,
   OnboardingPlansResponse,
@@ -1475,11 +1476,6 @@ export async function getOnboardingPlans() {
   return data
 }
 
-export async function getOnboardingExchangeRate() {
-  const { data } = await axiosInstance.get<OnboardingExchangeRateResponse>('/auth/onboarding/exchange-rate')
-  return data
-}
-
 export async function getOnboardingSubscriptionCaps() {
   const { data } = await axiosInstance.get<OnboardingSubscriptionCapsResponse>('/auth/onboarding/subscription/caps')
   return data
@@ -2230,6 +2226,14 @@ export async function getDataBundleWalletLedger(payload?: DataBundleLedgerQuery)
   return data
 }
 
+export async function exportDataBundleWalletLedger(params?: DataBundleLedgerFilters) {
+  const { data } = await axiosInstance.get<Blob>('/auth/data-bundles/ledger/export', {
+    responseType: 'blob',
+    params,
+  })
+  return data
+}
+
 // ─── Platform Wallets ─────────────────────────────────────────────────────────
 
 export async function getPlatformWallets(payload?: PlatformWalletsQuery) {
@@ -2557,6 +2561,12 @@ export async function verifyOnboardingBillingEmail({ id, data: body }: Onboardin
 export async function startOnboardingPayment({ id, data }: StartOnboardingPaymentPayload) {
   const { data: res } = await onboardingInstance.post<StartOnboardingPaymentResponse>(`${ONBOARDING}/${id}/payment`, data)
   return res
+}
+
+/** Asks the provider about a late payment and confirms it if paid. Same shape as getOnboardingOrder. */
+export async function verifyOnboardingPayment({ id }: { id: string }) {
+  const { data } = await onboardingInstance.post<OnboardingOrderResponse>(`${ONBOARDING}/${id}/payment/verify`)
+  return data
 }
 
 /** Books the fitting. On success the account exists and the setup link is emailed. */
@@ -2962,4 +2972,10 @@ export async function downloadSystemTenantExport({ id, exportId }: DownloadSyste
     responseType: 'blob',
   })
   return data
+}
+
+/** SIP settings for the browser dialer. The Fonu key stays on the server. */
+export async function getClickToCallCredentials() {
+  const { data } = await axiosInstance.get<ServerResponse<ClickToCallCredentials>>('/auth/telephony/click-to-call-credentials')
+  return data.data
 }

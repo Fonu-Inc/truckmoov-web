@@ -457,17 +457,7 @@ export type UpdateDriverPayload = {
   data: Partial<DriverInput>
 }
 
-export type ImportDriversPayload = {
-  data: {
-    items: Array<DriverInput & {
-      contactChannels?: {
-        whatsappNumber?: string | null
-        smsNumber?: string | null
-        voiceNumber?: string | null
-      }
-    }>
-  }
-}
+export type ImportDriversPayload = ImportVehiclesPayload
 
 export type UpdateDriverStatusPayload = {
   id: string

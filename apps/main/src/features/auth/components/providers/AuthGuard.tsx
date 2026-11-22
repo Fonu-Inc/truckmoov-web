@@ -5,7 +5,7 @@ import {
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getPostLoginRedirectPath } from "@/features/auth/utils/authRedirect";
 import {
-  OPEN_ROUTE_PREFIXES, PUBLIC_ROUTES,
+  EMAIL_LINK_ROUTES, OPEN_ROUTE_PREFIXES, PUBLIC_ROUTES,
 } from "@/features/auth/utils/publicRoutes";
 
 /**
@@ -44,7 +44,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
   // Signed in and sitting on the login screen — send them to their role's
   // home. "/" is only open to some roles; the rest would land on a 403.
-  if (isAuthenticated && isPublic) {
+  if (isAuthenticated && isPublic && !EMAIL_LINK_ROUTES.includes(location.pathname)) {
     return (
       <Navigate
         to={user ? getPostLoginRedirectPath(user.role) : "/"}

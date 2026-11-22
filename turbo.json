@@ -13,6 +13,12 @@
       "dependsOn": ["^lint"],
       "cache": false
     },
+    "typecheck": {
+      "cache": false
+    },
+    "test": {
+      "cache": false
+    },
     "preview": {
       "cache": false,
       "persistent": true

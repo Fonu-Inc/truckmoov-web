@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { InvoiceConfig } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
 import type { WaybillInvoice } from "@/features/payouts-invoicing/types";
+import { escapeHtml as esc } from "@truckmoov/app-core/utils/general-utils";
 import {
   CheckCircle2, FileText, Loader2, Mail, MessageSquare, Pencil, Receipt,
 } from "lucide-react";
@@ -124,23 +125,23 @@ export function InvoiceDetailView({
     const lineItemsHtml = (invoice.line_items as Array<{
       description: string; total: number;
     }>)
-      ?.map(item => `<tr><td style="padding:8px;border-bottom:1px solid #eee">${item.description}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${formatAmount(item.total)}</td></tr>`)
+      ?.map(item => `<tr><td style="padding:8px;border-bottom:1px solid #eee">${esc(item.description)}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${esc(formatAmount(item.total))}</td></tr>`)
       .join("") || "";
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${invoice.invoice_number}</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${esc(invoice.invoice_number)}</title>
     <style>body{font-family:Arial,sans-serif;margin:0;padding:40px;color:#333}.header{display:flex;justify-content:space-between;margin-bottom:30px}table{width:100%;border-collapse:collapse;margin:20px 0}th{background:#f5f5f5;padding:10px 8px;text-align:left;font-size:12px;text-transform:uppercase}.totals{margin-left:auto;width:300px}.totals td{padding:6px 8px}.total-row{font-weight:bold;font-size:16px;border-top:2px solid #333}.bank-details{background:#f9f9f9;padding:16px;border-radius:8px;margin-top:20px}</style></head><body>
-    <div class="header"><div><div style="font-size:18px;font-weight:bold">${config?.company_name || ""}</div>
-    <div style="font-size:13px;color:#666">${config?.company_address || ""}</div></div>
+    <div class="header"><div><div style="font-size:18px;font-weight:bold">${esc(config?.company_name)}</div>
+    <div style="font-size:13px;color:#666">${esc(config?.company_address)}</div></div>
     <div style="text-align:right"><div style="font-size:24px;font-weight:bold">INVOICE</div>
-    <div style="margin-top:8px"><strong>${invoice.invoice_number}</strong></div>
-    <div style="font-size:13px;color:#666">Date: ${invoice.invoice_date} | Due: ${invoice.due_date || "On receipt"}</div></div></div>
-    <div style="margin-bottom:20px"><div style="font-size:12px;text-transform:uppercase;color:#999">Bill To</div><div style="font-weight:bold">${invoice.customer_name}</div></div>
-    <div style="background:#f5f5f5;padding:12px;border-radius:6px;margin-bottom:20px;font-size:13px"><strong>Route:</strong> ${invoice.origin || ""} → ${invoice.destination || ""} | <strong>Vehicle:</strong> ${invoice.vehicle_number || "—"} | <strong>Waybill:</strong> ${invoice.waybill_number || "—"}</div>
+    <div style="margin-top:8px"><strong>${esc(invoice.invoice_number)}</strong></div>
+    <div style="font-size:13px;color:#666">Date: ${esc(invoice.invoice_date)} | Due: ${esc(invoice.due_date || "On receipt")}</div></div></div>
+    <div style="margin-bottom:20px"><div style="font-size:12px;text-transform:uppercase;color:#999">Bill To</div><div style="font-weight:bold">${esc(invoice.customer_name)}</div></div>
+    <div style="background:#f5f5f5;padding:12px;border-radius:6px;margin-bottom:20px;font-size:13px"><strong>Route:</strong> ${esc(invoice.origin)} → ${esc(invoice.destination)} | <strong>Vehicle:</strong> ${esc(invoice.vehicle_number || "—")} | <strong>Waybill:</strong> ${esc(invoice.waybill_number || "—")}</div>
     <table><thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${lineItemsHtml}</tbody></table>
-    <table class="totals"><tbody><tr><td>Subtotal</td><td style="text-align:right">${formatAmount(invoice.subtotal_ngn)}</td></tr>
-    ${(invoice.tax_amount_ngn || 0) > 0 ? `<tr><td>Tax (${invoice.tax_rate_percent}%)</td><td style="text-align:right">${formatAmount(invoice.tax_amount_ngn || 0)}</td></tr>` : ""}
-    <tr class="total-row"><td>Total</td><td style="text-align:right">${formatAmount(invoice.total_ngn)}</td></tr></tbody></table>
-    ${config?.bank_name ? `<div class="bank-details"><div style="font-size:12px;text-transform:uppercase;color:#999;margin-bottom:8px">Payment Details</div><div>Bank: ${config.bank_name}</div><div>Account: ${config.bank_account_name}</div><div>Number: ${config.bank_account_number}</div></div>` : ""}
-    ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffef0;border-radius:6px;font-size:13px">${invoice.notes}</div>` : ""}
+    <table class="totals"><tbody><tr><td>Subtotal</td><td style="text-align:right">${esc(formatAmount(invoice.subtotal_ngn))}</td></tr>
+    ${(invoice.tax_amount_ngn || 0) > 0 ? `<tr><td>Tax (${esc(invoice.tax_rate_percent)}%)</td><td style="text-align:right">${esc(formatAmount(invoice.tax_amount_ngn || 0))}</td></tr>` : ""}
+    <tr class="total-row"><td>Total</td><td style="text-align:right">${esc(formatAmount(invoice.total_ngn))}</td></tr></tbody></table>
+    ${config?.bank_name ? `<div class="bank-details"><div style="font-size:12px;text-transform:uppercase;color:#999;margin-bottom:8px">Payment Details</div><div>Bank: ${esc(config.bank_name)}</div><div>Account: ${esc(config.bank_account_name)}</div><div>Number: ${esc(config.bank_account_number)}</div></div>` : ""}
+    ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffef0;border-radius:6px;font-size:13px">${esc(invoice.notes)}</div>` : ""}
     </body></html>`;
     const w = window.open(
       "",

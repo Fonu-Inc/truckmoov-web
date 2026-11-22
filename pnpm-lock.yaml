@@ -179,9 +179,6 @@ importers:
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
-      fonu-sdk:
-        specifier: ^1.1.2
-        version: 1.1.2(react@18.3.1)(typescript@5.9.3)(yaml@2.9.0)
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
@@ -197,9 +194,6 @@ importers:
       jspdf-autotable:
         specifier: ^5.0.7
         version: 5.0.8(jspdf@4.2.1)
-      jssip:
-        specifier: ^3.10.1
-        version: 3.13.8
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -701,9 +695,6 @@ importers:
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
-      fonu-sdk:
-        specifier: ^1.1.2
-        version: 1.1.2(react@18.3.1)(typescript@5.9.3)(yaml@2.9.0)
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
@@ -5182,11 +5173,6 @@ packages:
       debug:
         optional: true
 
-  fonu-sdk@1.1.2:
-    resolution: {integrity: sha512-d/RpwCRUzsuer8i9HhYYFp028HaR8NgAJ5TgHuynyisOAMYieKVPrT67wzlzDaZ+3IjFTJqXlr8ZWQ0a8LfbyQ==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.2.0
-
   form-data@4.0.6:
     resolution: {integrity: sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==}
     engines: {node: '>= 6'}
@@ -6378,19 +6364,6 @@ packages:
       yaml:
         optional: true
 
-  postcss-loader@8.2.1:
-    resolution: {integrity: sha512-k98jtRzthjj3f76MYTs9JTpRqV1RaaMhEU0Lpw9OTmQZQdppg4B30VZ74BojuBHt3F4KyubHJoXCMUeM8Bqeow==}
-    engines: {node: '>= 18.12.0'}
-    peerDependencies:
-      '@rspack/core': 0.x || ^1.0.0 || ^2.0.0-0
-      postcss: ^8.5.18
-      webpack: ^5.0.0
-    peerDependenciesMeta:
-      '@rspack/core':
-        optional: true
-      webpack:
-        optional: true
-
   postcss-nested@6.2.0:
     resolution: {integrity: sha512-HQbt28KulC5AJzG+cZtj9kvKB93CFCdLvog1WFLf1D+xmMvPGlBstkpTEZfK5+AN9hfJocyBFCNiqyS48bpgzQ==}
     engines: {node: '>=12.0'}
@@ -7276,10 +7249,6 @@ packages:
 
   utrie@1.0.2:
     resolution: {integrity: sha512-1MLa5ouZiOmQzUbjbu9VmjLzn1QLXBhwpUa7kdLUQK+KQ5KA9I1vk5U4YHe/X2Ch7PYnJfWuWT+VbuxbGwljhw==}
-
-  uuid@11.1.1:
-    resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
-    hasBin: true
 
   uuid@14.0.0:
     resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
@@ -11304,15 +11273,6 @@ snapshots:
     dependencies:
       layout-base: 2.0.1
 
-  cosmiconfig@9.0.1(typescript@5.9.3):
-    dependencies:
-      env-paths: 2.2.1
-      import-fresh: 3.3.1
-      js-yaml: 4.3.2
-      parse-json: 5.2.0
-    optionalDependencies:
-      typescript: 5.9.3
-
   cosmiconfig@9.0.1(typescript@6.0.3):
     dependencies:
       env-paths: 2.2.1
@@ -12474,29 +12434,6 @@ snapshots:
   flatted@3.4.2: {}
 
   follow-redirects@1.16.3: {}
-
-  fonu-sdk@1.1.2(react@18.3.1)(typescript@5.9.3)(yaml@2.9.0):
-    dependencies:
-      autoprefixer: 10.5.0(postcss@8.5.26)
-      axios: 1.21.1
-      jssip: 3.13.8
-      moment: 2.30.1
-      postcss: 8.5.26
-      postcss-loader: 8.2.1(postcss@8.5.26)(typescript@5.9.3)
-      react: 18.3.1
-      socket.io-client: 4.8.3
-      tailwindcss: 3.4.19(yaml@2.9.0)
-      uuid: 11.1.1
-    transitivePeerDependencies:
-      - '@rspack/core'
-      - bufferutil
-      - debug
-      - supports-color
-      - tsx
-      - typescript
-      - utf-8-validate
-      - webpack
-      - yaml
 
   form-data@4.0.6:
     dependencies:
@@ -13866,15 +13803,6 @@ snapshots:
       postcss: 8.5.26
       yaml: 2.9.0
 
-  postcss-loader@8.2.1(postcss@8.5.26)(typescript@5.9.3):
-    dependencies:
-      cosmiconfig: 9.0.1(typescript@5.9.3)
-      jiti: 2.7.0
-      postcss: 8.5.26
-      semver: 7.8.5
-    transitivePeerDependencies:
-      - typescript
-
   postcss-nested@6.2.0(postcss@8.5.26):
     dependencies:
       postcss: 8.5.26
@@ -14956,8 +14884,6 @@ snapshots:
     dependencies:
       base64-arraybuffer: 1.0.2
     optional: true
-
-  uuid@11.1.1: {}
 
   uuid@14.0.0: {}
 

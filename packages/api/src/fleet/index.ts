@@ -23,6 +23,7 @@ import {
   deleteMaintenanceReminderSchedule,
   deleteVehicle,
   downloadDeviceImportTemplate,
+  downloadDriverImportTemplate,
   downloadVehicleImportTemplate,
   exportDevices,
   exportFleetAnalytics,
@@ -2020,6 +2021,7 @@ export function useUpsertFuelBudget() {
 
 export {
   downloadDeviceImportTemplate,
+  downloadDriverImportTemplate,
   downloadVehicleImportTemplate,
   exportComplianceDocs,
   exportDevices,

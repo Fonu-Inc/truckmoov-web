@@ -7,7 +7,6 @@ import { Toaster as Sonner } from "@/components/shadcn/sonner";
 import { AuthGuard } from "@/features/auth/components/providers/AuthGuard";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
-import { FonuCallProvider } from "./contexts/FonuCallContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { useAuthStore } from "./stores/authStore";
 
@@ -34,13 +33,11 @@ function App() {
         <CurrencyProvider>
           <PreferencesProvider>
             <Sonner />
-            <FonuCallProvider>
-              <AuthGuard>
-                <ErrorBoundary variant="page">
-                  <Outlet />
-                </ErrorBoundary>
-              </AuthGuard>
-            </FonuCallProvider>
+            <AuthGuard>
+              <ErrorBoundary variant="page">
+                <Outlet />
+              </ErrorBoundary>
+            </AuthGuard>
           </PreferencesProvider>
         </CurrencyProvider>
       </QueryClientProvider>

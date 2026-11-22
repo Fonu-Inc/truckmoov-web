@@ -1,5 +1,5 @@
 import type {
-  SystemInstallationJob, SystemInstaller,
+  InstallerJobStatus, SystemInstallationJob, SystemInstaller,
 } from "@truckmoov/api/auth";
 
 /**
@@ -19,6 +19,20 @@ export const INSTALLATION_STATUS_LABEL: Record<InstallationStatus, string> = {
   completed: "Completed",
   requires_attention: "Requires Attention",
   cancelled: "Cancelled",
+};
+
+/** The API job statuses behind each installation status, for filtering on the server. Pending has none. */
+export const JOB_STATUSES_BY_INSTALLATION_STATUS: Partial<Record<InstallationStatus, InstallerJobStatus[]>> = {
+  awaiting_assignment: ["unassigned"],
+  assigned: ["assigned"],
+  scheduled: ["scheduled"],
+  in_progress: ["in_progress"],
+  requires_attention: [
+    "overdue",
+    "issue_reported",
+  ],
+  completed: ["completed"],
+  cancelled: ["cancelled"],
 };
 
 export type InstallationRecord = {

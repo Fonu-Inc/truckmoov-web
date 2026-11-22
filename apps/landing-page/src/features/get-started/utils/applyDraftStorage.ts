@@ -115,10 +115,15 @@ export function adoptResumeLink() {
   if (!hasResumeParams())
     return false;
   const params = new URLSearchParams(window.location.search);
+  const id = params.get("applicationId") ?? params.get("id");
+  // A link for another application must not inherit this one's signature, plan or devices.
+  const storedId = readDraft("applicationId");
+  if (storedId && storedId !== id)
+    void clearApplyDraft();
   setOnboardingToken(params.get("token"));
   writeDraft(
     "applicationId",
-    params.get("applicationId") ?? params.get("id"),
+    id,
   );
   for (const key of [
     "token",

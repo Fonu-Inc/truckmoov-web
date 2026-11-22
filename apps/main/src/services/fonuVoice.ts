@@ -1,8 +1,7 @@
-// Thin wrapper around fonu-sdk for SIP voice without rendering widgets.
-// Sequence: fetch credentials -> map them -> start socket + SIP UA -> place calls.
-// Env vars required (set in .env): VITE_FONU_COMPANY_UUID, VITE_FONU_API_KEY.
+// Thin wrapper around the SIP core for voice without rendering widgets.
+// Credentials come from the backend (GET /auth/telephony/click-to-call-credentials).
 
-import { fetchUserCredentials } from "fonu-sdk";
+import type { ClickToCallCredentials } from "@truckmoov/api/auth";
 import {
   getFonuState,
   initSipConnection,
@@ -21,59 +20,13 @@ type SipEventHandlers = {
   onSessionCreated?: (session: any) => void;
 };
 
-const COMPANY_UUID = import.meta.env.VITE_FONU_COMPANY_UUID;
-const API_KEY = import.meta.env.VITE_FONU_API_KEY;
-
 let initialized = false;
-
-function ensureEnv() {
-  if (!COMPANY_UUID || !API_KEY) {
-    throw new Error("Fonu voice: missing VITE_FONU_COMPANY_UUID or VITE_FONU_API_KEY.");
-  }
-}
 
 /**
  * Initialize SIP connectivity. Call once (e.g., on app start or when opening dialer).
  */
-export async function setupFonuVoice(events: SipEventHandlers = {}) {
-  ensureEnv();
-
-  let creds: any;
-  try {
-    creds = await fetchUserCredentials(
-      COMPANY_UUID,
-      API_KEY,
-    );
-  }
-  catch (err) {
-    console.error(
-      "[FonuClickToCallSDK] fetchUserCredentials failed",
-      err,
-    );
-    throw err;
-  }
-
-  if (!creds)
-    throw new Error("Fonu voice: could not fetch user credentials.");
-
+export async function setupFonuVoice(creds: ClickToCallCredentials, events: SipEventHandlers = {}) {
   mapCredentials(creds);
-  console.log(
-    "[FonuClickToCallSDK] call prerequisites",
-    {
-      companyUuid: COMPANY_UUID,
-      apiKeyPresent: !!API_KEY,
-      clickToCall: {
-        enabled: creds?.clickToCall?.enabled,
-        extension: creds?.clickToCall?.extension,
-        domain: creds?.clickToCall?.domain,
-        wss_url: creds?.clickToCall?.wss_url,
-        destination: creds?.clickToCall?.destination,
-        origin: creds?.clickToCall?.origin,
-        originUuid: creds?.clickToCall?.originUuid,
-        originNumber: creds?.clickToCall?.origin?.number,
-      },
-    },
-  );
   try {
     initSipConnection(events);
   }

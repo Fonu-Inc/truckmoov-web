@@ -21,6 +21,7 @@ import { Input } from "@/components/shadcn/input";
 import {
   confirmPasswordSchema, fullNameSchema, newPasswordSchema, passwordMismatch,
 } from "@/features/auth/utils/schemas";
+import { useAuthStore } from "@/stores/authStore";
 
 const invitePasswordSchema = z
   .object({
@@ -48,6 +49,8 @@ export function InviteProfileForm({
 }: InviteProfileFormProps) {
   const navigate = useNavigate();
   const registerInvited = useRegisterInvited();
+  const signedInUser = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
 
   const form = useForm<InvitePasswordFormValues>({
     resolver: zodResolver(invitePasswordSchema),
@@ -59,6 +62,9 @@ export function InviteProfileForm({
   });
 
   function onSubmit(values: InvitePasswordFormValues) {
+    // Accepting creates a different account; the old session must not outlive it in this browser.
+    if (signedInUser)
+      logout();
     registerInvited.mutate(
       {
         data: {
@@ -89,6 +95,18 @@ export function InviteProfileForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-4"
       >
+        {signedInUser && (
+          <p
+            role="status"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+          >
+            You're signed in as
+            {" "}
+            {signedInUser.email}
+            . Accepting this invite will sign you out.
+          </p>
+        )}
+
         <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/40 px-3 py-2 text-sm">
           <Mail className="h-4 w-4 shrink-0 text-primary" />
           <span className="truncate">{email}</span>

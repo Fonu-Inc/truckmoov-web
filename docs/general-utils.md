@@ -71,6 +71,14 @@ reads as zero.
 formatBytes(1536) // "1.5 KB"
 ```
 
+**`escapeHtml(value)`** — escape a value for hand-built HTML (Leaflet popups,
+print windows written with `document.write`). Every tenant-typed value that goes
+into such a string goes through it. `null`/`undefined` become `""`.
+
+```tsx
+`<td>${escapeHtml(invoice.customer_name)}</td>`
+```
+
 ## Adding a function
 
 1. Write it in `general-utils.ts`, with a comment saying **when to reach for it**.

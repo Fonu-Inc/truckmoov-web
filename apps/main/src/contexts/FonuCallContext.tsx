@@ -1,6 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
+import { getClickToCallCredentialsQueryOptions } from "@truckmoov/api/auth";
 import {
   createContext, useContext, useEffect, useMemo, useState,
 } from "react";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import {
   placeFonuCall, setupFonuVoice,
 } from "@/services/fonuVoice";
@@ -56,31 +59,42 @@ export function FonuCallProvider({ children }: { children: React.ReactNode }) {
     setDurationSeconds,
   ] = useState(0);
 
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const { data: credentials } = useQuery({
+    ...getClickToCallCredentialsQueryOptions(),
+    enabled: isAuthenticated,
+  });
+
   useEffect(
     () => {
-      setupFonuVoice({
-        onConnecting: () => setStatus("connecting"),
-        onProgress: () => setStatus("ringing"),
-        onAccepted: () => setStatus("connected"),
-        onConfirmed: () => setStatus("connected"),
-        onEnded: () => setStatus("ended"),
-        onFailed: () => setStatus("failed"),
-        onRegistered: () =>
-          console.log("[FonuCall] registered: ready for calls"),
+      if (!credentials)
+        return;
+      setupFonuVoice(
+        credentials,
+        {
+          onConnecting: () => setStatus("connecting"),
+          onProgress: () => setStatus("ringing"),
+          onAccepted: () => setStatus("connected"),
+          onConfirmed: () => setStatus("connected"),
+          onEnded: () => setStatus("ended"),
+          onFailed: () => setStatus("failed"),
+          onRegistered: () =>
+            console.log("[FonuCall] registered: ready for calls"),
 
-        onSessionCreated: (s: any) => {
-          setSession(s);
-          setIsMuted(false);
-          setIsOnHold(false);
+          onSessionCreated: (s: any) => {
+            setSession(s);
+            setIsMuted(false);
+            setIsOnHold(false);
+          },
         },
-      }).catch((err) => {
+      ).catch((err) => {
         console.warn(
           "[FonuCall] init skipped",
           err?.message || err,
         );
       });
     },
-    [],
+    [credentials],
   );
 
   useEffect(

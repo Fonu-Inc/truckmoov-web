@@ -90,3 +90,12 @@ export function formatBytes(bytes: number | null | undefined): string {
     return `${mb.toFixed(1)} MB`
   return `${(mb / 1024).toFixed(2)} GB`
 }
+
+/**
+ * Escape a value for interpolation into an HTML string (Leaflet popups, print
+ * windows built with `document.write`). Reach for it on every tenant-typed value
+ * that goes into hand-built HTML. Null/undefined become "".
+ */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
+}

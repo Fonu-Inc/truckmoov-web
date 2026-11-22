@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "npx --yes serve@latest out -l 3000",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p .",
     "env:generate": "type-envgen .env -o src/shared/env/env.ts --target nextjs",
     "env:check": "type-envgen .env -o src/shared/env/env.ts --target nextjs --check",
     "env:watch": "type-envgen .env -o src/shared/env/env.ts --target nextjs --watch"

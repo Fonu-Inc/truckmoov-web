@@ -27,7 +27,7 @@ axiosInstance.interceptors.request.use((config) => {
 
 // ─── 401 refresh queue ────────────────────────────────────────────────────────
 
-const refreshClient = axios.create({ baseURL: BACKEND_URL })
+const refreshClient = axios.create({ baseURL: BACKEND_URL, timeout: 15000 })
 
 let isRefreshing = false
 let pendingQueue: Array<{
@@ -49,6 +49,43 @@ function redirectToLogin() {
   window.location.assign('/auth')
 }
 
+// Every tab of the app shares one refresh token, and the server spends it on use: one tab at a time.
+async function withRefreshLock<T>(refresh: () => Promise<T>): Promise<T> {
+  return typeof navigator !== 'undefined' && navigator.locks
+    ? await navigator.locks.request('truckmoov-auth-refresh', refresh)
+    : await refresh()
+}
+
+/** The new access token, or null when another tab has signed out meanwhile. */
+async function refreshSession(staleRefreshToken: string): Promise<string | null> {
+  await useAuthStore.persist.rehydrate()
+  const { accessToken, refreshToken, setSession } = useAuthStore.getState()
+  if (!refreshToken) return null
+  if (refreshToken !== staleRefreshToken && accessToken) return accessToken
+
+  const { data: res } = await refreshClient.post<ServerResponse<AuthSession>>(
+    '/auth/refresh',
+    { refreshToken },
+  )
+  setSession(res.data)
+  return res.data.accessToken
+}
+
+const DEAD_SESSION_STATUSES = [400, 401, 403]
+
+if (typeof window !== 'undefined') {
+  // Picks up another tab's refresh or sign-out, which this tab's store would otherwise never see.
+  window.addEventListener('storage', (event) => {
+    if (event.key !== 'truckmoov_auth' && event.key !== null) return
+    const before = useAuthStore.getState()
+    void Promise.resolve(useAuthStore.persist.rehydrate()).then(() => {
+      const after = useAuthStore.getState()
+      if (before.refreshToken && !after.refreshToken) redirectToLogin()
+      else if (before.user && after.user && before.user.id !== after.user.id) window.location.reload()
+    })
+  })
+}
+
 // ─── Response interceptor: normalize errors + 401 refresh ─────────────────────
 
 axiosInstance.interceptors.response.use(
@@ -64,7 +101,7 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(normalizeError(error))
     }
 
-    const { refreshToken, setSession, logout } = useAuthStore.getState()
+    const { refreshToken, logout } = useAuthStore.getState()
 
     if (!refreshToken) {
       logout()
@@ -86,15 +123,18 @@ axiosInstance.interceptors.response.use(
     isRefreshing = true
 
     try {
-      const { data: res } = await refreshClient.post<ServerResponse<AuthSession>>(
-        '/auth/refresh',
-        { refreshToken },
-      )
-      setSession(res.data)
-      flushQueue(null, res.data.accessToken)
-      originalRequest.headers.Authorization = `Bearer ${res.data.accessToken}`
+      const accessToken = await withRefreshLock(() => refreshSession(refreshToken))
+      if (!accessToken) throw new Error('signed out in another tab')
+      flushQueue(null, accessToken)
+      originalRequest.headers.Authorization = `Bearer ${accessToken}`
       return axiosInstance(originalRequest)
-    } catch {
+    } catch (refreshFailure) {
+      // Offline, a timeout or a 5xx says nothing about the session: keep it and let the caller retry.
+      if (axios.isAxiosError(refreshFailure) && !DEAD_SESSION_STATUSES.includes(refreshFailure.response?.status ?? 0)) {
+        const transient = normalizeError(refreshFailure)
+        flushQueue(transient, null)
+        return Promise.reject(transient)
+      }
       const refreshError: ServerErrorResponse = {
         error: 'TOKEN_REFRESH_FAILED',
         message: 'Session expired. Please log in again.',

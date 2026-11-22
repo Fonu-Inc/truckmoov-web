@@ -29,6 +29,7 @@ let socket: Socket | null = null
 let refCount = 0
 let unsubscribeAuth: (() => void) | null = null
 let retriedAuth = false
+let capacityRetry: ReturnType<typeof setTimeout> | undefined
 let status: RealtimeStatus = { state: 'idle' }
 const statusListeners = new Set<() => void>()
 
@@ -46,6 +47,7 @@ function teardown() {
     socket.disconnect()
     socket = null
   }
+  clearTimeout(capacityRetry)
   retriedAuth = false
   setStatus({ state: 'idle' })
 }
@@ -89,10 +91,21 @@ function create(): Socket {
         s.connect()
     })
   })
-  s.on('refused', ({ reason }: { reason: RealtimeRefusedReason }) => {
+  s.on('refused', ({ reason, retryAfterSeconds }: { reason: RealtimeRefusedReason, retryAfterSeconds?: number }) => {
     setStatus({ state: 'refused', reason })
     if (reason === 'unauthenticated')
       refreshOnce()
+    if (reason === 'capacity_reached') {
+      // Jitter on top, so clients the pod shed together do not all come back together.
+      const delayMs = ((retryAfterSeconds ?? 5 + Math.random() * 25) + Math.random() * 5) * 1000
+      clearTimeout(capacityRetry)
+      capacityRetry = setTimeout(() => {
+        if (socket !== s || s.connected)
+          return
+        setStatus({ state: 'connecting' })
+        s.connect()
+      }, delayMs)
+    }
   })
 
   // Token rotated → reconnect so the auth callback sends the new one. Logged out → close.

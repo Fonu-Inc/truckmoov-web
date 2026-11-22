@@ -96,7 +96,6 @@ import {
   getMe,
   getNotificationPreferences,
   getOnboardingBusinessInfo,
-  getOnboardingExchangeRate,
   getOnboardingKycDocuments,
   getTenantStorageUsage,
   getOnboardingPlans,
@@ -257,6 +256,7 @@ import {
   exportDataBundleAllocations,
   exportDataBundleRates,
   exportDataBundleTransactions,
+  exportDataBundleWalletLedger,
   getAllocatableSims,
   getDataBundleAllocation,
   getDataBundleAllocations,
@@ -337,6 +337,8 @@ import {
   sendOnboardingBillingEmailVerification,
   setOnboardingBillingEmail,
   startOnboardingPayment,
+  verifyOnboardingPayment,
+  getClickToCallCredentials,
   scheduleOnboardingInstallation,
   verifyOnboardingBillingEmail,
   getOnboardingEmailAvailability,
@@ -576,8 +578,8 @@ export const AUTH_QUERY_KEY = {
   tenantStorageUsage: ['tenantStorageUsage'],
   onboardingStatus: ['onboardingStatus'],
   onboardingPlans: ['onboardingPlans'],
-  onboardingExchangeRate: ['onboardingExchangeRate'],
   onboardingSubscriptionCaps: ['onboardingSubscriptionCaps'],
+  clickToCallCredentials: ['clickToCallCredentials'],
   simDataBundles: (payload: SimDataBundlesQuery) => ['simDataBundles', payload],
   sims: (payload?: SimsQuery) => payload ? ['sims', payload] : ['sims'],
   sim: (id: string) => ['sim', id],
@@ -1958,10 +1960,6 @@ export function getOnboardingPlansQueryOptions() {
   return queryOptions({ queryKey: AUTH_QUERY_KEY.onboardingPlans, queryFn: getOnboardingPlans })
 }
 
-export function getOnboardingExchangeRateQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.onboardingExchangeRate, queryFn: getOnboardingExchangeRate })
-}
-
 export function getOnboardingSubscriptionCapsQueryOptions() {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.onboardingSubscriptionCaps,
@@ -2368,6 +2366,7 @@ export {
   exportDataBundleAllocations,
   exportDataBundleRates,
   exportDataBundleTransactions,
+  exportDataBundleWalletLedger,
 }
 
 export function useTopUpDataBundleWallet() {
@@ -3635,5 +3634,22 @@ export function useRequestSystemTenantExport() {
     onSuccess: (_res, { id }) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTenantExports(id) })
     },
+  })
+}
+
+/** Writes the order cache directly, so the payment step sees a confirmation at once. */
+export function useVerifyOnboardingPayment() {
+  return useMutation({
+    mutationFn: verifyOnboardingPayment,
+    onSuccess: (res, { id }) => queryClient.setQueryData(AUTH_QUERY_KEY.onboardingOrder(id), res),
+  })
+}
+
+export function getClickToCallCredentialsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.clickToCallCredentials,
+    queryFn: getClickToCallCredentials,
+    staleTime: Infinity,
+    retry: false,
   })
 }

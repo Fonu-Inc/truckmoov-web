@@ -543,8 +543,8 @@ export default function JobsPage() {
     const {
       pickup, dropoff, stops,
     } = buildStopsPayload(data);
-    updateJobDetailsMutation.mutate(
-      {
+    try {
+      await updateJobDetailsMutation.mutateAsync({
         jobId,
         data: {
           pickup,
@@ -561,25 +561,30 @@ export default function JobsPage() {
           amount: data.amount,
           deadline: new Date(data.deadline).toISOString(),
         },
-      },
-      {
-        onSuccess: async () => {
-          updateJobSchedulingMutation.mutate({
-            jobId,
-            data: { priority: toApiPriority(data.priority) },
-          });
-          toast.success("Job updated");
-          setIsFormOpen(false);
-          if (data.attachmentFiles.length > 0) {
-            await uploadAttachments(
-              jobId,
-              data.attachmentFiles,
-            );
-          }
-        },
-        onError: error => toast.error(error.message),
-      },
-    );
+      });
+    }
+    catch (error) {
+      toast.error((error as Error).message);
+      return;
+    }
+    try {
+      await updateJobSchedulingMutation.mutateAsync({
+        jobId,
+        data: { priority: toApiPriority(data.priority) },
+      });
+    }
+    catch (error) {
+      toast.error(`Job details saved, but priority was not updated: ${(error as Error).message}`);
+      return;
+    }
+    toast.success("Job updated");
+    setIsFormOpen(false);
+    if (data.attachmentFiles.length > 0) {
+      await uploadAttachments(
+        jobId,
+        data.attachmentFiles,
+      );
+    }
   };
 
   const handleDeleteJob = () => {
@@ -1059,6 +1064,7 @@ export default function JobsPage() {
         isSubmitting={
           createJobMutation.isPending
           || updateJobDetailsMutation.isPending
+          || updateJobSchedulingMutation.isPending
           || (!!selectedJob && selectedJobDetailsQuery.isFetching)
         }
       />

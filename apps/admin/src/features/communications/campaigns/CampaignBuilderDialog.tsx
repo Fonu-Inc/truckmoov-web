@@ -60,6 +60,8 @@ function DetailsStep({ draft, onChange }: { draft: BuilderDraft; onChange: (chan
 export function CampaignBuilderDialog({ open, onOpenChange }: Props) {
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<BuilderDraft>(EMPTY_DRAFT);
+  // Set once created, so a retry after a failed send only sends.
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const { create, send } = useCampaignActions();
   const audience = useAudienceTenants(open && step >= 2);
   const chosen = useMemo(() => audience.tenants.filter(t => draft.audienceIds.includes(t.id)), [audience.tenants, draft.audienceIds]);
@@ -71,15 +73,20 @@ export function CampaignBuilderDialog({ open, onOpenChange }: Props) {
     if (!next) {
       setStep(0);
       setDraft(EMPTY_DRAFT);
+      setCreatedId(null);
     }
     onOpenChange(next);
   };
 
   const submit = async () => {
     try {
-      const campaign = await create.mutateAsync(toInput(draft, reach));
+      let id = createdId;
+      if (!id) {
+        id = (await create.mutateAsync(toInput(draft, reach))).id;
+        setCreatedId(id);
+      }
       if (!draft.sendLater)
-        await send.mutateAsync({ id: campaign.id });
+        await send.mutateAsync({ id });
       close(false);
     }
     catch {
@@ -104,7 +111,7 @@ export function CampaignBuilderDialog({ open, onOpenChange }: Props) {
           {step < STEPS.length - 1
             ? <Button disabled={Boolean(problem)} onClick={() => setStep(step + 1)}>Next</Button>
             : (
-                <Button disabled={Boolean(problem)} loading={create.isPending || send.isPending} onClick={() => void submit()}>
+                <Button disabled={Boolean(problem) || create.isPending || send.isPending} loading={create.isPending || send.isPending} onClick={() => void submit()}>
                   {draft.sendLater ? "Schedule campaign" : "Create and send"}
                 </Button>
               )}

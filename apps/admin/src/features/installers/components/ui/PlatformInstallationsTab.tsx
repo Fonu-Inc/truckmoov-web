@@ -1,19 +1,25 @@
 import type {
+  InstallerJobStatus, SystemInstallationJobsQuery,
+} from "@truckmoov/api/auth";
+import type {
   FilterField, FilterValues,
 } from "@/components/shadcn/table-toolbar";
 import type { InstallationRecord } from "@/features/installers/utils/platformInstallations";
 import { useAssignSystemInstallationOrder } from "@truckmoov/api/auth";
+import { debounce } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDateInTimezone, formatDateOnlyInTimezone,
 } from "@truckmoov/app-core/utils/time-utils";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   Ban, CheckCircle2, ClipboardList, Clock, Eye, RefreshCw,
 } from "lucide-react";
 import {
-  useMemo, useState,
+  useEffect, useMemo, useState,
 } from "react";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -35,10 +41,8 @@ import { installerName } from "@/features/installers/installerOptions";
 import {
   canChangeInstallationAssignment,
   eligibleInstallers,
-  filterInstallationRecords,
-  filterInstallationsByFields,
   INSTALLATION_STATUS_LABEL,
-  installationTotals,
+  JOB_STATUSES_BY_INSTALLATION_STATUS,
 } from "@/features/installers/utils/platformInstallations";
 import { InstallationStatusBadge } from "./InstallationStatusBadge";
 import { InstallerAssignmentList } from "./InstallerAssignmentList";
@@ -49,6 +53,20 @@ const HISTORY_STATUSES: InstallationRecord["status"][] = [
   "completed",
   "cancelled",
 ];
+const VIEW_JOB_STATUSES: Record<"active" | "history", InstallerJobStatus[]> = {
+  active: [
+    "unassigned",
+    "assigned",
+    "scheduled",
+    "in_progress",
+    "overdue",
+    "issue_reported",
+  ],
+  history: [
+    "completed",
+    "cancelled",
+  ],
+};
 
 /**
  * Fleetflow's `PlatformInstallationsTab`, live-wired to the installation orders
@@ -56,11 +74,9 @@ const HISTORY_STATUSES: InstallationRecord["status"][] = [
  * Assigned Installer section and persists through the platform assign route.
  */
 export function PlatformInstallationsTab() {
-  const {
-    records, loading, error, liveInstallers: installers, refresh,
-  } = usePlatformInstallations();
   const assignOrder = useAssignSystemInstallationOrder();
-  const allRecords = records;
+  // Installer occupancy for the assignment dialog, from the shared first page of every job.
+  const { allRecords } = usePlatformInstallations({ withInstallers: false });
   const { timezone } = usePreferences();
   const [
     view,
@@ -70,6 +86,21 @@ export function PlatformInstallationsTab() {
     search,
     setSearch,
   ] = useState("");
+  const [
+    searchTerm,
+    setSearchTerm,
+  ] = useState("");
+  const debouncedSearch = useMemo(
+    () => debounce(
+      (v: string) => setSearchTerm(v.trim()),
+      300,
+    ),
+    [],
+  );
+  useEffect(
+    () => () => debouncedSearch.cancel(),
+    [debouncedSearch],
+  );
   const [
     status,
     setStatus,
@@ -120,10 +151,57 @@ export function PlatformInstallationsTab() {
     filters,
     setFilters,
   ] = useState<FilterValues>({});
-  const [
+  const {
+    page, pageSize, setPage,
+  } = useServerPagination(
+    [
+      view,
+      searchTerm,
+      status,
+      filters,
+    ],
+    PAGE_SIZE,
+  );
+  const dateRange = (key: string, from: keyof SystemInstallationJobsQuery, to: keyof SystemInstallationJobsQuery) => filters[key]?.enabled
+    ? {
+        [from]: filters[key].dateFrom || undefined, [to]: filters[key].dateTo || undefined,
+      }
+    : {};
+  const query: SystemInstallationJobsQuery = {
+    status: (status === "all" ? VIEW_JOB_STATUSES[view] : JOB_STATUSES_BY_INSTALLATION_STATUS[status as InstallationRecord["status"]] ?? []).join(","),
+    search: searchTerm || undefined,
+    tenantType: filters.tenantType?.enabled ? filters.tenantType.value as SystemInstallationJobsQuery["tenantType"] || undefined : undefined,
+    assignment: filters.assignment?.enabled ? filters.assignment.value as SystemInstallationJobsQuery["assignment"] || undefined : undefined,
+    ...dateRange(
+      "scheduledDate",
+      "scheduledFrom",
+      "scheduledTo",
+    ),
+    ...dateRange(
+      "startedDate",
+      "startedFrom",
+      "startedTo",
+    ),
+    ...dateRange(
+      "completedDate",
+      "completedFrom",
+      "completedTo",
+    ),
+    ...dateRange(
+      "createdDate",
+      "createdFrom",
+      "createdTo",
+    ),
     page,
-    setPage,
-  ] = useState(1);
+    limit: pageSize,
+  };
+  const {
+    records, total, countsByStatus, loading, error, liveInstallers: installers, refresh,
+  } = usePlatformInstallations({ query });
+  const countOf = (statuses: InstallerJobStatus[]) => statuses.reduce(
+    (sum, s) => sum + (countsByStatus?.[s] ?? 0),
+    0,
+  );
   const [
     detailKey,
     setDetailKey,
@@ -156,61 +234,26 @@ export function PlatformInstallationsTab() {
       installers,
     ],
   );
-  const totals = installationTotals(enriched);
-  const activeRecords = useMemo(
-    () => enriched.filter(r => !HISTORY_STATUSES.includes(r.status)),
-    [enriched],
-  );
-  const historyRecords = useMemo(
-    () => enriched.filter(r => HISTORY_STATUSES.includes(r.status)),
-    [enriched],
-  );
-  const viewRecords = view === "history" ? historyRecords : activeRecords;
+  const totals = {
+    total: countOf([
+      ...VIEW_JOB_STATUSES.active,
+      ...VIEW_JOB_STATUSES.history,
+    ]),
+    completed: countOf(["completed"]),
+    inProgress: countOf(["in_progress"]),
+    cancelled: countOf(["cancelled"]),
+  };
   const viewStatusOptions = useMemo(
-    () => Object.entries(INSTALLATION_STATUS_LABEL).filter(([value]) => view === "history" ? HISTORY_STATUSES.includes(value as InstallationRecord["status"]) : !HISTORY_STATUSES.includes(value as InstallationRecord["status"])),
+    () => Object.entries(INSTALLATION_STATUS_LABEL).filter(([value]) => JOB_STATUSES_BY_INSTALLATION_STATUS[value as InstallationRecord["status"]]
+      && (view === "history" ? HISTORY_STATUSES.includes(value as InstallationRecord["status"]) : !HISTORY_STATUSES.includes(value as InstallationRecord["status"]))),
     [view],
-  );
-  const filtered = useMemo(
-    () => filterInstallationsByFields(
-      filterInstallationRecords(
-        viewRecords,
-        search,
-        status,
-        [],
-        "newest",
-      ),
-      {
-        tenantType: filters.tenantType?.enabled ? filters.tenantType.value : undefined,
-        assignment: filters.assignment?.enabled ? filters.assignment.value : undefined,
-        scheduledFrom: filters.scheduledDate?.enabled ? filters.scheduledDate.dateFrom : undefined,
-        scheduledTo: filters.scheduledDate?.enabled ? filters.scheduledDate.dateTo : undefined,
-        startedFrom: filters.startedDate?.enabled ? filters.startedDate.dateFrom : undefined,
-        startedTo: filters.startedDate?.enabled ? filters.startedDate.dateTo : undefined,
-        completedFrom: filters.completedDate?.enabled ? filters.completedDate.dateFrom : undefined,
-        completedTo: filters.completedDate?.enabled ? filters.completedDate.dateTo : undefined,
-        createdFrom: filters.createdDate?.enabled ? filters.createdDate.dateFrom : undefined,
-        createdTo: filters.createdDate?.enabled ? filters.createdDate.dateTo : undefined,
-      },
-    ),
-    [
-      viewRecords,
-      search,
-      status,
-      filters,
-    ],
   );
   const pages = Math.max(
     1,
-    Math.ceil(filtered.length / PAGE_SIZE),
+    Math.ceil(total / pageSize),
   );
-  const currentPage = Math.min(
-    page,
-    pages,
-  );
-  const visible = filtered.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
-  );
+  const currentPage = page;
+  const visible = enriched;
   const detail = enriched.find(r => r.key === detailKey) || null;
   const assignment = enriched.find(r => r.key === assignmentKey) || null;
   const candidates = assignment ? eligibleInstallers(
@@ -319,15 +362,27 @@ export function PlatformInstallationsTab() {
           setView(v as "active" | "history");
           setStatus("all");
           setFilters({});
-          setPage(1);
         }}
       >
         <TabsList>
           <TabsTrigger value="active">
             Active Installations
-            {" "}
+            <Badge
+              variant="secondary"
+              className="ml-2"
+            >
+              {countOf(VIEW_JOB_STATUSES.active)}
+            </Badge>
           </TabsTrigger>
-          <TabsTrigger value="history">Installation History</TabsTrigger>
+          <TabsTrigger value="history">
+            Installation History
+            <Badge
+              variant="secondary"
+              className="ml-2"
+            >
+              {countOf(VIEW_JOB_STATUSES.history)}
+            </Badge>
+          </TabsTrigger>
         </TabsList>
       </Tabs>
       <Card className="min-w-0">
@@ -339,7 +394,7 @@ export function PlatformInstallationsTab() {
             </div>
             <div className="flex items-center gap-2">
               <ExportButton
-                rows={filtered}
+                rows={visible}
                 filename="installations"
                 columns={[
                   {
@@ -369,14 +424,11 @@ export function PlatformInstallationsTab() {
             search={search}
             onSearchChange={(v) => {
               setSearch(v);
-              setPage(1);
+              debouncedSearch(v);
             }}
-            searchPlaceholder="Search installation, customer, fleet or installer…"
+            searchPlaceholder="Search job, customer, vehicle registration or location…"
             status={status}
-            onStatusChange={(v) => {
-              setStatus(v);
-              setPage(1);
-            }}
+            onStatusChange={setStatus}
             statusOptions={viewStatusOptions.map(([
               value,
               label,
@@ -386,10 +438,7 @@ export function PlatformInstallationsTab() {
             filterEntity="installations"
             filterFields={filterFields}
             filterValues={filters}
-            onFiltersApply={(next) => {
-              setFilters(next);
-              setPage(1);
-            }}
+            onFiltersApply={setFilters}
           />
         </CardHeader>
         <CardContent className="space-y-4">
@@ -473,7 +522,7 @@ export function PlatformInstallationsTab() {
                               colSpan={7 + dateColumns.length}
                               className="py-12 text-center text-sm text-muted-foreground"
                             >
-                              {records.length ? "No installations match your search or filters." : "No recorded installations yet."}
+                              {totals.total ? "No installations match your search or filters." : "No recorded installations yet."}
                             </TableCell>
                           </TableRow>
                         )}
@@ -483,14 +532,14 @@ export function PlatformInstallationsTab() {
                 )}
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
             <span>
-              {filtered.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}
+              {total ? (currentPage - 1) * pageSize + 1 : 0}
               –
               {Math.min(
-                currentPage * PAGE_SIZE,
-                filtered.length,
+                currentPage * pageSize,
+                total,
               )}
               {" of "}
-              {filtered.length}
+              {total}
               {" installations"}
             </span>
             {pages > 1 && (

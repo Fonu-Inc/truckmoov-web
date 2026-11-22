@@ -852,6 +852,11 @@ function ChecklistCard({ job }: { job: InstallerJobDetail }) {
   );
 }
 
+type PendingPhoto = {
+  file: File;
+  category: string;
+};
+
 /**
  * appdemo lists evidence per vehicle. The API keeps it per job with a
  * category, so "Attach Photos" asks for the category first.
@@ -868,28 +873,57 @@ function EvidenceCard({
   const fileRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef("");
 
-  function send(files: FileList | null) {
-    for (const file of files ?? []) {
+  const [
+    failed,
+    setFailed,
+  ] = useState<PendingPhoto[]>([]);
+  const [
+    sending,
+    setSending,
+  ] = useState(false);
+
+  // One request per photo, in turn, so each photo gets its own result.
+  async function send(items: PendingPhoto[]) {
+    const valid = items.filter(({ file }) => {
       if (!EVIDENCE_TYPES.includes(file.type)) {
         toast.error(`${file.name}: use a JPG, PNG or WebP photo.`);
-        continue;
+        return false;
       }
       if (file.size > MAX_EVIDENCE_BYTES) {
         toast.error(`${file.name}: the photo must be 10 MB or smaller.`);
-        continue;
+        return false;
       }
-      upload.mutate(
-        {
+      return true;
+    });
+    if (!valid.length)
+      return;
+    setSending(true);
+    const failures: Array<PendingPhoto & { message: string }> = [];
+    for (const item of valid) {
+      try {
+        await upload.mutateAsync({
           jobId: job.id,
-          category: categoryRef.current,
-          file,
-        },
-        {
-          onSuccess: () => toast.success("Evidence uploaded."),
-          onError: error => toast.error(error.message),
-        },
-      );
+          file: item.file,
+          category: item.category,
+        });
+      }
+      catch (error) {
+        failures.push({
+          ...item,
+          message: (error as { message?: string }).message ?? "upload failed",
+        });
+      }
     }
+    setSending(false);
+    setFailed(prev => [
+      ...prev.filter(p => !items.includes(p)),
+      ...failures,
+    ]);
+    const uploaded = valid.length - failures.length;
+    if (!failures.length)
+      toast.success(uploaded === 1 ? "Evidence uploaded." : `${uploaded} photos uploaded.`);
+    else
+      toast.error(`${uploaded} of ${valid.length} uploaded. ${failures.map(f => `${f.file.name} failed (${f.message})`).join(", ")} — retry below.`);
   }
 
   async function view(evidenceId: string) {
@@ -922,7 +956,13 @@ function EvidenceCard({
           multiple
           hidden
           onChange={(e) => {
-            send(e.target.files);
+            void send(Array.from(
+              e.target.files ?? [],
+              file => ({
+                file,
+                category: categoryRef.current,
+              }),
+            ));
             e.target.value = "";
           }}
         />
@@ -949,7 +989,7 @@ function EvidenceCard({
                     variant="outline"
                     className="gap-2"
                     disabled={!job.actions.canUploadEvidence || !categories.length}
-                    loading={upload.isPending}
+                    loading={sending}
                   >
                     <Upload className="h-4 w-4" />
                     {" "}
@@ -974,6 +1014,24 @@ function EvidenceCard({
             </div>
           </div>
         ))}
+
+        {failed.length > 0 && !sending && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm">
+            <span>
+              Not uploaded:
+              {" "}
+              {failed.map(f => f.file.name).join(", ")}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!job.actions.canUploadEvidence}
+              onClick={() => void send(failed)}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
 
         {job.evidence.length > 0 && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

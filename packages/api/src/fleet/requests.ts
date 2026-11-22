@@ -673,8 +673,14 @@ export async function deleteDriver({ id }: { id: string }) {
   return data
 }
 
-export async function importDrivers({ data }: ImportDriversPayload) {
-  const { data: res } = await axiosInstance.post<BulkDriverImportResponse>('/fleet/drivers/import', data)
+export async function importDrivers({ file, idempotencyKey }: ImportDriversPayload) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data: res } = await axiosInstance.post<BulkDriverImportResponse>(
+    '/fleet/drivers/import',
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data', 'Idempotency-Key': idempotencyKey } },
+  )
   return res
 }
 
