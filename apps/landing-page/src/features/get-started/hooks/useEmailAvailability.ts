@@ -1,11 +1,12 @@
 import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/get-started/schemas/applySchemas";
-
 import { useQuery } from "@tanstack/react-query";
+
 import { getOnboardingEmailAvailabilityQueryOptions } from "@truckmoov/api/auth";
 import {
   useEffect, useState,
 } from "react";
+import { useWatch } from "react-hook-form";
 
 const TAKEN_MESSAGE = "An account or application already exists for this email";
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]{2,}$/;
@@ -17,7 +18,10 @@ const PAUSE_MS = 400;
  * early warning only.
  */
 export function useEmailAvailability(form: UseFormReturn<BusinessDetailsValues>, applicationId?: string | null): boolean {
-  const email = (form.watch("businessEmail") ?? "").trim().toLowerCase();
+  const email = (useWatch({
+    control: form.control,
+    name: "businessEmail",
+  }) ?? "").trim().toLowerCase();
   const [
     paused,
     setPaused,

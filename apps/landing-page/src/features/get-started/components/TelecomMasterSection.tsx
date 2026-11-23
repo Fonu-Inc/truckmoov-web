@@ -10,6 +10,7 @@ import {
   getOnboardingM2mPlansQueryOptions, useVerifyOnboardingTelecomMasterNumber,
 } from "@truckmoov/api/auth";
 import { useState } from "react";
+import { useWatch } from "react-hook-form";
 import { SectionHeading } from "@/features/get-started/components/StepParts";
 import { toMtnMsisdn } from "@/features/get-started/schemas/applySchemas";
 import { formatCurrency } from "@/features/get-started/utils/formatCurrency";
@@ -45,9 +46,20 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
     explainerOpen,
     setExplainerOpen,
   ] = useState(false);
-  const numberType = form.watch("telecomMasterNumberType");
-  const msisdn = toMtnMsisdn(form.watch("telecomMasterMsisdn"));
-  const verified = Boolean(msisdn) && form.watch("telecomMasterVerifiedMsisdn") === msisdn;
+  const [
+    numberType,
+    typedMsisdn,
+    verifiedMsisdn,
+  ] = useWatch({
+    control: form.control,
+    name: [
+      "telecomMasterNumberType",
+      "telecomMasterMsisdn",
+      "telecomMasterVerifiedMsisdn",
+    ],
+  });
+  const msisdn = toMtnMsisdn(typedMsisdn);
+  const verified = Boolean(msisdn) && verifiedMsisdn === msisdn;
 
   function handleVerify() {
     if (!msisdn) {

@@ -111,7 +111,10 @@ The site should not render anything it doesn't need to:
    serialisable, so never pass a content object through a Client Component boundary.
 4. **React Compiler** is on and memoises every client component. Don't write `useMemo`,
    `useCallback` or `memo` by hand. Effects list their real dependencies. Never disable
-   `exhaustive-deps`.
+   `exhaustive-deps`. Read form values in render with `useWatch({ control, name })`, never
+   `form.watch("x")` or `form.getValues()` in JSX: the compiler caches them on `form`,
+   which never changes, so the value freezes (a picked State once left City disabled).
+   `form.watch(callback)` inside an effect is fine. `eslint.config.js` enforces this.
 5. **Dialogs** (Get Started, Contact) are mounted once, in
    `shared/components/providers/DialogHost.tsx`, which code-splits them and loads each on its
    first open. To open one, render `<DialogTrigger dialog="get-started" | "contact">`

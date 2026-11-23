@@ -14,6 +14,7 @@ import {
 } from "@truckmoov/api/auth";
 import { Check } from "lucide-react";
 import { useState } from "react";
+import { useWatch } from "react-hook-form";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
 import { IndemnityDialog } from "@/features/get-started/components/IndemnityDialog";
 import {
@@ -206,7 +207,20 @@ export function BusinessDetailsStep({
     />
   );
 
-  const selectedState = form.watch("state");
+  // useWatch, not form.watch: React Compiler memoises form.watch() on `form`,
+  // which froze the State at "" and left City disabled.
+  const selectedState = useWatch({
+    control: form.control,
+    name: "state",
+  });
+  const organizationName = useWatch({
+    control: form.control,
+    name: "organizationName",
+  });
+  const businessEmail = useWatch({
+    control: form.control,
+    name: "businessEmail",
+  });
   const cities = CITIES_BY_STATE[selectedState] ?? [];
 
   const selectField = (name: "state" | "city", label: string, options: readonly string[], placeholder: string) => (
@@ -504,7 +518,7 @@ export function BusinessDetailsStep({
         open={indemnityOpen}
         onOpenChange={setIndemnityOpen}
         initialName={licence.indemnitySignatureName}
-        companyName={form.watch("organizationName")}
+        companyName={organizationName}
         notice={indemnityNotice}
         onSigned={({
           method,
@@ -531,7 +545,7 @@ export function BusinessDetailsStep({
         open={accountDialogOpen}
         onOpenChange={setAccountDialogOpen}
         title="You already have a Fleet Pro account"
-        description={`An account already exists for ${form.getValues("businessEmail")}. We have emailed you the details of your existing account so you can sign in instead of applying again.`}
+        description={`An account already exists for ${businessEmail}. We have emailed you the details of your existing account so you can sign in instead of applying again.`}
         footer={(
           <>
             <button

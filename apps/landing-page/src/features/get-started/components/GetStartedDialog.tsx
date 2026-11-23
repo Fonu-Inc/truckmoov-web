@@ -32,7 +32,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { useForm } from "react-hook-form";
+import {
+  useForm, useWatch,
+} from "react-hook-form";
 import { ApplicationSaveContext } from "@/features/get-started/components/ApplicationSaveContext";
 import { ApplicationStatusScreen } from "@/features/get-started/components/ApplicationStatusScreen";
 import { BusinessDetailsStep } from "@/features/get-started/components/BusinessDetailsStep";
@@ -277,6 +279,24 @@ export function GetStartedDialog({
     mode: "onTouched",
     // Before the application exists, step 1 is only in this browser: restore what was typed.
     defaultValues: applicationId ? EMPTY_BUSINESS_DETAILS : readDetailsDraft(),
+  });
+  // The installation step's address defaults. useWatch, not getValues, so React
+  // Compiler can't serve a value cached from an earlier render.
+  const [
+    streetAddress,
+    city,
+    state,
+    contactName,
+    phoneNumber,
+  ] = useWatch({
+    control: form.control,
+    name: [
+      "streetAddress",
+      "city",
+      "state",
+      "contactName",
+      "phoneNumber",
+    ],
   });
 
   // Keep typed-but-unsaved details until the first save creates the application.
@@ -795,11 +815,11 @@ export function GetStartedDialog({
           applicationId={applicationId}
           vehicles={application?.vehicles ?? []}
           defaults={{
-            streetAddress: form.getValues("streetAddress"),
-            city: form.getValues("city"),
-            state: form.getValues("state"),
-            contactName: form.getValues("contactName") || undefined,
-            contactPhone: form.getValues("phoneNumber"),
+            streetAddress,
+            city,
+            state,
+            contactName: contactName || undefined,
+            contactPhone: phoneNumber,
           }}
           onDone={() => void returnHome()}
         />
