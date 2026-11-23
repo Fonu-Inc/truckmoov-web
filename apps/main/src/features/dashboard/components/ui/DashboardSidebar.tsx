@@ -18,7 +18,7 @@ import {
   Truck,
 } from "lucide-react";
 import {
-  memo, useMemo, useState,
+  memo, useEffect, useMemo, useState,
 } from "react";
 import {
   NavLink, useLocation,
@@ -28,6 +28,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/shadcn/collapsible";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/shadcn/sheet";
 import {
   Tooltip,
   TooltipContent,
@@ -47,6 +52,7 @@ import {
   GET_STARTED_PATH, GET_STARTED_ROLES, isInstallationPending,
 } from "@/features/get-started/utils/installationProgress";
 import { useSupportAccess } from "@/features/help/hooks/useSupportAccess";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 /**
@@ -252,6 +258,9 @@ const NavGroup = memo(NavGroupBase);
  * navigation no longer re-renders the sidebar: React bails out on the empty
  * prop comparison. Combined with `NavRow` taking its active state from
  * `NavLink`, a click updates the anchors that changed and nothing else.
+ *
+ * Mobile branch: renders a `Sheet` opened via `useSidebarStore.openMobile()`
+ * from the header, and closes it on every route change.
  */
 function DashboardSidebarBase() {
   const role = useAuthStore(s => s.user?.role);
@@ -259,6 +268,10 @@ function DashboardSidebarBase() {
   const supportAccess = useSupportAccess();
   const billingAccess = useBillingAccess();
   const collapsed = useSidebarStore(s => s.collapsed);
+  const mobileOpen = useSidebarStore(s => s.mobileOpen);
+  const closeMobile = useSidebarStore(s => s.closeMobile);
+  const isMobile = useIsMobile();
+  const { pathname } = useLocation();
 
   // Branding is effectively static for a session — without a staleTime this
   // refetches on every window focus and re-renders the sidebar for nothing.
@@ -299,6 +312,43 @@ function DashboardSidebarBase() {
     ],
   );
 
+  // Auto-close the drawer on navigation — a nav click should not leave it
+  // covering the page it just opened. Reads the flag at run time so the effect
+  // fires on `pathname` only, not when the drawer itself opens.
+  useEffect(
+    () => {
+      if (useSidebarStore.getState().mobileOpen)
+        closeMobile();
+    },
+    [
+      pathname,
+      closeMobile,
+    ],
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet
+        open={mobileOpen}
+        onOpenChange={o => (o ? undefined : closeMobile())}
+      >
+        <SheetContent
+          side="left"
+          className="w-64 border-r border-sidebar-border bg-sidebar p-0 [&>button]:text-sidebar-foreground"
+        >
+          {/* Required by Radix Dialog for a11y — the logo header inside the
+              body is decorative, so give screen readers a real title. */}
+          <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+          <TooltipProvider delayDuration={300}>
+            <div className="flex h-full flex-col">
+              {renderBody(false)}
+            </div>
+          </TooltipProvider>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <aside
@@ -307,6 +357,19 @@ function DashboardSidebarBase() {
           collapsed ? "w-20" : "w-64",
         )}
       >
+        {renderBody(collapsed)}
+      </aside>
+    </TooltipProvider>
+  );
+
+  /**
+   * Logo, org card, nav and footer — rendered inside either the desktop
+   * `<aside>` or the mobile `Sheet`, so both paths share one markup and adding
+   * a nav item stays a one-file edit.
+   */
+  function renderBody(collapsed: boolean) {
+    return (
+      <>
         {/* Logo Header */}
         <div className="flex min-h-16 items-center border-b border-sidebar-border px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -441,9 +504,9 @@ function DashboardSidebarBase() {
             </FooterRow>
           </div>
         </div>
-      </aside>
-    </TooltipProvider>
-  );
+      </>
+    );
+  }
 }
 
 export const DashboardSidebar = memo(DashboardSidebarBase);

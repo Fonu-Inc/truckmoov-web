@@ -46,8 +46,11 @@ export function DashboardLayout() {
       <ErrorBoundary><DashboardSidebar /></ErrorBoundary>
       <div
         className={cn(
-          "flex min-h-screen flex-col bg-card",
-          collapsed ? "ml-20" : "ml-64",
+          "flex min-h-screen min-w-0 flex-col bg-card",
+          // Mobile drops the fixed sidebar (rendered as a Sheet instead), so the
+          // content column takes the full width. `md:` is the same 768px cutoff
+          // useIsMobile flips on.
+          collapsed ? "md:ml-20" : "md:ml-64",
         )}
       >
         <ErrorBoundary>
@@ -59,8 +62,8 @@ export function DashboardLayout() {
         </ErrorBoundary>
         <TrialBanner />
         <main className={cn(
-          "flex-1 p-6 pb-24", // bottom room so the floating support bubble never covers the last row
-          entry?.fullWidth && "p-0",
+          "min-w-0 flex-1 p-4 pb-24 md:p-6 md:pb-24", // bottom room so the floating support bubble never covers the last row
+          entry?.fullWidth && "p-0 md:p-0",
         )}
         >
           {/* Keyed so a crash on one page doesn't follow you to the next. */}

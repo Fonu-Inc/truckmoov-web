@@ -658,6 +658,11 @@ never a stack.
 - Toasts are `sonner`. Icons are `lucide-react`, `h-4 w-4` inline / `h-3 w-3` in
   dense table meta.
 - Modals are `Dialog`; mobile/side panels are `Sheet` or `Drawer`.
+- Dashboard shells (main, installer, admin): below `md` (768px, `useIsMobile`)
+  the fixed sidebar is replaced by a left `Sheet`. The header's sidebar button
+  calls `useSidebarStore.openMobile()` on mobile (`toggle()` on desktop), the
+  sheet closes on every route change, and the content column's left margin is
+  `md:`-only. `mobileOpen` is not persisted.
 - Charts use the shadcn `chart` wrapper with `--chart-*` tokens.
 
 ## AI features are off
