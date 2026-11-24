@@ -31,7 +31,7 @@ function WhatsAppTemplatePicker({
 
   return (
     <div className="space-y-2">
-      <Label>WhatsApp template</Label>
+      <Label required>WhatsApp template</Label>
       <Select
         value={draft.templateName}
         onValueChange={templateName => onChange({ templateName })}
@@ -97,7 +97,12 @@ export function BuilderMessageStep({
       )}
       {draft.channels.includes("sms") && (
         <div className="space-y-2">
-          <Label htmlFor="campaign-sms">SMS</Label>
+          <Label
+            htmlFor="campaign-sms"
+            required
+          >
+            SMS
+          </Label>
           <SmsTemplateStarter onPick={smsBody => onChange({ smsBody })} />
           <Textarea
             id="campaign-sms"
@@ -111,7 +116,12 @@ export function BuilderMessageStep({
       )}
       {draft.channels.includes("email") && (
         <div className="space-y-2">
-          <Label htmlFor="campaign-email">Email</Label>
+          <Label
+            htmlFor="campaign-email"
+            required
+          >
+            Email
+          </Label>
           <Textarea
             id="campaign-email"
             rows={6}

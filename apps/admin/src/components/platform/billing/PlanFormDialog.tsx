@@ -230,13 +230,19 @@ function TextField({
   id,
   label,
   error,
+  required,
   ...props
 }: React.ComponentProps<typeof Input> & {
   id: string; label: string; error?: string;
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <Label
+        htmlFor={id}
+        required={required}
+      >
+        {label}
+      </Label>
       <Input
         id={id}
         className="rounded-xl"
@@ -337,6 +343,7 @@ function PlanFormBody({
           <TextField
             id="plan-code"
             label="Product ID"
+            required={!isEdit}
             value={form.code}
             disabled={isEdit}
             onChange={e => set(
@@ -349,6 +356,7 @@ function PlanFormBody({
           <TextField
             id="plan-name"
             label="Plan name"
+            required
             value={form.name}
             maxLength={120}
             onChange={e => set(
@@ -378,6 +386,7 @@ function PlanFormBody({
           <TextField
             id="plan-year1"
             label="Year-1 price (NGN)"
+            required
             type="number"
             min={1}
             step={1}
@@ -391,6 +400,7 @@ function PlanFormBody({
           <TextField
             id="plan-renewal"
             label="Renewal price (NGN)"
+            required
             type="number"
             min={1}
             step={1}
@@ -404,6 +414,7 @@ function PlanFormBody({
           <TextField
             id="plan-validity"
             label="Validity (days)"
+            required
             type="number"
             min={1}
             step={1}

@@ -409,7 +409,15 @@ export function ScheduleInstallationStep({
             onSubmit={form.handleSubmit(handleSubmit)}
           >
             <div className="col-span-2 space-y-1.5">
-              <span className={LABEL_CLASS}>Installation Address</span>
+              <span className={LABEL_CLASS}>
+                Installation Address
+                <span
+                  aria-hidden="true"
+                  className="ml-0.5 text-destructive"
+                >
+                  *
+                </span>
+              </span>
               <div className="grid gap-[15px] sm:grid-cols-3">
                 <FormField
                   control={form.control}
@@ -471,7 +479,12 @@ export function ScheduleInstallationStep({
               name="date"
               render={({ field }) => (
                 <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
-                  <FormLabel className={LABEL_CLASS}>Installation Date</FormLabel>
+                  <FormLabel
+                    className={LABEL_CLASS}
+                    required
+                  >
+                    Installation Date
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="date"
@@ -490,7 +503,12 @@ export function ScheduleInstallationStep({
               name="timeSlot"
               render={({ field }) => (
                 <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
-                  <FormLabel className={LABEL_CLASS}>Installation Time</FormLabel>
+                  <FormLabel
+                    className={LABEL_CLASS}
+                    required
+                  >
+                    Installation Time
+                  </FormLabel>
                   <FormControl>
                     {/* The design takes a clock time; the API books a slot, so the time
                         picks it — before noon is the morning slot. */}
@@ -520,7 +538,12 @@ export function ScheduleInstallationStep({
               name="contactName"
               render={({ field }) => (
                 <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
-                  <FormLabel className={LABEL_CLASS}>Site Contact Name</FormLabel>
+                  <FormLabel
+                    className={LABEL_CLASS}
+                    required
+                  >
+                    Site Contact Name
+                  </FormLabel>
                   <FormControl>
                     <Input
                       maxLength={80}
@@ -537,7 +560,12 @@ export function ScheduleInstallationStep({
               name="contactPhone"
               render={({ field }) => (
                 <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
-                  <FormLabel className={LABEL_CLASS}>Phone Number</FormLabel>
+                  <FormLabel
+                    className={LABEL_CLASS}
+                    required
+                  >
+                    Phone Number
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="tel"

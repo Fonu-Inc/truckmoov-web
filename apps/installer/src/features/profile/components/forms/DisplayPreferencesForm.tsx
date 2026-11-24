@@ -109,7 +109,7 @@ export function DisplayPreferencesForm({ preferences }: { preferences: Installer
             name="timezone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Default Timezone</FormLabel>
+                <FormLabel required>Default Timezone</FormLabel>
                 <Select
                   name={field.name}
                   value={field.value}
@@ -143,7 +143,7 @@ export function DisplayPreferencesForm({ preferences }: { preferences: Installer
             name="defaultTimeRange"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Default Time Range</FormLabel>
+                <FormLabel required>Default Time Range</FormLabel>
                 <Select
                   name={field.name}
                   value={field.value}

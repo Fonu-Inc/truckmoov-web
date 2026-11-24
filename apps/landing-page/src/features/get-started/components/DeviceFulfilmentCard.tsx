@@ -21,9 +21,12 @@ import { cn } from "@/shared/utils";
 export function DeviceFulfilmentCard({
   value,
   onChange,
+  required = false,
 }: {
   value: DeviceFulfilment;
   onChange: (value: DeviceFulfilment) => void;
+  /** Pickup is only enforced once devices are requested. */
+  required?: boolean;
 }) {
   const locationsQuery = useQuery(getPickupLocationsQueryOptions());
   const locations = locationsQuery.data?.data ?? [];
@@ -46,7 +49,17 @@ export function DeviceFulfilmentCard({
 
       <div className="mt-5 space-y-[19px]">
         <label className="block space-y-1.5">
-          <span className={LABEL_CLASS}>State</span>
+          <span className={LABEL_CLASS}>
+            State
+            {required && (
+              <span
+                aria-hidden="true"
+                className="ml-0.5 text-destructive"
+              >
+                *
+              </span>
+            )}
+          </span>
           <select
             value={value.state}
             onChange={event => onChange({
@@ -90,7 +103,17 @@ export function DeviceFulfilmentCard({
           )}
         </label>
         <label className="block space-y-1.5">
-          <span className={LABEL_CLASS}>Area</span>
+          <span className={LABEL_CLASS}>
+            Area
+            {required && (
+              <span
+                aria-hidden="true"
+                className="ml-0.5 text-destructive"
+              >
+                *
+              </span>
+            )}
+          </span>
           <select
             value={value.area}
             disabled={!value.state || areas.length === 0}
@@ -118,7 +141,17 @@ export function DeviceFulfilmentCard({
           </select>
         </label>
         <label className="block space-y-1.5">
-          <span className={LABEL_CLASS}>MTN Connect Store / Service Centre</span>
+          <span className={LABEL_CLASS}>
+            MTN Connect Store / Service Centre
+            {required && (
+              <span
+                aria-hidden="true"
+                className="ml-0.5 text-destructive"
+              >
+                *
+              </span>
+            )}
+          </span>
           <select
             value={value.store}
             disabled={!value.area || stores.length === 0}

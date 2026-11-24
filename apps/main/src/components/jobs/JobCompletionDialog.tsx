@@ -178,7 +178,7 @@ export function JobCompletionDialog({
                 name="revenueNgn"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Final Revenue (NGN) *</FormLabel>
+                    <FormLabel required>Final Revenue (NGN)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

@@ -128,7 +128,7 @@ export function SIMFormDialog({
               name="iccid"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ICCID</FormLabel>
+                  <FormLabel required>ICCID</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="89234500001234567890"
@@ -144,7 +144,7 @@ export function SIMFormDialog({
               name="imsi"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>IMSI</FormLabel>
+                  <FormLabel required>IMSI</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="234500123456789"
@@ -161,7 +161,7 @@ export function SIMFormDialog({
               name="mobileNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mobile Number</FormLabel>
+                  <FormLabel required>Mobile Number</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="+234 901 234 5678"
@@ -177,7 +177,7 @@ export function SIMFormDialog({
               name="networkOperator"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Network Operator</FormLabel>
+                  <FormLabel required>Network Operator</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
@@ -203,7 +203,7 @@ export function SIMFormDialog({
               name="dataLimit"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data Limit (GB)</FormLabel>
+                  <FormLabel required>Data Limit (GB)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"

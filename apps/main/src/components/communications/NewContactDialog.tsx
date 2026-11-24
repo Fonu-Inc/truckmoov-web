@@ -130,7 +130,12 @@ export function NewContactDialog({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="contact-name">Full name</Label>
+            <Label
+              htmlFor="contact-name"
+              required
+            >
+              Full name
+            </Label>
             <Input
               id="contact-name"
               placeholder="e.g. Adaeze Okonkwo"
@@ -141,7 +146,12 @@ export function NewContactDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="contact-phone">Phone number</Label>
+            <Label
+              htmlFor="contact-phone"
+              required
+            >
+              Phone number
+            </Label>
             <Input
               id="contact-phone"
               placeholder="+234 801 234 5678"
@@ -155,7 +165,7 @@ export function NewContactDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Channels</Label>
+            <Label required>Channels</Label>
             <div className="space-y-2 rounded-md border border-border p-3">
               <label className="flex items-center gap-3 cursor-pointer">
                 <Checkbox

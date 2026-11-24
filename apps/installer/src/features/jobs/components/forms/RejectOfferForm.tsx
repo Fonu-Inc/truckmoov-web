@@ -121,7 +121,7 @@ export function RejectOfferForm({
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reason</FormLabel>
+                  <FormLabel required>Reason</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={4}

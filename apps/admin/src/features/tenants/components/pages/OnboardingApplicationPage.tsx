@@ -542,7 +542,7 @@ export default function OnboardingApplicationPage() {
           )}
           {dialog !== "approved" && (
             <div className="space-y-2">
-              <Label>Reason</Label>
+              <Label required>Reason</Label>
               <Textarea
                 rows={4}
                 value={message}

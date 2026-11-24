@@ -276,7 +276,12 @@ export function IndemnityDialog({
         <label className="block space-y-1.5">
           <span className={LABEL_CLASS}>
             Company Name
-            <span className="ml-0.5 text-destructive">*</span>
+            <span
+              aria-hidden="true"
+              className="ml-0.5 text-destructive"
+            >
+              *
+            </span>
           </span>
           <input
             value={typedSignature}
@@ -294,7 +299,12 @@ export function IndemnityDialog({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className={LABEL_CLASS}>
               Signature
-              <span className="ml-0.5 text-destructive">*</span>
+              <span
+                aria-hidden="true"
+                className="ml-0.5 text-destructive"
+              >
+                *
+              </span>
             </span>
             <div className="inline-flex rounded-[12px] border-[0.5px] border-border p-0.5">
               {([

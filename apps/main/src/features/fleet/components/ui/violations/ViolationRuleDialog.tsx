@@ -327,7 +327,7 @@ export function ViolationRuleDialog({
           {step === 0 && (
             <>
               <div className="space-y-2">
-                <Label>Rule Name</Label>
+                <Label required>Rule Name</Label>
                 <Input
                   value={name}
                   onChange={e => setName(e.target.value)}
@@ -425,7 +425,7 @@ export function ViolationRuleDialog({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Applicable Days</Label>
+                    <Label required>Applicable Days</Label>
                     {dayButtons(
                       restrictedDays,
                       setRestrictedDays,
@@ -522,7 +522,7 @@ export function ViolationRuleDialog({
               {scheduleMode === "scheduled" && (
                 <>
                   <div className="space-y-2">
-                    <Label>Days</Label>
+                    <Label required>Days</Label>
                     {dayButtons(
                       schedDays,
                       setSchedDays,

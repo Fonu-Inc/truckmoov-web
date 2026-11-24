@@ -277,7 +277,12 @@ export function PlatformAdminsPanel() {
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="invite-name">Full Name</Label>
+                      <Label
+                        htmlFor="invite-name"
+                        required
+                      >
+                        Full Name
+                      </Label>
                       <Input
                         id="invite-name"
                         placeholder="e.g. Adaeze Okafor"
@@ -286,7 +291,12 @@ export function PlatformAdminsPanel() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="invite-email">Email Address</Label>
+                      <Label
+                        htmlFor="invite-email"
+                        required
+                      >
+                        Email Address
+                      </Label>
                       <Input
                         id="invite-email"
                         type="email"

@@ -114,7 +114,7 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First name</FormLabel>
+                <FormLabel required>First name</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -127,7 +127,7 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last name</FormLabel>
+                <FormLabel required>Last name</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -140,7 +140,7 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
             name="phoneNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone number</FormLabel>
+                <FormLabel required>Phone number</FormLabel>
                 <FormControl>
                   <Input
                     type="tel"
@@ -166,7 +166,7 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>State</FormLabel>
+                <FormLabel required>State</FormLabel>
                 <Select
                   name={field.name}
                   value={field.value}
@@ -203,7 +203,7 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
             name="city"
             render={({ field }) => (
               <FormItem className="sm:col-span-2">
-                <FormLabel>City / base location</FormLabel>
+                <FormLabel required>City / base location</FormLabel>
                 <FormControl>
                   <CityCombobox
                     state={form.watch("state") ?? ""}

@@ -676,6 +676,7 @@ export function JobFormDialog({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <MapLocationInput
                     label="Pickup address"
+                    required
                     placeholder="e.g. Apapa Port, Lagos"
                     pinColor="#22c55e"
                     value={pickupValue}
@@ -699,6 +700,7 @@ export function JobFormDialog({
                   />
                   <MapLocationInput
                     label="Delivery address"
+                    required
                     placeholder="e.g. Wuse Zone 5, Abuja"
                     pinColor="#ef4444"
                     value={deliveryValue}
@@ -995,7 +997,7 @@ export function JobFormDialog({
                     name="priority"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Priority</FormLabel>
+                        <FormLabel required>Priority</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
@@ -1118,7 +1120,7 @@ export function JobFormDialog({
                       name="cargoWeight"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Weight</FormLabel>
+                          <FormLabel required>Weight</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -1367,7 +1369,7 @@ export function JobFormDialog({
                       name="amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Amount (NGN)</FormLabel>
+                          <FormLabel required>Amount (NGN)</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -1384,7 +1386,10 @@ export function JobFormDialog({
                       name="deadline"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center gap-1.5">
+                          <FormLabel
+                            className="flex items-center gap-1.5"
+                            required
+                          >
                             <Calendar className="h-3 w-3" />
                             Deadline
                           </FormLabel>

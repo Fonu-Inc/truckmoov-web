@@ -232,7 +232,7 @@ export function WhatsAppBusinessSetup() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Phone Number</Label>
+              <Label required>Phone Number</Label>
               <Input
                 placeholder="+234 801 234 5678"
                 value={testPhone}

@@ -119,7 +119,7 @@ export function SupportPreferencesPanel() {
                 name="supportEmail"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel>Support Contact Email</FormLabel>
+                    <FormLabel required>Support Contact Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -151,7 +151,7 @@ export function SupportPreferencesPanel() {
                 name="responseTime"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel>Response Time Commitment</FormLabel>
+                    <FormLabel required>Response Time Commitment</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={field.onChange}

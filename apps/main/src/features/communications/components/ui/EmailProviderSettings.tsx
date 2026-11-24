@@ -620,7 +620,7 @@ export function EmailProviderSettings() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Recipient Email</Label>
+              <Label required>Recipient Email</Label>
               <Input
                 type="email"
                 value={testEmail}

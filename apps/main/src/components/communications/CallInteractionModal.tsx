@@ -226,7 +226,12 @@ export function CallInteractionModal({
           {/* Notes section */}
           {showNotes && (
             <div className="w-full mt-6 space-y-2">
-              <Label htmlFor="call-note">Call Notes</Label>
+              <Label
+                htmlFor="call-note"
+                required
+              >
+                Call Notes
+              </Label>
               <Textarea
                 id="call-note"
                 placeholder="Log call details, outcomes, follow-ups..."

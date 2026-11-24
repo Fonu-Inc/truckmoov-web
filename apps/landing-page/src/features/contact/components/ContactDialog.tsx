@@ -158,7 +158,10 @@ export function ContactDialog({
                         name={field.name}
                         render={({ field: control }) => (
                           <FormItem className={field.kind === "textarea" ? "gap-[5px]" : "gap-[9px]"}>
-                            <FormLabel className="text-sm leading-[17px] font-medium text-heading">
+                            <FormLabel
+                              className="text-sm leading-[17px] font-medium text-heading"
+                              required
+                            >
                               {field.label}
                             </FormLabel>
                             <FormControl>

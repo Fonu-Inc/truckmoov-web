@@ -23,7 +23,12 @@ export function PriceChangeFields({
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="price-reason">Reason for price change</Label>
+        <Label
+          htmlFor="price-reason"
+          required
+        >
+          Reason for price change
+        </Label>
         <Textarea
           id="price-reason"
           value={values.reason}
@@ -37,7 +42,12 @@ export function PriceChangeFields({
         <FieldError message={errors.reason} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="price-effective">Effective date</Label>
+        <Label
+          htmlFor="price-effective"
+          required
+        >
+          Effective date
+        </Label>
         <Input
           id="price-effective"
           type="date"

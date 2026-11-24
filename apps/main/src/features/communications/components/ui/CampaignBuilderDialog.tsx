@@ -332,7 +332,7 @@ export function CampaignBuilderDialog({
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Campaign Name</FormLabel>
+                      <FormLabel required>Campaign Name</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Weekly Driver Update"
@@ -345,7 +345,12 @@ export function CampaignBuilderDialog({
                 />
 
                 <div>
-                  <FormLabel className="mb-3 block">Select Channels</FormLabel>
+                  <FormLabel
+                    className="mb-3 block"
+                    required
+                  >
+                    Select Channels
+                  </FormLabel>
                   <div className="flex gap-3">
                     {channelOptions.map(channel => (
                       <Card
@@ -371,7 +376,7 @@ export function CampaignBuilderDialog({
 
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <FormLabel>Select Recipients</FormLabel>
+                    <FormLabel required>Select Recipients</FormLabel>
                     <div className="flex items-center gap-2">
                       <Checkbox
                         checked={selectAll}
@@ -478,7 +483,7 @@ export function CampaignBuilderDialog({
                     name="message"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Message Content</FormLabel>
+                        <FormLabel required>Message Content</FormLabel>
                         <div className="mb-2">
                           <FormattingToolbar
                             onFormat={handleFormat}

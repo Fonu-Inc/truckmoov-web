@@ -474,7 +474,7 @@ export function PhoneNumberManagement() {
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label>Select Phone Number</Label>
+                      <Label required>Select Phone Number</Label>
                       {loadingAvailable
                         ? (
                             <Skeleton
@@ -653,7 +653,7 @@ export function PhoneNumberManagement() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Select Tenant</Label>
+              <Label required>Select Tenant</Label>
               <Select
                 value={selectedTenantId}
                 onValueChange={setSelectedTenantId}

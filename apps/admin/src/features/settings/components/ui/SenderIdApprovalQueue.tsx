@@ -43,6 +43,7 @@ import {
 
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
 
 type SenderIdStatus = "pending" | "whitelisting" | "approved" | "rejected";
@@ -447,7 +448,7 @@ export function SenderIdApprovalQueue() {
               {(actionType === "approve" || actionType === "whitelist") && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Telecom Provider</label>
+                    <Label>Telecom Provider</Label>
                     <Input
                       placeholder="e.g., MTN, Airtel, Glo..."
                       value={formData.telecom_provider}
@@ -459,7 +460,7 @@ export function SenderIdApprovalQueue() {
                   </div>
                   {actionType === "approve" && (
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Whitelisting Reference</label>
+                      <Label>Whitelisting Reference</Label>
                       <Input
                         placeholder="Reference number from provider"
                         value={formData.telecom_reference}
@@ -475,7 +476,7 @@ export function SenderIdApprovalQueue() {
 
               {actionType === "reject" && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Rejection Reason *</label>
+                  <Label required>Rejection Reason</Label>
                   <Textarea
                     placeholder="Explain why this request is being rejected..."
                     value={formData.rejection_reason}
@@ -489,7 +490,7 @@ export function SenderIdApprovalQueue() {
               )}
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Admin Notes (optional)</label>
+                <Label>Admin Notes (optional)</Label>
                 <Textarea
                   placeholder="Internal notes..."
                   value={formData.admin_notes}

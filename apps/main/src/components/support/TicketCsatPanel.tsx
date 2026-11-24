@@ -126,7 +126,12 @@ export function TicketCsatPanel({
   return (
     <div className="rounded-lg border bg-muted/40 p-4 space-y-4">
       <div className="space-y-1">
-        <Label className="text-sm font-semibold">How was your support experience?</Label>
+        <Label
+          className="text-sm font-semibold"
+          required
+        >
+          How was your support experience?
+        </Label>
         <p className="text-xs text-muted-foreground">
           One rating per ticket for your whole account. The support team sees it.
         </p>

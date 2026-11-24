@@ -536,7 +536,7 @@ export function WhatsAppTemplatesManager({ tenantId: _tenantId }: WhatsAppTempla
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Template Name *</Label>
+                <Label required>Template Name</Label>
                 <Input
                   placeholder="job_notification"
                   value={formData.name}
@@ -628,7 +628,7 @@ export function WhatsAppTemplatesManager({ tenantId: _tenantId }: WhatsAppTempla
             </div>
 
             <div className="space-y-2">
-              <Label>Body Text *</Label>
+              <Label required>Body Text</Label>
               <Textarea
                 placeholder="Hello {{1}}, your job {{2}} is ready for pickup at {{3}}."
                 value={formData.body_text}

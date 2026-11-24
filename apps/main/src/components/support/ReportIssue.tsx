@@ -673,7 +673,12 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="subject">Subject *</Label>
+              <Label
+                htmlFor="subject"
+                required
+              >
+                Subject
+              </Label>
               <Input
                 id="subject"
                 placeholder="Brief summary of the issue"
@@ -687,7 +692,12 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label
+                htmlFor="description"
+                required
+              >
+                Description
+              </Label>
               <Textarea
                 id="description"
                 placeholder="Describe the issue in detail. What happened? What did you expect? When did it start?"

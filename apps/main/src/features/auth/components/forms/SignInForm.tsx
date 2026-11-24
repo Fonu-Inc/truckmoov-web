@@ -100,7 +100,7 @@ export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: stri
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel required>Email</FormLabel>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <FormControl>
@@ -124,7 +124,7 @@ export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: stri
           render={({ field }) => (
             <FormItem>
               <div className="flex items-center justify-between gap-3">
-                <FormLabel>Password</FormLabel>
+                <FormLabel required>Password</FormLabel>
                 <Link
                   to="/auth/forgot-password"
                   className="text-xs font-medium text-primary hover:underline"

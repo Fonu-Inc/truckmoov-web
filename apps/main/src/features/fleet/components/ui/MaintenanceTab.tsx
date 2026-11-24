@@ -1210,7 +1210,7 @@ export function MaintenanceTab() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Vehicle Registration</Label>
+                  <Label required>Vehicle Registration</Label>
                   <Select
                     value={newRecord.vehicleId}
                     onValueChange={value => setNewRecord({
@@ -1224,7 +1224,7 @@ export function MaintenanceTab() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Scheduled Date</Label>
+                  <Label required>Scheduled Date</Label>
                   <Input
                     type="date"
                     value={newRecord.scheduledDate}

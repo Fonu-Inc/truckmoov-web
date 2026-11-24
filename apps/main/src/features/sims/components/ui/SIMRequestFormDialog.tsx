@@ -243,7 +243,7 @@ export function SIMRequestFormDialog({
               name="numberOfSims"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Number of SIMs *</FormLabel>
+                  <FormLabel required>Number of SIMs</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -263,7 +263,7 @@ export function SIMRequestFormDialog({
               name="preferredOperator"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Carrier *</FormLabel>
+                  <FormLabel required>Carrier</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
@@ -303,7 +303,7 @@ export function SIMRequestFormDialog({
               name="planCycle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plan Type *</FormLabel>
+                  <FormLabel required>Plan Type</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value as string}
@@ -330,7 +330,7 @@ export function SIMRequestFormDialog({
               name="bundleCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data Bundle Plan *</FormLabel>
+                  <FormLabel required>Data Bundle Plan</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value as string}
@@ -372,7 +372,7 @@ export function SIMRequestFormDialog({
               name="useCase"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Use Case *</FormLabel>
+                  <FormLabel required>Use Case</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g. Fleet GPS tracking, Cold-chain telemetry, Driver dashcams"

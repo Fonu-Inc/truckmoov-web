@@ -259,7 +259,12 @@ export function MyProfileCard() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="profileName">Full Name</Label>
+            <Label
+              htmlFor="profileName"
+              required
+            >
+              Full Name
+            </Label>
             <Input
               id="profileName"
               value={profileName}

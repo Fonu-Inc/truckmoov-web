@@ -170,7 +170,14 @@ export function VehicleImportModal({
                 >
                   <span className="font-mono text-heading">
                     {column.header}
-                    {column.required && <span className="ml-1 text-destructive">*</span>}
+                    {column.required && (
+                      <span
+                        aria-hidden="true"
+                        className="ml-0.5 text-destructive"
+                      >
+                        *
+                      </span>
+                    )}
                   </span>
                   <span className="text-muted-foreground">{column.note || `e.g. ${column.example}`}</span>
                 </li>

@@ -223,7 +223,7 @@ export function WebhookManagementPanel() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Webhook Name</Label>
+                <Label required>Webhook Name</Label>
                 <Input
                   placeholder="e.g., ERP Notifications"
                   value={newWebhookName}
@@ -234,7 +234,7 @@ export function WebhookManagementPanel() {
                 </p>
               </div>
               <div>
-                <Label>Endpoint URL</Label>
+                <Label required>Endpoint URL</Label>
                 <Input
                   placeholder="https://your-server.com/webhooks"
                   value={newWebhookUrl}
@@ -242,7 +242,7 @@ export function WebhookManagementPanel() {
                 />
               </div>
               <div>
-                <Label>Event Types</Label>
+                <Label required>Event Types</Label>
                 <ScrollArea className="h-48 border rounded-md p-3 mt-1">
                   <div className="space-y-4">
                     {Object.entries(groupedEventTypes).map(([

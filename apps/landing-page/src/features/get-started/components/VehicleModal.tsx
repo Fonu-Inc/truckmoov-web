@@ -166,17 +166,17 @@ export function VehicleModal({
     }
   }
 
-  const requiredMark = <span className="-ml-1.5 text-destructive">*</span>;
-
   const textField = (name: TextName, label: string, placeholder?: string, required = false) => (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
         <FormItem className="gap-1.5">
-          <FormLabel className={LABEL_CLASS}>
+          <FormLabel
+            className={LABEL_CLASS}
+            required={required}
+          >
             {label}
-            {required && requiredMark}
           </FormLabel>
           <FormControl>
             <Input
@@ -197,9 +197,11 @@ export function VehicleModal({
       name={name}
       render={({ field }) => (
         <FormItem className="gap-1.5">
-          <FormLabel className={LABEL_CLASS}>
+          <FormLabel
+            className={LABEL_CLASS}
+            required={required}
+          >
             {label}
-            {required && requiredMark}
           </FormLabel>
           <FormControl>
             <select
@@ -349,7 +351,14 @@ export function VehicleModal({
             )}
             >
               Vehicle License Document
-              {!initial && requiredMark}
+              {!initial && (
+                <span
+                  aria-hidden="true"
+                  className="ml-0.5 text-destructive"
+                >
+                  *
+                </span>
+              )}
             </span>
             <input
               ref={licenceInputRef}

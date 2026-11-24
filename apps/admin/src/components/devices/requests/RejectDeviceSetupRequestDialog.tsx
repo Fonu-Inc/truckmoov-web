@@ -88,7 +88,7 @@ export function RejectDeviceSetupRequestDialog({
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reason (required)</FormLabel>
+                  <FormLabel required>Reason</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={4}

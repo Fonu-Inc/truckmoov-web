@@ -122,7 +122,7 @@ export function TmResolveForm({ request }: { request: SystemTelecomMasterRequest
           name="outcome"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Outcome</FormLabel>
+              <FormLabel required>Outcome</FormLabel>
               <Select
                 value={field.value}
                 onValueChange={field.onChange}
@@ -152,7 +152,7 @@ export function TmResolveForm({ request }: { request: SystemTelecomMasterRequest
               name="msisdn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Allocated number</FormLabel>
+                  <FormLabel required>Allocated number</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="0803 123 4567"
@@ -182,7 +182,7 @@ export function TmResolveForm({ request }: { request: SystemTelecomMasterRequest
             name="failureReason"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Failure reason</FormLabel>
+                <FormLabel required>Failure reason</FormLabel>
                 <FormControl><Input {...field} /></FormControl>
                 <FormMessage />
               </FormItem>

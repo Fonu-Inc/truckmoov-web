@@ -536,7 +536,12 @@ export function TenantWalletManagement() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="topup-amount">Top Up Amount (₦)</Label>
+              <Label
+                htmlFor="topup-amount"
+                required
+              >
+                Top Up Amount (₦)
+              </Label>
               <Input
                 id="topup-amount"
                 type="number"

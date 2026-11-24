@@ -1,7 +1,6 @@
 "use client";
 
 import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
-import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/get-started/schemas/applySchemas";
 import {
@@ -53,19 +52,6 @@ import { cn } from "@/shared/utils";
 import { SIGN_IN_URL } from "@/shared/utils/routes";
 
 const FORM_ID = "apply-business-details-form";
-
-/**
- * The design's field label: every Customer Details field is required. The label is flex gap-2,
- * so -ml-1.5 sits the asterisk 2px from the text, as in the design.
- */
-function RequiredLabel({ children }: { children: ReactNode }) {
-  return (
-    <FormLabel className={LABEL_CLASS}>
-      {children}
-      <span className="-ml-1.5 text-destructive">*</span>
-    </FormLabel>
-  );
-}
 
 type TextFieldName = Exclude<keyof BusinessDetailsValues, "identificationType">;
 
@@ -192,7 +178,12 @@ export function BusinessDetailsStep({
           !options.wide && "sm:col-span-1",
         )}
         >
-          <RequiredLabel>{label}</RequiredLabel>
+          <FormLabel
+            className={LABEL_CLASS}
+            required
+          >
+            {label}
+          </FormLabel>
           <FormControl>
             <Input
               type={options.type ?? "text"}
@@ -229,7 +220,12 @@ export function BusinessDetailsStep({
       name={name}
       render={({ field }) => (
         <FormItem className="col-span-2 gap-1.5 sm:col-span-1">
-          <RequiredLabel>{label}</RequiredLabel>
+          <FormLabel
+            className={LABEL_CLASS}
+            required
+          >
+            {label}
+          </FormLabel>
           <FormControl>
             <select
               aria-label={label}
@@ -503,9 +499,17 @@ export function BusinessDetailsStep({
                   setSectionError(null);
                 }}
               />
-              {indemnitySigned
-                ? "I confirm that I have reviewed the indemnity form and agree to its terms."
-                : "Sign the indemnity form before confirming your agreement."}
+              <span>
+                {indemnitySigned
+                  ? "I confirm that I have reviewed the indemnity form and agree to its terms."
+                  : "Sign the indemnity form before confirming your agreement."}
+                <span
+                  aria-hidden="true"
+                  className="ml-0.5 text-destructive"
+                >
+                  *
+                </span>
+              </span>
             </label>
           </section>
 

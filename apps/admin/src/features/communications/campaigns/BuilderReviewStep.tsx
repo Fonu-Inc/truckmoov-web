@@ -68,6 +68,7 @@ export function BuilderReviewStep({
         {draft.sendLater && (
           <div className="space-y-1 pl-6">
             <Label
+              required
               htmlFor="campaign-send-at"
               className="text-xs text-muted-foreground"
             >

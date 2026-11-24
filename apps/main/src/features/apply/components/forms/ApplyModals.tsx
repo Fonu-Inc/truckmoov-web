@@ -186,9 +186,11 @@ export function VehicleModal({
       name={name}
       render={({ field }) => (
         <FormItem className="space-y-1.5">
-          <FormLabel className="text-sm">
+          <FormLabel
+            className="text-sm"
+            required={required}
+          >
             {label}
-            {required && <span className="ml-0.5 text-destructive">*</span>}
           </FormLabel>
           <FormControl>
             <Input
@@ -239,9 +241,11 @@ export function VehicleModal({
               name="vehicleType"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel className="text-sm">
+                  <FormLabel
+                    className="text-sm"
+                    required
+                  >
                     Vehicle Type
-                    <span className="ml-0.5 text-destructive">*</span>
                   </FormLabel>
                   <Select
                     value={field.value || undefined}
@@ -356,13 +360,14 @@ export function VehicleModal({
             )}
 
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className={cn(
-                "text-sm",
-                licenceError && "text-destructive",
-              )}
+              <Label
+                className={cn(
+                  "text-sm",
+                  licenceError && "text-destructive",
+                )}
+                required={!initial}
               >
                 Vehicle License Document
-                {!initial && <span className="ml-0.5 text-destructive">*</span>}
               </Label>
               <input
                 ref={licenceInput}
@@ -552,9 +557,11 @@ export function RequestDevicesModal({
               name="quantity"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel className="text-sm">
+                  <FormLabel
+                    className="text-sm"
+                    required
+                  >
                     Number of Devices
-                    <span className="ml-0.5 text-destructive">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -574,9 +581,11 @@ export function RequestDevicesModal({
               name="useCase"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel className="text-sm">
+                  <FormLabel
+                    className="text-sm"
+                    required
+                  >
                     Use Case
-                    <span className="ml-0.5 text-destructive">*</span>
                   </FormLabel>
                   <FormControl>
                     <Textarea

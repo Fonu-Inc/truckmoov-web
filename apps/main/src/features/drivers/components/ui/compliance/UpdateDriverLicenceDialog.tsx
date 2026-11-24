@@ -83,7 +83,12 @@ function UpdateDriverLicenceForm({
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="drv-licence-number">Licence Number</Label>
+            <Label
+              htmlFor="drv-licence-number"
+              required
+            >
+              Licence Number
+            </Label>
             <Input
               id="drv-licence-number"
               value={licenseNumber}

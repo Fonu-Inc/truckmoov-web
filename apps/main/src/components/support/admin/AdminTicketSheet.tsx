@@ -553,7 +553,10 @@ export function AdminTicketSheet({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <Label
+                  className="text-[11px] uppercase tracking-wide text-muted-foreground"
+                  required
+                >
                   Reply to Tenant
                 </Label>
                 <div className="flex items-center gap-2">
@@ -632,9 +635,11 @@ export function AdminTicketSheet({
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="escalate-target">
+                        <Label
+                          htmlFor="escalate-target"
+                          required
+                        >
                           Escalate To
-                          <span className="text-destructive">*</span>
                         </Label>
                         <Select
                           value={escalateTo}

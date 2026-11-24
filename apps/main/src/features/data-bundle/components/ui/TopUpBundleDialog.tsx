@@ -246,7 +246,12 @@ export function TopUpBundleDialog({
         <div className="space-y-5 py-2">
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">SIM Card</Label>
+              <Label
+                className="text-sm font-medium"
+                required
+              >
+                SIM Card
+              </Label>
               <p className="text-xs text-muted-foreground">
                 Pick the SIM you want to top up. Each one shows its carrier and the device it's fitted to.
               </p>
@@ -324,7 +329,12 @@ export function TopUpBundleDialog({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Data Plan</Label>
+              <Label
+                className="text-sm font-medium"
+                required
+              >
+                Data Plan
+              </Label>
               <p className="text-xs text-muted-foreground">
                 {sim
                   ? "Pick the bundle to credit to this SIM. Size, validity and price are shown."

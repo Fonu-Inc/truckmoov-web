@@ -6,12 +6,24 @@ import { cn } from "@/lib/utils";
 
 const labelVariants = cva("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70");
 
-const Label = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & VariantProps<typeof labelVariants>
->(({ className, ...props }, ref) => (
-  <LabelPrimitive.Root ref={ref} className={cn(labelVariants(), className)} {...props} />
-));
+type LabelProps = React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
+  VariantProps<typeof labelVariants> & {
+    /** Shows a red asterisk after the text. Set it on every field the form refuses to submit empty. */
+    required?: boolean;
+  };
+
+const Label = React.forwardRef<React.ElementRef<typeof LabelPrimitive.Root>, LabelProps>(
+  ({ className, required, children, ...props }, ref) => (
+    <LabelPrimitive.Root ref={ref} className={cn(labelVariants(), className)} {...props}>
+      {children}
+      {required && (
+        <span aria-hidden="true" className="ml-0.5 text-destructive">
+          *
+        </span>
+      )}
+    </LabelPrimitive.Root>
+  ),
+);
 Label.displayName = LabelPrimitive.Root.displayName;
 
 export { Label };

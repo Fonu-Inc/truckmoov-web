@@ -247,7 +247,7 @@ export function DeviceSetupRequestDialog({
         <div className="space-y-4 py-2">
           {/* Quantity */}
           <div className="space-y-1.5">
-            <Label>Number of Devices *</Label>
+            <Label required>Number of Devices</Label>
             <Input
               type="number"
               min={1}
@@ -262,7 +262,7 @@ export function DeviceSetupRequestDialog({
           {/* Manufacturer + Model */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Manufacturer *</Label>
+              <Label required>Manufacturer</Label>
               <Select
                 value={manufacturer}
                 onValueChange={(v) => {
@@ -321,7 +321,7 @@ export function DeviceSetupRequestDialog({
 
           {/* Tracker Type */}
           <div className="space-y-1.5">
-            <Label>Tracker Type *</Label>
+            <Label required>Tracker Type</Label>
             <Select
               value={trackerType}
               onValueChange={setTrackerType}
@@ -460,7 +460,7 @@ export function DeviceSetupRequestDialog({
 
           {/* Use Case */}
           <div className="space-y-1.5">
-            <Label>Use Case *</Label>
+            <Label required>Use Case</Label>
             <Input
               value={useCase}
               onChange={e => setUseCase(e.target.value)}

@@ -193,7 +193,7 @@ export function CatalogModelDialog({
                 name="manufacturer"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Manufacturer</FormLabel>
+                    <FormLabel required>Manufacturer</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="e.g., Teltonika"
@@ -209,7 +209,7 @@ export function CatalogModelDialog({
                 name="model"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Model</FormLabel>
+                    <FormLabel required>Model</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="e.g., FMC130"
@@ -228,7 +228,7 @@ export function CatalogModelDialog({
                 name="protocolType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Protocol Type</FormLabel>
+                    <FormLabel required>Protocol Type</FormLabel>
                     <Select
                       name={field.name}
                       value={field.value}
@@ -321,7 +321,7 @@ export function CatalogModelDialog({
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel required>Status</FormLabel>
                   <Select
                     name={field.name}
                     value={field.value}

@@ -706,7 +706,7 @@ export default function PlatformDataBundles() {
             </div>
 
             <div className="space-y-2">
-              <Label>Display Name</Label>
+              <Label required>Display Name</Label>
               <Input
                 placeholder="e.g. MTN 10GB Monthly"
                 value={form.name}
@@ -718,7 +718,7 @@ export default function PlatformDataBundles() {
             </div>
 
             <div className="space-y-2">
-              <Label>Bundle Code</Label>
+              <Label required>Bundle Code</Label>
               <Input
                 placeholder="e.g. MTN_10GB_M"
                 value={form.code}
@@ -733,7 +733,7 @@ export default function PlatformDataBundles() {
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
-                <Label>Data (MB)</Label>
+                <Label required>Data (MB)</Label>
                 <Input
                   type="number"
                   min={1}
@@ -747,7 +747,7 @@ export default function PlatformDataBundles() {
                 {showErrors && fieldErrors.data_mb && <p className="text-xs text-destructive">{fieldErrors.data_mb}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Validity (days)</Label>
+                <Label required>Validity (days)</Label>
                 <Input
                   type="number"
                   min={1}
@@ -761,7 +761,7 @@ export default function PlatformDataBundles() {
                 {showErrors && fieldErrors.validity_days && <p className="text-xs text-destructive">{fieldErrors.validity_days}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Price (NGN)</Label>
+                <Label required>Price (NGN)</Label>
                 <Input
                   type="number"
                   min={1}

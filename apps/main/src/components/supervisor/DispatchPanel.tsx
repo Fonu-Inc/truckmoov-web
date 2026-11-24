@@ -133,10 +133,11 @@ export function DispatchPanel({
               <Label
                 htmlFor="vehicle"
                 className="flex items-center gap-1"
+                required
               >
                 <Truck className="h-3 w-3" />
                 {" "}
-                Vehicle *
+                Vehicle
               </Label>
               <Select
                 value={formData.vehicleId}
@@ -215,10 +216,11 @@ export function DispatchPanel({
             <Label
               htmlFor="pickup"
               className="flex items-center gap-1"
+              required
             >
               <MapPin className="h-3 w-3" />
               {" "}
-              Pickup Location *
+              Pickup Location
             </Label>
             <Input
               id="pickup"
@@ -234,10 +236,11 @@ export function DispatchPanel({
             <Label
               htmlFor="delivery"
               className="flex items-center gap-1"
+              required
             >
               <MapPin className="h-3 w-3" />
               {" "}
-              Delivery Location *
+              Delivery Location
             </Label>
             <Input
               id="delivery"

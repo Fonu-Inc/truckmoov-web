@@ -84,7 +84,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           name="newPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>New password</FormLabel>
+              <FormLabel required>New password</FormLabel>
               <PasswordFieldControl
                 placeholder="At least 8 characters"
                 autoComplete="new-password"
@@ -104,7 +104,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm new password</FormLabel>
+              <FormLabel required>Confirm new password</FormLabel>
               <PasswordFieldControl
                 placeholder="Repeat your new password"
                 autoComplete="new-password"

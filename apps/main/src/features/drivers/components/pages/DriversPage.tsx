@@ -1048,7 +1048,12 @@ export default function DriversPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="driver-message">Message</Label>
+              <Label
+                htmlFor="driver-message"
+                required
+              >
+                Message
+              </Label>
               <Textarea
                 id="driver-message"
                 placeholder="Type your message here..."

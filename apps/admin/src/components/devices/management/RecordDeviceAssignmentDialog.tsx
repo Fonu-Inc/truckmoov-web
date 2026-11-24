@@ -164,7 +164,7 @@ export function RecordDeviceAssignmentDialog({
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Tenant</Label>
+            <Label required>Tenant</Label>
             <Select
               value={tenantId}
               onValueChange={setTenantId}
@@ -187,7 +187,7 @@ export function RecordDeviceAssignmentDialog({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Devices</Label>
+              <Label required>Devices</Label>
               <span className="text-xs text-muted-foreground">
                 {selected.length}
                 {" selected"}
@@ -245,13 +245,20 @@ export function RecordDeviceAssignmentDialog({
             )}
           </div>
 
-          <label className="flex cursor-pointer items-start gap-3 text-sm">
+          <div className="flex items-start gap-3">
             <Checkbox
+              id="device-assignment-confirm"
               checked={confirmed}
               onCheckedChange={checked => setConfirmed(checked === true)}
             />
-            <span>I confirm these devices have been configured and activated.</span>
-          </label>
+            <Label
+              htmlFor="device-assignment-confirm"
+              required
+              className="cursor-pointer font-normal leading-normal"
+            >
+              I confirm these devices have been configured and activated.
+            </Label>
+          </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="device-assignment-notes">Notes (optional)</Label>

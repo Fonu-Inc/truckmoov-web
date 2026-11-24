@@ -518,7 +518,7 @@ export function IsolationCheckPanel() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr_1fr_auto]">
             <div className="space-y-2">
-              <Label>Tenant A (caller)</Label>
+              <Label required>Tenant A (caller)</Label>
               <Select
                 value={tenantAId}
                 onValueChange={setTenantAId}
@@ -544,7 +544,7 @@ export function IsolationCheckPanel() {
               <ArrowRight className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="space-y-2">
-              <Label>Tenant B (target)</Label>
+              <Label required>Tenant B (target)</Label>
               <Select
                 value={tenantBId}
                 onValueChange={setTenantBId}

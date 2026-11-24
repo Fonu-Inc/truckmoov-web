@@ -50,10 +50,6 @@ const EMPTY = {
   pickupLocationId: "",
 };
 
-function Required() {
-  return <span className="text-destructive"> *</span>;
-}
-
 /**
  * "Request Device" in two steps: what is needed, then the pickup point it is
  * collected from (pickup only, for every customer type). Hardware
@@ -137,9 +133,11 @@ export function RequestDeviceDialog({
           ? (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="req-qty">
+                  <Label
+                    htmlFor="req-qty"
+                    required
+                  >
                     Number of Devices Requested
-                    <Required />
                   </Label>
                   <Input
                     id="req-qty"
@@ -153,9 +151,11 @@ export function RequestDeviceDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="req-use">
+                  <Label
+                    htmlFor="req-use"
+                    required
+                  >
                     Use Case
-                    <Required />
                   </Label>
                   <Textarea
                     id="req-use"
@@ -207,9 +207,8 @@ export function RequestDeviceDialog({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>
+                  <Label required>
                     MTN Connect Store / Service Centre
-                    <Required />
                   </Label>
                   {locationsQuery.isLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
                   {locationsQuery.isError && (

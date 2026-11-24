@@ -113,7 +113,7 @@ export function EnterpriseEnquiryDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full name</FormLabel>
+                  <FormLabel required>Full name</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Ada Okonkwo"
@@ -130,7 +130,7 @@ export function EnterpriseEnquiryDialog({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Work email</FormLabel>
+                  <FormLabel required>Work email</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
@@ -149,7 +149,7 @@ export function EnterpriseEnquiryDialog({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <FormLabel required>Phone</FormLabel>
                     <FormControl>
                       <Input
                         type="tel"
@@ -167,7 +167,7 @@ export function EnterpriseEnquiryDialog({
                 name="companyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company name</FormLabel>
+                    <FormLabel required>Company name</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Acme Logistics"

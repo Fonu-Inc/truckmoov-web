@@ -619,7 +619,12 @@ export function GeofenceManagementDialog({
                       >
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="name">Zone Name *</Label>
+                            <Label
+                              htmlFor="name"
+                              required
+                            >
+                              Zone Name
+                            </Label>
                             <Input
                               id="name"
                               value={editForm.name}

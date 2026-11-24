@@ -49,7 +49,12 @@ export function SmsTemplateTestDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="sms-test-to">Phone number</Label>
+            <Label
+              htmlFor="sms-test-to"
+              required
+            >
+              Phone number
+            </Label>
             <Input
               id="sms-test-to"
               inputMode="tel"
@@ -63,7 +68,12 @@ export function SmsTemplateTestDialog({
               key={name}
               className="space-y-1"
             >
-              <Label htmlFor={`sms-test-${name}`}>{`Value for ${name}`}</Label>
+              <Label
+                htmlFor={`sms-test-${name}`}
+                required
+              >
+                {`Value for ${name}`}
+              </Label>
               <Input
                 id={`sms-test-${name}`}
                 value={values[name] ?? ""}

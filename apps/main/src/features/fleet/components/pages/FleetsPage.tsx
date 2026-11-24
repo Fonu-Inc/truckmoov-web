@@ -512,7 +512,12 @@ export default function FleetsPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fleet-name">Fleet Name</Label>
+              <Label
+                htmlFor="fleet-name"
+                required
+              >
+                Fleet Name
+              </Label>
               <Input
                 id="fleet-name"
                 value={name}

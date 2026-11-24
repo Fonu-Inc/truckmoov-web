@@ -365,7 +365,7 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
         <CardContent className="p-6 pt-0 space-y-5">
           {chips.length > 0 && (
             <div className="space-y-2">
-              <Label>What is happening?</Label>
+              <Label required>What is happening?</Label>
               <div className="flex flex-wrap gap-2">
                 {chips.map(c => (
                   <Badge
@@ -442,7 +442,7 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
           </div>
 
           <div className="space-y-2">
-            <Label>Details from the field</Label>
+            <Label required>Details from the field</Label>
             <Textarea
               rows={5}
               maxLength={4000}

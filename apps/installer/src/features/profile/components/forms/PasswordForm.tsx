@@ -117,7 +117,7 @@ export function PasswordForm() {
               name={name}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{label}</FormLabel>
+                  <FormLabel required>{label}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"

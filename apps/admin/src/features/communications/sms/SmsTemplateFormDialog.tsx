@@ -77,7 +77,12 @@ export function SmsTemplateFormDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="sms-name">Name</Label>
+            <Label
+              htmlFor="sms-name"
+              required
+            >
+              Name
+            </Label>
             <Input
               id="sms-name"
               maxLength={80}
@@ -105,7 +110,12 @@ export function SmsTemplateFormDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sms-content">Message</Label>
+            <Label
+              htmlFor="sms-content"
+              required
+            >
+              Message
+            </Label>
             <Textarea
               id="sms-content"
               rows={5}

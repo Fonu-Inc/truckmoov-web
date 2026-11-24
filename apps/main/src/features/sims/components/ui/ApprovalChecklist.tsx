@@ -265,6 +265,7 @@ export function ApprovalChecklist({
                 <Label
                   htmlFor="sub-ack"
                   className="text-xs cursor-pointer"
+                  required
                 >
                   I acknowledge exceeding subscription limits
                 </Label>
@@ -333,6 +334,7 @@ export function ApprovalChecklist({
                 <Label
                   htmlFor="vol-ack"
                   className="text-xs cursor-pointer"
+                  required
                 >
                   I have reviewed and acknowledge the risk flags
                 </Label>
@@ -347,10 +349,9 @@ export function ApprovalChecklist({
             <Label
               htmlFor="justification"
               className="text-sm font-medium"
+              required
             >
               Override Justification
-              {" "}
-              <span className="text-destructive">*</span>
             </Label>
             <Textarea
               id="justification"

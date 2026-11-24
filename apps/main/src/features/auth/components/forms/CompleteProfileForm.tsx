@@ -89,7 +89,7 @@ export function CompleteProfileForm({ token }: { token: string }) {
           name="fullName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Full name</FormLabel>
+              <FormLabel required>Full name</FormLabel>
               <FormControl>
                 <Input
                   placeholder="Ada Lovelace"
@@ -107,7 +107,7 @@ export function CompleteProfileForm({ token }: { token: string }) {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel required>Password</FormLabel>
               <PasswordFieldControl
                 placeholder="At least 8 characters"
                 autoComplete="new-password"
@@ -127,7 +127,7 @@ export function CompleteProfileForm({ token }: { token: string }) {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm password</FormLabel>
+              <FormLabel required>Confirm password</FormLabel>
               <PasswordFieldControl
                 placeholder="Repeat your password"
                 autoComplete="new-password"

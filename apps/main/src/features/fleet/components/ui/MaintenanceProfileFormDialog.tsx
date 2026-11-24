@@ -175,7 +175,7 @@ export function MaintenanceProfileFormDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Vehicle *</Label>
+            <Label required>Vehicle</Label>
             <Select
               value={newProfile.vehicleId}
               onValueChange={value => setNewProfile({
@@ -199,7 +199,7 @@ export function MaintenanceProfileFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Service Category *</Label>
+            <Label required>Service Category</Label>
             <Select
               value={newProfile.serviceType}
               onValueChange={value => setNewProfile({
@@ -225,7 +225,7 @@ export function MaintenanceProfileFormDialog({
 
           {newProfile.serviceType === "custom" && (
             <div className="space-y-2">
-              <Label>Custom Category</Label>
+              <Label required>Custom Category</Label>
               <Input
                 placeholder="e.g., Suspension Check"
                 value={newProfile.customLabel}
@@ -237,7 +237,7 @@ export function MaintenanceProfileFormDialog({
           )}
 
           <div className="space-y-2">
-            <Label>Schedule Based On *</Label>
+            <Label required>Schedule Based On</Label>
             <Select
               value={newProfile.intervalType}
               onValueChange={value =>

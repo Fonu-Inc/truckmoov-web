@@ -151,7 +151,12 @@ export function StartConversationDialog({
           {!conversationId && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="outreach-phone">Phone number</Label>
+                <Label
+                  htmlFor="outreach-phone"
+                  required
+                >
+                  Phone number
+                </Label>
                 <Input
                   id="outreach-phone"
                   inputMode="tel"
@@ -173,7 +178,7 @@ export function StartConversationDialog({
           )}
 
           <div className="space-y-2">
-            <Label>Template</Label>
+            <Label required>Template</Label>
             <Select
               value={templateKey}
               onValueChange={(next) => {
@@ -224,7 +229,12 @@ export function StartConversationDialog({
               key={number}
               className="space-y-2"
             >
-              <Label htmlFor={`outreach-var-${number}`}>{`Value for {{${number}}}`}</Label>
+              <Label
+                htmlFor={`outreach-var-${number}`}
+                required
+              >
+                {`Value for {{${number}}}`}
+              </Label>
               <Input
                 id={`outreach-var-${number}`}
                 value={values[String(number)] ?? ""}

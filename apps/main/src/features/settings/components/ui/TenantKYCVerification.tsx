@@ -418,7 +418,12 @@ export function TenantKYCVerification({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="company_name">Company Name *</Label>
+                <Label
+                  htmlFor="company_name"
+                  required
+                >
+                  Company Name
+                </Label>
                 <Input
                   id="company_name"
                   value={businessInfo.company_name}
@@ -429,7 +434,12 @@ export function TenantKYCVerification({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="registration_number">Registration Number *</Label>
+                <Label
+                  htmlFor="registration_number"
+                  required
+                >
+                  Registration Number
+                </Label>
                 <Input
                   id="registration_number"
                   value={businessInfo.registration_number || ""}
@@ -440,7 +450,12 @@ export function TenantKYCVerification({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tax_id">Tax Identification Number (TIN) *</Label>
+                <Label
+                  htmlFor="tax_id"
+                  required
+                >
+                  Tax Identification Number (TIN)
+                </Label>
                 <Input
                   id="tax_id"
                   value={businessInfo.tax_id || ""}
@@ -451,7 +466,12 @@ export function TenantKYCVerification({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="business_type">Business Type *</Label>
+                <Label
+                  htmlFor="business_type"
+                  required
+                >
+                  Business Type
+                </Label>
                 <Select
                   value={businessInfo.business_type || ""}
                   onValueChange={value => setBusinessInfo({
@@ -520,7 +540,12 @@ export function TenantKYCVerification({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3">
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address_line1">Address Line 1 *</Label>
+                <Label
+                  htmlFor="address_line1"
+                  required
+                >
+                  Address Line 1
+                </Label>
                 <Input
                   id="address_line1"
                   value={businessInfo.address_line1 || ""}
@@ -542,7 +567,12 @@ export function TenantKYCVerification({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
+                <Label
+                  htmlFor="state"
+                  required
+                >
+                  State
+                </Label>
                 <Select
                   value={businessInfo.state || ""}
                   onValueChange={state => setBusinessInfo({
@@ -565,7 +595,12 @@ export function TenantKYCVerification({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
+                <Label
+                  htmlFor="city"
+                  required
+                >
+                  City
+                </Label>
                 <CityCombobox
                   id="city"
                   state={businessInfo.state || ""}
@@ -609,7 +644,12 @@ export function TenantKYCVerification({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label
+                  htmlFor="phone"
+                  required
+                >
+                  Phone Number
+                </Label>
                 <Input
                   id="phone"
                   value={businessInfo.phone || ""}
@@ -620,7 +660,12 @@ export function TenantKYCVerification({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Business Email *</Label>
+                <Label
+                  htmlFor="email"
+                  required
+                >
+                  Business Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -632,7 +677,7 @@ export function TenantKYCVerification({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="billing_email">Billing Email *</Label>
+                <Label htmlFor="billing_email">Billing Email</Label>
                 <Input
                   id="billing_email"
                   type="email"
@@ -691,7 +736,7 @@ export function TenantKYCVerification({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-2">
-                  <Label>Document Type</Label>
+                  <Label required>Document Type</Label>
                   <Select
                     value={selectedDocType}
                     onValueChange={setSelectedDocType}
@@ -706,8 +751,14 @@ export function TenantKYCVerification({
                           value={type.value}
                         >
                           {type.label}
-                          {" "}
-                          {type.required && "*"}
+                          {type.required && (
+                            <span
+                              aria-hidden="true"
+                              className="ml-0.5 text-destructive"
+                            >
+                              *
+                            </span>
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -1204,7 +1204,7 @@ export function VoiceIVRManager() {
           <div className="space-y-6 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Prompt Name</Label>
+                <Label required>Prompt Name</Label>
                 <Input
                   value={formData.name || ""}
                   onChange={e => setFormData({
@@ -1281,7 +1281,7 @@ export function VoiceIVRManager() {
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label>{lang.nativeName}</Label>
+                        <Label required={lang.code === "en"}>{lang.nativeName}</Label>
                         <Button
                           variant="outline"
                           size="sm"
@@ -1342,7 +1342,12 @@ export function VoiceIVRManager() {
 
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="call-phone">Phone Number</Label>
+              <Label
+                htmlFor="call-phone"
+                required
+              >
+                Phone Number
+              </Label>
               <Input
                 id="call-phone"
                 placeholder="+234 801 234 5678"

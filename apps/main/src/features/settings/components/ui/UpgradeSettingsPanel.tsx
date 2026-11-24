@@ -137,7 +137,7 @@ function UpgradeForm({ onSubmitted }: { onSubmitted: () => void }) {
             name="reason"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Note to the reviewer</FormLabel>
+                <FormLabel required>Note to the reviewer</FormLabel>
                 <FormControl>
                   <Textarea
                     rows={4}

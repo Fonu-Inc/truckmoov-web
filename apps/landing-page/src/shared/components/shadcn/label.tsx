@@ -7,8 +7,13 @@ import { cn } from "@/shared/utils";
 
 function Label({
   className,
+  required,
+  children,
   ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+}: React.ComponentProps<typeof LabelPrimitive.Root> & {
+  /** Shows a red asterisk after the text. Set it on every field the form refuses to submit empty. */
+  required?: boolean;
+}) {
   return (
     <LabelPrimitive.Root
       data-slot="label"
@@ -17,7 +22,18 @@ function Label({
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+      {/* The label is flex gap-2; -ml-1.5 sits the asterisk 2px from the text. */}
+      {required && (
+        <span
+          aria-hidden="true"
+          className="-ml-1.5 text-destructive"
+        >
+          *
+        </span>
+      )}
+    </LabelPrimitive.Root>
   );
 }
 

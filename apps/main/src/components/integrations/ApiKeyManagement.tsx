@@ -244,7 +244,7 @@ export function ApiKeyManagement() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Key Name</Label>
+                <Label required>Key Name</Label>
                 <Input
                   placeholder="e.g., ERP Integration"
                   value={newKeyName}
@@ -252,7 +252,7 @@ export function ApiKeyManagement() {
                 />
               </div>
               <div>
-                <Label>Scopes</Label>
+                <Label required>Scopes</Label>
                 <ScrollArea className="h-48 border rounded-md p-3 mt-1">
                   <div className="space-y-3">
                     {API_SCOPES.map(scope => (

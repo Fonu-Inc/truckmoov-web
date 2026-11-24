@@ -74,7 +74,10 @@ export function KYCRequestDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="reason">
+            <Label
+              htmlFor="reason"
+              required
+            >
               Reason / Instructions for the Tenant
             </Label>
             <Textarea

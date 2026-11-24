@@ -379,7 +379,7 @@ export function OrganizationSettingsForm() {
                 name="organizationName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Organization Name</FormLabel>
+                    <FormLabel required>Organization Name</FormLabel>
                     <FormControl><Input {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
@@ -390,7 +390,7 @@ export function OrganizationSettingsForm() {
                 name="contactEmail"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contact Email</FormLabel>
+                    <FormLabel required>Contact Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -471,7 +471,12 @@ export function OrganizationSettingsForm() {
         <div className="p-6 pt-0">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="defaultTimezone">Default Timezone</Label>
+              <Label
+                htmlFor="defaultTimezone"
+                required
+              >
+                Default Timezone
+              </Label>
               <Select
                 value={timezone}
                 onValueChange={value => handleDisplayPreferenceChange(
@@ -498,7 +503,12 @@ export function OrganizationSettingsForm() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="defaultLanguage">Default Language</Label>
+              <Label
+                htmlFor="defaultLanguage"
+                required
+              >
+                Default Language
+              </Label>
               <Select
                 value={language}
                 onValueChange={value => handleDisplayPreferenceChange(

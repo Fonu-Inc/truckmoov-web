@@ -111,7 +111,12 @@ function SuspendForm({
       </DialogHeader>
       <ImpactPreview tenant={tenant} />
       <div className="space-y-2">
-        <Label htmlFor="suspend-reason">Reason (shown to your team)</Label>
+        <Label
+          htmlFor="suspend-reason"
+          required
+        >
+          Reason (shown to your team)
+        </Label>
         <Textarea
           id="suspend-reason"
           value={reason}
@@ -122,7 +127,12 @@ function SuspendForm({
         <p className="text-xs text-muted-foreground">{`At least ${MIN_REASON} characters.`}</p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="suspend-name">{`Type "${tenant.name}" to confirm`}</Label>
+        <Label
+          htmlFor="suspend-name"
+          required
+        >
+          {`Type "${tenant.name}" to confirm`}
+        </Label>
         <Input
           id="suspend-name"
           value={typedName}

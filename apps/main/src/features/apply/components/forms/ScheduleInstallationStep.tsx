@@ -415,7 +415,7 @@ export function ScheduleInstallationStep({
             </div>
 
             <div className="space-y-1.5">
-              <Label>Installation Address</Label>
+              <Label required>Installation Address</Label>
               <div className="grid gap-3 sm:grid-cols-3">
                 <FormField
                   control={form.control}
@@ -473,7 +473,7 @@ export function ScheduleInstallationStep({
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Installation Date</FormLabel>
+                    <FormLabel required>Installation Date</FormLabel>
                     <FormControl>
                       <Input
                         type="date"
@@ -492,7 +492,7 @@ export function ScheduleInstallationStep({
                 name="timeSlot"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Installation Time</FormLabel>
+                    <FormLabel required>Installation Time</FormLabel>
                     <FormControl>
                       {/* The design takes a clock time; the API books a slot, so the time
                           picks it — before noon is the morning slot. */}
@@ -524,7 +524,7 @@ export function ScheduleInstallationStep({
                 name="contactName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Site Contact Name</FormLabel>
+                    <FormLabel required>Site Contact Name</FormLabel>
                     <FormControl>
                       <Input
                         maxLength={80}
@@ -541,7 +541,7 @@ export function ScheduleInstallationStep({
                 name="contactPhone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel required>Phone Number</FormLabel>
                     <FormControl>
                       <Input
                         type="tel"

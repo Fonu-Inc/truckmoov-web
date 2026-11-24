@@ -459,6 +459,7 @@ function TicketActions({
       <Label
         htmlFor="ticket-reply"
         className="text-[11px] uppercase tracking-wide text-muted-foreground"
+        required
       >
         Reply
       </Label>
@@ -495,6 +496,7 @@ function TicketActions({
           <Label
             htmlFor="ticket-reopen"
             className="text-[11px] uppercase tracking-wide text-muted-foreground"
+            required
           >
             Still not fixed?
           </Label>

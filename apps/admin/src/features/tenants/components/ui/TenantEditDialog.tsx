@@ -207,7 +207,7 @@ export function TenantEditDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company Name *</FormLabel>
+                  <FormLabel required>Company Name</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Acme Logistics Ltd"
@@ -224,7 +224,7 @@ export function TenantEditDialog({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email *</FormLabel>
+                  <FormLabel required>Email</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
@@ -294,7 +294,7 @@ export function TenantEditDialog({
               name="organizationType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Organization Role</FormLabel>
+                  <FormLabel required>Organization Role</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
@@ -325,7 +325,7 @@ export function TenantEditDialog({
               name="planCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subscription Plan</FormLabel>
+                  <FormLabel required>Subscription Plan</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}

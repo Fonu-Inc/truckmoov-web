@@ -91,10 +91,11 @@ export function CreateOwnerOperatorDialog({
             <Label
               htmlFor="oo-name"
               className="flex items-center gap-1.5"
+              required
             >
               <User className="h-3.5 w-3.5" />
               {" "}
-              Operator Name *
+              Operator Name
             </Label>
             <Input
               id="oo-name"
@@ -126,10 +127,11 @@ export function CreateOwnerOperatorDialog({
             <Label
               htmlFor="oo-phone"
               className="flex items-center gap-1.5"
+              required
             >
               <Phone className="h-3.5 w-3.5" />
               {" "}
-              Phone *
+              Phone
             </Label>
             <Input
               id="oo-phone"

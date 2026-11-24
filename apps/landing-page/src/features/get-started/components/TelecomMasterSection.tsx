@@ -116,9 +116,11 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
         name="telecomMasterNumberType"
         render={({ field }) => (
           <FormItem className="gap-1.5">
-            <FormLabel className={LABEL_CLASS}>
+            <FormLabel
+              className={LABEL_CLASS}
+              required
+            >
               Do you have an existing MTN number you would like to use as your Telecom Master number?
-              <span className="-ml-1.5 text-destructive">*</span>
             </FormLabel>
             <div
               role="radiogroup"
@@ -164,9 +166,11 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
           name="telecomMasterMsisdn"
           render={({ field }) => (
             <FormItem className="mt-[19px] gap-1.5">
-              <FormLabel className={LABEL_CLASS}>
+              <FormLabel
+                className={LABEL_CLASS}
+                required
+              >
                 MTN Phone Number
-                <span className="-ml-1.5 text-destructive">*</span>
               </FormLabel>
               <div className="flex gap-2">
                 <FormControl>

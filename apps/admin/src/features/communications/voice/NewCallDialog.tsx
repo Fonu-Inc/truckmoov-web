@@ -62,7 +62,12 @@ export function NewCallDialog({ onClose }: { onClose: () => void }) {
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="call-to">Phone number</Label>
+            <Label
+              htmlFor="call-to"
+              required
+            >
+              Phone number
+            </Label>
             <Input
               id="call-to"
               inputMode="tel"

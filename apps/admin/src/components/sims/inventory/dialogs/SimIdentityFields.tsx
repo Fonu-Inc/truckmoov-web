@@ -41,7 +41,7 @@ export function SimIdentityFields({
           name="iccid"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>ICCID *</FormLabel>
+              <FormLabel required>ICCID</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -58,7 +58,7 @@ export function SimIdentityFields({
           name="msisdn"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Phone Number *</FormLabel>
+              <FormLabel required>Phone Number</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -93,7 +93,7 @@ export function SimIdentityFields({
           name="carrier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Carrier</FormLabel>
+              <FormLabel required>Carrier</FormLabel>
               <Select
                 name={field.name}
                 value={otherMode ? OTHER_CARRIER : field.value}
@@ -132,7 +132,7 @@ export function SimIdentityFields({
           name="carrier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Carrier Name *</FormLabel>
+              <FormLabel required>Carrier Name</FormLabel>
               <FormControl>
                 <Input
                   {...field}

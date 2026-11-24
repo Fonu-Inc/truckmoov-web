@@ -192,7 +192,7 @@ export function DeviceFormDialogWithCatalog({
           >
             {/* Manufacturer Selection */}
             <div className="space-y-2">
-              <FormLabel>Manufacturer</FormLabel>
+              <FormLabel required>Manufacturer</FormLabel>
               <Select
                 value={selectedManufacturer}
                 onValueChange={handleManufacturerChange}
@@ -224,7 +224,7 @@ export function DeviceFormDialogWithCatalog({
               name="catalog_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Model</FormLabel>
+                  <FormLabel required>Model</FormLabel>
                   <Select
                     onValueChange={handleModelChange}
                     value={field.value}
@@ -306,7 +306,7 @@ export function DeviceFormDialogWithCatalog({
               name="imei"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>IMEI Number</FormLabel>
+                  <FormLabel required>IMEI Number</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="359779090012345"

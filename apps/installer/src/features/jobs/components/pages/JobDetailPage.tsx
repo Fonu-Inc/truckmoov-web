@@ -489,8 +489,16 @@ export default function JobDetailPage() {
               onCheckedChange={v => setConfirmed(!!v)}
               className="mt-0.5"
             />
-            I confirm that the installation has been completed and the information provided
-            is accurate.
+            <span>
+              I confirm that the installation has been completed and the information provided
+              is accurate.
+              <span
+                aria-hidden="true"
+                className="ml-0.5 text-destructive"
+              >
+                *
+              </span>
+            </span>
           </label>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

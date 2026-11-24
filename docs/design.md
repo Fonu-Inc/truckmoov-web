@@ -655,6 +655,7 @@ never a stack.
   prop — use it instead of a bespoke spinner. `variant="gradient"` is the
   primary CTA in dialogs.
 - Forms: see [forms.md](forms.md) — react-hook-form + zod + shadcn `Form`.
+  Required fields show a red asterisk via `<FormLabel required>` / `<Label required>`.
 - Toasts are `sonner`. Icons are `lucide-react`, `h-4 w-4` inline / `h-3 w-3` in
   dense table meta.
 - Modals are `Dialog`; mobile/side panels are `Sheet` or `Drawer`.

@@ -211,7 +211,12 @@ function PasswordField({
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <Label
+        htmlFor={id}
+        required
+      >
+        {label}
+      </Label>
       <Input
         id={id}
         type="password"

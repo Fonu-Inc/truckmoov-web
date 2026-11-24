@@ -162,7 +162,7 @@ function EditSimForm({
               name="plan"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plan</FormLabel>
+                  <FormLabel required>Plan</FormLabel>
                   <Select
                     name={field.name}
                     value={field.value ?? ""}

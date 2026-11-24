@@ -104,7 +104,7 @@ export function WorkPreferencesForm({ preferences }: { preferences: InstallerWor
             name="availability"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Current availability</FormLabel>
+                <FormLabel required>Current availability</FormLabel>
                 <Select
                   name={field.name}
                   value={field.value}
@@ -125,7 +125,7 @@ export function WorkPreferencesForm({ preferences }: { preferences: InstallerWor
             )}
           />
           <div className="space-y-2">
-            <Label>Working hours</Label>
+            <Label required>Working hours</Label>
             <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
@@ -177,7 +177,7 @@ export function WorkPreferencesForm({ preferences }: { preferences: InstallerWor
             name="preferredPeriods"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Preferred working periods</FormLabel>
+                <FormLabel required>Preferred working periods</FormLabel>
                 <Select
                   name={field.name}
                   value={field.value}

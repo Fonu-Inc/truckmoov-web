@@ -50,7 +50,12 @@ function ReplyForm({
     <div className="space-y-3 rounded-lg border border-border/60 p-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor="canned-shortcut">Shortcut</Label>
+          <Label
+            htmlFor="canned-shortcut"
+            required
+          >
+            Shortcut
+          </Label>
           <Input
             id="canned-shortcut"
             placeholder="eta"
@@ -60,7 +65,12 @@ function ReplyForm({
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="canned-title">Title</Label>
+          <Label
+            htmlFor="canned-title"
+            required
+          >
+            Title
+          </Label>
           <Input
             id="canned-title"
             placeholder="Asking for an ETA"
@@ -71,7 +81,12 @@ function ReplyForm({
         </div>
       </div>
       <div className="space-y-1">
-        <Label htmlFor="canned-body">Reply</Label>
+        <Label
+          htmlFor="canned-body"
+          required
+        >
+          Reply
+        </Label>
         <Textarea
           id="canned-body"
           rows={3}

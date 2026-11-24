@@ -571,7 +571,7 @@ export function WhatsAppAssistPanel() {
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>WABA ID *</Label>
+              <Label required>WABA ID</Label>
               <Input
                 placeholder="1234567890123456"
                 value={formData.waba_id}
@@ -582,7 +582,7 @@ export function WhatsAppAssistPanel() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Phone Number ID *</Label>
+              <Label required>Phone Number ID</Label>
               <Input
                 placeholder="1234567890123456"
                 value={formData.phone_number_id}

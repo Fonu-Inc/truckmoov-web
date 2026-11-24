@@ -58,7 +58,12 @@ function DetailsStep({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="campaign-name">Name</Label>
+        <Label
+          htmlFor="campaign-name"
+          required
+        >
+          Name
+        </Label>
         <Input
           id="campaign-name"
           maxLength={120}

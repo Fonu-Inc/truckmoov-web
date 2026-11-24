@@ -268,9 +268,9 @@ export function IndemnityDialog({
               <Label
                 htmlFor="indemnity-signer-name"
                 className="text-sm"
+                required
               >
                 Company Name
-                <span className="ml-0.5 text-destructive">*</span>
               </Label>
               <Input
                 id="indemnity-signer-name"
@@ -285,9 +285,8 @@ export function IndemnityDialog({
             </div>
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Label>
+                <Label required>
                   Signature
-                  <span className="ml-0.5 text-destructive">*</span>
                 </Label>
                 <div className="inline-flex rounded-lg border border-border p-0.5">
                   {([

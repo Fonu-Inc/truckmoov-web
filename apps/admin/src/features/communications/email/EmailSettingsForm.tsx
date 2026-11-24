@@ -40,7 +40,12 @@ function ServerFields({
       <legend className="px-1 text-sm font-medium">{legend}</legend>
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor={`${idPrefix}-host`}>Host</Label>
+          <Label
+            htmlFor={`${idPrefix}-host`}
+            required
+          >
+            Host
+          </Label>
           <Input
             id={`${idPrefix}-host`}
             disabled={disabled}
@@ -62,7 +67,12 @@ function ServerFields({
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor={`${idPrefix}-user`}>Username</Label>
+          <Label
+            htmlFor={`${idPrefix}-user`}
+            required
+          >
+            Username
+          </Label>
           <Input
             id={`${idPrefix}-user`}
             disabled={disabled}
@@ -72,7 +82,12 @@ function ServerFields({
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor={`${idPrefix}-password`}>Password</Label>
+          <Label
+            htmlFor={`${idPrefix}-password`}
+            required
+          >
+            Password
+          </Label>
           <Input
             id={`${idPrefix}-password`}
             disabled={disabled}
@@ -161,7 +176,12 @@ export function EmailSettingsForm({
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor="mail-address">Email address</Label>
+          <Label
+            htmlFor="mail-address"
+            required
+          >
+            Email address
+          </Label>
           <Input
             id="mail-address"
             disabled={!canManage}

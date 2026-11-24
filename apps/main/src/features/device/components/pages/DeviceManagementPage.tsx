@@ -994,7 +994,12 @@ export default function DeviceManagement() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="firmware-version">Firmware Version</Label>
+            <Label
+              htmlFor="firmware-version"
+              required
+            >
+              Firmware Version
+            </Label>
             <Input
               id="firmware-version"
               value={firmwareVersion}

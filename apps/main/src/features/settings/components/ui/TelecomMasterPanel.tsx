@@ -124,7 +124,7 @@ function RequestForm() {
           name="numberType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Number</FormLabel>
+              <FormLabel required>Number</FormLabel>
               <FormControl>
                 <RadioGroup
                   value={field.value}
@@ -151,7 +151,7 @@ function RequestForm() {
             name="msisdn"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>MTN number</FormLabel>
+                <FormLabel required>MTN number</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="0803 123 4567"

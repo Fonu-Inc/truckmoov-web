@@ -188,7 +188,10 @@ export function JobMatchingDialog({
             <CardContent className="p-4 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                  <Label
+                    className="flex items-center gap-2"
+                    required
+                  >
                     <Truck className="h-4 w-4" />
                     Select Vehicle
                   </Label>
@@ -225,7 +228,10 @@ export function JobMatchingDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                  <Label
+                    className="flex items-center gap-2"
+                    required
+                  >
                     <User className="h-4 w-4" />
                     Select Driver
                   </Label>

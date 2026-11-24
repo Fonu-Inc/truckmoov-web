@@ -125,7 +125,12 @@ function SetLicenceReminderForm({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="licence-reminder-email">Recipient Email</Label>
+            <Label
+              htmlFor="licence-reminder-email"
+              required
+            >
+              Recipient Email
+            </Label>
             <Input
               id="licence-reminder-email"
               type="email"

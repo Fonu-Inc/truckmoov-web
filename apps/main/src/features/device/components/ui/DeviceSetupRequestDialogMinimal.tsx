@@ -158,7 +158,7 @@ export function DeviceSetupRequestDialogMinimal({
         <div className="space-y-4 py-2">
           {/* Quantity */}
           <div className="space-y-1.5">
-            <Label>Number of Devices *</Label>
+            <Label required>Number of Devices</Label>
             <Input
               type="number"
               min={1}
@@ -207,7 +207,7 @@ export function DeviceSetupRequestDialogMinimal({
 
           {/* Manufacturer */}
           <div className="space-y-1.5">
-            <Label>Manufacturer *</Label>
+            <Label required>Manufacturer</Label>
             <Select
               value={manufacturer}
               onValueChange={(v) => {
@@ -233,7 +233,7 @@ export function DeviceSetupRequestDialogMinimal({
 
           {/* Model — dependent dropdown if catalog has matches, else free text */}
           <div className="space-y-1.5">
-            <Label>Model *</Label>
+            <Label required>Model</Label>
             {models.length > 0
               ? (
                   <Select
@@ -268,7 +268,7 @@ export function DeviceSetupRequestDialogMinimal({
 
           {/* Use Case */}
           <div className="space-y-1.5">
-            <Label>Use Case *</Label>
+            <Label required>Use Case</Label>
             <Textarea
               value={useCase}
               onChange={e => setUseCase(e.target.value)}

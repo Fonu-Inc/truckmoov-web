@@ -150,7 +150,12 @@ export function MaintenanceConfigPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="maintenanceWarnDays">Warning Period (days)</Label>
+            <Label
+              htmlFor="maintenanceWarnDays"
+              required
+            >
+              Warning Period (days)
+            </Label>
             <Input
               id="maintenanceWarnDays"
               type="number"

@@ -496,7 +496,12 @@ export default function DriverGroupsPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="group-name">Group Name</Label>
+              <Label
+                htmlFor="group-name"
+                required
+              >
+                Group Name
+              </Label>
               <Input
                 id="group-name"
                 value={name}

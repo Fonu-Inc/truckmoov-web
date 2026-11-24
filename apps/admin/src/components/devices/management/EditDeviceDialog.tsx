@@ -153,7 +153,7 @@ export function EditDeviceDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Manufacturer</Label>
+            <Label required>Manufacturer</Label>
             <Select
               value={manufacturer}
               onValueChange={setManufacturer}
@@ -177,7 +177,12 @@ export function EditDeviceDialog({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="device-model">Model</Label>
+            <Label
+              htmlFor="device-model"
+              required
+            >
+              Model
+            </Label>
             <Input
               id="device-model"
               value={model}

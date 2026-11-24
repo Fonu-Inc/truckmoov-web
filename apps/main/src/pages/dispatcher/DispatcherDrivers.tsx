@@ -229,7 +229,7 @@ export default function DispatcherDrivers() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Message</Label>
+              <Label required>Message</Label>
               <Textarea
                 placeholder="Type your message here..."
                 value={messageContent}

@@ -34,6 +34,7 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { ExportButton } from "@/components/shadcn/export-button";
+import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
@@ -1013,7 +1014,7 @@ export function KYCReviewWorkflow() {
           <div className="space-y-4 py-4">
             {reviewAction === "reject" && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Rejection Reason *</label>
+                <Label required>Rejection Reason</Label>
                 <Textarea
                   placeholder="Please provide a reason for rejection..."
                   value={reviewComment}
@@ -1024,7 +1025,7 @@ export function KYCReviewWorkflow() {
             )}
             {reviewAction === "approve" && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Comments (Optional)</label>
+                <Label>Comments (Optional)</Label>
                 <Textarea
                   placeholder="Add any notes..."
                   value={reviewComment}

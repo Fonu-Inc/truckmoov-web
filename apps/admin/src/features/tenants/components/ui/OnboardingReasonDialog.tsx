@@ -93,7 +93,7 @@ export function OnboardingReasonDialog({
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{fieldLabel}</FormLabel>
+                  <FormLabel required>{fieldLabel}</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={4}

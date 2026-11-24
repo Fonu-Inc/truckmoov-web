@@ -361,7 +361,7 @@ export function PricingRulesPanel({
           </DialogHeader>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
             <div>
-              <Label>Rule Name *</Label>
+              <Label required>Rule Name</Label>
               <Input
                 value={form.rule_name}
                 onChange={e => setForm(f => ({
@@ -382,7 +382,7 @@ export function PricingRulesPanel({
                 />
               </div>
               <div>
-                <Label>Destination *</Label>
+                <Label required>Destination</Label>
                 <Input
                   value={form.destination}
                   onChange={e => setForm(f => ({

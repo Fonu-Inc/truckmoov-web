@@ -94,7 +94,7 @@ export function SendInvoiceEmailDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Recipient Email *</Label>
+            <Label required>Recipient Email</Label>
             <Input
               type="email"
               value={recipientEmail}

@@ -71,10 +71,10 @@ type StakeholderKYCConfig = {
 
 const FLEET_PROVIDER_KYC_CONFIG: StakeholderKYCConfig = {
   audience: "Fleet Provider",
-  orgNameLabel: "Fleet Provider Name *",
+  orgNameLabel: "Fleet Provider Name",
   orgNamePlaceholder: "e.g. Sahara Transport Services",
-  registrationLabel: "Registration Number *",
-  taxIdLabel: "Tax Identification Number (TIN) *",
+  registrationLabel: "Registration Number",
+  taxIdLabel: "Tax Identification Number (TIN)",
   industryLabel: "Primary Vehicle Type",
   employeesLabel: "Fleet Size (number of vehicles)",
   showBusinessType: true,
@@ -461,7 +461,12 @@ export function OnboardingKYCStep({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="companyName">{cfg.orgNameLabel}</Label>
+              <Label
+                htmlFor="companyName"
+                required
+              >
+                {cfg.orgNameLabel}
+              </Label>
               <Input
                 id="companyName"
                 value={businessInfo.companyName ?? ""}
@@ -474,7 +479,12 @@ export function OnboardingKYCStep({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="registrationNumber">{cfg.registrationLabel}</Label>
+              <Label
+                htmlFor="registrationNumber"
+                required
+              >
+                {cfg.registrationLabel}
+              </Label>
               <Input
                 id="registrationNumber"
                 value={businessInfo.registrationNumber ?? ""}
@@ -487,7 +497,12 @@ export function OnboardingKYCStep({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="taxId">{cfg.taxIdLabel}</Label>
+              <Label
+                htmlFor="taxId"
+                required
+              >
+                {cfg.taxIdLabel}
+              </Label>
               <Input
                 id="taxId"
                 value={businessInfo.taxId ?? ""}
@@ -501,7 +516,12 @@ export function OnboardingKYCStep({
             </div>
             {cfg.showBusinessType && (
               <div className="space-y-2">
-                <Label htmlFor="businessType">Business Type *</Label>
+                <Label
+                  htmlFor="businessType"
+                  required
+                >
+                  Business Type
+                </Label>
                 <Select
                   value={businessInfo.businessType ?? ""}
                   onValueChange={v => updateField(
@@ -614,7 +634,12 @@ export function OnboardingKYCStep({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="addressLine1">Street Address *</Label>
+              <Label
+                htmlFor="addressLine1"
+                required
+              >
+                Street Address
+              </Label>
               <Input
                 id="addressLine1"
                 value={businessInfo.addressLine1 ?? ""}
@@ -627,7 +652,12 @@ export function OnboardingKYCStep({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="state">State *</Label>
+              <Label
+                htmlFor="state"
+                required
+              >
+                State
+              </Label>
               <Select
                 value={businessInfo.state ?? ""}
                 onValueChange={(state) => {
@@ -658,7 +688,12 @@ export function OnboardingKYCStep({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="city">City *</Label>
+              <Label
+                htmlFor="city"
+                required
+              >
+                City
+              </Label>
               <CityCombobox
                 id="city"
                 state={businessInfo.state ?? ""}
@@ -714,7 +749,12 @@ export function OnboardingKYCStep({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number *</Label>
+              <Label
+                htmlFor="phone"
+                required
+              >
+                Phone Number
+              </Label>
               <Input
                 id="phone"
                 value={businessInfo.phone ?? ""}
@@ -727,8 +767,11 @@ export function OnboardingKYCStep({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">
-                {cfg.audience === "Owner-Operator" ? "Contact Email *" : "Business Email *"}
+              <Label
+                htmlFor="email"
+                required
+              >
+                {cfg.audience === "Owner-Operator" ? "Contact Email" : "Business Email"}
               </Label>
               <Input
                 id="email"
@@ -743,7 +786,12 @@ export function OnboardingKYCStep({
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="billingEmail">Billing Email *</Label>
+              <Label
+                htmlFor="billingEmail"
+                required
+              >
+                Billing Email
+              </Label>
               <Input
                 id="billingEmail"
                 type="email"
@@ -792,7 +840,7 @@ export function OnboardingKYCStep({
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Document Type</Label>
+              <Label required>Document Type</Label>
               <Select
                 value={selectedDocType}
                 onValueChange={setSelectedDocType}
@@ -808,8 +856,14 @@ export function OnboardingKYCStep({
                       value={type.value}
                     >
                       {type.label}
-                      {" "}
-                      {type.required && "*"}
+                      {type.required && (
+                        <span
+                          aria-hidden="true"
+                          className="ml-0.5 text-destructive"
+                        >
+                          *
+                        </span>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>

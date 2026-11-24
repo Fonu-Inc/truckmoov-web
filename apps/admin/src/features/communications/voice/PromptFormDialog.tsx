@@ -69,7 +69,12 @@ export function PromptFormDialog({
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1 sm:col-span-2">
-              <Label htmlFor="prompt-name">Name</Label>
+              <Label
+                htmlFor="prompt-name"
+                required
+              >
+                Name
+              </Label>
               <Input
                 id="prompt-name"
                 maxLength={80}

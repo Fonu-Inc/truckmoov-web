@@ -190,9 +190,11 @@ export function BusinessDetailsStep({
           options.className,
         )}
         >
-          <FormLabel className="text-sm">
+          <FormLabel
+            className="text-sm"
+            required
+          >
             {label}
-            <span className="ml-0.5 text-destructive">*</span>
           </FormLabel>
           <FormControl>
             <Input
@@ -218,9 +220,11 @@ export function BusinessDetailsStep({
       name="state"
       render={({ field: input }) => (
         <FormItem className="space-y-1.5">
-          <FormLabel className="text-sm">
+          <FormLabel
+            className="text-sm"
+            required
+          >
             State
-            <span className="ml-0.5 text-destructive">*</span>
           </FormLabel>
           <Select
             value={input.value ?? ""}
@@ -262,9 +266,11 @@ export function BusinessDetailsStep({
       name="city"
       render={({ field: input }) => (
         <FormItem className="space-y-1.5">
-          <FormLabel className="text-sm">
+          <FormLabel
+            className="text-sm"
+            required
+          >
             City
-            <span className="ml-0.5 text-destructive">*</span>
           </FormLabel>
           <Select
             value={cities.includes(input.value) ? input.value : ""}
@@ -553,6 +559,7 @@ export function BusinessDetailsStep({
               <Label
                 htmlFor="indemnity-confirmation"
                 className="cursor-pointer text-sm leading-5 text-foreground"
+                required
               >
                 {indemnitySigned
                   ? "I confirm that I have reviewed the indemnity form and agree to its terms."

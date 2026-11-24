@@ -310,7 +310,8 @@ export function AddInstallerDialog({
         {step === 0 && (
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="First Name*"
+              label="First Name"
+              required
               error={errors.firstName}
             >
               <Input
@@ -323,7 +324,8 @@ export function AddInstallerDialog({
               />
             </Field>
             <Field
-              label="Last Name*"
+              label="Last Name"
+              required
               error={errors.lastName}
             >
               <Input
@@ -336,7 +338,8 @@ export function AddInstallerDialog({
               />
             </Field>
             <Field
-              label="Email Address*"
+              label="Email Address"
+              required
               error={errors.email}
             >
               <Input
@@ -351,7 +354,8 @@ export function AddInstallerDialog({
               />
             </Field>
             <Field
-              label="Phone Number*"
+              label="Phone Number"
+              required
               error={errors.phone}
             >
               <Input
@@ -369,7 +373,8 @@ export function AddInstallerDialog({
         {step === 1 && (
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="State / Region*"
+              label="State / Region"
+              required
               error={errors.state}
             >
               <Select
@@ -396,7 +401,8 @@ export function AddInstallerDialog({
               </Select>
             </Field>
             <Field
-              label="City / Location*"
+              label="City / Location"
+              required
               error={errors.city}
             >
               <CityCombobox
@@ -409,7 +415,8 @@ export function AddInstallerDialog({
               />
             </Field>
             <Field
-              label="Service Area*"
+              label="Service Area"
+              required
               error={errors.serviceAreas}
               full
             >
@@ -424,7 +431,8 @@ export function AddInstallerDialog({
               />
             </Field>
             <Field
-              label="Installer Capabilities*"
+              label="Installer Capabilities"
+              required
               error={errors.capabilities}
               full
             >
@@ -510,11 +518,13 @@ function Field({
   label,
   error,
   full,
+  required,
   children,
 }: {
   label: string;
   error?: string;
   full?: boolean;
+  required?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -523,7 +533,7 @@ function Field({
       full && "sm:col-span-2",
     )}
     >
-      <Label>{label}</Label>
+      <Label required={required}>{label}</Label>
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>

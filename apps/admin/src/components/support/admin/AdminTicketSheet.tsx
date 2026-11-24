@@ -538,10 +538,9 @@ export function AdminTicketSheet({
                   <Label
                     htmlFor="escalate-target"
                     className="font-semibold"
+                    required
                   >
                     Escalate To
-                    {" "}
-                    <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={escalateTo}

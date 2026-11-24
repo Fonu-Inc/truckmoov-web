@@ -202,8 +202,9 @@ export function LogTicketDialog({
             <Label
               htmlFor="ticket-title"
               className="text-xs"
+              required
             >
-              Ticket title *
+              Ticket title
             </Label>
             <Input
               id="ticket-title"
@@ -220,8 +221,9 @@ export function LogTicketDialog({
             <Label
               htmlFor="ticket-message"
               className="text-xs"
+              required
             >
-              Message *
+              Message
             </Label>
             <Textarea
               id="ticket-message"
@@ -251,7 +253,12 @@ export function LogTicketDialog({
           {/* Channel + Category */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="ticket-channel">Channel *</Label>
+              <Label
+                htmlFor="ticket-channel"
+                required
+              >
+                Channel
+              </Label>
               <Select
                 value={channel}
                 onValueChange={setChannel}
@@ -282,7 +289,12 @@ export function LogTicketDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ticket-category">Category *</Label>
+              <Label
+                htmlFor="ticket-category"
+                required
+              >
+                Category
+              </Label>
               <Select
                 value={category}
                 onValueChange={setCategory}

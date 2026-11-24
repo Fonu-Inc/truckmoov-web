@@ -126,7 +126,7 @@ export function PlanPricingManager() {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-2">
-              <Label>1 USD =</Label>
+              <Label required>1 USD =</Label>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"

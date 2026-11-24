@@ -182,7 +182,7 @@ export function SIMRequestFormDialogMinimal({
 
         <div className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label>Number of SIMs *</Label>
+            <Label required>Number of SIMs</Label>
             <Input
               type="number"
               min={1}
@@ -230,7 +230,7 @@ export function SIMRequestFormDialogMinimal({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Carrier *</Label>
+            <Label required>Carrier</Label>
             <Select
               value={carrier}
               onValueChange={(v) => {
@@ -255,7 +255,7 @@ export function SIMRequestFormDialogMinimal({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Plan Type *</Label>
+            <Label required>Plan Type</Label>
             <Select
               value={planCycle}
               onValueChange={(v) => {
@@ -272,7 +272,7 @@ export function SIMRequestFormDialogMinimal({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Data Bundle Plan *</Label>
+            <Label required>Data Bundle Plan</Label>
             <Select
               value={bundleCode}
               onValueChange={setBundleCode}
@@ -304,7 +304,7 @@ export function SIMRequestFormDialogMinimal({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Use Case *</Label>
+            <Label required>Use Case</Label>
             <Textarea
               value={useCase}
               onChange={e => setUseCase(e.target.value)}

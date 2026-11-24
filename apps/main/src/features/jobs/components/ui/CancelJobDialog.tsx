@@ -63,7 +63,12 @@ function CancelJobForm({
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-1.5">
-        <Label htmlFor="cancel-reason">Reason for cancelling</Label>
+        <Label
+          htmlFor="cancel-reason"
+          required
+        >
+          Reason for cancelling
+        </Label>
         <Textarea
           id="cancel-reason"
           rows={3}

@@ -160,7 +160,7 @@ export function SimAssignDialog({
               name="tenantId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tenant</FormLabel>
+                  <FormLabel required>Tenant</FormLabel>
                   <Select
                     name={field.name}
                     value={field.value}
@@ -202,7 +202,7 @@ export function SimAssignDialog({
               name="deviceId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Device</FormLabel>
+                  <FormLabel required>Device</FormLabel>
                   <Select
                     name={field.name}
                     value={field.value}

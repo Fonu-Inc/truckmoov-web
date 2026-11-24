@@ -230,7 +230,7 @@ export function VehicleFormDialog({
                 name="plateNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Plate Number</FormLabel>
+                    <FormLabel required>Plate Number</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="LAG-123-XY"
@@ -247,7 +247,7 @@ export function VehicleFormDialog({
                 name="registrationNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Registration Number</FormLabel>
+                    <FormLabel required>Registration Number</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="RC-0001234"
@@ -265,7 +265,7 @@ export function VehicleFormDialog({
               name="vin"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>VIN</FormLabel>
+                  <FormLabel required>VIN</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="17-character VIN"
@@ -284,7 +284,7 @@ export function VehicleFormDialog({
                 name="make"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Make</FormLabel>
+                    <FormLabel required>Make</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Mercedes-Benz"
@@ -301,7 +301,7 @@ export function VehicleFormDialog({
                 name="model"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Model</FormLabel>
+                    <FormLabel required>Model</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Actros"
@@ -320,7 +320,7 @@ export function VehicleFormDialog({
                 name="year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Year</FormLabel>
+                    <FormLabel required>Year</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -338,7 +338,7 @@ export function VehicleFormDialog({
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Type</FormLabel>
+                    <FormLabel required>Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}

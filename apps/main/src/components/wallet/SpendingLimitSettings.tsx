@@ -263,7 +263,12 @@ export function SpendingLimitSettings({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="monthlyLimit">Monthly Limit (₦)</Label>
+              <Label
+                htmlFor="monthlyLimit"
+                required
+              >
+                Monthly Limit (₦)
+              </Label>
               <Input
                 id="monthlyLimit"
                 type="number"

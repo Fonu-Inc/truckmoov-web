@@ -141,7 +141,7 @@ export function InviteProfileForm({
           name="fullName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Full name</FormLabel>
+              <FormLabel required>Full name</FormLabel>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <FormControl>
@@ -164,7 +164,7 @@ export function InviteProfileForm({
           name="newPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel required>Password</FormLabel>
               <PasswordFieldControl
                 placeholder="At least 8 characters"
                 autoComplete="new-password"
@@ -184,7 +184,7 @@ export function InviteProfileForm({
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm password</FormLabel>
+              <FormLabel required>Confirm password</FormLabel>
               <PasswordFieldControl
                 placeholder="Repeat your password"
                 autoComplete="new-password"

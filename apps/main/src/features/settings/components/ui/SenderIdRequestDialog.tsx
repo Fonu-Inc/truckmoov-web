@@ -182,7 +182,12 @@ export function SenderIdRequestDialog({
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="sender_id">Sender ID</Label>
+              <Label
+                htmlFor="sender_id"
+                required
+              >
+                Sender ID
+              </Label>
               <Input
                 id="sender_id"
                 placeholder="e.g., MYCOMPANY"
@@ -220,7 +225,12 @@ export function SenderIdRequestDialog({
           {/* Request Letter Upload Section */}
           <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-medium">Request Letter</Label>
+              <Label
+                className="text-base font-medium"
+                required
+              >
+                Request Letter
+              </Label>
               <Button
                 type="button"
                 variant="outline"

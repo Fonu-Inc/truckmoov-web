@@ -22,9 +22,12 @@ import { NIGERIAN_STATES } from "@/features/apply/utils/applySchemas";
 export function DeviceFulfilmentCard({
   value,
   onChange,
+  required = false,
 }: {
   value: DeviceFulfilment;
   onChange: (value: DeviceFulfilment) => void;
+  /** A pickup point must be chosen to continue (devices were requested). */
+  required?: boolean;
 }) {
   const locationsQuery = useQuery(getPickupLocationsQueryOptions());
   const locations = locationsQuery.data?.data ?? [];
@@ -47,7 +50,7 @@ export function DeviceFulfilmentCard({
 
       <div className="mt-6 max-w-xl space-y-5">
         <div className="space-y-2">
-          <Label>State</Label>
+          <Label required={required}>State</Label>
           <Select
             value={value.state}
             onValueChange={state => onChange({
@@ -90,7 +93,7 @@ export function DeviceFulfilmentCard({
           )}
         </div>
         <div className="space-y-2">
-          <Label>Area</Label>
+          <Label required={required}>Area</Label>
           <Select
             value={value.area}
             disabled={!value.state || areas.length === 0}
@@ -117,7 +120,7 @@ export function DeviceFulfilmentCard({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>MTN Connect Store / Service Centre</Label>
+          <Label required={required}>MTN Connect Store / Service Centre</Label>
           <Select
             value={value.store}
             disabled={!value.area || stores.length === 0}

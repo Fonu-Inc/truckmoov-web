@@ -526,7 +526,12 @@ export default function UsersSettingsPage() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="inviteEmail">Email Address</Label>
+                  <Label
+                    htmlFor="inviteEmail"
+                    required
+                  >
+                    Email Address
+                  </Label>
                   <Input
                     id="inviteEmail"
                     type="email"

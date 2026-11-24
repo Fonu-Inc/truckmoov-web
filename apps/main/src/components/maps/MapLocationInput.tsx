@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import { getBrowserCoordinates } from "@/lib/browserLocation";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +57,8 @@ export type MapLocationInputProps = {
   value?: MapLocation | null;
   placeholder?: string;
   label?: string;
+  /** Marks the label with a red asterisk. */
+  required?: boolean;
   pinColor?: string;
   suggestionsSide?: "top" | "bottom";
   inputClassName?: string;
@@ -235,6 +238,7 @@ export function MapLocationInput({
   value,
   placeholder = "Enter a location and press Enter",
   label,
+  required,
   pinColor = "hsl(var(--primary))",
   suggestionsSide = "bottom",
   inputClassName,
@@ -437,12 +441,13 @@ export function MapLocationInput({
       )}
     >
       {label && (
-        <label
+        <Label
           htmlFor={inputId}
-          className="text-sm font-medium text-foreground"
+          className="text-foreground"
+          required={required}
         >
           {label}
-        </label>
+        </Label>
       )}
       <div className="relative">
         <MapPin

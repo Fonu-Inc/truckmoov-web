@@ -198,7 +198,7 @@ export function TemplateFormDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel required>Name</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="driver_followup"
@@ -215,7 +215,7 @@ export function TemplateFormDialog({
                 name="language"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Language</FormLabel>
+                    <FormLabel required>Language</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={field.onChange}
@@ -243,7 +243,7 @@ export function TemplateFormDialog({
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
+                    <FormLabel required>Category</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={field.onChange}
@@ -286,7 +286,7 @@ export function TemplateFormDialog({
               name="body"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Body</FormLabel>
+                  <FormLabel required>Body</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={4}
@@ -314,7 +314,7 @@ export function TemplateFormDialog({
                   name={`examples.${index}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
+                      <FormLabel required>
                         Example for
                         {" "}
                         {`{{${index + 1}}}`}

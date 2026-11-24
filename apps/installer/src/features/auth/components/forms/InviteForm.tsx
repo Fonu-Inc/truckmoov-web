@@ -129,7 +129,7 @@ export function InviteForm({
           name="newPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel required>Password</FormLabel>
               <PasswordFieldControl
                 placeholder="At least 8 characters"
                 autoComplete="new-password"
@@ -149,7 +149,7 @@ export function InviteForm({
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm password</FormLabel>
+              <FormLabel required>Confirm password</FormLabel>
               <PasswordFieldControl
                 placeholder="Repeat your password"
                 autoComplete="new-password"

@@ -439,6 +439,7 @@ export function FleetRequirementsStep({
       <DeviceFulfilmentCard
         value={fulfilment}
         onChange={setFulfilment}
+        required={deviceTotal > 0}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">

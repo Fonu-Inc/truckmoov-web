@@ -158,7 +158,7 @@ export function DriverFormDialog({
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel required>First Name</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="John"
@@ -174,7 +174,7 @@ export function DriverFormDialog({
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel required>Last Name</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Doe"
@@ -193,7 +193,7 @@ export function DriverFormDialog({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel required>Phone Number</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="+27 82 123 4567"
@@ -228,7 +228,7 @@ export function DriverFormDialog({
                 name="licenseNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>License Number</FormLabel>
+                    <FormLabel required>License Number</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="DL123456789"
@@ -244,7 +244,7 @@ export function DriverFormDialog({
                 name="licenseExpiry"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>License Expiry</FormLabel>
+                    <FormLabel required>License Expiry</FormLabel>
                     <FormControl>
                       <Input
                         type="date"
@@ -263,7 +263,7 @@ export function DriverFormDialog({
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel required>Status</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -290,7 +290,7 @@ export function DriverFormDialog({
                 name="communicationPreference"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Communication</FormLabel>
+                    <FormLabel required>Communication</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}

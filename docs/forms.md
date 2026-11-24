@@ -102,6 +102,27 @@ export function SignInForm() {
 
 `FormControl` uses Radix `Slot` to clone its child and automatically wire up `id`, `aria-describedby`, and `aria-invalid` — do not set these manually on the input.
 
+## Required Fields
+
+Every field the form will not submit empty gets a red asterisk through the
+`required` prop on `FormLabel` / `Label`:
+
+```tsx
+<FormLabel required>Email</FormLabel>
+<Label htmlFor="licence" required={!initial}>Driver's licence</Label>
+```
+
+- The mark must match the validation: a non-optional zod field, an input with
+  `required`, or a submit/`disabled` check that rejects an empty value. Optional
+  fields, filters, search boxes and always-valued switches get no mark.
+- When it depends on state (create vs edit, a conditional field), pass the same
+  expression the validation uses.
+- Never hand-roll the asterisk (`Name *`, `<span className="text-destructive">*</span>`).
+  The span is `aria-hidden`; keep the input's own `required` / `aria-required`
+  for screen readers.
+- Primitives: `packages/reusables/src/components/shadcn/label.tsx` (main, admin,
+  installer) and `apps/landing-page/src/shared/components/shadcn/label.tsx`.
+
 ## Field Patterns
 
 ### Text Input

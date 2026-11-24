@@ -120,7 +120,12 @@ export function EmailComposeDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="mail-to">To</Label>
+            <Label
+              htmlFor="mail-to"
+              required
+            >
+              To
+            </Label>
             <Input
               id="mail-to"
               placeholder="name@example.com, other@example.com"
@@ -138,7 +143,12 @@ export function EmailComposeDialog({
           </div>
           {invalid.length > 0 && <p className="text-xs text-destructive">{`Not an email address: ${invalid.join(", ")}`}</p>}
           <div className="space-y-1">
-            <Label htmlFor="mail-subject">Subject</Label>
+            <Label
+              htmlFor="mail-subject"
+              required
+            >
+              Subject
+            </Label>
             <Input
               id="mail-subject"
               maxLength={998}
@@ -147,7 +157,12 @@ export function EmailComposeDialog({
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="mail-body">Message</Label>
+            <Label
+              htmlFor="mail-body"
+              required
+            >
+              Message
+            </Label>
             <Textarea
               id="mail-body"
               rows={10}

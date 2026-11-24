@@ -181,7 +181,12 @@ export function PlatformRoleEditorDialog({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="role-name">Role name</Label>
+            <Label
+              htmlFor="role-name"
+              required
+            >
+              Role name
+            </Label>
             <Input
               id="role-name"
               value={name}

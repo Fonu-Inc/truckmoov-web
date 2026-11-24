@@ -234,7 +234,7 @@ export function VehicleFinancialConfigDialog({
         <div className="space-y-6">
           {/* Vehicle Selector */}
           <div className="space-y-2">
-            <Label>Select Vehicle</Label>
+            <Label required>Select Vehicle</Label>
             <Select
               value={selectedVehicleId}
               onValueChange={loadVehicleConfig}

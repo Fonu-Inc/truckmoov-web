@@ -144,7 +144,7 @@ export function ReportIssueForm({
               name="issueType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Issue type</FormLabel>
+                  <FormLabel required>Issue type</FormLabel>
                   <Select
                     name={field.name}
                     value={field.value ?? ""}
@@ -176,7 +176,7 @@ export function ReportIssueForm({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Describe the issue</FormLabel>
+                  <FormLabel required>Describe the issue</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={5}

@@ -147,9 +147,11 @@ export function RequestDevicesModal({
             name="quantity"
             render={({ field }) => (
               <FormItem className="gap-1.5">
-                <FormLabel className={LABEL_CLASS}>
+                <FormLabel
+                  className={LABEL_CLASS}
+                  required
+                >
                   Number of Devices
-                  <span className="-ml-1.5 text-destructive">*</span>
                 </FormLabel>
                 <FormControl>
                   <input
@@ -170,9 +172,11 @@ export function RequestDevicesModal({
             name="useCase"
             render={({ field }) => (
               <FormItem className="gap-1.5">
-                <FormLabel className={LABEL_CLASS}>
+                <FormLabel
+                  className={LABEL_CLASS}
+                  required
+                >
                   Use Case
-                  <span className="-ml-1.5 text-destructive">*</span>
                 </FormLabel>
                 <FormControl>
                   <textarea

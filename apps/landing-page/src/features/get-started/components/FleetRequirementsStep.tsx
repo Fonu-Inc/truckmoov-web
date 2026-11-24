@@ -497,6 +497,7 @@ export function FleetRequirementsStep({
         <DeviceFulfilmentCard
           value={fulfilment}
           onChange={setFulfilment}
+          required={deviceTotal > 0}
         />
 
         {!canProceed && (

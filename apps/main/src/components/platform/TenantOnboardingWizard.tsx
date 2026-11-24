@@ -421,7 +421,7 @@ export function TenantOnboardingWizard({
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label>Organization Role *</Label>
+                <Label required>Organization Role</Label>
                 <p className="text-xs text-muted-foreground">
                   Choose the role for this tenant. The form below adapts to the role you pick.
                 </p>
@@ -452,10 +452,11 @@ export function TenantOnboardingWizard({
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">
+                  <Label
+                    htmlFor="companyName"
+                    required
+                  >
                     {NAME_LABEL[formData.organizationType]}
-                    {" "}
-                    *
                   </Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -471,7 +472,12 @@ export function TenantOnboardingWizard({
 
                 {formData.organizationType !== "OWNER_OPERATOR" && (
                   <div className="space-y-2">
-                    <Label htmlFor="primaryContactName">Contact Name *</Label>
+                    <Label
+                      htmlFor="primaryContactName"
+                      required
+                    >
+                      Contact Name
+                    </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -487,7 +493,12 @@ export function TenantOnboardingWizard({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Business Email *</Label>
+                    <Label
+                      htmlFor="email"
+                      required
+                    >
+                      Business Email
+                    </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -501,7 +512,7 @@ export function TenantOnboardingWizard({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="billingEmail">Billing Email *</Label>
+                    <Label htmlFor="billingEmail">Billing Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -517,7 +528,12 @@ export function TenantOnboardingWizard({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Label
+                    htmlFor="phone"
+                    required
+                  >
+                    Phone Number
+                  </Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -551,7 +567,12 @@ export function TenantOnboardingWizard({
                 <CardContent className="space-y-6">
                   {/* Billing model: Subscription vs Trial */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Billing Model *</Label>
+                    <Label
+                      className="text-sm font-medium"
+                      required
+                    >
+                      Billing Model
+                    </Label>
                     <div className="grid grid-cols-2 gap-3">
                       {([
                         {

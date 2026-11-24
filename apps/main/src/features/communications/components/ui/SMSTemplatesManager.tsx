@@ -541,7 +541,7 @@ export function SMSTemplatesManager() {
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Template Name</Label>
+                <Label required>Template Name</Label>
                 <Input
                   value={formData.name}
                   onChange={e => setFormData({
@@ -577,7 +577,7 @@ export function SMSTemplatesManager() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Message Content</Label>
+                <Label required>Message Content</Label>
                 <div className="text-xs text-muted-foreground">
                   {getCharCount(formData.content)}
                   {" "}

@@ -209,7 +209,7 @@ export function DeviceFormDialog({
               name="imei"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>IMEI Number</FormLabel>
+                  <FormLabel required>IMEI Number</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="359779090012345"
@@ -230,7 +230,7 @@ export function DeviceFormDialog({
               name="manufacturer"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Manufacturer</FormLabel>
+                  <FormLabel required>Manufacturer</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
@@ -264,7 +264,7 @@ export function DeviceFormDialog({
                 name="customManufacturer"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Custom Manufacturer</FormLabel>
+                    <FormLabel required>Custom Manufacturer</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter manufacturer name"
@@ -284,7 +284,7 @@ export function DeviceFormDialog({
               name="model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Model</FormLabel>
+                  <FormLabel required>Model</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="FMC130"

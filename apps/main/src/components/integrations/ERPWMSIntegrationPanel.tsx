@@ -264,7 +264,7 @@ export function ERPWMSIntegrationPanel({ tenantId: _tenantId }: Props) {
                   </Select>
                 </div>
                 <div>
-                  <Label>Connection Name</Label>
+                  <Label required>Connection Name</Label>
                   <Input
                     value={newConnector.name}
                     onChange={e => setNewConnector(p => ({

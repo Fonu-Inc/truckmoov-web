@@ -119,7 +119,12 @@ export function TerminateTenantDialog({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="reason">Termination reason (required)</Label>
+            <Label
+              htmlFor="reason"
+              required
+            >
+              Termination reason
+            </Label>
             <Textarea
               id="reason"
               placeholder="Provide a clear, auditable reason for termination..."
@@ -135,7 +140,10 @@ export function TerminateTenantDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirm">
+            <Label
+              htmlFor="confirm"
+              required
+            >
               Type
               {" "}
               <span className="font-mono font-bold">TERMINATE</span>

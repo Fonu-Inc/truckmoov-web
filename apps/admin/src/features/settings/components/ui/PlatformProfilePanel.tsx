@@ -192,7 +192,7 @@ export function PlatformProfilePanel() {
                 name="platformName"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel>Platform Name</FormLabel>
+                    <FormLabel required>Platform Name</FormLabel>
                     <FormControl><Input {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
@@ -203,7 +203,7 @@ export function PlatformProfilePanel() {
                 name="supportEmail"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel>Support Email</FormLabel>
+                    <FormLabel required>Support Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"

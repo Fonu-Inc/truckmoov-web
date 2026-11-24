@@ -1007,7 +1007,7 @@ function FuelTabContent() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Vehicle Registration</Label>
+                  <Label required>Vehicle Registration</Label>
                   <Select
                     value={newTransaction.vehicleReg}
                     onValueChange={(value) => {
@@ -1094,7 +1094,7 @@ function FuelTabContent() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Quantity (Litres)</Label>
+                  <Label required>Quantity (Litres)</Label>
                   <Input
                     type="number"
                     placeholder="e.g. 50"
@@ -1105,7 +1105,7 @@ function FuelTabContent() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Price per Litre (₦)</Label>
+                  <Label required>Price per Litre (₦)</Label>
                   <Input
                     type="number"
                     placeholder="e.g. 650"
