@@ -349,7 +349,7 @@ export function MaintenanceTab() {
       return [
         vehicle?.make,
         vehicle?.model,
-      ].filter(Boolean).join(" ") || "—";
+      ].filter(Boolean).join(" ") || "-";
     },
     [findVehicle],
   );
@@ -357,7 +357,7 @@ export function MaintenanceTab() {
   const getVehicleRegistration = useCallback(
     (record: MaintenanceRecord) => {
       const vehicle = findVehicle(record.vehicleId);
-      return record.vehicleRegistrationNumber || vehicle?.registrationNumber || vehicle?.plateNumber || "—";
+      return record.vehicleRegistrationNumber || vehicle?.registrationNumber || vehicle?.plateNumber || "-";
     },
     [findVehicle],
   );
@@ -989,8 +989,8 @@ export function MaintenanceTab() {
                             <p className="font-medium whitespace-nowrap">{getVehicleName(record.vehicleId)}</p>
                             <p className="text-xs text-muted-foreground whitespace-nowrap">{getVehicleRegistration(record)}</p>
                           </TableCell>
-                          <TableCell className="whitespace-nowrap">{record.description || "—"}</TableCell>
-                          <TableCell className="capitalize">{record.maintenanceType || "—"}</TableCell>
+                          <TableCell className="whitespace-nowrap">{record.description || "-"}</TableCell>
+                          <TableCell className="capitalize">{record.maintenanceType || "-"}</TableCell>
                           <TableCell>
                             <div className={cn(
                               PRIORITY_BADGE_CLASS,
@@ -1012,7 +1012,7 @@ export function MaintenanceTab() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="min-w-[200px] max-w-[280px] whitespace-normal break-words">{record.notes || "—"}</TableCell>
+                          <TableCell className="min-w-[200px] max-w-[280px] whitespace-normal break-words">{record.notes || "-"}</TableCell>
                           <TableCell>
                             <div className="text-sm">
                               {formatMaintenanceDate(record.scheduledDate)}

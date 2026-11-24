@@ -354,12 +354,12 @@ function FuelTabContent() {
     return [
       vehicle?.make,
       vehicle?.model,
-    ].filter(Boolean).join(" ") || "—";
+    ].filter(Boolean).join(" ") || "-";
   };
 
   const getVehiclePlate = (transaction: FuelTransaction) => {
     const vehicle = findVehicle(transaction);
-    return transaction.vehiclePlateNumber || (vehicle ? getVehicleRegistration(vehicle) : "") || "—";
+    return transaction.vehiclePlateNumber || (vehicle ? getVehicleRegistration(vehicle) : "") || "-";
   };
 
   const summary = summaryQuery.data?.data;
@@ -556,7 +556,7 @@ function FuelTabContent() {
                       <Fuel className="h-5 w-5 text-primary" />
                       {`Fuel Consumption (${uniqueVehicleCount})`}
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-1">Per-vehicle fuel usage and spend — spot anomalies, theft signals, and efficiency trends.</p>
+                    <p className="text-sm text-muted-foreground mt-1">Per-vehicle fuel usage and spend. Spot anomalies, theft signals, and efficiency trends.</p>
                   </div>
                   <Button
                     variant="outline"
@@ -896,9 +896,9 @@ function FuelTabContent() {
                                 <p className="font-medium whitespace-nowrap">{getVehicleName(transaction)}</p>
                                 <p className="text-xs text-muted-foreground whitespace-nowrap">{getVehiclePlate(transaction)}</p>
                               </TableCell>
-                              <TableCell>{transaction.driverName || "—"}</TableCell>
-                              <TableCell className="max-w-[150px] truncate">{transaction.station || "—"}</TableCell>
-                              <TableCell className="capitalize">{transaction.fuelType || "—"}</TableCell>
+                              <TableCell>{transaction.driverName || "-"}</TableCell>
+                              <TableCell className="max-w-[150px] truncate">{transaction.station || "-"}</TableCell>
+                              <TableCell className="capitalize">{transaction.fuelType || "-"}</TableCell>
                               <TableCell>{`${transaction.liters.toFixed(1)}L`}</TableCell>
                               <TableCell className="font-medium">{`₦${transaction.totalCost.toLocaleString()}`}</TableCell>
                               <TableCell>{formatDayMonthTime(transaction.recordedAt)}</TableCell>

@@ -192,7 +192,7 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
           </p>
           <p className="flex items-start gap-2 text-xs text-muted-foreground">
             <Clock className="mt-0.5 h-4 w-4 shrink-0" />
-            New Telecom Master SIM requested — Allocation Pending. Your number will appear in your
+            New Telecom Master SIM requested: Allocation Pending. Your number will appear in your
             account once MTN allocates it.
           </p>
         </div>

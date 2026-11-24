@@ -131,7 +131,7 @@ function fmt(iso?: string | null) {
           year: "numeric",
         },
       )
-    : "—";
+    : "-";
 }
 
 const PAGE_SIZE = 8;

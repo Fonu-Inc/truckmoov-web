@@ -373,7 +373,7 @@ export function TenantWalletManagement() {
               ? <Skeleton className="h-8 w-24" />
               : (
                   <div className="text-2xl font-bold">
-                    {summary?.totalWallets?.toLocaleString() ?? "—"}
+                    {summary?.totalWallets?.toLocaleString() ?? "-"}
                   </div>
                 )}
             <p className="text-xs text-muted-foreground">Active tenant wallets</p>
@@ -392,7 +392,7 @@ export function TenantWalletManagement() {
                   <div className="text-2xl font-bold">
                     {summary
                       ? `₦${Math.round((summary.totalBalanceKobo ?? 0) / 100).toLocaleString()}`
-                      : "—"}
+                      : "-"}
                   </div>
                 )}
             <p className="text-xs text-muted-foreground">Across all tenants</p>
@@ -409,7 +409,7 @@ export function TenantWalletManagement() {
               ? <Skeleton className="h-8 w-24" />
               : (
                   <div className="text-2xl font-bold text-warning">
-                    {summary?.lowBalance?.toLocaleString() ?? "—"}
+                    {summary?.lowBalance?.toLocaleString() ?? "-"}
                   </div>
                 )}
             <p className="text-xs text-muted-foreground">Below threshold</p>
@@ -426,7 +426,7 @@ export function TenantWalletManagement() {
               ? <Skeleton className="h-8 w-24" />
               : (
                   <div className="text-2xl font-bold text-destructive">
-                    {summary?.negativeBalance?.toLocaleString() ?? "—"}
+                    {summary?.negativeBalance?.toLocaleString() ?? "-"}
                   </div>
                 )}
             <p className="text-xs text-muted-foreground">Using credit</p>

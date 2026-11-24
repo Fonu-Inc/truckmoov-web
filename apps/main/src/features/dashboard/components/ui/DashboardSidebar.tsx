@@ -182,7 +182,7 @@ function NavGroupBase({
       <Tooltip>
         <TooltipTrigger asChild>{row}</TooltipTrigger>
         <TooltipContent side="right">
-          {collapsed ? `${group.label} — Coming soon` : "Coming soon"}
+          {collapsed ? `${group.label}: Coming soon` : "Coming soon"}
         </TooltipContent>
       </Tooltip>
     );

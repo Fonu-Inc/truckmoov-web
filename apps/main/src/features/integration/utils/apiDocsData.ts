@@ -650,7 +650,7 @@ export const API_ENDPOINTS: EndpointDoc[] = [
     ],
     requestBody: {
       description: "Rejection reason",
-      example: { reason: "Illegible waybill image — driver to re-submit" },
+      example: { reason: "Illegible waybill image, driver to re-submit" },
     },
     response: {
       description: "Rejected waybill",

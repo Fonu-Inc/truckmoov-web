@@ -233,7 +233,7 @@ export function TopUpBundleDialog({
           <span className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-muted-foreground" />
             Wallet balance
-            <span className="font-semibold">{balance === undefined ? "—" : formatNgn(balance)}</span>
+            <span className="font-semibold">{balance === undefined ? "-" : formatNgn(balance)}</span>
           </span>
           <Link
             to={WALLET_HREF}
@@ -248,7 +248,7 @@ export function TopUpBundleDialog({
             <div className="space-y-2">
               <Label className="text-sm font-medium">SIM Card</Label>
               <p className="text-xs text-muted-foreground">
-                Pick the SIM you want to top up — each one shows its carrier and the device it's fitted to.
+                Pick the SIM you want to top up. Each one shows its carrier and the device it's fitted to.
               </p>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -288,7 +288,7 @@ export function TopUpBundleDialog({
                         <span className="block truncate text-sm font-semibold">{formatMobile(s.mobileNumber)}</span>
                         <span className="block truncate text-xs text-muted-foreground">
                           {blocked
-                            ? `SIM ${s.status.toLowerCase()} — cannot be topped up`
+                            ? `SIM ${s.status.toLowerCase()}: cannot be topped up`
                             : s.assignedDevice
                               ? `${s.assignedDevice.name || s.assignedDevice.imei} · ${s.assignedDevice.type}`
                               : "Not fitted to a device"}
@@ -327,7 +327,7 @@ export function TopUpBundleDialog({
               <Label className="text-sm font-medium">Data Plan</Label>
               <p className="text-xs text-muted-foreground">
                 {sim
-                  ? "Pick the bundle to credit to this SIM — size, validity and price are shown."
+                  ? "Pick the bundle to credit to this SIM. Size, validity and price are shown."
                   : "Pick a SIM card first."}
               </p>
               {sim && (

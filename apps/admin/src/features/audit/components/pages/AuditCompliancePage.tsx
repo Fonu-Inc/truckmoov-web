@@ -497,8 +497,8 @@ export default function AuditCompliancePage() {
                                   <TableCell className="text-sm">{e.resource}</TableCell>
                                   <TableCell className="text-sm">{e.tenantName}</TableCell>
                                   <TableCell>
-                                    <div className="font-mono text-xs">{e.ipAddress ?? "—"}</div>
-                                    <div className="text-xs text-muted-foreground">{e.location ?? "—"}</div>
+                                    <div className="font-mono text-xs">{e.ipAddress ?? "-"}</div>
+                                    <div className="text-xs text-muted-foreground">{e.location ?? "-"}</div>
                                   </TableCell>
                                   <TableCell>
                                     <Badge

@@ -828,7 +828,7 @@ export function ComplianceTab() {
                             >
                               {hasActiveComplianceFilters
                                 ? (hasDateFilter
-                                    ? "No vehicle licences match. Note: licences with no date in the filtered field are excluded — an unknown date can't be placed inside a date window."
+                                    ? "No vehicle licences match. Note: licences with no date in the filtered field are excluded, since an unknown date can't be placed inside a date window."
                                     : "No vehicle licences match your filters.")
                                 : "No vehicle licences found."}
                             </TableCell>
@@ -845,7 +845,7 @@ export function ComplianceTab() {
                                 <div className="flex items-center gap-2">
                                   <Truck className="h-4 w-4 text-muted-foreground" />
                                   <div>
-                                    <p className="font-medium">{doc.documentName || "—"}</p>
+                                    <p className="font-medium">{doc.documentName || "-"}</p>
                                   </div>
                                 </div>
                               </TableCell>
@@ -868,7 +868,7 @@ export function ComplianceTab() {
                               </TableCell>
                               <TableCell>
                                 {daysLeft === null
-                                  ? "—"
+                                  ? "-"
                                   : (
                                       <span className={cn(
                                         "font-medium",
@@ -994,12 +994,12 @@ export function ComplianceTab() {
                   <p className="font-medium">
                     {selectedDocument.issueDate
                       ? formatDate(selectedDocument.issueDate)
-                      : "—"}
+                      : "-"}
                   </p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Expiry Date</Label>
-                  <p className="font-medium">{selectedDocument.expiryDate ? formatDate(selectedDocument.expiryDate) : "—"}</p>
+                  <p className="font-medium">{selectedDocument.expiryDate ? formatDate(selectedDocument.expiryDate) : "-"}</p>
                 </div>
               </div>
               {selectedDocument.fileUrl && (

@@ -296,7 +296,7 @@ export function JobsOverviewCard({
                         {job.created_at ? format(
                           new Date(job.created_at),
                           "MMM d, h:mm aaa",
-                        ) : "—"}
+                        ) : "-"}
                       </p>
                     </div>
                   </div>
@@ -362,7 +362,7 @@ export function VehiclesOverviewCard({
                         {" "}
                         {v.model}
                         {" · "}
-                        {v.year || "—"}
+                        {v.year || "-"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -436,7 +436,7 @@ export function DriversOverviewCard({
                       </Avatar>
                       <div className="space-y-0.5 min-w-0">
                         <p className="font-medium text-sm truncate">{d.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{d.phone || "—"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{d.phone || "-"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -472,7 +472,7 @@ const DEFAULT_ALERTS: OverviewAlert[] = [
     id: "1", title: "Harsh braking detected", description: "LAG-441-XT · Apapa Expressway", severity: "warning", time: "12 min ago",
   },
   {
-    id: "2", title: "Geofence exit — Apapa Depot", description: "LAG-118-KJ left the zone", severity: "critical", time: "38 min ago",
+    id: "2", title: "Geofence exit: Apapa Depot", description: "LAG-118-KJ left the zone", severity: "critical", time: "38 min ago",
   },
   {
     id: "3", title: "Low fuel level (18%)", description: "ABJ-902-LM · Abuja Terminal", severity: "warning", time: "1 hr ago",

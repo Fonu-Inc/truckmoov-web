@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 
-const EMPTY = "—";
+const EMPTY = "-";
 
 const STATUS_CARDS = [
   {

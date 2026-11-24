@@ -783,7 +783,7 @@ export function VoiceIVRManager() {
                     <Headphones className="h-5 w-5 text-primary" />
                     Recent Calls
                   </CardTitle>
-                  <CardDescription className="mt-1">Latest voice and IVR calls — review duration, outcome, and recordings.</CardDescription>
+                  <CardDescription className="mt-1">Latest voice and IVR calls. Review duration, outcome, and recordings.</CardDescription>
                 </div>
                 <Button
                   variant="outline"

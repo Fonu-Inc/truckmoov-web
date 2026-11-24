@@ -346,7 +346,7 @@ export function SMSTemplatesManager() {
                 <MessageSquare className="h-4 w-4" />
                 All Templates
               </CardTitle>
-              <CardDescription className="mt-1">Reusable SMS and WhatsApp templates — manage approval status, variables, and category tags.</CardDescription>
+              <CardDescription className="mt-1">Reusable SMS and WhatsApp templates. Manage approval status, variables, and category tags.</CardDescription>
             </div>
             <ExportButton
               filename="sms-templates"

@@ -101,13 +101,13 @@ import { InstallerJobStatusBadge } from "@/features/jobs/components/ui/Installer
 
 type Unit = InstallerJobDetail["units"][number];
 
-const deviceLabel = (u: Unit) => u.device?.name ?? u.device?.imei ?? "—";
+const deviceLabel = (u: Unit) => u.device?.name ?? u.device?.imei ?? "-";
 
 const DEVICE_COLUMNS: ColumnDef<Unit>[] = [
   {
     header: "Device ID",
     meta: { className: "font-medium" },
-    cell: ({ row }) => row.original.device?.name ?? "—",
+    cell: ({ row }) => row.original.device?.name ?? "-",
   },
   {
     header: "IMEI",
@@ -124,7 +124,7 @@ const DEVICE_COLUMNS: ColumnDef<Unit>[] = [
   },
   {
     header: "Vehicle",
-    cell: ({ row }) => row.original.vehicle?.registrationNumber ?? "—",
+    cell: ({ row }) => row.original.vehicle?.registrationNumber ?? "-",
   },
 ];
 
@@ -135,11 +135,11 @@ const SIM_COLUMNS: ColumnDef<Unit>[] = [
   },
   {
     header: "IMSI",
-    cell: ({ row }) => row.original.sim?.imsi ?? "—",
+    cell: ({ row }) => row.original.sim?.imsi ?? "-",
   },
   {
     header: "Phone number",
-    cell: ({ row }) => row.original.sim?.msisdn ?? "—",
+    cell: ({ row }) => row.original.sim?.msisdn ?? "-",
   },
   {
     header: "Carrier",
@@ -151,7 +151,7 @@ const SIM_COLUMNS: ColumnDef<Unit>[] = [
   },
   {
     header: "Vehicle",
-    cell: ({ row }) => row.original.vehicle?.registrationNumber ?? "—",
+    cell: ({ row }) => row.original.vehicle?.registrationNumber ?? "-",
   },
 ];
 
@@ -351,7 +351,7 @@ export default function JobDetailPage() {
                       />
                       <Info
                         label="Comment"
-                        value={job.feedback.comment ?? "—"}
+                        value={job.feedback.comment ?? "-"}
                       />
                     </div>
                   </SleekCard>
@@ -816,7 +816,7 @@ function ChecklistCard({ job }: { job: InstallerJobDetail }) {
             variant="secondary"
             className="rounded-full"
           >
-            {`Installation Progress — ${completed}/${total} completed`}
+            {`Installation Progress: ${completed}/${total} completed`}
           </Badge>
         </span>
       )}
@@ -939,7 +939,7 @@ function EvidenceCard({
     if (!failures.length)
       toast.success(uploaded === 1 ? "Evidence uploaded." : `${uploaded} photos uploaded.`);
     else
-      toast.error(`${uploaded} of ${valid.length} uploaded. ${failures.map(f => `${f.file.name} failed (${f.message})`).join(", ")} — retry below.`);
+      toast.error(`${uploaded} of ${valid.length} uploaded. ${failures.map(f => `${f.file.name} failed (${f.message})`).join(", ")}. Retry below.`);
   }
 
   async function view(evidenceId: string) {
@@ -1196,12 +1196,12 @@ function InstallationReport({
   function download() {
     // ponytail: client-side text report from the job payload — swap for a server PDF if one lands.
     const lines = [
-      `Installation report — ${job.jobNumber}`,
+      `Installation report: ${job.jobNumber}`,
       "",
       ...fields.map(([
         k,
         v,
-      ]) => `${k}: ${typeof v === "string" ? v : "—"}`),
+      ]) => `${k}: ${typeof v === "string" ? v : "-"}`),
       `Installer: ${job.completion.installer}`,
       `Checklist: ${job.completion.checklist}`,
       `Evidence: ${job.completion.evidenceCount} file(s)`,
@@ -1314,7 +1314,7 @@ function Info({
   return (
     <div className="rounded-xl border p-3">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-0.5 break-words text-sm font-medium">{value || "—"}</div>
+      <div className="mt-0.5 break-words text-sm font-medium">{value || "-"}</div>
     </div>
   );
 }
@@ -1328,7 +1328,7 @@ function Tile({
   return (
     <div className="rounded-xl border p-3">
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-0.5 break-words text-sm font-medium">{value || "—"}</p>
+      <p className="mt-0.5 break-words text-sm font-medium">{value || "-"}</p>
     </div>
   );
 }

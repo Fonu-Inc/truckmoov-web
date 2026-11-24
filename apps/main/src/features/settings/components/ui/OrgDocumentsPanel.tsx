@@ -40,7 +40,7 @@ export function OrgDocumentsPanel() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         These are the documents your organization submitted during onboarding. They are
-        read-only — contact support if anything needs to change.
+        read-only. Contact support if anything needs to change.
       </p>
       <div className="space-y-6 pr-4">
         <Card>

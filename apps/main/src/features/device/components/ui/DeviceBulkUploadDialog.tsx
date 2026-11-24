@@ -83,7 +83,7 @@ const previewColumns: ColumnDef<ParsedRow>[] = [
     header: "IMEI",
     enableSorting: false,
     meta: { className: "p-2 font-mono" },
-    cell: ({ row }) => row.original.imei || "—",
+    cell: ({ row }) => row.original.imei || "-",
   },
   {
     id: "manufacturer",

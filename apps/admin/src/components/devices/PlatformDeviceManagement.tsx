@@ -523,7 +523,7 @@ export function PlatformDeviceManagement() {
                                           {[
                                             sim.msisdn,
                                             sim.carrier,
-                                          ].filter(Boolean).join(" · ") || "—"}
+                                          ].filter(Boolean).join(" · ") || "-"}
                                         </p>
                                       </div>
                                     )
@@ -559,7 +559,7 @@ export function PlatformDeviceManagement() {
                                       device.assignedAt,
                                       "M/d/yyyy, h:mm:ss a",
                                     )
-                                  : "—"}
+                                  : "-"}
                               </TableCell>
                               <TableCell>
                                 <DropdownMenu>

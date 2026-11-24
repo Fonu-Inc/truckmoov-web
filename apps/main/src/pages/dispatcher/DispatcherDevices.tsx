@@ -311,7 +311,7 @@ export default function DispatcherDevices() {
             </div>
             <div>
               <p className="font-medium">{device.manufacturer}</p>
-              <p className="text-xs text-muted-foreground">{device.model || "—"}</p>
+              <p className="text-xs text-muted-foreground">{device.model || "-"}</p>
             </div>
           </div>
         );
@@ -354,7 +354,7 @@ export default function DispatcherDevices() {
         const vehicle = getVehicleInfo(row.original.vehicle_id);
         return vehicle
           ? <span className="text-sm">{vehicle.registrationNumber}</span>
-          : <span className="text-muted-foreground">—</span>;
+          : <span className="text-muted-foreground">-</span>;
       },
     },
     {
@@ -379,7 +379,7 @@ export default function DispatcherDevices() {
                 </span>
               </div>
             )
-          : <span className="text-muted-foreground">—</span>;
+          : <span className="text-muted-foreground">-</span>;
       },
     },
     {

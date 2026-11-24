@@ -288,7 +288,7 @@ export function ScheduleInstallationStep({
                 <div>
                   <p className="text-base font-semibold">Devices you requested</p>
                   <p className="text-sm text-muted-foreground">
-                    Choose the vehicle each device should be installed in — a vehicle can only be
+                    Choose the vehicle each device should be installed in. A vehicle can only be
                     picked once.
                   </p>
                 </div>
@@ -399,7 +399,7 @@ export function ScheduleInstallationStep({
                                     value={vehicle.id}
                                     disabled={Boolean(takenBy)}
                                   >
-                                    {`${vehicle.registrationNumber || "Unregistered"} — ${vehicle.make} ${vehicle.model}`}
+                                    {`${vehicle.registrationNumber || "Unregistered"} - ${vehicle.make} ${vehicle.model}`}
                                     {takenBy ? " (already assigned)" : ""}
                                   </SelectItem>
                                 );
@@ -594,7 +594,7 @@ export function ScheduleInstallationStep({
                 watched.streetAddress,
                 watched.city,
                 watched.state,
-              ].filter(Boolean).join(", ") || "your confirmed address"}${watched.date ? ` on ${watched.date}` : ""} — ${time}.`}
+              ].filter(Boolean).join(", ") || "your confirmed address"}${watched.date ? ` on ${watched.date}` : ""} at ${time}.`}
             </div>
 
             <Button

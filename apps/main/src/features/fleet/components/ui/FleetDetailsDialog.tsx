@@ -289,7 +289,7 @@ export function FleetDetailsDialog({
                   {" "}
                   Created
                   {" "}
-                  {fleet ? new Date(fleet.createdAt).toLocaleDateString() : "—"}
+                  {fleet ? new Date(fleet.createdAt).toLocaleDateString() : "-"}
                 </Badge>
               </div>
             </DialogDescription>
@@ -444,10 +444,10 @@ export function FleetDetailsDialog({
                             <span className="rounded bg-secondary px-2 py-1 font-mono text-xs">{plateOf(v)}</span>
                           </div>
                         </td>
-                        <td className="py-4 pr-6 font-medium text-sm">{v.make || "—"}</td>
+                        <td className="py-4 pr-6 font-medium text-sm">{v.make || "-"}</td>
                         <td className="py-4 pr-6 font-medium text-sm">{v.model}</td>
-                        <td className="py-4 pr-6 capitalize">{v.type ?? "—"}</td>
-                        <td className="py-4 pr-6">{v.year ?? "—"}</td>
+                        <td className="py-4 pr-6 capitalize">{v.type ?? "-"}</td>
+                        <td className="py-4 pr-6">{v.year ?? "-"}</td>
                         <td className="py-4 pr-6">
                           <span className={cn(
                             "rounded-full px-2.5 py-1 text-[11px] font-medium capitalize",
@@ -479,7 +479,7 @@ export function FleetDetailsDialog({
                                   </span>
                                 </div>
                               )
-                            : <span className="text-muted-foreground">—</span>}
+                            : <span className="text-muted-foreground">-</span>}
                         </td>
                         <td className="py-4 text-right">
                           <DropdownMenu>

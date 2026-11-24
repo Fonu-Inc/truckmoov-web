@@ -116,7 +116,7 @@ function InvoiceDialog({
                     <div>
                       <p className="font-medium">{methodLabel(p.method)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {p.paidAt ? formatDate(p.paidAt) : "—"}
+                        {p.paidAt ? formatDate(p.paidAt) : "-"}
                       </p>
                     </div>
                     <p className="tabular-nums font-medium">{ngn(p.amountNgn)}</p>
@@ -274,9 +274,9 @@ export function BillingInvoicesTab() {
                             tone="info"
                           />
                         )
-                      : <span className="text-muted-foreground">—</span>}
+                      : <span className="text-muted-foreground">-</span>}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{inv.deviceCount || "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{inv.deviceCount || "-"}</TableCell>
                   <TableCell className="text-muted-foreground">{inv.billingPeriod}</TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(inv.issueDate)}</TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(inv.dueDate)}</TableCell>

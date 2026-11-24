@@ -38,7 +38,7 @@ export function getDeviceSetupColumns(actions: Actions): ColumnDef<SystemDeviceS
       id: "email",
       header: "Request Email",
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">{row.original.requestingEmail ?? "—"}</span>
+        <span className="text-sm text-muted-foreground">{row.original.requestingEmail ?? "-"}</span>
       ),
     },
     {

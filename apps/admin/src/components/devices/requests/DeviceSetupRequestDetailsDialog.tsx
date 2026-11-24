@@ -163,7 +163,7 @@ export function DeviceSetupRequestDetailsDialog({
                   label="Requesting Email"
                   icon={User}
                 >
-                  <span className="break-all text-sm">{request.requestingEmail ?? "—"}</span>
+                  <span className="break-all text-sm">{request.requestingEmail ?? "-"}</span>
                 </Field>
                 <Field
                   label="Manufacturer"
@@ -203,23 +203,23 @@ export function DeviceSetupRequestDetailsDialog({
                   {TRACKER_TYPE_LABELS[request.trackerType] ?? request.trackerType}
                 </Field>
                 <Field label="SIM Required">{request.simRequired ? "Yes" : "No"}</Field>
-                <Field label="Installation Location">{location || "—"}</Field>
+                <Field label="Installation Location">{location || "-"}</Field>
                 <Field label="Preferred Date">
                   {request.preferredInstallDate
                     ? formatWithPattern(
                         request.preferredInstallDate,
                         "dd MMMM yyyy",
                       )
-                    : "—"}
+                    : "-"}
                 </Field>
-                <Field label="Decided By">{request.decidedBy ?? "—"}</Field>
+                <Field label="Decided By">{request.decidedBy ?? "-"}</Field>
                 <Field label="Decided">
                   {request.decidedAt ? formatWithPattern(
                     request.decidedAt,
                     "dd MMM yyyy HH:mm",
-                  ) : "—"}
+                  ) : "-"}
                 </Field>
-                <Field label="Assigned To">{request.assignedTo ?? "—"}</Field>
+                <Field label="Assigned To">{request.assignedTo ?? "-"}</Field>
               </div>
 
               <Separator />

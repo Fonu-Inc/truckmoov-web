@@ -135,16 +135,16 @@ function subscriptionRow(licence: TenantLicence | null | undefined): Row {
   };
   if (!licence) {
     return {
-      ...base, count: "—", detail: "No active licence",
+      ...base, count: "-", detail: "No active licence",
     };
   }
   if (licence.status === "ended") {
     return {
-      ...base, count: 0, detail: `${licence.planName} — ended`,
+      ...base, count: 0, detail: `${licence.planName}: ended`,
     };
   }
   return {
-    ...base, count: 1, detail: "Active plan — no changes in this period",
+    ...base, count: 1, detail: "Active plan, no changes in this period",
   };
 }
 
@@ -236,28 +236,28 @@ export function PeriodSummary({ mode }: { mode: ReportPeriod }) {
             <SummaryStat
               icon={Package}
               label="Jobs created"
-              value={operations ? `${operations.jobsCreated}` : "—"}
+              value={operations ? `${operations.jobsCreated}` : "-"}
               hint={mode === "daily" ? "Today" : "This week"}
               loading={loading}
             />
             <SummaryStat
               icon={CheckCircle}
               label="Jobs completed"
-              value={operations ? `${operations.jobsCompleted}` : "—"}
+              value={operations ? `${operations.jobsCompleted}` : "-"}
               hint={operations && `${operations.jobsInProgress} in progress`}
               loading={loading}
             />
             <SummaryStat
               icon={Truck}
               label="Vehicles active"
-              value={fleet ? `${fleet.activeVehicles}/${fleet.totalVehicles}` : "—"}
+              value={fleet ? `${fleet.activeVehicles}/${fleet.totalVehicles}` : "-"}
               hint={fleet && `${fleet.vehiclesInMaintenance} in maintenance`}
               loading={loading}
             />
             <SummaryStat
               icon={CreditCard}
               label="Revenue booked"
-              value={summary ? formatCurrency(summary.revenueNgn) : "—"}
+              value={summary ? formatCurrency(summary.revenueNgn) : "-"}
               hint="Completed jobs"
               loading={loading}
             />

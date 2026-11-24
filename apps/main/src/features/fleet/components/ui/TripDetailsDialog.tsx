@@ -142,7 +142,7 @@ export function TripDetailsDialog({
             </Badge>
           </DialogTitle>
           <DialogDescription>
-            The journey taken to complete this job — route, stops and progress
+            The journey taken to complete this job: route, stops and progress
           </DialogDescription>
         </DialogHeader>
 
@@ -150,10 +150,10 @@ export function TripDetailsDialog({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               {
-                icon: Navigation, label: "Distance", value: located.length > 1 ? `${distanceKm.toFixed(1)} km` : "—",
+                icon: Navigation, label: "Distance", value: located.length > 1 ? `${distanceKm.toFixed(1)} km` : "-",
               },
               {
-                icon: Clock, label: trip.status === "completed" ? "Duration" : "Est. time", value: located.length > 1 ? `${Math.floor(etaMin / 60)}h ${etaMin % 60}m` : "—",
+                icon: Clock, label: trip.status === "completed" ? "Duration" : "Est. time", value: located.length > 1 ? `${Math.floor(etaMin / 60)}h ${etaMin % 60}m` : "-",
               },
               {
                 icon: MapPin, label: "Stops", value: `${trip.stops.length}`,
@@ -235,7 +235,7 @@ export function TripDetailsDialog({
                     </div>
                     <div className="pb-2 min-w-0">
                       <p className="text-xs text-muted-foreground">{w.kind}</p>
-                      <p className="text-sm break-words">{w.address || "—"}</p>
+                      <p className="text-sm break-words">{w.address || "-"}</p>
                       {i > 0 && legKm(i) !== null && (
                         <p className="text-[11px] text-muted-foreground mt-0.5">
                           {legKm(i)?.toFixed(1)}

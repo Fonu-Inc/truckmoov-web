@@ -82,7 +82,7 @@ function QuotationDialog({
               />
               <LabelValue
                 label="Related request"
-                value={quotation.relatedRequest ?? "—"}
+                value={quotation.relatedRequest ?? "-"}
               />
               <LabelValue
                 label="Related payment"
@@ -249,15 +249,15 @@ export function BillingQuotationsTab() {
                             tone="info"
                           />
                         )
-                      : <span className="text-muted-foreground">—</span>}
+                      : <span className="text-muted-foreground">-</span>}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{qt.deviceCount || "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{qt.deviceCount || "-"}</TableCell>
                   <TableCell className="max-w-[280px] text-muted-foreground">{qt.description}</TableCell>
                   <TableCell className="text-right tabular-nums">{ngn(qt.totalNgn)}</TableCell>
                   <TableCell>
                     <QuotationStatus status={qt.status} />
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{qt.relatedRequest ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{qt.relatedRequest ?? "-"}</TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <RowActions
                       onView={() => setSelectedId(qt.id)}

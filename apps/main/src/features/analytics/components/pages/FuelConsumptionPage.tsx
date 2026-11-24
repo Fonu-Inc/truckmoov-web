@@ -53,7 +53,7 @@ const FUEL_COLUMNS: ColumnDef<FuelRow>[] = [
     accessorKey: "totalKm",
     header: "Distance (km)",
     meta: { className: "text-right" },
-    cell: ({ row }) => row.original.totalKm?.toLocaleString() ?? "—",
+    cell: ({ row }) => row.original.totalKm?.toLocaleString() ?? "-",
   },
   {
     accessorKey: "liters",
@@ -72,7 +72,7 @@ const FUEL_COLUMNS: ColumnDef<FuelRow>[] = [
     header: "Efficiency",
     meta: { className: "text-right" },
     accessorFn: v => v.efficiency ?? -1,
-    cell: ({ row }) => (row.original.efficiency === null ? "—" : `${row.original.efficiency} km/L`),
+    cell: ({ row }) => (row.original.efficiency === null ? "-" : `${row.original.efficiency} km/L`),
   },
   {
     accessorKey: "trips",
@@ -313,7 +313,7 @@ function FuelConsumptionReport({ report }: { report: FleetFuelReport }) {
   const {
     totalLitres: totalLiters, totalCostNgn: totalFuelCost, totalDistanceKm: totalKm, avgEfficiencyKmPerLitre,
   } = report.summary;
-  const avgEfficiency = avgEfficiencyKmPerLitre === null ? "—" : avgEfficiencyKmPerLitre.toFixed(1);
+  const avgEfficiency = avgEfficiencyKmPerLitre === null ? "-" : avgEfficiencyKmPerLitre.toFixed(1);
   const top5 = displayFuelData.slice(
     0,
     5,
@@ -398,7 +398,7 @@ function FuelConsumptionReport({ report }: { report: FleetFuelReport }) {
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Total Distance</p>
                 <p className="text-2xl font-bold truncate">
-                  {totalKm === null ? "—" : `${totalKm.toLocaleString()} km`}
+                  {totalKm === null ? "-" : `${totalKm.toLocaleString()} km`}
                 </p>
               </div>
             </div>

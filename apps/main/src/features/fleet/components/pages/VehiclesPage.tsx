@@ -88,10 +88,10 @@ const LOADING_ROWS = [
 /** "22 Nov 2026, 14:48", as the design app shows it. */
 function formatAddedDate(iso?: string) {
   if (!iso)
-    return "—";
+    return "-";
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
-    ? "—"
+    ? "-"
     : d.toLocaleString(
         "en-GB",
         {
@@ -423,7 +423,7 @@ export default function VehiclesPage() {
                   <Truck className="h-5 w-5 text-primary" />
                   {`Vehicles (${filteredVehicles.length})`}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">All vehicles in your fleet — registration, assigned driver, and operational status at a glance.</p>
+                <p className="text-sm text-muted-foreground mt-1">All vehicles in your fleet: registration, assigned driver, and operational status at a glance.</p>
               </div>
               <Button
                 variant="outline"
@@ -543,13 +543,13 @@ export default function VehiclesPage() {
                                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                                     <Truck className="h-4 w-4 text-primary" />
                                   </div>
-                                  <span className="rounded bg-secondary px-2 py-1 font-mono text-xs">{vehicle.registrationNumber || "—"}</span>
+                                  <span className="rounded bg-secondary px-2 py-1 font-mono text-xs">{vehicle.registrationNumber || "-"}</span>
                                 </div>
                               </td>
-                              <td className="py-4 pr-6 font-medium text-sm">{vehicle.make || "—"}</td>
-                              <td className="py-4 pr-6 font-medium text-sm">{vehicle.model || "—"}</td>
-                              <td className="py-4 pr-6 capitalize">{vehicle.type || "—"}</td>
-                              <td className="py-4 pr-6">{vehicle.year ?? "—"}</td>
+                              <td className="py-4 pr-6 font-medium text-sm">{vehicle.make || "-"}</td>
+                              <td className="py-4 pr-6 font-medium text-sm">{vehicle.model || "-"}</td>
+                              <td className="py-4 pr-6 capitalize">{vehicle.type || "-"}</td>
+                              <td className="py-4 pr-6">{vehicle.year ?? "-"}</td>
                               <td className="py-4 pr-6">
                                 <span
                                   className={cn(
@@ -565,7 +565,7 @@ export default function VehiclesPage() {
                               </td>
                               <td className="py-4 pr-6">
                                 {pct === null || pct === undefined
-                                  ? <span className="text-[11px] text-muted-foreground">—</span>
+                                  ? <span className="text-[11px] text-muted-foreground">-</span>
                                   : (
                                       <div className="flex items-center gap-2">
                                         <div className="h-2 w-14 rounded-full bg-secondary">
@@ -582,7 +582,7 @@ export default function VehiclesPage() {
                                     )}
                               </td>
                               <td className="py-4 pr-6">
-                                <span className="text-sm text-foreground">{fleetNameByVehicle.get(vehicle.id) ?? "—"}</span>
+                                <span className="text-sm text-foreground">{fleetNameByVehicle.get(vehicle.id) ?? "-"}</span>
                               </td>
                               <td className="py-4 pr-6">
                                 <span className="text-sm text-muted-foreground">{formatAddedDate(vehicle.createdAt)}</span>

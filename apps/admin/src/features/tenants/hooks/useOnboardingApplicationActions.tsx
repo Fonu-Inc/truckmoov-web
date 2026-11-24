@@ -33,43 +33,43 @@ const REASON_DIALOG: Record<ReasonKind, {
     title: "Reject application",
     submitLabel: "Reject",
     fieldLabel: "Reason",
-    placeholder: "Shared with the applicant — write something they can act on.",
-    describe: name => `${name} — this is final. No tenant is created and the applicant is emailed this reason.`,
+    placeholder: "Shared with the applicant. Write something they can act on.",
+    describe: name => `${name}: this is final. No tenant is created and the applicant is emailed this reason.`,
   },
   changes: {
     title: "Request changes",
     submitLabel: "Request changes",
     fieldLabel: "Reason",
-    placeholder: "Shared with the applicant — write something they can act on.",
-    describe: name => `${name} — the application goes back to the applicant with this reason and a fresh resume link.`,
+    placeholder: "Shared with the applicant. Write something they can act on.",
+    describe: name => `${name}: the application goes back to the applicant with this reason and a fresh resume link.`,
   },
   provision: {
     title: "Open payment without stock",
     submitLabel: "Open payment",
     fieldLabel: "Why is it safe to open payment?",
     placeholder: "For example: stock arrives Monday and the customer has been told.",
-    describe: name => `${name} — device stock does not cover this order yet. Your reason is saved in the activity log.`,
+    describe: name => `${name}: device stock does not cover this order yet. Your reason is saved in the activity log.`,
   },
   payment_resolved: {
     title: "Mark payment resolved",
     submitLabel: "Mark resolved",
     fieldLabel: "Note",
     placeholder: "What was checked or done. Staff only.",
-    describe: name => `${name} — records that the wrong-amount payment has been dealt with.`,
+    describe: name => `${name}: records that the wrong-amount payment has been dealt with.`,
   },
   payment_refund: {
     title: "Refund needed",
     submitLabel: "Mark refund needed",
     fieldLabel: "Note",
     placeholder: "What was paid and what should be refunded. Staff only.",
-    describe: name => `${name} — flags this payment so finance can refund it.`,
+    describe: name => `${name}: flags this payment so finance can refund it.`,
   },
   payment_issue_refund: {
     title: "Issue refund",
     submitLabel: "Refund the money",
     fieldLabel: "Note",
     placeholder: "Why this refund is being issued. Staff only.",
-    describe: name => `${name} — the full amount goes back to the card it was paid with, and the applicant is emailed. This cannot be undone.`,
+    describe: name => `${name}: the full amount goes back to the card it was paid with, and the applicant is emailed. This cannot be undone.`,
   },
 };
 
@@ -125,7 +125,7 @@ export function useOnboardingApplicationActions() {
         if (res.data.delivered === false)
           toast.error(res.message || "Status updated but the email could not be sent: use Resend");
         else
-          toast.success("Changes requested — the applicant has been emailed a resume link");
+          toast.success("Changes requested. The applicant has been emailed a resume link");
       }
       return true;
     }
@@ -144,7 +144,7 @@ export function useOnboardingApplicationActions() {
         id: application.id,
         data: reason ? { reason } : undefined,
       });
-      toast.success("Marked provisioned — the applicant can now pay");
+      toast.success("Marked provisioned. The applicant can now pay");
       setReasonTarget(null);
     }
     catch (error) {

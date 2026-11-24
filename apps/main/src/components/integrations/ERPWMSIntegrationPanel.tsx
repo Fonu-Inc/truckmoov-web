@@ -412,7 +412,7 @@ export function ERPWMSIntegrationPanel({ tenantId: _tenantId }: Props) {
               <Settings2 className="h-5 w-5" />
               {selectedConnector.name}
               {" "}
-              — Configuration
+              - Configuration
             </CardTitle>
           </CardHeader>
           <CardContent>

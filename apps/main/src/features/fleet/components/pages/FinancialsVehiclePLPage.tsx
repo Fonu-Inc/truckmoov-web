@@ -498,7 +498,7 @@ export default function FinancialsVehiclePLPage() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">{getVehicleName(vehicle.vehicle_id)}</span>
-                            <span className="text-xs text-muted-foreground">{vehicle.plateNumber || "—"}</span>
+                            <span className="text-xs text-muted-foreground">{vehicle.plateNumber || "-"}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-right text-green-600">{format(vehicle.revenue?.total || 0)}</TableCell>
@@ -524,7 +524,7 @@ export default function FinancialsVehiclePLPage() {
                                 }}
                               />
                             </div>
-                            <span className="text-sm">{score ?? "—"}</span>
+                            <span className="text-sm">{score ?? "-"}</span>
                           </div>
                         </TableCell>
                       </TableRow>

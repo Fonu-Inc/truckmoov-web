@@ -90,7 +90,7 @@ export function VehicleViolationsTab({
       r.critical,
       r.mostFrequent,
       quotaText(r.quota),
-      r.lastAt ? formatViolationDate(r.lastAt) : "—",
+      r.lastAt ? formatViolationDate(r.lastAt) : "-",
     ]),
   );
 
@@ -100,7 +100,7 @@ export function VehicleViolationsTab({
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display">Vehicle Violations</h3>
-            <p className="text-sm text-muted-foreground">One row per vehicle — recorded violations, scores and quotas.</p>
+            <p className="text-sm text-muted-foreground">One row per vehicle: recorded violations, scores and quotas.</p>
           </div>
           <button
             type="button"
@@ -171,7 +171,7 @@ export function VehicleViolationsTab({
                   <td className={TD_CLASS}>
                     <ViolationQuotaCell quota={r.quota} />
                   </td>
-                  <td className={`${TD_CLASS} whitespace-nowrap`}>{r.lastAt ? formatViolationDate(r.lastAt) : "—"}</td>
+                  <td className={`${TD_CLASS} whitespace-nowrap`}>{r.lastAt ? formatViolationDate(r.lastAt) : "-"}</td>
                   <td className={`${TD_CLASS} text-right`}>
                     <button
                       type="button"

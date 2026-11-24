@@ -193,7 +193,7 @@ export function SIMInventoryTable({
         const device = getDeviceInfo(row.original.deviceId);
         return device
           ? <span className="text-sm font-mono">{device.imei.slice(-6)}</span>
-          : <span className="text-muted-foreground">—</span>;
+          : <span className="text-muted-foreground">-</span>;
       },
     },
     {
@@ -306,7 +306,7 @@ export function SIMInventoryTable({
               {total}
               )
             </CardTitle>
-            <CardDescription className="mt-1">All IoT SIMs in your inventory — track status, carrier, data usage, and assigned device at a glance.</CardDescription>
+            <CardDescription className="mt-1">All IoT SIMs in your inventory. Track status, carrier, data usage, and assigned device at a glance.</CardDescription>
           </div>
           <Button
             variant="outline"

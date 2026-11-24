@@ -360,7 +360,7 @@ export function SubscriptionInvoicesPanel() {
     0,
   );
   const overdueCount = INVOICES.filter(i => i.status === "overdue").length;
-  const nextDue = INVOICES.find(i => i.status === "pending")?.dueDate ?? "—";
+  const nextDue = INVOICES.find(i => i.status === "pending")?.dueDate ?? "-";
 
   const handleDownload = (inv: SubscriptionInvoice) => {
     if (inv.status !== "paid" || !inv.paidDate) {
@@ -384,7 +384,7 @@ export function SubscriptionInvoicesPanel() {
             "_",
             " ",
           ).toUpperCase()
-        : "—",
+        : "-",
       paymentReference: inv.reference,
       items: inv.items,
       subtotal,
@@ -549,7 +549,7 @@ export function SubscriptionInvoicesPanel() {
                 <Download className="h-5 w-5" />
                 Subscription Invoices
               </CardTitle>
-              <CardDescription>Platform billing — subscriptions, plans, billing cycles</CardDescription>
+              <CardDescription>Platform billing: subscriptions, plans, billing cycles</CardDescription>
             </div>
             <ExportButton
               filename="subscription-invoices"

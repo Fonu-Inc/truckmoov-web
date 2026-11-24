@@ -106,7 +106,7 @@ function RequestForm() {
         } : { numberType: "new" },
       },
       {
-        onSuccess: () => toast.success("Telecom Master requested — MTN will confirm it."),
+        onSuccess: () => toast.success("Telecom Master requested. MTN will confirm it."),
         onError: err => toast.error(err.message),
       },
     );
@@ -237,7 +237,7 @@ export function TelecomMasterPanel() {
               {request.numberType === "new" && (
                 <Item
                   label="SIM Serial Number"
-                  value={request.simSerial || "—"}
+                  value={request.simSerial || "-"}
                 />
               )}
               {failed && request.failureReason && (
@@ -249,7 +249,7 @@ export function TelecomMasterPanel() {
             </dl>
             {!failed && (
               <p className="text-xs text-muted-foreground">
-                To change or replace your Telecom Master, contact support — it can&apos;t be edited here.
+                To change or replace your Telecom Master, contact support. It can&apos;t be edited here.
               </p>
             )}
           </>

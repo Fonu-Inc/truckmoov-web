@@ -85,7 +85,7 @@ export function fromSystemInstallationJob(job: SystemInstallationJob): Installat
     reference: job.jobNumber || job.id,
     customer: job.customer || "Customer not recorded",
     customerEmail: job.customerEmail ?? undefined,
-    fleet: "—",
+    fleet: "-",
     vehicleCount: job.vehicleCount,
     deviceCount: job.deviceCount,
     tenantType: job.tenantType === "owner_operator"

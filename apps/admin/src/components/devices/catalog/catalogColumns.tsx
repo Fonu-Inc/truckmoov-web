@@ -71,7 +71,7 @@ export function getCatalogColumns({
       accessorKey: "defaultPort",
       header: "Port",
       meta: { className: "px-5 text-muted-foreground" },
-      cell: ({ row }) => row.original.defaultPort || "—",
+      cell: ({ row }) => row.original.defaultPort || "-",
     },
     {
       accessorKey: "supportedFeatures",

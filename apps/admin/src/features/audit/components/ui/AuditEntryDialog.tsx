@@ -80,15 +80,15 @@ export function AuditEntryDialog({
                 ],
                 [
                   "IP address",
-                  selected.ipAddress ?? "—",
+                  selected.ipAddress ?? "-",
                 ],
                 [
                   "Location",
-                  selected.location ?? "—",
+                  selected.location ?? "-",
                 ],
                 [
                   "Device",
-                  selected.device ?? "—",
+                  selected.device ?? "-",
                 ],
                 [
                   "Source",

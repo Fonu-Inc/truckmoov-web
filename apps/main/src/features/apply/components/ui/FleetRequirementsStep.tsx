@@ -196,7 +196,7 @@ export function FleetRequirementsStep({
     const hasLicence = application.documents.some(document => document.vehicleId === vehicle.id);
     const devicesAfter = vehicles.length - 1;
     if (deviceTotal > devicesAfter) {
-      toast.error(`Remove a device request first — ${deviceTotal} devices can't be fitted to ${devicesAfter} vehicle${devicesAfter === 1 ? "" : "s"}.`);
+      toast.error(`Remove a device request first: ${deviceTotal} devices can't be fitted to ${devicesAfter} vehicle${devicesAfter === 1 ? "" : "s"}.`);
       return;
     }
     if (hasLicence && !(await confirm({
@@ -426,7 +426,7 @@ export function FleetRequirementsStep({
                   key: "useCase", label: "Use Case", value: request.useCase,
                 },
                 {
-                  key: "notes", label: "Additional Notes", value: request.notes || "—",
+                  key: "notes", label: "Additional Notes", value: request.notes || "-",
                 },
               ],
             })}

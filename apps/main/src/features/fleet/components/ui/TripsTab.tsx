@@ -105,9 +105,9 @@ const COLUMNS = [
 /** "18 Oct 2026, 09:00 am" */
 function formatTripDate(iso?: string) {
   if (!iso)
-    return "—";
+    return "-";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : format(
+  return Number.isNaN(d.getTime()) ? "-" : format(
     d,
     "dd MMM yyyy, hh:mm aaa",
   );
@@ -182,7 +182,7 @@ export function TripsTab() {
           const plate = vehicle?.plateNumber || j.assigned_vehicle_reg || "";
           return {
             id: j.id ?? j.reference ?? "",
-            reference: j.reference || j.id || "—",
+            reference: j.reference || j.id || "-",
             status,
             progress,
             date: j.created_at ?? new Date().toISOString(),
@@ -271,12 +271,12 @@ export function TripsTab() {
 
   const handleExport = () => {
     const rows = filtered.map(t => [
-      t.vehicleName || "—",
-      t.plate || "—",
-      t.pickup.address || "—",
-      t.delivery.address || "—",
+      t.vehicleName || "-",
+      t.plate || "-",
+      t.pickup.address || "-",
+      t.delivery.address || "-",
       t.stops.length,
-      t.driver || "—",
+      t.driver || "-",
       km(statsById.get(t.id)?.distance_km),
       kph(statsById.get(t.id)?.avg_speed_kph),
       formatDuration(statsById.get(t.id)?.duration_minutes),
@@ -475,17 +475,17 @@ export function TripsTab() {
                             {/* The design app says "Unassigned" when no vehicle is on the job. */}
                             <span
                               className="block text-sm font-medium"
-                              title={t.vehicleName || (t.plate ? "—" : "Unassigned")}
+                              title={t.vehicleName || (t.plate ? "-" : "Unassigned")}
                             >
-                              {t.vehicleName || (t.plate ? "—" : "Unassigned")}
+                              {t.vehicleName || (t.plate ? "-" : "Unassigned")}
                             </span>
                             {t.plate && <span className="block text-xs text-muted-foreground">{t.plate}</span>}
                           </td>
                           <td className={TD_CLASS}>
-                            <span className="block">{t.pickup.address || "—"}</span>
+                            <span className="block">{t.pickup.address || "-"}</span>
                           </td>
                           <td className={TD_CLASS}>
-                            <span className="block">{t.delivery.address || "—"}</span>
+                            <span className="block">{t.delivery.address || "-"}</span>
                           </td>
                           <td className={TD_NUM_CLASS}>
                             {t.stops.length > 0

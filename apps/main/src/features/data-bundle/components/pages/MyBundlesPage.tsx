@@ -158,7 +158,7 @@ export function MyBundlesPage() {
         return (
           <>
             <p className="text-sm">{formatMobile(a.msisdn)}</p>
-            <p className="text-xs text-muted-foreground">{sim?.operator ?? (a.bundle?.carrier ? carrierName(a.bundle.carrier) : "—")}</p>
+            <p className="text-xs text-muted-foreground">{sim?.operator ?? (a.bundle?.carrier ? carrierName(a.bundle.carrier) : "-")}</p>
           </>
         );
       },
@@ -170,7 +170,7 @@ export function MyBundlesPage() {
         const sim = simByNumber.get(formatMobile(row.original.msisdn));
         return (
           <>
-            <p className="text-sm">{sim?.assignedDevice?.name || sim?.assignedDevice?.imei || "—"}</p>
+            <p className="text-sm">{sim?.assignedDevice?.name || sim?.assignedDevice?.imei || "-"}</p>
             <p className="text-xs text-muted-foreground">{sim?.assignedDevice?.type}</p>
           </>
         );

@@ -149,7 +149,7 @@ export function DataBundlesLayout() {
           <Link
             to="/wallet"
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/60 bg-card/50 px-3.5 text-sm hover:bg-muted/40"
-            title="Wallet balance shared by bundles and communications — fund it on the Wallet page"
+            title="Wallet balance shared by bundles and communications. Fund it on the Wallet page"
           >
             <Wallet className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Wallet</span>
@@ -297,15 +297,15 @@ export function DataBundlesLayout() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Carrier</p>
-                    <p className="font-medium">{carrierId ? carrierName(carrierId) : "—"}</p>
+                    <p className="font-medium">{carrierId ? carrierName(carrierId) : "-"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Plan Type</p>
-                    <p className="font-medium capitalize">{b?.billingCycle ?? b?.billing_cycle ?? "—"}</p>
+                    <p className="font-medium capitalize">{b?.billingCycle ?? b?.billing_cycle ?? "-"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Price</p>
-                    <p className="font-medium">{b ? formatNgn(Number(b.price ?? b.price_ngn)) : "—"}</p>
+                    <p className="font-medium">{b ? formatNgn(Number(b.price ?? b.price_ngn)) : "-"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Activated</p>

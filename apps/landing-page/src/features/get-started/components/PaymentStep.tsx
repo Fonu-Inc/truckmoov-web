@@ -74,7 +74,7 @@ function paymentError(error: unknown) {
   if (err.statusCode === 402)
     return "Your payment was declined. Try again.";
   if (err.statusCode === 503)
-    return "Payments are temporarily unavailable. Please try again later — this isn't a problem with your details.";
+    return "Payments are temporarily unavailable. Please try again later. This isn't a problem with your details.";
   if (err.statusCode === 409 && /stage/i.test(err.message))
     return "Payment opens once your devices have been allocated. We'll email you when you can pay.";
   return err.message || "The payment couldn't be started. Try again.";
@@ -378,7 +378,7 @@ export function PaymentStep({
         {pollTimedOut && (
           <Notice tone="info">
             <span className="flex flex-wrap items-center justify-between gap-3">
-              <span>We're still confirming your payment. We'll email you once it's confirmed — don't pay again.</span>
+              <span>We're still confirming your payment. We'll email you once it's confirmed. Don't pay again.</span>
               <button
                 type="button"
                 className={SECONDARY_BUTTON_CLASS}

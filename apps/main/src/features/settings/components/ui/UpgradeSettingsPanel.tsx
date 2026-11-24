@@ -41,7 +41,7 @@ import { useInstallationPending } from "@/features/get-started/hooks/useInstalla
 const schema = z.object({
   reason: z.string().trim().min(
     10,
-    "Give the reviewer at least a sentence — this speeds up approval.",
+    "Give the reviewer at least a sentence. This speeds up approval.",
   ),
 });
 type Values = z.infer<typeof schema>;
@@ -117,7 +117,7 @@ function UpgradeForm({ onSubmitted }: { onSubmitted: () => void }) {
         onSuccess: () => {
           form.reset();
           onSubmitted();
-          toast.success("Request submitted — a reviewer will decide within 3 business days.");
+          toast.success("Request submitted. A reviewer will decide within 3 business days.");
         },
         onError: err => toast.error(err.message),
       },

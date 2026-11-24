@@ -250,7 +250,7 @@ export function VehicleFinancialConfigDialog({
                   >
                     {vehicle.registration_number}
                     {" "}
-                    —
+                    -
                     {vehicle.make}
                     {" "}
                     {vehicle.model}

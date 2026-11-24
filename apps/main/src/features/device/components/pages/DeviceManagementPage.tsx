@@ -486,7 +486,7 @@ export default function DeviceManagement() {
             <div>
               <p className="font-medium">{device.name || device.manufacturer}</p>
               <p className="text-xs text-muted-foreground">
-                {device.name ? `${device.manufacturer} · ${device.model || "—"}` : device.model || "—"}
+                {device.name ? `${device.manufacturer} · ${device.model || "-"}` : device.model || "-"}
               </p>
             </div>
           </div>
@@ -516,7 +516,7 @@ export default function DeviceManagement() {
                 </p>
               </>
             )
-          : <span className="text-muted-foreground">—</span>;
+          : <span className="text-muted-foreground">-</span>;
       },
     },
     {
@@ -532,7 +532,7 @@ export default function DeviceManagement() {
                 <p className="text-xs text-muted-foreground">{sim.operator}</p>
               </>
             )
-          : <span className="text-muted-foreground">—</span>;
+          : <span className="text-muted-foreground">-</span>;
       },
     },
     {
@@ -584,7 +584,7 @@ export default function DeviceManagement() {
                 </span>
               </div>
             )
-          : <span className="text-muted-foreground">—</span>;
+          : <span className="text-muted-foreground">-</span>;
       },
     },
     {
@@ -739,7 +739,7 @@ export default function DeviceManagement() {
                     {filteredDevices.length}
                     )
                   </CardTitle>
-                  <CardDescription className="mt-1">All trackers in your fleet — monitor lifecycle status, signal health, and last-seen timestamps.</CardDescription>
+                  <CardDescription className="mt-1">All trackers in your fleet. Monitor lifecycle status, signal health, and last-seen timestamps.</CardDescription>
                 </div>
                 <Button
                   variant="outline"

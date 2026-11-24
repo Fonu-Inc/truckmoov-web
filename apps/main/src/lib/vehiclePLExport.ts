@@ -64,7 +64,7 @@ function buildRows(data: VehicleProfitability[], nameLookup: (id: string) => str
     margin: d.profitability?.margin_percent || 0,
     // Unscored vehicles have a null score; exports show "n/a", like the server's PDF.
     score: d.profitability?.score ?? "n/a",
-    tier: TIER_LABEL[d.profitability?.tier || "marginal"] || "—",
+    tier: TIER_LABEL[d.profitability?.tier || "marginal"] || "-",
     fuel: d.costs?.fuel || 0,
     maintenance: d.costs?.maintenance || 0,
     wages: d.costs?.wages || 0,

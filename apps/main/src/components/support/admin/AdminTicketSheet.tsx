@@ -196,7 +196,7 @@ export function AdminTicketSheet({
       0,
       8,
     )}`
-    : "—";
+    : "-";
   const reporterInitials = getInitials(reporterDisplay);
 
   const priorityStyles: Record<string, {

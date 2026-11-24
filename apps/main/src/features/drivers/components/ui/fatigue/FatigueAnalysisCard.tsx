@@ -100,7 +100,7 @@ export function FatigueAnalysisCard({ analysis }: { analysis: DriverFatigueAnaly
             </div>
             <div>
               <h3 className="font-semibold tracking-tight text-foreground font-display text-lg flex items-center gap-2">
-                {analysis.driverName || "—"}
+                {analysis.driverName || "-"}
                 <div className={cn(
                   "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                   style.badge,
@@ -112,11 +112,11 @@ export function FatigueAnalysisCard({ analysis }: { analysis: DriverFatigueAnaly
               <p className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {`${analysis.drivingMinutes ?? "—"} min driving`}
+                  {`${analysis.drivingMinutes ?? "-"} min driving`}
                 </span>
                 <span className="flex items-center gap-1">
                   <Coffee className="h-3 w-3" />
-                  {`Rest compliance: ${analysis.restCompliance ?? "—"}/10`}
+                  {`Rest compliance: ${analysis.restCompliance ?? "-"}/10`}
                 </span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -141,7 +141,7 @@ export function FatigueAnalysisCard({ analysis }: { analysis: DriverFatigueAnaly
       {/* The capture only shows collapsed cards; this panel's markup is ours. */}
       {expanded && (
         <div className="p-6 pt-0 space-y-3 text-sm">
-          <p className="text-muted-foreground">{analysis.analysis || "—"}</p>
+          <p className="text-muted-foreground">{analysis.analysis || "-"}</p>
           <div>
             <p className="font-medium mb-1">Indicators</p>
             {analysis.indicators.length
@@ -150,7 +150,7 @@ export function FatigueAnalysisCard({ analysis }: { analysis: DriverFatigueAnaly
                     {analysis.indicators.map(item => <li key={item}>{item}</li>)}
                   </ul>
                 )
-              : <p className="text-muted-foreground">—</p>}
+              : <p className="text-muted-foreground">-</p>}
           </div>
           <div>
             <p className="font-medium mb-1">Recommendations</p>
@@ -160,7 +160,7 @@ export function FatigueAnalysisCard({ analysis }: { analysis: DriverFatigueAnaly
                     {analysis.recommendations.map(item => <li key={item}>{item}</li>)}
                   </ul>
                 )
-              : <p className="text-muted-foreground">—</p>}
+              : <p className="text-muted-foreground">-</p>}
           </div>
         </div>
       )}

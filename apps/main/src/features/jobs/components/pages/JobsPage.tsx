@@ -167,9 +167,9 @@ const JOB_STATUS_OPTIONS: Record<JobsTab, Array<{
 /** "Dec 11, 2024 8:30 AM" — the design app's start date and deadline cells. */
 function formatScheduleDate(iso?: string | null) {
   if (!iso)
-    return "—";
+    return "-";
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? "—" : format(
+  return Number.isNaN(date.getTime()) ? "-" : format(
     date,
     "MMM d, yyyy h:mm a",
   );
@@ -178,9 +178,9 @@ function formatScheduleDate(iso?: string | null) {
 /** "11 Dec 2024, 08:30" — the design app's Date Created cell. */
 function formatCreatedDate(iso?: string | null) {
   if (!iso)
-    return "—";
+    return "-";
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? "—" : format(
+  return Number.isNaN(date.getTime()) ? "-" : format(
     date,
     "dd MMM yyyy, HH:mm",
   );
@@ -691,7 +691,7 @@ export default function JobsPage() {
   // (aggregators only watch jobs, so they get a dash).
   const renderAssignButton = (job: DispatchJob, kind: AssignResourceKind) => {
     if (isAggregatorAdmin)
-      return <span className="text-xs text-muted-foreground">—</span>;
+      return <span className="text-xs text-muted-foreground">-</span>;
     const Icon = kind === "driver" ? Users : Truck;
     return (
       <Button
@@ -720,22 +720,22 @@ export default function JobsPage() {
 
   const exportColumns = [
     {
-      header: "Pickup Address", accessor: (j: DispatchJob) => j.pickup?.address || "—",
+      header: "Pickup Address", accessor: (j: DispatchJob) => j.pickup?.address || "-",
     },
     {
-      header: "Delivery Address", accessor: (j: DispatchJob) => j.dropoff?.address || "—",
+      header: "Delivery Address", accessor: (j: DispatchJob) => j.dropoff?.address || "-",
     },
     {
-      header: "Stops", accessor: (j: DispatchJob) => stopsLabel(j) ?? "—",
+      header: "Stops", accessor: (j: DispatchJob) => stopsLabel(j) ?? "-",
     },
     {
-      header: "Assigned Driver", accessor: (j: DispatchJob) => driverNameFor(j) ?? "—",
+      header: "Assigned Driver", accessor: (j: DispatchJob) => driverNameFor(j) ?? "-",
     },
     {
-      header: "Assigned Vehicle", accessor: (j: DispatchJob) => vehiclePlateFor(j) ?? "—",
+      header: "Assigned Vehicle", accessor: (j: DispatchJob) => vehiclePlateFor(j) ?? "-",
     },
     {
-      header: "Priority", accessor: (j: DispatchJob) => j.priority?.toUpperCase() ?? "—",
+      header: "Priority", accessor: (j: DispatchJob) => j.priority?.toUpperCase() ?? "-",
     },
     {
       header: "Status", accessor: (j: DispatchJob) => jobStatusLabel(j.status || "created"),
@@ -967,17 +967,17 @@ export default function JobsPage() {
                               <TableCell>
                                 <p className="flex items-start gap-1.5 text-xs max-w-[240px]">
                                   <MapPin className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
-                                  <span className="truncate">{job.pickup?.address || "—"}</span>
+                                  <span className="truncate">{job.pickup?.address || "-"}</span>
                                 </p>
                               </TableCell>
                               <TableCell>
                                 <p className="flex items-start gap-1.5 text-xs max-w-[240px]">
                                   <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
-                                  <span className="truncate">{job.dropoff?.address || "—"}</span>
+                                  <span className="truncate">{job.dropoff?.address || "-"}</span>
                                 </p>
                               </TableCell>
                               <TableCell className="text-xs">
-                                {stops ? <span>{stops}</span> : <span className="text-muted-foreground">—</span>}
+                                {stops ? <span>{stops}</span> : <span className="text-muted-foreground">-</span>}
                               </TableCell>
                               <TableCell>
                                 {job.assigned_driver_id && driverName
@@ -988,7 +988,7 @@ export default function JobsPage() {
                                       </p>
                                     )
                                   : job.assigned_driver_id
-                                    ? <span className="text-xs text-muted-foreground">—</span>
+                                    ? <span className="text-xs text-muted-foreground">-</span>
                                     : renderAssignButton(
                                         job,
                                         "driver",
@@ -1008,7 +1008,7 @@ export default function JobsPage() {
                                       </div>
                                     )
                                   : job.assigned_vehicle_id
-                                    ? <span className="text-xs text-muted-foreground">—</span>
+                                    ? <span className="text-xs text-muted-foreground">-</span>
                                     : renderAssignButton(
                                         job,
                                         "vehicle",
@@ -1017,7 +1017,7 @@ export default function JobsPage() {
                               <TableCell>
                                 {job.priority
                                   ? <Badge className={`rounded-full px-2.5 ${PRIORITY_BADGE[job.priority] ?? PRIORITY_BADGE.normal}`}>{job.priority.toUpperCase()}</Badge>
-                                  : <span className="text-xs text-muted-foreground">—</span>}
+                                  : <span className="text-xs text-muted-foreground">-</span>}
                               </TableCell>
                               <TableCell>
                                 {reports.length > 0

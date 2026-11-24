@@ -34,21 +34,21 @@ const previewColumns: ColumnDef<DeviceMappingRow>[] = [
     header: "Device",
     enableSorting: false,
     meta: { className: "p-1.5" },
-    cell: ({ row }) => row.original.device_name || "—",
+    cell: ({ row }) => row.original.device_name || "-",
   },
   {
     id: "imei",
     header: "IMEI",
     enableSorting: false,
     meta: { className: "p-1.5 font-mono" },
-    cell: ({ row }) => row.original.imei || "—",
+    cell: ({ row }) => row.original.imei || "-",
   },
   {
     id: "vehicle",
     header: "Vehicle",
     enableSorting: false,
     meta: { className: "p-1.5" },
-    cell: ({ row }) => row.original.vehicle_id || "—",
+    cell: ({ row }) => row.original.vehicle_id || "-",
   },
 ];
 

@@ -17,7 +17,7 @@ import {
 function location(e: FleetViolation) {
   return e.latitude != null && e.longitude != null
     ? `${e.latitude.toFixed(4)}, ${e.longitude.toFixed(4)}`
-    : "—";
+    : "-";
 }
 
 /**
@@ -167,7 +167,7 @@ export function ViolationEventsTab({
                               <p className="text-xs text-muted-foreground truncate">{vehicle(e.vehicleId).plate}</p>
                             </div>
                           )
-                        : "—"}
+                        : "-"}
                     </td>
                   )}
                   <td className={TD_CLASS}>{typeLabel(e.type)}</td>
@@ -223,7 +223,7 @@ export function ViolationEventsTab({
                       ? [
                           vehicle(selected.vehicleId).name,
                           vehicle(selected.vehicleId).plate,
-                        ].filter(v => v !== "—").join(" · ")
+                        ].filter(v => v !== "-").join(" · ")
                       : vehiclePlate(selected.vehicleId),
                   ],
                   [

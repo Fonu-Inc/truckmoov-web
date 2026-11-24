@@ -31,7 +31,7 @@ const STORAGE_TIPS = [
     title: "Archive completed jobs", body: "Older POD photos can be archived from the Jobs page once jobs are settled.",
   },
   {
-    title: "Re-scan waybills at lower DPI", body: "Capture waybills via the mobile app — server-side compression keeps quality high.",
+    title: "Re-scan waybills at lower DPI", body: "Capture waybills via the mobile app. Server-side compression keeps quality high.",
   },
   {
     title: "Remove expired compliance docs", body: "Outdated insurance, FRSC and roadworthiness scans can be safely deleted after renewal.",
@@ -179,7 +179,7 @@ export function StoragePanel() {
               <AlertTriangle className="h-4 w-4 mt-0.5 text-warning shrink-0" />
               <div className="flex-1">
                 {over
-                  ? `You're over the ${formatBytes(limitBytes)} storage limit on your plan. New uploads may be blocked — upgrade to add capacity.`
+                  ? `You're over the ${formatBytes(limitBytes)} storage limit on your plan. New uploads may be blocked. Upgrade to add capacity.`
                   : `You've used ${percentage?.toFixed(0)}% of your ${formatBytes(limitBytes)} storage. Consider upgrading soon to avoid disruption.`}
               </div>
               <Button

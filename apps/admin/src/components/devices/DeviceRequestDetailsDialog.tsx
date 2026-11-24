@@ -223,7 +223,7 @@ export function DeviceRequestDetailsDialog({
                 {" "}
                 Requesting Email
               </p>
-              <p className="font-medium text-sm break-all">{tenantEmail || "—"}</p>
+              <p className="font-medium text-sm break-all">{tenantEmail || "-"}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground flex items-center gap-1">

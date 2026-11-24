@@ -15,7 +15,7 @@ const MONTH_NAMES = [
   "Dec",
 ];
 
-export const UNAVAILABLE = "—";
+export const UNAVAILABLE = "-";
 export const DATA_USAGE_REFRESH_MS = 60000;
 
 export function formatCount(value?: number | null) {

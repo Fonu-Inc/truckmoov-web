@@ -83,7 +83,7 @@ function buildRows(data: VehicleProfitability[], nameLookup: (id: string) => str
     profit: d.profitability?.net_profit || 0,
     margin: d.profitability?.margin_percent || 0,
     score: d.profitability?.score || 0,
-    tier: TIER_LABEL[d.profitability?.tier || "marginal"] || "—",
+    tier: TIER_LABEL[d.profitability?.tier || "marginal"] || "-",
     fuel: d.costs?.fuel || 0,
     maintenance: d.costs?.maintenance || 0,
     wages: d.costs?.wages || 0,

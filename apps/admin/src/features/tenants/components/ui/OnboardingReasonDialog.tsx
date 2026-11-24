@@ -52,7 +52,7 @@ export function OnboardingReasonDialog({
   submitLabel,
   destructive,
   fieldLabel = "Reason",
-  placeholder = "Shared with the applicant — write something they can act on.",
+  placeholder = "Shared with the applicant. Write something they can act on.",
   loading,
   onOpenChange,
   onSubmit,

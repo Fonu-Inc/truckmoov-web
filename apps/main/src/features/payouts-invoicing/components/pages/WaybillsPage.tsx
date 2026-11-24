@@ -243,27 +243,27 @@ export default function WaybillsPage() {
       accessorKey: "waybill_number",
       header: "Waybill #",
       meta: { className: "font-mono text-sm" },
-      cell: ({ row }) => row.original.waybill_number || "—",
+      cell: ({ row }) => row.original.waybill_number || "-",
     },
     {
       accessorKey: "destination",
       header: "Destination",
-      cell: ({ row }) => row.original.destination || "—",
+      cell: ({ row }) => row.original.destination || "-",
     },
     {
       accessorKey: "vehicle_number",
       header: "Vehicle",
-      cell: ({ row }) => row.original.vehicle_number || "—",
+      cell: ({ row }) => row.original.vehicle_number || "-",
     },
     {
       accessorKey: "customer_name",
       header: "Customer",
-      cell: ({ row }) => row.original.customer_name || "—",
+      cell: ({ row }) => row.original.customer_name || "-",
     },
     {
       accessorKey: "calculated_price_ngn",
       header: "Price",
-      cell: ({ row }) => row.original.calculated_price_ngn ? formatAmount(row.original.calculated_price_ngn) : "—",
+      cell: ({ row }) => row.original.calculated_price_ngn ? formatAmount(row.original.calculated_price_ngn) : "-",
     },
     {
       accessorKey: "created_at",

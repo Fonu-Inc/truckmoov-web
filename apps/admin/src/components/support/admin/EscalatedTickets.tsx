@@ -276,7 +276,7 @@ export function EscalatedTickets() {
                       <span className="text-[11px] text-muted-foreground">
                         {ticket.escalatedAt
                           ? formatRelative(ticket.escalatedAt)
-                          : "—"}
+                          : "-"}
                       </span>
                     </div>
                   </button>

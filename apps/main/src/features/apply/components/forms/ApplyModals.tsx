@@ -419,7 +419,7 @@ export function VehicleModal({
                         <UploadCloud className="h-6 w-6 text-muted-foreground" />
                         <span className="text-sm font-medium">Upload vehicle license</span>
                         <span className="text-xs text-muted-foreground">
-                          {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG — max 10MB"}
+                          {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG, max 10MB"}
                         </span>
                       </button>
                     </div>
@@ -483,7 +483,7 @@ export function RequestDevicesModal({
     resolver: zodResolver(deviceRequestSchema.refine(
       values => values.quantity <= maxQuantity,
       {
-        message: `You can request at most ${maxQuantity} more device${maxQuantity === 1 ? "" : "s"} — one per vehicle.`,
+        message: `You can request at most ${maxQuantity} more device${maxQuantity === 1 ? "" : "s"}, one per vehicle.`,
         path: ["quantity"],
       },
     )),

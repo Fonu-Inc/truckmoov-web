@@ -1024,7 +1024,7 @@ export function FleetAnalyticsTab() {
                                   driver.safetyScore === null ? "text-muted-foreground" : driver.safetyScore >= 80 ? "text-success" : driver.safetyScore >= 60 ? "text-warning" : "text-destructive",
                                 )}
                               >
-                                {driver.safetyScore ?? "—"}
+                                {driver.safetyScore ?? "-"}
                               </span>
                             </div>
                           </div>

@@ -262,7 +262,7 @@ function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
         <div className="space-y-1">
           <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Channel</Label>
           <p className="text-sm font-medium capitalize">
-            {String(channelLabel || "—").replace(
+            {String(channelLabel || "-").replace(
               /_/g,
               " ",
             )}

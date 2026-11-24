@@ -156,7 +156,7 @@ export function BroadcastTracker() {
       cell: ({ row }) => {
         const recipient = row.original;
         if (!recipient.reply_content)
-          return <span className="text-sm text-muted-foreground">—</span>;
+          return <span className="text-sm text-muted-foreground">-</span>;
         return (
           <Button
             variant="ghost"

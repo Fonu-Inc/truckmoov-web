@@ -138,7 +138,7 @@ export default function EndpointsPage() {
                 </Badge>
                 <code className="text-sm font-mono">{endpoint.path}</code>
                 <span className="text-sm text-muted-foreground hidden sm:inline">
-                  —
+                  -
                   {" "}
                   {endpoint.description}
                 </span>

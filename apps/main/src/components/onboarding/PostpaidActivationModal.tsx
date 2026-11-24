@@ -102,7 +102,7 @@ export function PostpaidActivationModal({
             className="mt-5 w-full"
             size="lg"
           >
-            Got it — continue
+            Got it, continue
           </Button>
         </div>
       </DialogContent>

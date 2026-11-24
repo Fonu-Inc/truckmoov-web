@@ -77,7 +77,7 @@ export function CustomerTypeStep({
         <h2 className="text-lg font-semibold text-foreground">What type of customer are you?</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Select the option that matches how you operate. Owner Operator / Individual accounts are
-          limited to 10 vehicles — choose Enterprise Customer if you run more than 10.
+          limited to 10 vehicles. Choose Enterprise Customer if you run more than 10.
         </p>
       </div>
 

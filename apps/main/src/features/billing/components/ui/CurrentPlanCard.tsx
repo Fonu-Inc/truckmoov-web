@@ -96,7 +96,7 @@ function PlanBody({ plan }: { plan: TenantLicence }) {
           </div>
           <div className="text-right shrink-0">
             <p className="text-3xl font-semibold tabular-nums tracking-tight text-primary">
-              {price === null ? "—" : ngn(price)}
+              {price === null ? "-" : ngn(price)}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">per device</p>
             {plan.renewalInvoiceId && <RenewNow invoiceId={plan.renewalInvoiceId} />}
@@ -112,7 +112,7 @@ function PlanBody({ plan }: { plan: TenantLicence }) {
           <Fact
             icon={Wallet}
             label="Total amount paid"
-            value={plan.totalPaidNgn === null ? "—" : ngn(plan.totalPaidNgn)}
+            value={plan.totalPaidNgn === null ? "-" : ngn(plan.totalPaidNgn)}
             hint={plan.totalPaidNgn === null ? undefined : "Including VAT and installation"}
           />
           <Fact
@@ -123,7 +123,7 @@ function PlanBody({ plan }: { plan: TenantLicence }) {
           <Fact
             icon={RefreshCw}
             label="Renewal price"
-            value={plan.renewalPricePerDeviceNgn === null ? "—" : `${ngn(plan.renewalPricePerDeviceNgn)} per device`}
+            value={plan.renewalPricePerDeviceNgn === null ? "-" : `${ngn(plan.renewalPricePerDeviceNgn)} per device`}
           />
           <Fact
             icon={CalendarClock}
@@ -139,7 +139,7 @@ function PlanBody({ plan }: { plan: TenantLicence }) {
 
 /**
  * The same card when the account has no licence yet. The design app always shows
- * the plan card, so it stays in place with every value read as "—" (the licence
+ * the plan card, so it stays in place with every value read as "-" (the licence
  * endpoint exists; this account simply has no plan on it).
  */
 function NoPlanBody() {
@@ -156,11 +156,11 @@ function NoPlanBody() {
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
                 <Package className="h-5 w-5" />
               </span>
-              <h3 className="text-2xl font-semibold leading-tight">—</h3>
+              <h3 className="text-2xl font-semibold leading-tight">-</h3>
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-3xl font-semibold tabular-nums tracking-tight text-primary">—</p>
+            <p className="text-3xl font-semibold tabular-nums tracking-tight text-primary">-</p>
             <p className="mt-1 text-xs text-muted-foreground">per device</p>
           </div>
         </div>
@@ -169,27 +169,27 @@ function NoPlanBody() {
           <Fact
             icon={Cpu}
             label="Devices purchased"
-            value="—"
+            value="-"
           />
           <Fact
             icon={Wallet}
             label="Total amount paid"
-            value="—"
+            value="-"
           />
           <Fact
             icon={CalendarClock}
             label="Date of purchase"
-            value="—"
+            value="-"
           />
           <Fact
             icon={RefreshCw}
             label="Renewal price"
-            value="—"
+            value="-"
           />
           <Fact
             icon={CalendarClock}
             label="Renews on"
-            value="—"
+            value="-"
           />
         </div>
       </div>

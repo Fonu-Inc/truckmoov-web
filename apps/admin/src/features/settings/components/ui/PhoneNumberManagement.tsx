@@ -292,7 +292,7 @@ export function PhoneNumberManagement() {
                 <span>{row.original.tenant_name}</span>
               </div>
             )
-          : <span className="text-muted-foreground">—</span>,
+          : <span className="text-muted-foreground">-</span>,
       },
       {
         id: "cost",

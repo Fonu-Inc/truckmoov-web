@@ -192,7 +192,7 @@ export function DeviceFormDialog({
                     <FormLabel>Device Name</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g. Truck 12 — Tracker"
+                        placeholder="e.g. Truck 12 - Tracker"
                         maxLength={60}
                         disabled={isSubmitting}
                         {...field}

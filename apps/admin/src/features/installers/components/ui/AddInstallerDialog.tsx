@@ -231,29 +231,29 @@ export function AddInstallerDialog({
     () => [
       {
         label: "Installer",
-        value: `${form.firstName} ${form.lastName}`.trim() || "—",
+        value: `${form.firstName} ${form.lastName}`.trim() || "-",
       },
       {
         label: "Installer ID", value: form.installerId || "Assigned on creation",
       },
       {
-        label: "Email", value: form.email || "—",
+        label: "Email", value: form.email || "-",
       },
       {
-        label: "Phone", value: form.phone || "—",
+        label: "Phone", value: form.phone || "-",
       },
       {
-        label: "Service area", value: form.serviceAreas.join(", ") || "—",
+        label: "Service area", value: form.serviceAreas.join(", ") || "-",
       },
       {
         label: "Location",
         value: [
           form.city,
           form.state,
-        ].filter(Boolean).join(", ") || "—",
+        ].filter(Boolean).join(", ") || "-",
       },
       {
-        label: "Capabilities", value: form.capabilities.join(", ") || "—",
+        label: "Capabilities", value: form.capabilities.join(", ") || "-",
       },
       {
         label: "Account status",

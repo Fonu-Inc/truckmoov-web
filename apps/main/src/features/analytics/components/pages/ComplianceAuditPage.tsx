@@ -121,7 +121,7 @@ function ComplianceAuditReport({
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Overall Compliance Rate</p>
-                <p className={`text-3xl font-bold ${RATE_TEXT[tone]}`}>{complianceRate === null ? "—" : `${complianceRate}%`}</p>
+                <p className={`text-3xl font-bold ${RATE_TEXT[tone]}`}>{complianceRate === null ? "-" : `${complianceRate}%`}</p>
               </div>
             </div>
           </div>
@@ -159,7 +159,7 @@ function ComplianceAuditReport({
         <div className="p-6 pb-4 flex flex-row items-start justify-between gap-4 space-y-0">
           <div className="space-y-1">
             <h3 className="font-semibold tracking-tight text-foreground font-display text-base">Compliance Breakdown</h3>
-            <p className="text-sm text-muted-foreground">Current documents and driver licences by status — valid, expiring, expired, missing.</p>
+            <p className="text-sm text-muted-foreground">Current documents and driver licences by status: valid, expiring, expired, missing.</p>
           </div>
           <ChartPeriodFilter
             value={chartPeriod}
@@ -237,7 +237,7 @@ function ComplianceAuditReport({
                   <TableCell className="text-right tabular-nums">{c.expired}</TableCell>
                   <TableCell className="text-right tabular-nums">{c.missing}</TableCell>
                   <TableCell className={`text-right tabular-nums font-medium ${RATE_TEXT[rateTone(c.total > 0 ? c.complianceRatePercent : null)]}`}>
-                    {c.total > 0 ? `${c.complianceRatePercent}%` : "—"}
+                    {c.total > 0 ? `${c.complianceRatePercent}%` : "-"}
                   </TableCell>
                 </TableRow>
               ))}

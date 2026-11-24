@@ -68,7 +68,7 @@ export default function AuditPage() {
                             <div className="flex items-center gap-2">
                               {/* ponytail: the audit entry carries no actor name, only
                                 actorId — show the id until the API resolves one. */}
-                              <span className="font-medium text-sm">{log.actorId || "—"}</span>
+                              <span className="font-medium text-sm">{log.actorId || "-"}</span>
                               <Badge
                                 variant="outline"
                                 className="text-xs"

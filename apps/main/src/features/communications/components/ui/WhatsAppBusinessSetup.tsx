@@ -538,7 +538,7 @@ function UsageStatsCard({ tenantId: _tenantId }: { tenantId: string }) {
           <Zap className="h-4 w-4 text-primary" />
           Usage Statistics
         </CardTitle>
-        <CardDescription>WhatsApp messaging volume and delivery health for this tenant — track sends, receives, and reply rates.</CardDescription>
+        <CardDescription>WhatsApp messaging volume and delivery health for this tenant. Track sends, receives, and reply rates.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

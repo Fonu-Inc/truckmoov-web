@@ -147,7 +147,7 @@ function toTenantAdoption(item: BundleAdoptionItem): TenantAdoption {
       continue;
     const sim = byNumber.get(line.mobileNumber) ?? {
       msisdn: line.mobileNumber,
-      iccid: line.iccid ?? "—",
+      iccid: line.iccid ?? "-",
       carrier: line.carrier ?? "",
       vehicle: line.vehicleLabel ?? undefined,
       bundles: [],
@@ -217,7 +217,7 @@ export default function PlatformDataBundles() {
   }));
   const summaryQuery = useQuery(getBundleSummaryQueryOptions());
   const summary = summaryQuery.data?.data;
-  const figure = (value: number | undefined) => summaryQuery.isError || value === undefined ? "—" : value;
+  const figure = (value: number | undefined) => summaryQuery.isError || value === undefined ? "-" : value;
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
   const carrierList = useMemo(
     () => carriersQuery.data?.data.carriers ?? [],
@@ -471,7 +471,7 @@ export default function PlatformDataBundles() {
           />
           <StatCard
             title="Monthly Bundle Spend"
-            value={summary ? fmtCurrency(summary.monthlyBundleSpendNgn) : "—"}
+            value={summary ? fmtCurrency(summary.monthlyBundleSpendNgn) : "-"}
             icon={TrendingUp}
             loading={summaryQuery.isPending}
           />
@@ -1112,7 +1112,7 @@ function TenantAdoptionTable() {
                                             </div>
                                           </TableCell>
                                           <TableCell className="font-mono text-xs text-muted-foreground">{sim.iccid}</TableCell>
-                                          <TableCell className="text-sm">{sim.vehicle ?? "—"}</TableCell>
+                                          <TableCell className="text-sm">{sim.vehicle ?? "-"}</TableCell>
                                           <TableCell>
                                             <div className="flex flex-col gap-1">
                                               {sim.bundles.map(b => (

@@ -95,7 +95,7 @@ export function InvoiceDetailView({
       total_ngn: total,
       line_items: [
         {
-          description: `Transport: ${editForm.origin || "—"} → ${editForm.destination || "—"}`, total: subtotal,
+          description: `Transport: ${editForm.origin || "-"} → ${editForm.destination || "-"}`, total: subtotal,
         },
       ],
     } as Partial<WaybillInvoice>);
@@ -135,7 +135,7 @@ export function InvoiceDetailView({
     <div style="margin-top:8px"><strong>${esc(invoice.invoice_number)}</strong></div>
     <div style="font-size:13px;color:#666">Date: ${esc(invoice.invoice_date)} | Due: ${esc(invoice.due_date || "On receipt")}</div></div></div>
     <div style="margin-bottom:20px"><div style="font-size:12px;text-transform:uppercase;color:#999">Bill To</div><div style="font-weight:bold">${esc(invoice.customer_name)}</div></div>
-    <div style="background:#f5f5f5;padding:12px;border-radius:6px;margin-bottom:20px;font-size:13px"><strong>Route:</strong> ${esc(invoice.origin)} → ${esc(invoice.destination)} | <strong>Vehicle:</strong> ${esc(invoice.vehicle_number || "—")} | <strong>Waybill:</strong> ${esc(invoice.waybill_number || "—")}</div>
+    <div style="background:#f5f5f5;padding:12px;border-radius:6px;margin-bottom:20px;font-size:13px"><strong>Route:</strong> ${esc(invoice.origin)} → ${esc(invoice.destination)} | <strong>Vehicle:</strong> ${esc(invoice.vehicle_number || "-")} | <strong>Waybill:</strong> ${esc(invoice.waybill_number || "-")}</div>
     <table><thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${lineItemsHtml}</tbody></table>
     <table class="totals"><tbody><tr><td>Subtotal</td><td style="text-align:right">${esc(formatAmount(invoice.subtotal_ngn))}</td></tr>
     ${(invoice.tax_amount_ngn || 0) > 0 ? `<tr><td>Tax (${esc(invoice.tax_rate_percent)}%)</td><td style="text-align:right">${esc(formatAmount(invoice.tax_amount_ngn || 0))}</td></tr>` : ""}
@@ -376,7 +376,7 @@ export function InvoiceDetailView({
                   <div>
                     <span className="text-muted-foreground">Due Date:</span>
                     {" "}
-                    <span className="font-medium">{invoice.due_date || "—"}</span>
+                    <span className="font-medium">{invoice.due_date || "-"}</span>
                   </div>
                 </div>
               </div>
@@ -401,12 +401,12 @@ export function InvoiceDetailView({
                   <div>
                     <span className="text-muted-foreground">Vehicle:</span>
                     {" "}
-                    {invoice.vehicle_number || "—"}
+                    {invoice.vehicle_number || "-"}
                   </div>
                   <div>
                     <span className="text-muted-foreground">Waybill #:</span>
                     {" "}
-                    {invoice.waybill_number || "—"}
+                    {invoice.waybill_number || "-"}
                   </div>
                   <div>
                     <span className="text-muted-foreground">Quantity:</span>

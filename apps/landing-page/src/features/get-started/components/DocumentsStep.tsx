@@ -69,7 +69,7 @@ const ID_CARD_TYPES: Array<{
   },
 ];
 
-const ID_TYPE_REQUIRED = "Select your identification card type first — only a National Identification Card or Driver's License is accepted. Any other card will be rejected.";
+const ID_TYPE_REQUIRED = "Select your identification card type first. Only a National Identification Card or Driver's License is accepted. Any other card will be rejected.";
 
 function uploadError(error: unknown) {
   const err = error as ServerErrorResponse;

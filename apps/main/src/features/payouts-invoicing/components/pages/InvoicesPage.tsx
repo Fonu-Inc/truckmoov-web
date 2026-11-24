@@ -213,13 +213,13 @@ export default function InvoicesPage() {
                 {inv.destination}
               </span>
             )
-          : inv.destination || "—";
+          : inv.destination || "-";
       },
     },
     {
       accessorKey: "vehicle_number",
       header: "Vehicle",
-      cell: ({ row }) => row.original.vehicle_number || "—",
+      cell: ({ row }) => row.original.vehicle_number || "-",
     },
     {
       accessorKey: "total_ngn",
@@ -236,7 +236,7 @@ export default function InvoicesPage() {
             row.original.due_date,
             "dd MMM yyyy",
           )
-        : "—",
+        : "-",
     },
     {
       id: "actions",

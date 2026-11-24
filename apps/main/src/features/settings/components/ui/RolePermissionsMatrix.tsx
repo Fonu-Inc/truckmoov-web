@@ -249,10 +249,10 @@ const LEGEND: {
   access: Access; label: string; detail: string; chip: string; icon: typeof Check;
 }[] = [
   {
-    access: "full", label: "Can do", detail: "Granted — role can perform this action", chip: "bg-success/10 text-success", icon: Check,
+    access: "full", label: "Can do", detail: "Granted: role can perform this action", chip: "bg-success/10 text-success", icon: Check,
   },
   {
-    access: "read", label: "View only", detail: "View only — read access, no changes", chip: "bg-warning/10 text-warning", icon: Eye,
+    access: "read", label: "View only", detail: "View only: read access, no changes", chip: "bg-warning/10 text-warning", icon: Eye,
   },
   {
     access: "none", label: "No access", detail: "Not granted", chip: "bg-muted text-muted-foreground", icon: X,

@@ -172,7 +172,7 @@ function shortId(id?: string) {
         0,
         8,
       )
-    : "—";
+    : "-";
 }
 
 const reporterName = (ticket: SupportTicket) => ticket.reporterName?.trim() || "Unknown reporter";

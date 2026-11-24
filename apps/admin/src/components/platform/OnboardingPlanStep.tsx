@@ -524,7 +524,7 @@ function UsageRatesStrip() {
     <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
       <div>
         <p className="text-sm font-medium text-foreground">Connectivity & usage (pay as you grow)</p>
-        <p className="text-xs text-muted-foreground">FleetPro is powered by Fonu — only pay for what you use.</p>
+        <p className="text-xs text-muted-foreground">FleetPro is powered by Fonu. Only pay for what you use.</p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {loadingSummary

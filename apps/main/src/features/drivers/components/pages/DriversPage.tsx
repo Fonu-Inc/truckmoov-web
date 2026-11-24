@@ -475,7 +475,7 @@ export default function DriversPage() {
               {getInitials(driver.name)}
             </div>
             <div>
-              <p className="font-medium">{driver.name || "—"}</p>
+              <p className="font-medium">{driver.name || "-"}</p>
             </div>
           </div>
         </TableCell>
@@ -511,7 +511,7 @@ export default function DriversPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )
-            : <span className="text-sm text-muted-foreground">—</span>}
+            : <span className="text-sm text-muted-foreground">-</span>}
         </TableCell>
         <TableCell>
           {driver.email
@@ -536,11 +536,11 @@ export default function DriversPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )
-            : <span className="text-sm text-muted-foreground">—</span>}
+            : <span className="text-sm text-muted-foreground">-</span>}
         </TableCell>
         <TableCell>
           <div className="text-sm">
-            <p className="font-mono">{driver.licenseNumber || "—"}</p>
+            <p className="font-mono">{driver.licenseNumber || "-"}</p>
             <p className={licenseWarning ? "text-xs text-warning" : "text-xs text-muted-foreground"}>
               {licenseWarning && <AlertTriangle className="h-3 w-3 inline mr-1" />}
               {`Exp: ${formatWithPattern(
@@ -560,11 +560,11 @@ export default function DriversPage() {
                   )}
                 </div>
               )
-            : <span className="text-sm text-muted-foreground">—</span>}
+            : <span className="text-sm text-muted-foreground">-</span>}
         </TableCell>
         <TableCell>
           {score === null || !band
-            ? <span className="text-sm text-muted-foreground">—</span>
+            ? <span className="text-sm text-muted-foreground">-</span>
             : (
                 <div className="min-w-[120px] space-y-1">
                   <div className="flex items-center justify-between gap-2">
@@ -580,9 +580,9 @@ export default function DriversPage() {
                 </div>
               )}
         </TableCell>
-        <TableCell>{driver.trips ?? "—"}</TableCell>
+        <TableCell>{driver.trips ?? "-"}</TableCell>
         <TableCell>
-          <span className="text-sm text-foreground">{groupNameByDriver.get(driver.id) ?? "—"}</span>
+          <span className="text-sm text-foreground">{groupNameByDriver.get(driver.id) ?? "-"}</span>
         </TableCell>
         <TableCell>
           <span className="text-sm text-muted-foreground">

@@ -35,7 +35,7 @@ export default function KycOnboarding() {
     <OnboardingLayout
       step={2}
       title="Verify your business"
-      subtitle="Submit your business details and documents so our team can verify your account. You can continue to the dashboard at any time — we'll keep reminding you until verification is complete."
+      subtitle="Submit your business details and documents so our team can verify your account. You can continue to the dashboard at any time. We'll keep reminding you until verification is complete."
     >
       {tenantId
         ? (

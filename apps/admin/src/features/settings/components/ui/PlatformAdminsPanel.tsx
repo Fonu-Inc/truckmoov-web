@@ -101,7 +101,7 @@ function getAdminDisplayName(admin: AdminUser): string {
  * invite with a predefined staff role, delete, and per-person permissions
  * (saved as their personal role). The Full Name in the invite is not stored by
  * the API. The Added column reads `createdAt` when the server sends it and
- * shows "—" otherwise; nothing is invented for real admins.
+ * shows "-" otherwise; nothing is invented for real admins.
  */
 export function PlatformAdminsPanel() {
   const { user } = useAuthStore();

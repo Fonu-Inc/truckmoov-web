@@ -387,7 +387,7 @@ export function MessagePreview({
                   )}
                 </div>
                 <div className="mt-4 pt-4 border-t border-border/50 text-xs text-muted-foreground">
-                  <p>—</p>
+                  <p>-</p>
                   <p>{senderName}</p>
                   <p>Fleet Management Platform</p>
                 </div>

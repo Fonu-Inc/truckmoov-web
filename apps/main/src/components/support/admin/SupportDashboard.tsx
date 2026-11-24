@@ -438,7 +438,7 @@ export function SupportDashboard() {
                     ? stats.avgResolutionHours < 24
                       ? `${stats.avgResolutionHours.toFixed(1)}h`
                       : `${(stats.avgResolutionHours / 24).toFixed(1)}d`
-                    : "—"}
+                    : "-"}
                 </p>
                 <p className="text-xs text-muted-foreground">From open to resolved</p>
               </div>

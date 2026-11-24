@@ -218,7 +218,7 @@ export default function WelcomeDashboard() {
     <OnboardingLayout
       step={4}
       title="Welcome Aboard 🎉"
-      subtitle="Jump straight to what matters most. These shortcuts are tailored to your role — you can always reach them from the sidebar later."
+      subtitle="Jump straight to what matters most. These shortcuts are tailored to your role. You can always reach them from the sidebar later."
     >
       <div className="grid gap-3 sm:grid-cols-2">
         {actions.map((a) => {

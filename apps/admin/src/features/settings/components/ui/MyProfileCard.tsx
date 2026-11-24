@@ -209,7 +209,7 @@ export function MyProfileCard() {
           My Profile
         </CardTitle>
         <CardDescription>
-          Your personal account only — these details are not shown as the platform profile.
+          Your personal account only. These details are not shown as the platform profile.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

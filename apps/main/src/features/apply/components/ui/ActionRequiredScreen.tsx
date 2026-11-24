@@ -59,7 +59,7 @@ export function ActionRequiredScreen({
       </h1>
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
         Our team reviewed your application and needs a few things corrected before it can be
-        approved. Update the areas below and resubmit — everything else you already provided has
+        approved. Update the areas below and resubmit. Everything else you already provided has
         been saved.
       </p>
 
@@ -112,7 +112,7 @@ export function ActionRequiredScreen({
                     {stepLabel(flag.step)}
                   </p>
                   <p className="mt-0.5 text-sm font-semibold text-foreground">{flag.area}</p>
-                  <p className="mt-1.5 text-sm text-success">Updated — ready to resubmit</p>
+                  <p className="mt-1.5 text-sm text-success">Updated, ready to resubmit</p>
                 </div>
               </div>
               <Button

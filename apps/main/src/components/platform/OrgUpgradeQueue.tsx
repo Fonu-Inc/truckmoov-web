@@ -46,19 +46,19 @@ export function OrgUpgradeQueue() {
     queryFn: async () => {
       const DEMO_REQUESTS = [
         {
-          id: "dur-1", org_id: "demo-oo-1", orgName: "Tunde Adebayo Logistics", orgType: "OWNER_OPERATOR", status: "pending", reason: "Fleet has grown to 9 vehicles — exceeded Owner-Operator cap.", current_vehicle_count: 9, current_driver_count: 11, target_org_type: "FLEET_PROVIDER", requested_by_name: "Tunde Adebayo", created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), reviewed_at: null, review_notes: null,
+          id: "dur-1", org_id: "demo-oo-1", orgName: "Tunde Adebayo Logistics", orgType: "OWNER_OPERATOR", status: "pending", reason: "Fleet has grown to 9 vehicles, exceeding the Owner-Operator cap.", current_vehicle_count: 9, current_driver_count: 11, target_org_type: "FLEET_PROVIDER", requested_by_name: "Tunde Adebayo", created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), reviewed_at: null, review_notes: null,
         },
         {
           id: "dur-2", org_id: "demo-oo-2", orgName: "Cisse Brothers Haulage", orgType: "OWNER_OPERATOR", status: "pending", reason: "Adding a fleet manager and 4 new trucks for Kano corridor.", current_vehicle_count: 8, current_driver_count: 8, target_org_type: "FLEET_PROVIDER", requested_by_name: "Aminata Cissé", created_at: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(), reviewed_at: null, review_notes: null,
         },
         {
-          id: "dur-3", org_id: "demo-oo-3", orgName: "Mensah Cargo Express", orgType: "OWNER_OPERATOR", status: "pending", reason: "Won enterprise contract — needs dispatcher seat and multi-driver.", current_vehicle_count: 7, current_driver_count: 9, target_org_type: "FLEET_PROVIDER", requested_by_name: "Kwame Mensah", created_at: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(), reviewed_at: null, review_notes: null,
+          id: "dur-3", org_id: "demo-oo-3", orgName: "Mensah Cargo Express", orgType: "OWNER_OPERATOR", status: "pending", reason: "Won enterprise contract; needs dispatcher seat and multi-driver.", current_vehicle_count: 7, current_driver_count: 9, target_org_type: "FLEET_PROVIDER", requested_by_name: "Kwame Mensah", created_at: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(), reviewed_at: null, review_notes: null,
         },
         {
-          id: "dur-4", org_id: "demo-oo-4", orgName: "Dlamini Transport", orgType: "OWNER_OPERATOR", status: "approved", reason: "Acquired competitor — now operating 14 trucks.", current_vehicle_count: 14, current_driver_count: 16, target_org_type: "FLEET_PROVIDER", requested_by_name: "Zanele Dlamini", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), reviewed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(), review_notes: "Approved — KYC docs and bank statements verified.",
+          id: "dur-4", org_id: "demo-oo-4", orgName: "Dlamini Transport", orgType: "OWNER_OPERATOR", status: "approved", reason: "Acquired competitor, now operating 14 trucks.", current_vehicle_count: 14, current_driver_count: 16, target_org_type: "FLEET_PROVIDER", requested_by_name: "Zanele Dlamini", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), reviewed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(), review_notes: "Approved: KYC docs and bank statements verified.",
         },
         {
-          id: "dur-5", org_id: "demo-oo-5", orgName: "Bello & Sons Logistics", orgType: "OWNER_OPERATOR", status: "rejected", reason: "Want to add manager seat.", current_vehicle_count: 3, current_driver_count: 3, target_org_type: "FLEET_PROVIDER", requested_by_name: "Ibrahim Bello", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(), reviewed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(), review_notes: "Below threshold — Owner-Operator plan still appropriate. Consider Standard tier add-on.",
+          id: "dur-5", org_id: "demo-oo-5", orgName: "Bello & Sons Logistics", orgType: "OWNER_OPERATOR", status: "rejected", reason: "Want to add manager seat.", current_vehicle_count: 3, current_driver_count: 3, target_org_type: "FLEET_PROVIDER", requested_by_name: "Ibrahim Bello", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(), reviewed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(), review_notes: "Below threshold. Owner-Operator plan still appropriate. Consider Standard tier add-on.",
         },
       ];
       return DEMO_REQUESTS;
@@ -223,7 +223,7 @@ export function OrgUpgradeQueue() {
           <DialogHeader>
             <DialogTitle>Review Upgrade Request</DialogTitle>
             <DialogDescription>
-              Approving will convert this Owner-Operator to a Fleet Provider — removing the vehicle cap, granting Fleet Admin roles to all members, and unlocking the full dashboard. All vehicles, drivers, jobs, and settlements are preserved.
+              Approving will convert this Owner-Operator to a Fleet Provider, removing the vehicle cap, granting Fleet Admin roles to all members, and unlocking the full dashboard. All vehicles, drivers, jobs, and settlements are preserved.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">

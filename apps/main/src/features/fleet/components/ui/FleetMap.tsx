@@ -579,7 +579,7 @@ export function FleetMap({
               ),
             )
           : null;
-        const batteryDisplay = vehicle.batteryVoltage != null ? `${vehicle.batteryVoltage.toFixed(1)}V` : "—";
+        const batteryDisplay = vehicle.batteryVoltage != null ? `${vehicle.batteryVoltage.toFixed(1)}V` : "-";
         const batteryColor = batteryPercent != null ? (batteryPercent >= 60 ? "#22c55e" : batteryPercent >= 30 ? "#f59e0b" : "#ef4444") : "#94a3b8";
 
         const popupContent = `
@@ -840,7 +840,7 @@ export function FleetMap({
           <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 8px;font-size:11px;color:#374151;">
             <span style="color:#6b7280;">Speed</span><span>${event.speedKph} km/h</span>
             <span style="color:#6b7280;">When</span><span>${tsLabel}</span>
-            <span style="color:#6b7280;">Road</span><span>${event.roadName || "—"}</span>
+            <span style="color:#6b7280;">Road</span><span>${event.roadName || "-"}</span>
             <span style="color:#6b7280;">Driver</span><span>${event.driverName}</span>
             <span style="color:#6b7280;">Vehicle</span><span>${event.vehicleRegistration}</span>
           </div>
@@ -915,15 +915,15 @@ export function FleetMap({
                 <div className="h-px bg-border my-1.5" />
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-warning/70" />
-                  <span className="text-xs text-muted-foreground">Harsh — minor</span>
+                  <span className="text-xs text-muted-foreground">Harsh: minor</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-warning" />
-                  <span className="text-xs text-muted-foreground">Harsh — moderate</span>
+                  <span className="text-xs text-muted-foreground">Harsh: moderate</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-destructive" />
-                  <span className="text-xs text-muted-foreground">Harsh — severe</span>
+                  <span className="text-xs text-muted-foreground">Harsh: severe</span>
                 </div>
               </>
             )}

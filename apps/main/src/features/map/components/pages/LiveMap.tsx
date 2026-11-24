@@ -111,9 +111,9 @@ function WhatsAppIcon() {
 
 const REFUSED_COPY: Record<string, string> = {
   origin_not_allowed: "Live updates blocked for this origin",
-  capacity_reached: "Live updates are at capacity — try again shortly",
+  capacity_reached: "Live updates are at capacity. Try again shortly",
   unauthenticated: "Live updates need you to sign in again",
-  scope_unavailable: "Live updates are unavailable right now — try again shortly",
+  scope_unavailable: "Live updates are unavailable right now. Try again shortly",
   tenant_suspended: "Live updates are paused while this account is suspended",
   app_check_failed: "Live updates couldn't verify this app",
 };
@@ -543,11 +543,11 @@ export default function LiveMap() {
           }
           // The URL is shown once and never again — if the clipboard refused it, show it here instead.
           toast.success(
-            copied ? "Tracking link copied and WhatsApp opened" : "WhatsApp opened — the link couldn't be copied",
+            copied ? "Tracking link copied and WhatsApp opened" : "WhatsApp opened, but the link couldn't be copied",
             {
               description: copied
                 ? `This is the only time the link is shown. Expires ${formatDateTime(data.expiresAt)}.`
-                : `${data.url} — it won't be shown again. Expires ${formatDateTime(data.expiresAt)}.`,
+                : `${data.url} (it won't be shown again). Expires ${formatDateTime(data.expiresAt)}.`,
               duration: copied ? undefined : 30_000,
             },
           );
@@ -635,7 +635,7 @@ export default function LiveMap() {
         }
       : realtime.state === "disconnected"
         ? {
-            icon: WifiOff, text: "Offline — reconnecting", className: "text-warning", dot: "bg-warning",
+            icon: WifiOff, text: "Offline, reconnecting", className: "text-warning", dot: "bg-warning",
           }
         : {
             icon: WifiOff, text: "Connecting...", className: "text-warning", dot: "bg-warning",

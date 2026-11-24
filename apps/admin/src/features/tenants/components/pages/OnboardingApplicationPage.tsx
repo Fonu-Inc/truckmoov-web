@@ -94,10 +94,10 @@ type DialogKind = Exclude<Decision, "pending">;
 
 /** Fleetflow's applicationFormSections, filled from the live application. */
 function applicationFormSections(app: SystemOnboardingApplicationDetail) {
-  const address = app.address || "—";
+  const address = app.address || "-";
   // ponytail: the application has one address line — no separate city / state for
   // "Business location" / "State" yet.
-  const location = "—";
+  const location = "-";
   if (app.applicantType === "owner_operator") {
     return [
       {
@@ -149,7 +149,7 @@ function applicationFormSections(app: SystemOnboardingApplicationDetail) {
         ],
         [
           "Contact person's role",
-          app.contactRole || "—",
+          app.contactRole || "-",
         ],
         [
           "Business phone number",
@@ -169,7 +169,7 @@ function applicationFormSections(app: SystemOnboardingApplicationDetail) {
             ? `Existing MTN number +${app.telecomMaster.msisdn ?? ""}`
             : app.telecomMaster?.numberType === "new"
               ? "New Telecom Master SIM requested"
-              : "—",
+              : "-",
         ],
       ] as Array<[string, string]>,
     },
@@ -305,7 +305,7 @@ export default function OnboardingApplicationPage() {
     ...(decision === "pending" && app.decisionReason ? [app.decisionReason] : []),
     ...app.documents
       .filter(d => d.status === "rejected" && d.rejectionReason)
-      .map(d => `${SECTION_LABEL.documents}: ${prettyDocumentType(d.documentType)} — ${d.rejectionReason}`),
+      .map(d => `${SECTION_LABEL.documents}: ${prettyDocumentType(d.documentType)}: ${d.rejectionReason}`),
   ];
 
   return (
@@ -419,7 +419,7 @@ export default function OnboardingApplicationPage() {
         </div>
         {app.stage === "provisioning" && (
           <p className="text-sm text-muted-foreground">
-            Waiting for device stock. Payment opens by itself once enough devices are available, or you can open it now from the actions menu — if stock is still short, you will be asked for a reason.
+            Waiting for device stock. Payment opens by itself once enough devices are available, or you can open it now from the actions menu. If stock is still short, you will be asked for a reason.
           </p>
         )}
         {app.paymentReviews.map(review => (
@@ -773,7 +773,7 @@ function SubmittedDocumentsCard({
         documentId: rejecting.id,
         data: { reason },
       });
-      toast.success("Document rejected — use Request More Information to send the application back");
+      toast.success("Document rejected. Use Request More Information to send the application back");
       setRejecting(null);
     }
     catch (error) {
@@ -847,7 +847,7 @@ function SubmittedDocumentsCard({
       <OnboardingReasonDialog
         open={!!rejecting}
         title="Reject document"
-        description={`${rejecting ? prettyDocumentType(rejecting.documentType) : ""} — the applicant sees this reason when more information is requested.`}
+        description={`${rejecting ? prettyDocumentType(rejecting.documentType) : ""}: the applicant sees this reason when more information is requested.`}
         submitLabel="Reject document"
         destructive
         loading={rejectDoc.isPending}

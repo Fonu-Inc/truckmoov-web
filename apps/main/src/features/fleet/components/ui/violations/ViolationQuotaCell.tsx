@@ -5,7 +5,7 @@ import { quotaText } from "@/features/fleet/components/ui/violations/violationsU
 /** Quota use of the rule the subject last broke, as in the design app's Violations tab. */
 export function ViolationQuotaCell({ quota }: { quota: ViolationSubject["quota"] }) {
   if (!quota)
-    return <>—</>;
+    return <>-</>;
   return (
     <div className="w-28 space-y-1">
       <div className="flex justify-between text-xs">

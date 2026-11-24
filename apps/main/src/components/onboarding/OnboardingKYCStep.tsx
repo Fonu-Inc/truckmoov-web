@@ -446,7 +446,7 @@ export function OnboardingKYCStep({
                   {cfg.audience === "Owner-Operator" ? "Operator Information" : "Company Information"}
                 </CardTitle>
                 <CardDescription>
-                  Some details have been pre-filled from your sign-up — just complete the rest.
+                  Some details have been pre-filled from your sign-up. Just complete the rest.
                 </CardDescription>
               </div>
             </div>

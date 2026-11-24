@@ -48,7 +48,7 @@ const METHOD_LABEL: Record<TenantPaymentMethod, string> = {
 };
 
 export function methodLabel(method: TenantPaymentMethod | null) {
-  return method ? METHOD_LABEL[method] : "—";
+  return method ? METHOD_LABEL[method] : "-";
 }
 
 export function invoiceStatusKey(status: TenantInvoiceStatus): InvoiceStatusKey {

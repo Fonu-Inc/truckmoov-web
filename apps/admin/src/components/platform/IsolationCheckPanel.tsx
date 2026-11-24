@@ -291,8 +291,8 @@ export function IsolationCheckPanel() {
 
     toast.success(
       newReport.overall === "pass"
-        ? `Isolation verified — ${passed}/${results.length} endpoints blocked`
-        : `Leakage detected — ${failed} endpoint(s) failed`,
+        ? `Isolation verified: ${passed}/${results.length} endpoints blocked`
+        : `Leakage detected: ${failed} endpoint(s) failed`,
     );
   };
 

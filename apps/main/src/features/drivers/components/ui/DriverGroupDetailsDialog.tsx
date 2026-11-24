@@ -235,7 +235,7 @@ export function DriverGroupDetailsDialog({
                   {" "}
                   Created
                   {" "}
-                  {group ? new Date(group.createdAt).toLocaleDateString() : "—"}
+                  {group ? new Date(group.createdAt).toLocaleDateString() : "-"}
                 </Badge>
               </div>
             </DialogDescription>
@@ -407,7 +407,7 @@ export function DriverGroupDetailsDialog({
                             </div>
                           </td>
                           <td className="py-4 pr-6 text-sm">{d.phone}</td>
-                          <td className="py-4 pr-6 text-muted-foreground max-w-[160px] truncate">{d.email || "—"}</td>
+                          <td className="py-4 pr-6 text-muted-foreground max-w-[160px] truncate">{d.email || "-"}</td>
                           <td className="py-4 pr-6">
                             <p className="font-mono">{d.licenseNumber}</p>
                             {d.licenseExpiryDate && (
@@ -427,7 +427,7 @@ export function DriverGroupDetailsDialog({
                               statusColors[d.status ?? ""] ?? "bg-muted text-muted-foreground",
                             )}
                             >
-                              {d.status ?? "—"}
+                              {d.status ?? "-"}
                             </span>
                           </td>
                           <td className="py-4 pr-6">
@@ -455,7 +455,7 @@ export function DriverGroupDetailsDialog({
                                 )}
                           </td>
                           <td className="py-4 pr-6">{d.trips ?? 0}</td>
-                          <td className="py-4 pr-6 capitalize">{channelOf(d) || "—"}</td>
+                          <td className="py-4 pr-6 capitalize">{channelOf(d) || "-"}</td>
                           <td className="py-4 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

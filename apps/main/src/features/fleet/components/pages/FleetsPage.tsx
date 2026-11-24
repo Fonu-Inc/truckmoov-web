@@ -431,7 +431,7 @@ export default function FleetsPage() {
                             <p className="font-medium text-sm">{fleet.name}</p>
                           </div>
                         </td>
-                        <td className="py-4 pr-6 max-w-[280px] truncate text-muted-foreground">{fleet.description || "—"}</td>
+                        <td className="py-4 pr-6 max-w-[280px] truncate text-muted-foreground">{fleet.description || "-"}</td>
                         <td className="py-4 pr-6">
                           <Badge variant="outline">
                             {fleet.vehicleCount}

@@ -263,7 +263,7 @@ export function FleetFinancialsLayout() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">
-                      {fleetTotals.totalKm > 0 ? format(fleetTotals.totalCosts / fleetTotals.totalKm) : "—"}
+                      {fleetTotals.totalKm > 0 ? format(fleetTotals.totalCosts / fleetTotals.totalKm) : "-"}
                     </p>
                     <p className="text-xs text-muted-foreground">Cost per KM · Fleet average</p>
                   </div>

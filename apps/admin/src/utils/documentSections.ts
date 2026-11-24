@@ -155,7 +155,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   },
   {
     number: "8",
-    title: "API Sequence — Job Creation & Driver Assignment",
+    title: "API Sequence: Job Creation & Driver Assignment",
     content: ["The job creation and driver assignment flow involves the following sequence: Supervisor creates job via API, Dispatch service selects and assigns the best available driver, Messaging service sends WhatsApp notification, MTN WhatsApp API delivers message and returns confirmation."],
     bullets: [
       "POST /api/v1/jobs - Create new job",
@@ -167,7 +167,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   },
   {
     number: "9",
-    title: "API Sequence — Driver Response via WhatsApp",
+    title: "API Sequence: Driver Response via WhatsApp",
     content: ["When a driver responds via WhatsApp, the platform processes the reply through webhook handlers with proper idempotency and state management."],
     bullets: [
       "Message Deduplication: External message ID used to prevent duplicate processing",
@@ -179,7 +179,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   },
   {
     number: "10",
-    title: "API Sequence — Telemetry Ingestion & Live Tracking",
+    title: "API Sequence: Telemetry Ingestion & Live Tracking",
     content: ["GPS device data flows through the MTN IoT network to the FleetPro ingestion service, where it is normalized, stored, and broadcast to supervisors in real-time."],
     tables: [
       {
@@ -462,12 +462,12 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
           [
             "Platform Development",
             "✅ Full ownership",
-            "—",
+            "-",
           ],
           [
             "IP & Source Code",
             "✅ Owner",
-            "—",
+            "-",
           ],
           [
             "Product Roadmap",
@@ -477,11 +477,11 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
           [
             "L2/L3 Support",
             "✅ Provides",
-            "—",
+            "-",
           ],
           [
             "Platform Operations",
-            "—",
+            "-",
             "✅ Operates",
           ],
           [
@@ -501,12 +501,12 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
           ],
           [
             "Customer Billing",
-            "—",
+            "-",
             "✅ Manages",
           ],
           [
             "L1 Support",
-            "—",
+            "-",
             "✅ Provides",
           ],
         ],

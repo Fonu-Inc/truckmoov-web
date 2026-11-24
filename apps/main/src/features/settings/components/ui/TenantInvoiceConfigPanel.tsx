@@ -30,7 +30,7 @@ export function TenantInvoiceConfigPanel() {
             readOnly
             disabled
           />
-          <p className="text-xs text-muted-foreground">Default Net 15 — invoices fall due - days after issue.</p>
+          <p className="text-xs text-muted-foreground">Default Net 15: invoices fall due 15 days after issue.</p>
         </div>
 
         <div className="space-y-3 border-t border-border/50 pt-4">

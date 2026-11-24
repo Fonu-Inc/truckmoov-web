@@ -386,7 +386,7 @@ export function DeviceSetupRequestDialog({
                   >
                     {v.registrationNumber}
                     {" "}
-                    —
+                    -
                     {v.make}
                     {" "}
                     {v.model}

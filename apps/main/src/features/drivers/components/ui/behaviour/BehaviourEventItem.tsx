@@ -55,7 +55,7 @@ export function BehaviourEventItem({
           {phone}
         </span>
       </div>
-      <p className="text-xs mt-1 text-muted-foreground">{`Speed: ${event.speedKph != null ? `${Math.round(event.speedKph)} km/h` : "—"}`}</p>
+      <p className="text-xs mt-1 text-muted-foreground">{`Speed: ${event.speedKph != null ? `${Math.round(event.speedKph)} km/h` : "-"}`}</p>
     </div>
   );
 }

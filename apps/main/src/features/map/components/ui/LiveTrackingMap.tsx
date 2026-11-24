@@ -30,7 +30,7 @@ const STATUS_LABEL: Record<TrackingStatus, string> = {
 };
 
 const SATELLITE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const SATELLITE_ATTRIBUTION = "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics";
+const SATELLITE_ATTRIBUTION = "Tiles &copy; Esri | Source: Esri, Maxar, Earthstar Geographics";
 
 const LAGOS: L.LatLngExpression = [
   6.5244,
@@ -111,12 +111,12 @@ function vehiclePopup(v: TrackingVehicle) {
       ${job
         ? `<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12px;color:#475569;">
             <div style="color:#94a3b8;">Job</div><div style="font-weight:600;color:#3b82f6;">${esc(job.reference)}</div>
-            <div style="color:#94a3b8;">Start</div><div style="font-weight:500;">${esc(job.pickupAddress || "—")}</div>
-            <div style="color:#94a3b8;">End</div><div style="font-weight:500;">${esc(job.deliveryAddress || job.dropoffAddress || "—")}</div>
+            <div style="color:#94a3b8;">Start</div><div style="font-weight:500;">${esc(job.pickupAddress || "-")}</div>
+            <div style="color:#94a3b8;">End</div><div style="font-weight:500;">${esc(job.deliveryAddress || job.dropoffAddress || "-")}</div>
           </div>`
         : ""}
       <div style="display:flex;gap:10px;margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b;flex-wrap:wrap;">
-        <div>🚗 ${v.position?.speedKph != null ? `${Math.round(v.position.speedKph)} km/h` : "—"}</div>
+        <div>🚗 ${v.position?.speedKph != null ? `${Math.round(v.position.speedKph)} km/h` : "-"}</div>
         ${fuel != null ? `<div>⛽ ${esc(fuel)}%</div>` : ""}
         <div>⏱ ${v.position ? esc(formatRelative(v.position.fixedAt)) : "Never reported"}</div>
       </div>

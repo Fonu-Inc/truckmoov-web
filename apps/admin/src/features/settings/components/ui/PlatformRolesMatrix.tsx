@@ -49,10 +49,10 @@ const LEVEL_META: Record<Level, {
   icon: typeof Check; label: string; className: string;
 }> = {
   full: {
-    icon: Check, label: "Granted — role can perform this action", className: "bg-success/10 text-success",
+    icon: Check, label: "Granted: role can perform this action", className: "bg-success/10 text-success",
   },
   view: {
-    icon: Eye, label: "View only — read access, no changes", className: "bg-warning/10 text-warning",
+    icon: Eye, label: "View only: read access, no changes", className: "bg-warning/10 text-warning",
   },
   none: {
     icon: X, label: "Not granted", className: "bg-muted text-muted-foreground",

@@ -283,7 +283,7 @@ export function SimInventoryTab() {
                 <Wifi className="h-5 w-5 text-primary" />
                 SIM Inventory
               </CardTitle>
-              <CardDescription>All provisioned SIMs across tenants — search, filter, assign and export</CardDescription>
+              <CardDescription>All provisioned SIMs across tenants: search, filter, assign and export</CardDescription>
             </div>
             <Button
               variant="outline"

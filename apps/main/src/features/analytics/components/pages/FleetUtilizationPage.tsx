@@ -115,7 +115,7 @@ type UtilizationRow = {
 type SortKey = "utilization";
 
 /** Neither distance nor engine hours are recorded on jobs yet. */
-const UNKNOWN = "—";
+const UNKNOWN = "-";
 
 function formatPercent(value: number): string {
   return `${Number(value.toFixed(1))}%`;
@@ -849,7 +849,7 @@ function UtilizationBreakdownCard({
                         <p className="mt-1 text-xs text-muted-foreground">{row.plate}</p>
                       </td>
                       <td className={`${TD} break-words`}>{row.registration}</td>
-                      <td className={`${TD} break-words`}>{row.driver ?? "—"}</td>
+                      <td className={`${TD} break-words`}>{row.driver ?? "-"}</td>
                       <td className={`${TD} tabular-nums`}>{UNKNOWN}</td>
                       <td className={`${TD} tabular-nums`}>{UNKNOWN}</td>
                       <td className={`${TD} tabular-nums`}>{UNKNOWN}</td>
@@ -1043,7 +1043,7 @@ function UnderutilizedCard({
                     className={TR}
                   >
                     <td className={`${TD} py-4 font-medium`}>{row.registration}</td>
-                    <td className={TD}>{row.driver ?? "—"}</td>
+                    <td className={TD}>{row.driver ?? "-"}</td>
                     <td className={TD}>{formatPercent(row.utilization)}</td>
                     <td className={TD}>{UNKNOWN}</td>
                     <td className={TD}>{formatLastActive(row.lastActiveAt)}</td>
@@ -1087,7 +1087,7 @@ function UtilizationDetailDialog({
         ],
         [
           "Assigned Driver",
-          row.driver ?? "—",
+          row.driver ?? "-",
         ],
         [
           "Total Distance",

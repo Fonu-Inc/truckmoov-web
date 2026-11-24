@@ -427,11 +427,11 @@ export function BusinessDetailsStep({
                     <span className="flex w-full flex-col gap-1 rounded-[15px] bg-surface p-3">
                       <span className="flex items-baseline gap-1.5">
                         <span className="text-lg font-bold text-heading">{`₦${plan.perDeviceYear1Ngn.toLocaleString()}`}</span>
-                        <span className="text-xs text-muted-foreground">per device — Year 1</span>
+                        <span className="text-xs text-muted-foreground">per device, Year 1</span>
                       </span>
                       <span className="flex items-baseline gap-1.5">
                         <span className="text-sm font-semibold text-heading">{`₦${plan.perDeviceRenewalNgn.toLocaleString()}`}</span>
-                        <span className="text-xs text-muted-foreground">per device — Renewal</span>
+                        <span className="text-xs text-muted-foreground">per device, Renewal</span>
                       </span>
                     </span>
                     <span className={cn(

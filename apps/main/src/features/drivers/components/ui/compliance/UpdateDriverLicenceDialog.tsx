@@ -79,7 +79,7 @@ function UpdateDriverLicenceForm({
       <DialogContent className="bg-card border-border max-w-md">
         <DialogHeader>
           <DialogTitle>Update Licence</DialogTitle>
-          <DialogDescription>{driver?.name || "—"}</DialogDescription>
+          <DialogDescription>{driver?.name || "-"}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">

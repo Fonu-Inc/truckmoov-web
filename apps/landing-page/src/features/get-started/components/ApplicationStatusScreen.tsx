@@ -152,7 +152,7 @@ export function ApplicationStatusScreen({
           {booked
             ? "Your account is ready. Sign in with the setup link we emailed you."
             : awaitingProvisioning
-              ? "We're allocating your devices and SIMs. Payment opens as soon as that's done — we'll email you."
+              ? "We're allocating your devices and SIMs. Payment opens as soon as that's done. We'll email you."
               : approved
                 ? "You can now make payment for your Fleet Pro package to continue."
                 : rejected
@@ -165,7 +165,7 @@ export function ApplicationStatusScreen({
         {!approved && !rejected && !changesRequested && (
           <p className="mt-3 flex max-w-[460px] items-start gap-2 rounded-[15px] bg-surface px-4 py-3 text-left text-xs leading-[17px] text-muted-foreground">
             <Clock className="mt-px size-4 shrink-0 text-brand-deep" />
-            This review takes a little while — you don't need to stay on this page. We'll email you as
+            This review takes a little while, and you don't need to stay on this page. We'll email you as
             soon as your application has been approved, and you can come back then to make your
             payment.
           </p>
@@ -216,7 +216,7 @@ export function ApplicationStatusScreen({
               className="text-muted-foreground"
             >
               <span className="font-medium text-heading">{DOCUMENT_LABELS[document.documentType] ?? document.documentType}</span>
-              {document.rejectionReason ? ` — ${document.rejectionReason}` : ""}
+              {document.rejectionReason ? `: ${document.rejectionReason}` : ""}
             </p>
           ))}
         </div>

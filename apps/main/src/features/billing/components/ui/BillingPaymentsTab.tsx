@@ -259,16 +259,16 @@ export function BillingPaymentsTab() {
                             tone="info"
                           />
                         )
-                      : <span className="text-muted-foreground">—</span>}
+                      : <span className="text-muted-foreground">-</span>}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{p.deviceCount || "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{p.deviceCount || "-"}</TableCell>
                   <TableCell className="text-right tabular-nums">{ngn(p.amountNgn)}</TableCell>
                   <TableCell>{methodLabel(p.method)}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {[
                       p.invoiceNumber,
                       p.quotationNumber,
-                    ].filter(Boolean).join(" · ") || "—"}
+                    ].filter(Boolean).join(" · ") || "-"}
                   </TableCell>
                   <TableCell>
                     <PaymentStatus status={p.status} />

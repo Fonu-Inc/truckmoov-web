@@ -66,15 +66,15 @@ export default function BehaviourPage() {
     [driversQuery.data?.data],
   );
   const driverPhone = useCallback(
-    (id: string) => driversById.get(id)?.phone || "—",
+    (id: string) => driversById.get(id)?.phone || "-",
     [driversById],
   );
   const driverName = useCallback(
-    (id: string) => driversById.get(id)?.name || "—",
+    (id: string) => driversById.get(id)?.name || "-",
     [driversById],
   );
 
-  const stat = (value: number | null | undefined) => (summaryQuery.isLoading ? "…" : `${value ?? "—"}`);
+  const stat = (value: number | null | undefined) => (summaryQuery.isLoading ? "…" : `${value ?? "-"}`);
 
   return (
     <>
@@ -150,7 +150,7 @@ export default function BehaviourPage() {
                   className={TAB_CONTENT_CLASS}
                 >
                   <div className="grid gap-4">
-                    <p className="text-xs text-muted-foreground">Drivers are ranked by performance score — braking (30%), speeding (30%), acceleration (20%) and cornering (20%), calculated from recorded telemetry events.</p>
+                    <p className="text-xs text-muted-foreground">Drivers are ranked by performance score: braking (30%), speeding (30%), acceleration (20%) and cornering (20%), calculated from recorded telemetry events.</p>
                     {rankingQuery.isLoading && <StateMessage><Loader2 className="mx-auto h-5 w-5 animate-spin" /></StateMessage>}
                     {rankingQuery.isError && (
                       <StateMessage>

@@ -69,7 +69,7 @@ export function MaintenanceListCard({
         <DashboardListRow
           key={p.id}
           title={`${vehiclePlate(p.vehicleId)} · ${p.serviceLabel}`}
-          subtitle={p.currentMileage != null ? `Odometer ${p.currentMileage.toLocaleString("en-US")} km` : "Odometer —"}
+          subtitle={p.currentMileage != null ? `Odometer ${p.currentMileage.toLocaleString("en-US")} km` : "Odometer -"}
           right={(
             <RowPill className={overdue ? "border-destructive/30 text-destructive" : "border-warning/30 text-warning"}>
               {dueLabel(

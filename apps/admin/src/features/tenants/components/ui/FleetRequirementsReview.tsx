@@ -25,7 +25,7 @@ type FleetDetailItem = {
   noDetails?: boolean;
 };
 
-const dash = (value: string | null | undefined) => value || "—";
+const dash = (value: string | null | undefined) => value || "-";
 
 /**
  * Vehicles submitted and the devices requested by the organization — fleetflow's
@@ -62,7 +62,7 @@ export function FleetRequirementsReview({
       ],
       [
         "Year",
-        "—",
+        "-",
       ],
       [
         "Vehicle type",
@@ -70,35 +70,35 @@ export function FleetRequirementsReview({
       ],
       [
         "Load capacity",
-        "—",
+        "-",
       ],
       [
         "Engine number",
-        "—",
+        "-",
       ],
       [
         "Chassis number",
-        "—",
+        "-",
       ],
       [
         "Colour",
-        "—",
+        "-",
       ],
       [
         "Engine capacity",
-        "—",
+        "-",
       ],
       [
         "Odometer",
-        "—",
+        "-",
       ],
       [
         "Purchase type",
-        "—",
+        "-",
       ],
       [
         "Licence plan",
-        "—",
+        "-",
       ],
     ],
   }));
@@ -115,11 +115,11 @@ export function FleetRequirementsReview({
       ],
       [
         "Use case",
-        r.useCase || "—",
+        r.useCase || "-",
       ],
       [
         "Notes",
-        "—",
+        "-",
       ],
     ],
   }));

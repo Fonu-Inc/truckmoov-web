@@ -42,7 +42,7 @@ export const STATUS_LABELS: Record<string, string> = {
   deactivated: "Deactivated",
 };
 
-export const EMPTY_VALUE = "—";
+export const EMPTY_VALUE = "-";
 
 export type SimRow = {
   id: string;

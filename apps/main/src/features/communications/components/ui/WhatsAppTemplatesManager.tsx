@@ -255,7 +255,7 @@ export function WhatsAppTemplatesManager({ tenantId: _tenantId }: WhatsAppTempla
     {
       accessorKey: "category",
       header: "Category",
-      cell: ({ row }) => <Badge variant="outline">{row.original.category || "—"}</Badge>,
+      cell: ({ row }) => <Badge variant="outline">{row.original.category || "-"}</Badge>,
     },
     {
       accessorKey: "language",

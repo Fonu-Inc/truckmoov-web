@@ -181,7 +181,7 @@ export function SIMRequestDetailsDialog({
                 Requesting Email
               </p>
               <p className="font-medium text-sm break-all">
-                {tenantEmail || "—"}
+                {tenantEmail || "-"}
               </p>
             </div>
             <div className="space-y-1">

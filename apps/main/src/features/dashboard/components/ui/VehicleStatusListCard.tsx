@@ -147,7 +147,7 @@ export function VehiclesInMaintenanceCard({
             subtitle={[
               r.technician,
               daysLabel(r),
-            ].filter(Boolean).join(" · ") || "—"}
+            ].filter(Boolean).join(" · ") || "-"}
             right={<RowPill className={pill.className}>{pill.label}</RowPill>}
           />
         );

@@ -80,13 +80,13 @@ function fmt(iso?: string | null) {
           day: "2-digit", month: "short", year: "numeric",
         },
       )
-    : "—";
+    : "-";
 }
 
 // The API records no tenant type or start time per job yet.
 const NOT_RECORDED = "Not recorded";
-const vehicleLabel = (j: SystemInstallationJob) => (j.firstVehicle ? `${j.firstVehicle.make} ${j.firstVehicle.model}` : "—");
-const deviceLabel = (j: SystemInstallationJob) => (j.firstDevice ? `${j.firstDevice.manufacturer} ${j.firstDevice.model}` : "—");
+const vehicleLabel = (j: SystemInstallationJob) => (j.firstVehicle ? `${j.firstVehicle.make} ${j.firstVehicle.model}` : "-");
+const deviceLabel = (j: SystemInstallationJob) => (j.firstDevice ? `${j.firstDevice.manufacturer} ${j.firstDevice.model}` : "-");
 const locationLabel = (j: SystemInstallationJob) => `${j.location.city}, ${fromApiState(j.location.state)}`;
 const completedAt = (j: SystemInstallationJob) => (j.status === "completed" ? j.completedAt : null);
 
@@ -374,7 +374,7 @@ export function InstallerProfileSheet({
                     <TableBody>
                       {filteredJobs.map(j => (
                         <TableRow key={j.id}>
-                          <TableCell>{j.customer || "—"}</TableCell>
+                          <TableCell>{j.customer || "-"}</TableCell>
                           <TableCell>{NOT_RECORDED}</TableCell>
                           <TableCell>
                             <div className="font-medium">{vehicleLabel(j)}</div>
@@ -427,7 +427,7 @@ function Info({
   return (
     <div className="rounded-xl border p-3">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-0.5 text-sm font-medium">{value || "—"}</div>
+      <div className="mt-0.5 text-sm font-medium">{value || "-"}</div>
     </div>
   );
 }

@@ -664,6 +664,9 @@ never a stack.
   sheet closes on every route change, and the content column's left margin is
   `md:`-only. `mobileOpen` is not persisted.
 - Charts use the shadcn `chart` wrapper with `--chart-*` tokens.
+- No em dashes (—) in any text a user sees. An empty value renders as `-`
+  (`{email || "-"}`); in sentences use a comma, colon or full stop instead.
+  Code comments may still use them.
 
 ## AI features are off
 

@@ -576,15 +576,15 @@ export default function DriverCompliancePage() {
                           driver, status, daysLeft,
                         }) => (
                           <TableRow key={driver.id}>
-                            <TableCell className="font-medium">{driver.name || "—"}</TableCell>
-                            <TableCell>{driver.phone || "—"}</TableCell>
+                            <TableCell className="font-medium">{driver.name || "-"}</TableCell>
+                            <TableCell>{driver.phone || "-"}</TableCell>
                             <TableCell
                               className="text-muted-foreground max-w-[200px] truncate"
                               title={driver.email ?? undefined}
                             >
-                              {driver.email || "—"}
+                              {driver.email || "-"}
                             </TableCell>
-                            <TableCell className="font-mono text-sm">{driver.licenseNumber || "—"}</TableCell>
+                            <TableCell className="font-mono text-sm">{driver.licenseNumber || "-"}</TableCell>
                             <TableCell>
                               {status
                                 ? (
@@ -596,7 +596,7 @@ export default function DriverCompliancePage() {
                                       {statusLabels[status]}
                                     </div>
                                   )
-                                : "—"}
+                                : "-"}
                             </TableCell>
                             <TableCell>{formatDate(driver.licenseExpiryDate)}</TableCell>
                             <TableCell className={cn(
@@ -605,7 +605,7 @@ export default function DriverCompliancePage() {
                             )}
                             >
                               {daysLeft === null
-                                ? "—"
+                                ? "-"
                                 : daysLeft < 0
                                   ? `Expired ${Math.abs(daysLeft)} days ago`
                                   : daysLeft === 0 ? "Expires today" : `${daysLeft} days`}

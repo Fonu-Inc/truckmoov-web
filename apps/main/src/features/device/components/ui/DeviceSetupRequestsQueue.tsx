@@ -310,7 +310,7 @@ export function DeviceSetupRequestsQueue({
       accessorFn: req => req.requester_name ?? "",
       cell: ({ row }) => (
         <>
-          <p className="text-sm">{row.original.requester_name || "—"}</p>
+          <p className="text-sm">{row.original.requester_name || "-"}</p>
           {row.original.needs_sim && (
             <Badge
               variant="secondary"
@@ -326,7 +326,7 @@ export function DeviceSetupRequestsQueue({
       id: "vehicle",
       header: "Vehicle",
       accessorFn: req => req.vehicle_name ?? "",
-      cell: ({ row }) => <p className="text-sm">{row.original.vehicle_name || "—"}</p>,
+      cell: ({ row }) => <p className="text-sm">{row.original.vehicle_name || "-"}</p>,
     },
     {
       id: "location",
@@ -344,7 +344,7 @@ export function DeviceSetupRequestsQueue({
                 ].filter(Boolean).join(", ")}
               </div>
             )
-          : "—";
+          : "-";
       },
     },
     {
@@ -801,7 +801,7 @@ export function DeviceSetupRequestsQueue({
                 </div>
                 <div>
                   <span className="text-muted-foreground">Model</span>
-                  <p className="font-medium">{detailRequest.model || "—"}</p>
+                  <p className="font-medium">{detailRequest.model || "-"}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">IMEI</span>
@@ -813,11 +813,11 @@ export function DeviceSetupRequestsQueue({
                 </div>
                 <div>
                   <span className="text-muted-foreground">Vehicle</span>
-                  <p>{detailRequest.vehicle_name || "—"}</p>
+                  <p>{detailRequest.vehicle_name || "-"}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Requester</span>
-                  <p>{detailRequest.requester_name || "—"}</p>
+                  <p>{detailRequest.requester_name || "-"}</p>
                 </div>
               </div>
               <Separator />

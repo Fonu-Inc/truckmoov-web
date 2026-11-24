@@ -193,7 +193,7 @@ export function PricingRulesPanel({
     {
       accessorKey: "vehicle_type",
       header: "Vehicle Type",
-      cell: ({ row }) => row.original.vehicle_type || "—",
+      cell: ({ row }) => row.original.vehicle_type || "-",
     },
     {
       accessorKey: "customer_name",
@@ -212,7 +212,7 @@ export function PricingRulesPanel({
       meta: { className: "text-right text-sm" },
       cell: ({ row }) => {
         const rule = row.original;
-        return rule.price_per_unit_ngn ? `${formatAmount(rule.price_per_unit_ngn)}/${rule.unit_type || "unit"}` : "—";
+        return rule.price_per_unit_ngn ? `${formatAmount(rule.price_per_unit_ngn)}/${rule.unit_type || "unit"}` : "-";
       },
     },
     {
@@ -228,7 +228,7 @@ export function PricingRulesPanel({
                   rule.effective_from,
                   "dd MMM yy",
                 )
-              : "—"}
+              : "-"}
             {rule.effective_to
               ? ` → ${formatWithPattern(
                 rule.effective_to,

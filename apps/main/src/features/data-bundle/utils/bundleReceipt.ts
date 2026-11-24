@@ -55,7 +55,7 @@ export function generateBundleTransactionReceipt(transaction: BundleReceiptTrans
     ],
     [
       "Payment reference",
-      transaction.payment_reference ?? "—",
+      transaction.payment_reference ?? "-",
     ],
     [
       "Date",

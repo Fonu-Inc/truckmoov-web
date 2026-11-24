@@ -90,7 +90,7 @@ export function formatTmNumber(msisdn?: string | null) {
   )} ${msisdn.slice(
     6,
     9,
-  )} ${msisdn.slice(9)}` : msisdn || "—";
+  )} ${msisdn.slice(9)}` : msisdn || "-";
 }
 
 /** Quotation line for a new Telecom Master SIM; null when not applicable. Included once. */

@@ -62,7 +62,7 @@ type PeriodValue = (typeof PERIODS)[number]["value"];
 /** One shared feed size: the endpoint is the same for every role. */
 const ACTIVITY_LIMIT = 8;
 
-// shortcut: the drivers list caps a page at 100, so names past that show "—"; page through if tenants outgrow it.
+// shortcut: the drivers list caps a page at 100, so names past that show "-"; page through if tenants outgrow it.
 const DRIVER_LOOKUP_LIMIT = 100;
 
 const ACTIVITY_DESCRIPTIONS: Record<string, string> = {
@@ -86,7 +86,7 @@ function activityDescription(entityType: string, action: string) {
 function timeAgo(iso: string) {
   const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
   if (Number.isNaN(minutes))
-    return "—";
+    return "-";
   if (minutes < 1)
     return "just now";
   if (minutes < 60)
@@ -139,8 +139,8 @@ export default function EnterpriseLogisticsDashboard() {
     ])),
     [drivers.data],
   );
-  const vehiclePlate = (id: string | null) => (id && plateById.get(id)) || "—";
-  const driverName = (id: string | null) => (id && nameById.get(id)) || "—";
+  const vehiclePlate = (id: string | null) => (id && plateById.get(id)) || "-";
+  const driverName = (id: string | null) => (id && nameById.get(id)) || "-";
 
   const {
     dueProfiles, overdueProfiles,
@@ -276,22 +276,22 @@ export default function EnterpriseLogisticsDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Vehicles"
-            value={overview?.cards.totalVehicles ?? "—"}
+            value={overview?.cards.totalVehicles ?? "-"}
             icon={Truck}
           />
           <StatCard
             title="Total Jobs"
-            value={overview?.cards.totalJobs ?? "—"}
+            value={overview?.cards.totalJobs ?? "-"}
             icon={Package}
           />
           <StatCard
             title="Total Drivers"
-            value={overview?.cards.totalDrivers ?? "—"}
+            value={overview?.cards.totalDrivers ?? "-"}
             icon={Users}
           />
           <StatCard
             title="Total Devices"
-            value={devicesSummary.isLoading ? "…" : devicesSummary.isError ? "—" : (devicesSummary.data?.data.total ?? 0)}
+            value={devicesSummary.isLoading ? "…" : devicesSummary.isError ? "-" : (devicesSummary.data?.data.total ?? 0)}
             icon={Cpu}
           />
         </div>

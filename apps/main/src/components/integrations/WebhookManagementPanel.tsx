@@ -152,7 +152,7 @@ export function WebhookManagementPanel() {
               ...prev, [registered.id]: registered.signingSecret!,
             }));
           }
-          toast.success("Webhook registered — copy its signing secret now, it is shown only once");
+          toast.success("Webhook registered. Copy its signing secret now, it is shown only once");
         },
         onError: error => toast.error(error.message),
       },
@@ -230,7 +230,7 @@ export function WebhookManagementPanel() {
                   onChange={e => setNewWebhookName(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Used in this session only — the API stores the URL and event types, not a name.
+                  Used in this session only. The API stores the URL and event types, not a name.
                 </p>
               </div>
               <div>
@@ -358,7 +358,7 @@ export function WebhookManagementPanel() {
                                 <Webhook className="h-4 w-4" />
                                 {/* ponytail: the API stores no webhook name — the URL is
                                     the only human-readable identifier it returns. */}
-                                <CardTitle className="text-base">—</CardTitle>
+                                <CardTitle className="text-base">-</CardTitle>
                                 <Badge variant={isActive ? "default" : "secondary"}>
                                   {isActive ? "Enabled" : "Paused"}
                                 </Badge>
@@ -418,7 +418,7 @@ export function WebhookManagementPanel() {
                               <code className="text-xs bg-muted px-2 py-1 rounded">
                                 {secret
                                   ? (showSecrets[subscription.id] ? secret : "••••••••••••")
-                                  : "—"}
+                                  : "-"}
                               </code>
                               <Button
                                 variant="ghost"

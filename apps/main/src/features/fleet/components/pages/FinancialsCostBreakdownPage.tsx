@@ -471,7 +471,7 @@ function CostBreakdownTable({
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{getVehicleName(item.vehicle_id)}</span>
-                      <span className="text-xs text-muted-foreground">{item.plateNumber || "—"}</span>
+                      <span className="text-xs text-muted-foreground">{item.plateNumber || "-"}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">{format(item.costs?.fuel || 0)}</TableCell>

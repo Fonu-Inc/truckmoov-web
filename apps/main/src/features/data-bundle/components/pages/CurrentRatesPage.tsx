@@ -189,7 +189,7 @@ export function CurrentRatesPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Current Rates</CardTitle>
-              <CardDescription>Current bundle catalog by carrier and plan type — the source of truth for all SIM allocations.</CardDescription>
+              <CardDescription>Current bundle catalog by carrier and plan type, the source of truth for all SIM allocations.</CardDescription>
             </div>
             <Button
               variant="outline"

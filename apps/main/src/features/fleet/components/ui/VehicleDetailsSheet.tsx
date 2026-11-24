@@ -239,16 +239,16 @@ export function VehicleDetailsSheet({
                   <CardContent className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">VIN</span>
-                      <span className="font-mono">{details.vin ?? "—"}</span>
+                      <span className="font-mono">{details.vin ?? "-"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Type</span>
-                      <span className="capitalize">{details.type ?? "—"}</span>
+                      <span className="capitalize">{details.type ?? "-"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Capacity</span>
                       <span>
-                        {details.capacity === null ? "—" : `${details.capacity} tons`}
+                        {details.capacity === null ? "-" : `${details.capacity} tons`}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -283,9 +283,9 @@ export function VehicleDetailsSheet({
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Coordinates</span>
                           <span className="font-mono text-xs">
-                            {location.latitude?.toFixed(4) ?? "—"}
+                            {location.latitude?.toFixed(4) ?? "-"}
                             ,
-                            {location.longitude?.toFixed(4) ?? "—"}
+                            {location.longitude?.toFixed(4) ?? "-"}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">

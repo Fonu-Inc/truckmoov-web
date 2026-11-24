@@ -147,7 +147,7 @@ export function TmNumbersPanel() {
     retry.mutate(
       { id },
       {
-        onSuccess: () => toast.success("Retry requested — the request is back in the pending queue."),
+        onSuccess: () => toast.success("Retry requested. The request is back in the pending queue."),
         onError: error => toast.error(errorMessage(
           error,
           "Could not retry this request.",
@@ -162,7 +162,7 @@ export function TmNumbersPanel() {
     <Card className="bg-card/50 border-border/50">
       <CardHeader>
         <CardTitle>Telecom Master</CardTitle>
-        <CardDescription>Telecom Master — existing MTN numbers and new Telecom Master SIM allocation requests. Device SIMs are managed under SIMs.</CardDescription>
+        <CardDescription>Telecom Master: existing MTN numbers and new Telecom Master SIM allocation requests. Device SIMs are managed under SIMs.</CardDescription>
         <div className="flex flex-col gap-2 pt-2 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -260,7 +260,7 @@ export function TmNumbersPanel() {
                           </TableCell>
                           <TableCell>{r.numberType === "existing" ? "Existing" : "New Allocation"}</TableCell>
                           <TableCell>{r.msisdn ? formatTmNumber(r.msisdn) : "Awaiting allocation"}</TableCell>
-                          <TableCell>{r.simSerial || "—"}</TableCell>
+                          <TableCell>{r.simSerial || "-"}</TableCell>
                           <TableCell>
                             <Badge
                               variant="outline"
@@ -346,7 +346,7 @@ export function TmNumbersPanel() {
                       </div>
                       <div>
                         <dt className="text-xs text-muted-foreground">MTN Reference</dt>
-                        <dd>{open.mtnReference || "—"}</dd>
+                        <dd>{open.mtnReference || "-"}</dd>
                       </div>
                       {open.failureReason && (
                         <div className="col-span-2">

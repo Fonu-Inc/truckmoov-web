@@ -59,7 +59,7 @@ function categoryLabel(category: string) {
 // (that reads as instant resolution). Zero is a legitimate value.
 function formatResolutionHours(hrs: number | null): string {
   if (hrs === null || hrs === undefined)
-    return "—";
+    return "-";
   if (hrs < 1)
     return `${Math.round(hrs * 60)}m`;
   if (hrs < 24)

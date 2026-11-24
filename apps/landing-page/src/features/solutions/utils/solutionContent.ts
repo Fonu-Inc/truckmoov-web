@@ -207,7 +207,7 @@ const aiLogisticsOperations: SolutionPageData = {
     description: "Decisions, not just dashboards. Turn operational data into clear,\nactionable intelligence that helps teams make faster, more\nconfident decisions and improve performance across the entire\nfleet.",
     icon: Brain,
   },
-  premise: "An intelligence layer woven through dispatch, routing and maintenance — surfacing\nthe next best action, not just dashboards full of charts.",
+  premise: "An intelligence layer woven through dispatch, routing and maintenance, surfacing\nthe next best action, not just dashboards full of charts.",
   useCases: [
     "Operators drowning in manual dispatch decisions",
     "Networks optimising routing across thousands of stops",

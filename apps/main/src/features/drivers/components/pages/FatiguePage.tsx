@@ -9,7 +9,7 @@ import { FatigueAnalysisCard } from "@/features/drivers/components/ui/fatigue/Fa
 
 /** Scores come back as decimals; the design app shows whole-ish numbers out of 10. */
 function formatScore(value: number | null | undefined) {
-  return value === null || value === undefined ? "—" : Number(value.toFixed(1));
+  return value === null || value === undefined ? "-" : Number(value.toFixed(1));
 }
 
 /** Radix Progress, as plain markup so the rendered classes match the design app. */

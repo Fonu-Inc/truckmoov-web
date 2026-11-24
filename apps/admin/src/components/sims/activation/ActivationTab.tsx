@@ -200,7 +200,7 @@ export function ActivationTab() {
                 SIM Activations
               </CardTitle>
               <CardDescription>
-                SIM activations for the devices each tenant has requested — every requested device ships with its SIM
+                SIM activations for the devices each tenant has requested. Every requested device ships with its SIM
               </CardDescription>
             </div>
             <Button

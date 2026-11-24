@@ -704,7 +704,7 @@ export function GeofenceManagementDialog({
                           {editForm.geofence_type === "POLYGON" && (
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-xs text-muted-foreground">
-                                {`Click the map to add corners — ${editForm.points.length} placed, at least 3 needed.`}
+                                {`Click the map to add corners: ${editForm.points.length} placed, at least 3 needed.`}
                               </p>
                               <div className="flex gap-2 shrink-0">
                                 <Button

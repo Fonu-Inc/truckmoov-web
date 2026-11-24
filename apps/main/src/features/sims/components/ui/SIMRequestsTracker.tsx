@@ -104,7 +104,7 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
             <FileText className="h-5 w-5 text-primary" />
             My SIM Requests
           </CardTitle>
-          <CardDescription>Track every IoT SIM request you've submitted — from approval and activation through to device assignment.</CardDescription>
+          <CardDescription>Track every IoT SIM request you've submitted, from approval and activation through to device assignment.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {[
@@ -129,7 +129,7 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
           <FileText className="h-5 w-5 text-primary" />
           My SIM Requests
         </CardTitle>
-        <CardDescription>Track every IoT SIM request you've submitted — from approval and activation through to device assignment.</CardDescription>
+        <CardDescription>Track every IoT SIM request you've submitted, from approval and activation through to device assignment.</CardDescription>
       </CardHeader>
       <CardContent>
         {requests.length === 0 ? (
@@ -201,26 +201,26 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <p className="text-xs text-muted-foreground">Organisation Name</p>
-                          <p className="font-medium">{request.organizationName || "—"}</p>
+                          <p className="font-medium">{request.organizationName || "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Requesting Email</p>
-                          <p className="font-medium break-all">{request.requestingEmail || user?.email || "—"}</p>
+                          <p className="font-medium break-all">{request.requestingEmail || user?.email || "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Carrier</p>
-                          <p className="font-medium uppercase">{request.carrier || "—"}</p>
+                          <p className="font-medium uppercase">{request.carrier || "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Plan Type</p>
-                          <p className="font-medium capitalize">{request.planType || "—"}</p>
+                          <p className="font-medium capitalize">{request.planType || "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Data Bundle Plan</p>
                           <p className="font-medium">
                             {request.dataBundlePlan
                               ? `${request.dataBundlePlan.dataLimitGb.toFixed(1)} GB`
-                              : "—"}
+                              : "-"}
                           </p>
                         </div>
                         <div>
@@ -229,7 +229,7 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">Use Case</p>
-                          <p className="font-medium">{request.useCase || "—"}</p>
+                          <p className="font-medium">{request.useCase || "-"}</p>
                         </div>
                       </div>
 

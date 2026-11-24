@@ -294,7 +294,7 @@ export function PlatformInstallationsTab() {
     );
   };
   /** Shows the recorded time when the value carries one; date-only values stay date-only. */
-  const dateTime = (value: string) => !value ? "—" : value.includes("T") ? formatDateInTimezone(
+  const dateTime = (value: string) => !value ? "-" : value.includes("T") ? formatDateInTimezone(
     value,
     timezone,
   ) : formatDateOnlyInTimezone(
@@ -489,7 +489,7 @@ export function PlatformInstallationsTab() {
                           <TableRow key={r.key}>
                             <TableCell className="max-w-[220px] whitespace-normal font-medium">{r.customer}</TableCell>
                             <TableCell>{r.tenantType || "Not recorded"}</TableCell>
-                            <TableCell>{r.vehicleCount ?? "—"}</TableCell>
+                            <TableCell>{r.vehicleCount ?? "-"}</TableCell>
                             <TableCell title={r.deviceCount == null ? "No device count recorded" : undefined}>{r.deviceCount ?? 0}</TableCell>
                             <TableCell className="max-w-[190px] whitespace-normal">{assignedName(r)}</TableCell>
                             <TableCell><InstallationStatusBadge status={r.status} /></TableCell>

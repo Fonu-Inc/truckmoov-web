@@ -47,7 +47,7 @@ export function DetailDialog({
             className="space-y-1.5"
           >
             <dt className="text-xs font-medium text-muted-foreground">{field.label}</dt>
-            <dd className="rounded-[12px] bg-surface px-3 py-2 text-sm text-heading">{field.value || "—"}</dd>
+            <dd className="rounded-[12px] bg-surface px-3 py-2 text-sm text-heading">{field.value || "-"}</dd>
           </div>
         ))}
       </dl>

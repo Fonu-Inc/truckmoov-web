@@ -153,7 +153,7 @@ const companyColumn: ColumnDef<InstallerJobListItem> = {
   meta: { className: "font-medium" },
   cell: ({ row }) => (
     <>
-      {row.original.companyName || "—"}
+      {row.original.companyName || "-"}
       <span className="block text-xs text-muted-foreground">{row.original.jobNumber}</span>
     </>
   ),
@@ -164,7 +164,7 @@ const locationColumn: ColumnDef<InstallerJobListItem> = {
   cell: ({ row }) => [
     row.original.city,
     row.original.state,
-  ].filter(Boolean).join(", ") || "—",
+  ].filter(Boolean).join(", ") || "-",
 };
 
 const statusColumn: ColumnDef<InstallerJobListItem> = {
@@ -366,7 +366,7 @@ function OffersTable({ query }: { query: ReturnType<typeof useInstallerJobs> }) 
     () => [
       {
         header: "Company Name",
-        cell: ({ row }) => row.original.companyName || "—",
+        cell: ({ row }) => row.original.companyName || "-",
         meta: { className: "font-medium" },
       },
       {

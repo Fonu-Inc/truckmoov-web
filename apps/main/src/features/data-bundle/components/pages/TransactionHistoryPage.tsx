@@ -238,7 +238,7 @@ export function TransactionHistoryPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Transaction History</CardTitle>
-              <CardDescription>Chronological log of every bundle top-up — useful for reconciling spend and tracking failed attempts.</CardDescription>
+              <CardDescription>Chronological log of every bundle top-up, useful for reconciling spend and tracking failed attempts.</CardDescription>
             </div>
             <Button
               variant="outline"

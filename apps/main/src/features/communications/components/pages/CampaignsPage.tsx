@@ -133,7 +133,7 @@ const campaignColumns: ColumnDef<Campaign>[] = [
     cell: ({ row }) => {
       const campaign = row.original;
       if (campaign.status !== "completed" && campaign.status !== "sending")
-        return <span className="text-sm text-muted-foreground">—</span>;
+        return <span className="text-sm text-muted-foreground">-</span>;
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs">
@@ -404,7 +404,7 @@ export function CampaignsPage() {
                     <Send className="h-5 w-5" />
                     Campaigns
                   </CardTitle>
-                  <CardDescription className="mt-1">All outbound broadcast campaigns — track delivery, channel mix, and performance.</CardDescription>
+                  <CardDescription className="mt-1">All outbound broadcast campaigns. Track delivery, channel mix, and performance.</CardDescription>
                 </div>
                 <ExportButton
                   filename="campaigns"

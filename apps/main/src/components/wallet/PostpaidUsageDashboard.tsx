@@ -178,7 +178,7 @@ function CurrentUsageCard({
           <div>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Current Usage —
+              Current Usage -
               {" "}
               {currentPeriod}
             </CardTitle>
@@ -234,7 +234,7 @@ function CurrentUsageCard({
                     Number(creditLimit.credit_limit_ngn),
                     "NGN",
                   )
-                : "—"}
+                : "-"}
             </p>
             <Progress
               value={creditUtilization}
@@ -345,7 +345,7 @@ const invoiceColumns: ColumnDef<PostpaidInvoiceRow>[] = [
             Pay
           </Button>
         )
-      : <span className="text-xs text-muted-foreground">—</span>),
+      : <span className="text-xs text-muted-foreground">-</span>),
   },
 ];
 

@@ -175,7 +175,7 @@ function ResourceNotice({
   if (!payload)
     return null;
   if (!payload.available)
-    return <p className="text-sm text-muted-foreground">Service unavailable — could not reach the fleet service.</p>;
+    return <p className="text-sm text-muted-foreground">Service unavailable: could not reach the fleet service.</p>;
   if (payload.items.length === 0)
     return <p className="text-sm text-muted-foreground">{empty}</p>;
   return null;
@@ -431,19 +431,19 @@ export function TenantDetailsSheet({
                       ],
                       [
                         "Company email address",
-                        tenant.email || company?.email || "—",
+                        tenant.email || company?.email || "-",
                       ],
                       [
                         "Company phone number",
-                        tenant.phone || company?.phoneNumber || "—",
+                        tenant.phone || company?.phoneNumber || "-",
                       ],
                       [
                         "Contact person's full name",
-                        tenant.primaryContactName || company?.contactName || "—",
+                        tenant.primaryContactName || company?.contactName || "-",
                       ],
                       [
                         "Company address",
-                        tenant.address || tenant.businessInfo?.addressLine1 || company?.businessAddress || "—",
+                        tenant.address || tenant.businessInfo?.addressLine1 || company?.businessAddress || "-",
                       ],
                       [
                         "Tenant type",
@@ -502,7 +502,7 @@ export function TenantDetailsSheet({
                             <div className="flex items-center gap-3">
                               <Truck className="h-4 w-4 text-muted-foreground" />
                               <div>
-                                <p className="text-sm font-medium">{v.registrationNumber || "—"}</p>
+                                <p className="text-sm font-medium">{v.registrationNumber || "-"}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {[
                                     v.make,
@@ -598,10 +598,10 @@ export function TenantDetailsSheet({
                                 <Cpu className="h-4 w-4 text-muted-foreground" />
                                 <div>
                                   <p className="text-sm font-medium">
-                                    {`${d.manufacturer || "—"} ${d.model || ""}`}
+                                    {`${d.manufacturer || "-"} ${d.model || ""}`}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {`IMEI: ${d.imei || "—"}${d.assignedVehicleId ? " · Assigned" : " · Unassigned"}`}
+                                    {`IMEI: ${d.imei || "-"}${d.assignedVehicleId ? " · Assigned" : " · Unassigned"}`}
                                   </p>
                                 </div>
                               </div>
@@ -780,7 +780,7 @@ export function TenantDetailsSheet({
                               <div>
                                 <p className="text-sm font-medium">{dr.name}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {`${dr.phone || "—"} · Licence ${dr.licenseNumber || "—"}`}
+                                  {`${dr.phone || "-"} · Licence ${dr.licenseNumber || "-"}`}
                                 </p>
                               </div>
                             </div>
@@ -865,7 +865,7 @@ export function TenantDetailsSheet({
               >
                 <dt className="text-xs text-muted-foreground">{label}</dt>
                 <dd className="text-sm font-medium break-words">
-                  {value === null || value === undefined || value === "" ? "—" : String(value)}
+                  {value === null || value === undefined || value === "" ? "-" : String(value)}
                 </dd>
               </div>
             ))}
@@ -1026,7 +1026,7 @@ function AuditLogTab({
                                   className="block truncate"
                                   title={log.description ?? undefined}
                                 >
-                                  {log.description || "—"}
+                                  {log.description || "-"}
                                 </span>
                               </TableCell>
                               <TableCell>
@@ -1038,7 +1038,7 @@ function AuditLogTab({
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                                {log.user_name || "—"}
+                                {log.user_name || "-"}
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                                 {formatWithPattern(

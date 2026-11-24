@@ -378,7 +378,7 @@ export default function ActivationOnboarding() {
       });
     }
     setDeviceFiles(next);
-    toast.success("File parsed — review row counts before continuing");
+    toast.success("File parsed. Review row counts before continuing");
   };
 
   const handleSimFiles = async (list: FileList) => {
@@ -402,7 +402,7 @@ export default function ActivationOnboarding() {
     }
     setSimFiles(next);
     if (next.length > simFiles.length) {
-      toast.success("File uploaded — review row counts before continuing");
+      toast.success("File uploaded. Review row counts before continuing");
     }
   };
 
@@ -417,7 +417,7 @@ export default function ActivationOnboarding() {
     catch {
       // silently ignore — user is skipping
     }
-    toast.info("Activation skipped — you can configure devices, SIMs and features later from Settings.");
+    toast.info("Activation skipped. You can configure devices, SIMs and features later from Settings.");
     goToQuickAccess();
   };
 
@@ -438,7 +438,7 @@ export default function ActivationOnboarding() {
     }
     try {
       await completeOnboardingMutation.mutateAsync();
-      toast.success("System activated — almost there.");
+      toast.success("System activated, almost there.");
       goToQuickAccess();
     }
     catch {
@@ -452,7 +452,7 @@ export default function ActivationOnboarding() {
       step={3}
       wide
       title="Let's activate your system"
-      subtitle="Add the devices, SIMs and features you need to start operating. You can do this now or come back to it from Settings — your choice."
+      subtitle="Add the devices, SIMs and features you need to start operating. You can do this now or come back to it from Settings. Your choice."
     >
       <div className="space-y-6">
         {/* Plan cap banner */}
@@ -574,7 +574,7 @@ export default function ActivationOnboarding() {
                 <div className="mt-3">
                   <DropZone
                     accept=".csv"
-                    helperText="CSV — max 500 rows per file"
+                    helperText="CSV, max 500 rows per file"
                     files={deviceFiles}
                     onFiles={handleDeviceFiles}
                   />
@@ -728,7 +728,7 @@ export default function ActivationOnboarding() {
                 <div className="mt-3">
                   <DropZone
                     accept=".csv"
-                    helperText="CSV — max 500 rows per file"
+                    helperText="CSV, max 500 rows per file"
                     files={simFiles}
                     onFiles={handleSimFiles}
                   />

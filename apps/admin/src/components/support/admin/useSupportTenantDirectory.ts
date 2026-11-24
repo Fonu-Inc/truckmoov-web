@@ -35,7 +35,7 @@ export function useSupportTenantDirectory() {
           ].includes(type))) {
             return "Enterprise";
           }
-          return "—";
+          return "-";
         },
       };
     },

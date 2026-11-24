@@ -111,5 +111,5 @@ export function prettyDocumentType(t: string) {
 }
 
 export function prettyFileSize(bytes: number | null) {
-  return bytes ? `${(bytes / 1024).toFixed(0)} KB` : "—";
+  return bytes ? `${(bytes / 1024).toFixed(0)} KB` : "-";
 }

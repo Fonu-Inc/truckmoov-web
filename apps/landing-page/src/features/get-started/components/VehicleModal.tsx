@@ -404,7 +404,7 @@ export function VehicleModal({
                     <CloudArrowUp className="size-6 text-muted-foreground" />
                     <span className="text-sm font-medium text-heading">Upload vehicle license</span>
                     <span className="text-xs text-muted-foreground">
-                      {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG — max 10MB"}
+                      {initial ? "Leave empty to keep the licence already uploaded" : "PDF, JPG or PNG, max 10MB"}
                     </span>
                   </button>
                 )}

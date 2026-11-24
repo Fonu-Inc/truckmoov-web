@@ -462,7 +462,7 @@ export default function GetStartedPage() {
                           >
                             {failure.imei ?? failure.deviceId}
                             {failure.model && ` (${failure.model})`}
-                            {" — "}
+                            {": "}
                             {failure.reason}
                           </li>
                         ))}

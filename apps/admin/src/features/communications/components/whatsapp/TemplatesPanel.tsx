@@ -125,7 +125,7 @@ export function TemplatesPanel({ connected }: { connected: boolean }) {
               header: "Template",
               cell: ({ row }) => (
                 <div className="max-w-md space-y-1">
-                  <p className="font-medium">{row.original.name || "—"}</p>
+                  <p className="font-medium">{row.original.name || "-"}</p>
                   <p className="line-clamp-2 text-xs text-muted-foreground">{bodyTextOf(row.original.components)}</p>
                   {row.original.rejected_reason && row.original.rejected_reason !== "NONE" && (
                     <p className="text-xs text-destructive">
@@ -148,14 +148,14 @@ export function TemplatesPanel({ connected }: { connected: boolean }) {
                   variant="outline"
                   className="text-xs"
                 >
-                  {row.original.category || "—"}
+                  {row.original.category || "-"}
                 </Badge>
               ),
             },
             {
               id: "language",
               header: "Language",
-              cell: ({ row }) => row.original.language || "—",
+              cell: ({ row }) => row.original.language || "-",
             },
             {
               id: "quality",
@@ -171,7 +171,7 @@ export function TemplatesPanel({ connected }: { connected: boolean }) {
                         {score.toLowerCase()}
                       </Badge>
                     )
-                  : "—";
+                  : "-";
               },
             },
             {
@@ -182,7 +182,7 @@ export function TemplatesPanel({ connected }: { connected: boolean }) {
                   variant="outline"
                   className={STATUS_TONE[row.original.status ?? ""] ?? "text-xs"}
                 >
-                  {row.original.status || "—"}
+                  {row.original.status || "-"}
                 </Badge>
               ),
             },

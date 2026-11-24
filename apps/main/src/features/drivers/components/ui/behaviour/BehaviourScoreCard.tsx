@@ -59,7 +59,7 @@ function ScoreGauge({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`text-lg font-bold ${scoreColor}`}>{score ?? "—"}</span>
+          <span className={`text-lg font-bold ${scoreColor}`}>{score ?? "-"}</span>
         </div>
       </div>
       <p className="text-xs text-muted-foreground">{label}</p>
@@ -82,7 +82,7 @@ export function BehaviourScoreCard({
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
-              {score.rank === null ? "—" : `#${score.rank}`}
+              {score.rank === null ? "-" : `#${score.rank}`}
             </div>
             <div>
               <p className="font-semibold">{score.driverName}</p>

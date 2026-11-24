@@ -299,7 +299,7 @@ export function ScheduleInstallationStep({
         <div className="mt-5 rounded-[15px] border-[0.5px] border-border p-4">
           <SectionHeading
             title="Devices you requested"
-            description="Choose the vehicle each device should be installed in — a vehicle can only be picked once."
+            description="Choose the vehicle each device should be installed in. A vehicle can only be picked once."
             action={(
               <div className="flex gap-2">
                 <button
@@ -390,7 +390,7 @@ export function ScheduleInstallationStep({
                               disabled={Boolean(takenBy)}
                               className="text-heading"
                             >
-                              {`${vehicle.registrationNumber || "Unregistered"} — ${vehicle.make} ${vehicle.model}${takenBy ? " (already assigned)" : ""}`}
+                              {`${vehicle.registrationNumber || "Unregistered"} - ${vehicle.make} ${vehicle.model}${takenBy ? " (already assigned)" : ""}`}
                             </option>
                           );
                         })}
@@ -594,7 +594,7 @@ export function ScheduleInstallationStep({
                 watched.streetAddress,
                 watched.city,
                 watched.state,
-              ].filter(Boolean).join(", ") || "your confirmed address"}${watched.date ? ` on ${watched.date}` : ""} — ${time}.`}
+              ].filter(Boolean).join(", ") || "your confirmed address"}${watched.date ? ` on ${watched.date}` : ""}, ${time}.`}
             </p>
 
             <button

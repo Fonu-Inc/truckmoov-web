@@ -142,7 +142,7 @@ export function ViolationRulesTab({ entity }: { entity: ViolationRuleEntity }) {
                 header: "Rule Name", accessor: r => r.name,
               },
               {
-                header: "Rule Description", accessor: r => r.description || "—",
+                header: "Rule Description", accessor: r => r.description || "-",
               },
               {
                 header: "Violation Type", accessor: r => typeLabel(r.type),
@@ -236,7 +236,7 @@ export function ViolationRulesTab({ entity }: { entity: ViolationRuleEntity }) {
                     className={TR_CLASS}
                   >
                     <td className={`${TD_CLASS} font-medium`}>{r.name}</td>
-                    <td className={`${TD_CLASS} text-sm text-muted-foreground`}>{r.description || "—"}</td>
+                    <td className={`${TD_CLASS} text-sm text-muted-foreground`}>{r.description || "-"}</td>
                     <td className={TD_CLASS}>{typeLabel(r.type)}</td>
                     <td className={`${TD_CLASS} text-sm`}>{r.threshold}</td>
                     <td className={TD_CLASS}>{appliesTo(r)}</td>

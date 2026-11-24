@@ -36,7 +36,7 @@ function ConnectionDetail({
   return (
     <div className="space-y-1">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="truncate text-sm font-medium text-foreground">{value || "—"}</p>
+      <p className="truncate text-sm font-medium text-foreground">{value || "-"}</p>
     </div>
   );
 }
@@ -58,7 +58,7 @@ function ToneDetail({
               {value}
             </Badge>
           )
-        : <p className="text-sm font-medium text-foreground">—</p>}
+        : <p className="text-sm font-medium text-foreground">-</p>}
     </div>
   );
 }

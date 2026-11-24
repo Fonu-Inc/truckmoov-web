@@ -408,7 +408,7 @@ function ReportIssue({ onSubmitted }: { onSubmitted: () => void }) {
                       value={j.id}
                     >
                       {j.jobNumber}
-                      {j.companyName && ` — ${j.companyName}`}
+                      {j.companyName && ` - ${j.companyName}`}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -41,7 +41,7 @@ export function CustomerTypeStep({
     >
       <StepHeading
         title="What type of customer are you?"
-        description="Select the option that matches how you operate. Owner Operator / Individual accounts are limited to 10 vehicles — choose Enterprise Customer if you run more than 10."
+        description="Select the option that matches how you operate. Owner Operator / Individual accounts are limited to 10 vehicles. Choose Enterprise Customer if you run more than 10."
       />
       <div className="mt-[30px] grid gap-[9px] sm:grid-cols-2">
         {CUSTOMER_TYPES.map(type => (

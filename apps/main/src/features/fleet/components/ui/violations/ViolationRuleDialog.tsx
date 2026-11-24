@@ -307,7 +307,7 @@ export function ViolationRuleDialog({
             {" "}
             {STEPS.length}
             {" "}
-            —
+            -
             {" "}
             {STEPS[step]}
             . A violation is generated when a recorded event satisfies this rule's conditions.
@@ -361,7 +361,7 @@ export function ViolationRuleDialog({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">What the rule detects — overspeeding, harsh driving events, or restricted-hours trips.</p>
+                <p className="text-xs text-muted-foreground">What the rule detects: overspeeding, harsh driving events, or restricted-hours trips.</p>
               </div>
             </>
           )}
@@ -549,7 +549,7 @@ export function ViolationRuleDialog({
                 </>
               )}
               <p className="text-xs text-muted-foreground">
-                This schedule defines when the rule applies — it is different from the date filter used when reviewing past violations.
+                This schedule defines when the rule applies. It is different from the date filter used when reviewing past violations.
               </p>
             </>
           )}
@@ -571,7 +571,7 @@ export function ViolationRuleDialog({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  How serious the violation is — critical deducts the most
+                  How serious the violation is. Critical deducts the most
                   {" "}
                   {noun}
                   {" "}

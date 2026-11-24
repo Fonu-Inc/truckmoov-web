@@ -603,7 +603,7 @@ export function JobFormDialog({
           <DialogDescription>
             {isEditing
               ? "Update the shipment details across the steps below."
-              : "Plan a new shipment in three quick steps — locations, details, then review."}
+              : "Plan a new shipment in three quick steps: locations, details, then review."}
           </DialogDescription>
         </DialogHeader>
 
@@ -871,7 +871,7 @@ export function JobFormDialog({
                           <MapPin className="h-6 w-6 text-muted-foreground mb-2" />
                           <p className="text-sm font-medium">Map is idle</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            Enter a pickup address above — the first pin will drop here.
+                            Enter a pickup address above. The first pin will drop here.
                           </p>
                         </div>
                       )
@@ -1628,15 +1628,15 @@ export function JobFormDialog({
                   <div className="p-3 rounded-md bg-muted/30 border border-border/50">
                     <p className="text-xs uppercase text-muted-foreground tracking-wide mb-1">Dimensions</p>
                     <p className="text-sm">
-                      {dimensions.length ?? "—"}
+                      {dimensions.length ?? "-"}
                       {" "}
                       ×
                       {" "}
-                      {dimensions.width ?? "—"}
+                      {dimensions.width ?? "-"}
                       {" "}
                       ×
                       {" "}
-                      {dimensions.height ?? "—"}
+                      {dimensions.height ?? "-"}
                       {" "}
                       cm
                     </p>
@@ -1917,7 +1917,7 @@ function RouteRow({
       />
       <div className="flex-1 min-w-0">
         <p className="text-xs uppercase text-muted-foreground tracking-wide">{label}</p>
-        <p className="font-medium truncate">{value || "—"}</p>
+        <p className="font-medium truncate">{value || "-"}</p>
       </div>
     </div>
   );
@@ -1938,7 +1938,7 @@ function SummaryCard({
         mono && "font-mono",
       )}
       >
-        {value || "—"}
+        {value || "-"}
       </p>
     </div>
   );

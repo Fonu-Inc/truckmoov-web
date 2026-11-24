@@ -19,7 +19,7 @@ export function formatNgn(amount: number) {
 export const NO_ENDPOINT = "-";
 
 /** Shown when the record exists but the field is empty (e.g. no linked quotation). */
-export const NONE = "—";
+export const NONE = "-";
 
 export type Tone = "success" | "warning" | "destructive" | "muted" | "info" | "primary";
 

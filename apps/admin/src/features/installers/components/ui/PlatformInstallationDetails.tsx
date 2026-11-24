@@ -106,7 +106,7 @@ export function PlatformInstallationDetails({
             />
             <Field
               label="Site address"
-              value={customer?.address || String(liveCustomer.address || "—")}
+              value={customer?.address || String(liveCustomer.address || "-")}
             />
             <Field
               label="Scheduled date"
@@ -115,7 +115,7 @@ export function PlatformInstallationDetails({
                     customer?.scheduledDate || record.scheduledDate,
                     timezone,
                   )
-                : "—"}
+                : "-"}
             />
           </dl>
         </section>
@@ -184,17 +184,17 @@ export function PlatformInstallationDetails({
                               <TableBody>
                                 {units.map(unit => (
                                   <TableRow key={unit.index}>
-                                    <TableCell className="font-mono">{unit.vehicle?.registrationNumber ?? "—"}</TableCell>
+                                    <TableCell className="font-mono">{unit.vehicle?.registrationNumber ?? "-"}</TableCell>
                                     <TableCell>
                                       {unit.vehicle
-                                        ? `${unit.vehicle.make} ${unit.vehicle.model}`.trim() || "—"
-                                        : "—"}
+                                        ? `${unit.vehicle.make} ${unit.vehicle.model}`.trim() || "-"
+                                        : "-"}
                                     </TableCell>
-                                    <TableCell>{unit.vehicle?.vehicleType || "—"}</TableCell>
+                                    <TableCell>{unit.vehicle?.vehicleType || "-"}</TableCell>
                                     <TableCell>
                                       {unit.device
                                         ? `${unit.device.manufacturer} ${unit.device.model}`.trim()
-                                        : "—"}
+                                        : "-"}
                                     </TableCell>
                                   </TableRow>
                                 ))}
@@ -218,10 +218,10 @@ export function PlatformInstallationDetails({
                                     <TableCell>
                                       {unit.device
                                         ? `${unit.device.manufacturer} ${unit.device.model}`.trim()
-                                        : "—"}
+                                        : "-"}
                                     </TableCell>
-                                    <TableCell className="font-mono">{unit.device?.imei ?? "—"}</TableCell>
-                                    <TableCell>{unit.device?.statusLabel ?? "—"}</TableCell>
+                                    <TableCell className="font-mono">{unit.device?.imei ?? "-"}</TableCell>
+                                    <TableCell>{unit.device?.statusLabel ?? "-"}</TableCell>
                                   </TableRow>
                                 ))}
                               </TableBody>
@@ -242,10 +242,10 @@ export function PlatformInstallationDetails({
                               <TableBody>
                                 {units.map(unit => (
                                   <TableRow key={unit.index}>
-                                    <TableCell className="font-mono">{unit.sim?.iccid ?? "—"}</TableCell>
-                                    <TableCell className="font-mono">{unit.sim?.imsi ?? "—"}</TableCell>
-                                    <TableCell className="font-mono">{unit.sim?.msisdn ?? "—"}</TableCell>
-                                    <TableCell>{unit.sim?.carrier ?? "—"}</TableCell>
+                                    <TableCell className="font-mono">{unit.sim?.iccid ?? "-"}</TableCell>
+                                    <TableCell className="font-mono">{unit.sim?.imsi ?? "-"}</TableCell>
+                                    <TableCell className="font-mono">{unit.sim?.msisdn ?? "-"}</TableCell>
+                                    <TableCell>{unit.sim?.carrier ?? "-"}</TableCell>
                                   </TableRow>
                                 ))}
                               </TableBody>
@@ -350,7 +350,7 @@ function Field({
   return (
     <div className="min-w-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 break-words text-sm font-medium">{value || "—"}</dd>
+      <dd className="mt-1 break-words text-sm font-medium">{value || "-"}</dd>
     </div>
   );
 }

@@ -390,11 +390,11 @@ export default function TenantsPage() {
 
   // Stats — live from the summary endpoint.
   const summaryPayload = summaryQuery.data?.data;
-  const totalTenants = summaryPayload?.totalTenants ?? "—";
-  const activeTenants = summaryPayload?.activeTenants ?? "—";
-  const suspendedTenants = summaryPayload?.suspendedTenants ?? "—";
-  const terminatedTenants = summaryPayload?.terminatedTenants ?? "—";
-  const inactiveTenants = summaryPayload?.inactiveTenants ?? "—";
+  const totalTenants = summaryPayload?.totalTenants ?? "-";
+  const activeTenants = summaryPayload?.activeTenants ?? "-";
+  const suspendedTenants = summaryPayload?.suspendedTenants ?? "-";
+  const terminatedTenants = summaryPayload?.terminatedTenants ?? "-";
+  const inactiveTenants = summaryPayload?.inactiveTenants ?? "-";
 
   const handleReinstate = async (tenant: SystemTenant) => {
     try {
@@ -664,7 +664,7 @@ export default function TenantsPage() {
                                     <TableCell className="text-sm">
                                       {tenant.primaryContactName
                                         ? <span className="font-medium">{tenant.primaryContactName}</span>
-                                        : <span className="text-muted-foreground">—</span>}
+                                        : <span className="text-muted-foreground">-</span>}
                                     </TableCell>
                                     <TableCell>
                                       <div className="flex flex-wrap gap-1">
@@ -678,7 +678,7 @@ export default function TenantsPage() {
                                                 {ot === "OWNER_OPERATOR" ? "Owner-Operator" : "Enterprise"}
                                               </Badge>
                                             ))
-                                          : <span className="text-xs text-muted-foreground">—</span>}
+                                          : <span className="text-xs text-muted-foreground">-</span>}
                                       </div>
                                     </TableCell>
                                     <TableCell>

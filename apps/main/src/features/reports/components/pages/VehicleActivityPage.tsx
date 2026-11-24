@@ -65,7 +65,7 @@ const TRIP_COLUMNS: ColumnDef<ReportVehicleTrip>[] = [
     header: "Route",
     enableSorting: false,
     meta: { className: "max-w-[280px] truncate text-sm" },
-    cell: ({ row }) => `${row.original.from ?? "—"} → ${row.original.to ?? "—"}`,
+    cell: ({ row }) => `${row.original.from ?? "-"} → ${row.original.to ?? "-"}`,
   },
   {
     accessorKey: "status",

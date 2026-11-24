@@ -48,19 +48,19 @@ function SimCardContent({ sim }: { sim: SystemSimItem | undefined }) {
     <>
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">ICCID</span>
-        <span className="font-mono">{sim.iccid || "—"}</span>
+        <span className="font-mono">{sim.iccid || "-"}</span>
       </div>
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">Phone Number</span>
-        <span className="font-mono">{sim.msisdn || "—"}</span>
+        <span className="font-mono">{sim.msisdn || "-"}</span>
       </div>
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">Carrier</span>
-        <span>{sim.carrier || "—"}</span>
+        <span>{sim.carrier || "-"}</span>
       </div>
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">IMSI</span>
-        <span className="font-mono">{sim.imsi || "—"}</span>
+        <span className="font-mono">{sim.imsi || "-"}</span>
       </div>
       {sim.status && (
         <div className="flex justify-between text-sm">
@@ -95,7 +95,7 @@ function SimCardContent({ sim }: { sim: SystemSimItem | undefined }) {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Network Type</span>
-          <span>{sim.networkType ?? "—"}</span>
+          <span>{sim.networkType ?? "-"}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Last Active</span>
@@ -183,7 +183,7 @@ export function DeviceDetailSheet({
                       {selectedDevice.tenantName || (selectedDevice.tenantId ? `${selectedDevice.tenantId.slice(
                         0,
                         8,
-                      )}...` : "—")}
+                      )}...` : "-")}
                     </p>
                   </div>
                   <div>

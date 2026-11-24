@@ -220,7 +220,7 @@ export function ReviewStep({
                     vehicle.make,
                     vehicle.model,
                     vehicle.year,
-                  ].filter(Boolean).join(" · ") || "—"}
+                  ].filter(Boolean).join(" · ") || "-"}
                 </span>
               </div>
             ))}
@@ -332,7 +332,7 @@ function Field({
   return (
     <div className="min-w-0">
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="truncate text-sm font-medium text-foreground">{value.trim() ? value : "—"}</p>
+      <p className="truncate text-sm font-medium text-foreground">{value.trim() ? value : "-"}</p>
     </div>
   );
 }

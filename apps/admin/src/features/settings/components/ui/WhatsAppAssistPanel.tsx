@@ -276,7 +276,7 @@ export function WhatsAppAssistPanel() {
                   <span className="text-sm">{defaultAccount.display_phone_number || "Not set"}</span>
                 </div>
               )
-            : <span className="text-muted-foreground text-sm">—</span>;
+            : <span className="text-muted-foreground text-sm">-</span>;
         },
       },
       {
@@ -286,7 +286,7 @@ export function WhatsAppAssistPanel() {
           const defaultAccount = getTenantAccounts(row.original.id).find(a => a.is_default_sender && a.status === "CONNECTED");
           return defaultAccount?.connected_at
             ? <span className="text-sm">{formatDate(defaultAccount.connected_at)}</span>
-            : <span className="text-muted-foreground text-sm">—</span>;
+            : <span className="text-muted-foreground text-sm">-</span>;
         },
       },
       {
@@ -666,7 +666,7 @@ export function WhatsAppAssistPanel() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              Audit Log —
+              Audit Log -
               {" "}
               {auditTenant?.name}
             </DialogTitle>

@@ -366,7 +366,7 @@ export function MyTickets() {
                     <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
                     {summaryQuery.isPending
                       ? <Skeleton className="mt-1 h-6 w-10" />
-                      : <p className="text-xl font-semibold leading-tight">{summary ? kpi.value : "—"}</p>}
+                      : <p className="text-xl font-semibold leading-tight">{summary ? kpi.value : "-"}</p>}
                   </div>
                 </CardContent>
               </Card>

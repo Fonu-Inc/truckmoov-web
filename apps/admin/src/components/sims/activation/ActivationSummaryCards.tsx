@@ -50,7 +50,7 @@ function StatCard({
                 valueClassName,
               )}
               >
-                {value ?? "—"}
+                {value ?? "-"}
               </div>
             )}
         <p className="text-xs text-muted-foreground">{note}</p>

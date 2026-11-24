@@ -51,7 +51,7 @@ export const VIOLATION_TYPES: ViolationType[] = [
   "restricted_hours",
 ];
 
-export const quotaText = (q: ViolationSubject["quota"]) => (q ? `${q.used} of ${q.quota}` : "—");
+export const quotaText = (q: ViolationSubject["quota"]) => (q ? `${q.used} of ${q.quota}` : "-");
 
 /** "10 / month" */
 export const QUOTA_PERIOD_UNIT: Record<ViolationQuotaPeriod, string> = {
@@ -77,7 +77,7 @@ export const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** "21 Nov 2026, 10:05 PM" */
 export function formatViolationDate(iso: string) {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : format(
+  return Number.isNaN(d.getTime()) ? "-" : format(
     d,
     "dd MMM yyyy, hh:mm a",
   );

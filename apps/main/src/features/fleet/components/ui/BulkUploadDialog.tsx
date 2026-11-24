@@ -190,9 +190,9 @@ export function BulkUploadDialog({
       });
       const summary = `${data.created} created, ${data.updated} updated${skipped.length ? `, ${skipped.length} skipped` : ""}`;
       if (skipped.length > 0)
-        toast.warning(`Import complete — ${summary}`);
+        toast.warning(`Import complete: ${summary}`);
       else
-        toast.success(`Import complete — ${summary}`);
+        toast.success(`Import complete: ${summary}`);
     }
     catch (error) {
       const err = error as { message?: string };
@@ -230,7 +230,7 @@ export function BulkUploadDialog({
         <DialogHeader>
           <DialogTitle>{config.title}</DialogTitle>
           <DialogDescription>
-            Upload a CSV file — the server validates it and imports what it can.
+            Upload a CSV file. The server validates it and imports what it can.
           </DialogDescription>
         </DialogHeader>
 

@@ -70,7 +70,7 @@ const DEMO_EMAILS: Email[] = [
       {
         name: "Dispatch", email: "dispatch@fleetpro.ng",
       },
-    ], subject: "Re: JOB-10421 — Confirmed delivery to Ibadan", preview: "All loaded and en route. Driver Matthias should arrive at the Ibadan depot by...", body: "Hi team,\n\nAll loaded and en route. Driver Matthias should arrive at the Ibadan depot by 14:30 today. POD will be uploaded as soon as offloading completes.\n\nBest,\nOlumide", date: new Date(Date.now() - 1000 * 60 * 22), isRead: false, isStarred: true, hasAttachment: false, folder: "inbox", labels: ["Operations"],
+    ], subject: "Re: JOB-10421: Confirmed delivery to Ibadan", preview: "All loaded and en route. Driver Matthias should arrive at the Ibadan depot by...", body: "Hi team,\n\nAll loaded and en route. Driver Matthias should arrive at the Ibadan depot by 14:30 today. POD will be uploaded as soon as offloading completes.\n\nBest,\nOlumide", date: new Date(Date.now() - 1000 * 60 * 22), isRead: false, isStarred: true, hasAttachment: false, folder: "inbox", labels: ["Operations"],
   },
   {
     id: "d2", from: {
@@ -79,7 +79,7 @@ const DEMO_EMAILS: Email[] = [
       {
         name: "Dispatch", email: "dispatch@fleetpro.ng",
       },
-    ], subject: "Gate pass approval — Container ABCU1234567", preview: "Your gate pass request has been approved. Please present this email at Gate 3...", body: "Your gate pass request has been approved.\n\nContainer: ABCU1234567\nVessel: MV Hope\nValid until: Tomorrow 18:00\n\nPlease present this email at Gate 3 along with the original BOL.", date: new Date(Date.now() - 1000 * 60 * 90), isRead: false, isStarred: false, hasAttachment: true, folder: "inbox", labels: ["Compliance"],
+    ], subject: "Gate pass approval: Container ABCU1234567", preview: "Your gate pass request has been approved. Please present this email at Gate 3...", body: "Your gate pass request has been approved.\n\nContainer: ABCU1234567\nVessel: MV Hope\nValid until: Tomorrow 18:00\n\nPlease present this email at Gate 3 along with the original BOL.", date: new Date(Date.now() - 1000 * 60 * 90), isRead: false, isStarred: false, hasAttachment: true, folder: "inbox", labels: ["Compliance"],
   },
   {
     id: "d3", from: {
@@ -88,7 +88,7 @@ const DEMO_EMAILS: Email[] = [
       {
         name: "Dispatch", email: "dispatch@fleetpro.ng",
       },
-    ], subject: "Invoice INV-2026-0418 — Payment received", preview: "Confirming receipt of ₦1,250,000 for last week's PH-Aba haul. Thank you...", body: "Confirming receipt of ₦1,250,000 for last week's PH-Aba haul.\n\nThank you for the prompt settlement. Looking forward to next week's allocations.", date: new Date(Date.now() - 1000 * 60 * 60 * 4), isRead: true, isStarred: false, hasAttachment: true, folder: "inbox", labels: ["Finance"],
+    ], subject: "Invoice INV-2026-0418: Payment received", preview: "Confirming receipt of ₦1,250,000 for last week's PH-Aba haul. Thank you...", body: "Confirming receipt of ₦1,250,000 for last week's PH-Aba haul.\n\nThank you for the prompt settlement. Looking forward to next week's allocations.", date: new Date(Date.now() - 1000 * 60 * 60 * 4), isRead: true, isStarred: false, hasAttachment: true, folder: "inbox", labels: ["Finance"],
   },
   {
     id: "d4", from: {
@@ -97,7 +97,7 @@ const DEMO_EMAILS: Email[] = [
       {
         name: "Compliance", email: "compliance@fleetpro.ng",
       },
-    ], subject: "Vehicle inspection reminder — TRK-007", preview: "Roadworthiness for vehicle TRK-007 expires in 14 days. Please book an inspection...", body: "Roadworthiness for vehicle TRK-007 expires in 14 days.\n\nPlease book an inspection slot through the VIO portal before the expiry date to avoid penalty.", date: new Date(Date.now() - 1000 * 60 * 60 * 9), isRead: true, isStarred: true, hasAttachment: false, folder: "inbox", labels: ["Compliance"],
+    ], subject: "Vehicle inspection reminder: TRK-007", preview: "Roadworthiness for vehicle TRK-007 expires in 14 days. Please book an inspection...", body: "Roadworthiness for vehicle TRK-007 expires in 14 days.\n\nPlease book an inspection slot through the VIO portal before the expiry date to avoid penalty.", date: new Date(Date.now() - 1000 * 60 * 60 * 9), isRead: true, isStarred: true, hasAttachment: false, folder: "inbox", labels: ["Compliance"],
   },
   {
     id: "d5", from: {
@@ -106,7 +106,7 @@ const DEMO_EMAILS: Email[] = [
       {
         name: "Dispatch", email: "dispatch@fleetpro.ng",
       },
-    ], subject: "Capacity available — Kano corridor next week", preview: "We have 3 trucks free Mon-Wed for the Kano corridor. Let us know if you have...", body: "Hi,\n\nWe have 3 trucks free Mon-Wed for the Kano corridor. Let us know if you have any loads we can pick up.\n\nRegards,\nSahara Ops", date: new Date(Date.now() - 1000 * 60 * 60 * 26), isRead: true, isStarred: false, hasAttachment: false, folder: "inbox",
+    ], subject: "Capacity available: Kano corridor next week", preview: "We have 3 trucks free Mon-Wed for the Kano corridor. Let us know if you have...", body: "Hi,\n\nWe have 3 trucks free Mon-Wed for the Kano corridor. Let us know if you have any loads we can pick up.\n\nRegards,\nSahara Ops", date: new Date(Date.now() - 1000 * 60 * 60 * 26), isRead: true, isStarred: false, hasAttachment: false, folder: "inbox",
   },
   {
     id: "d6", from: {
@@ -115,7 +115,7 @@ const DEMO_EMAILS: Email[] = [
       {
         name: "Finance", email: "finance@fleetpro.ng",
       },
-    ], subject: "Download for $499.00 — FleetPro Subscription", preview: "Your monthly subscription has been renewed successfully. Download attached...", body: "Thanks for paying with Stripe.\n\nAmount: $499.00\nPlan: FleetPro Premium\nNext billing date: Next month\n\nReceipt attached.", date: new Date(Date.now() - 1000 * 60 * 60 * 38), isRead: true, isStarred: false, hasAttachment: true, folder: "inbox", labels: ["Finance"],
+    ], subject: "Download for $499.00 - FleetPro Subscription", preview: "Your monthly subscription has been renewed successfully. Download attached...", body: "Thanks for paying with Stripe.\n\nAmount: $499.00\nPlan: FleetPro Premium\nNext billing date: Next month\n\nReceipt attached.", date: new Date(Date.now() - 1000 * 60 * 60 * 38), isRead: true, isStarred: false, hasAttachment: true, folder: "inbox", labels: ["Finance"],
   },
   {
     id: "d7", from: {
@@ -124,7 +124,7 @@ const DEMO_EMAILS: Email[] = [
       {
         name: "Dispatch", email: "dispatch@fleetpro.ng",
       },
-    ], subject: "Delay notice — Abuja → Jos run", preview: "Heavy rains around Keffi causing 2-3 hour delay. Driver is safe, will resume...", body: "Heavy rains around Keffi causing 2-3 hour delay. Driver is safe and parked at a registered rest stop. Will resume the run once visibility improves.", date: new Date(Date.now() - 1000 * 60 * 60 * 50), isRead: true, isStarred: false, hasAttachment: false, folder: "inbox", labels: ["Operations"],
+    ], subject: "Delay notice: Abuja → Jos run", preview: "Heavy rains around Keffi causing 2-3 hour delay. Driver is safe, will resume...", body: "Heavy rains around Keffi causing 2-3 hour delay. Driver is safe and parked at a registered rest stop. Will resume the run once visibility improves.", date: new Date(Date.now() - 1000 * 60 * 60 * 50), isRead: true, isStarred: false, hasAttachment: false, folder: "inbox", labels: ["Operations"],
   },
   {
     id: "d8", from: {

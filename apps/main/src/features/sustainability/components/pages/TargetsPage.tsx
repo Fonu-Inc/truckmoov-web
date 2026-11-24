@@ -63,7 +63,7 @@ export default function TargetsPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Baseline</span>
                     <span>
-                      {display.baseline_co2_kg_per_month?.toFixed(0) || "—"}
+                      {display.baseline_co2_kg_per_month?.toFixed(0) || "-"}
                       {" "}
                       kg/month
                     </span>
@@ -71,7 +71,7 @@ export default function TargetsPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Target</span>
                     <span className="text-success">
-                      {display.target_co2_kg_per_month?.toFixed(0) || "—"}
+                      {display.target_co2_kg_per_month?.toFixed(0) || "-"}
                       {" "}
                       kg/month
                     </span>
@@ -89,7 +89,7 @@ export default function TargetsPage() {
                   </p>
                   {!targetData && (
                     <p className="text-[10px] text-muted-foreground text-center italic pt-1">
-                      Sample targets shown — configure below to set your own.
+                      Sample targets shown. Configure below to set your own.
                     </p>
                   )}
                 </div>

@@ -53,10 +53,10 @@ const STATUS: Record<string, {
     label: "Installation In Progress", variant: "secondary", note: "Devices are being provisioned and installed.",
   },
   provisioned: {
-    label: "Completed", variant: "default", note: "Installation is complete — the devices are in your active list.",
+    label: "Completed", variant: "default", note: "Installation is complete. The devices are in your active list.",
   },
   active: {
-    label: "Completed", variant: "default", note: "Installation is complete — the devices are in your active list.",
+    label: "Completed", variant: "default", note: "Installation is complete. The devices are in your active list.",
   },
   rejected: {
     label: "Rejected", variant: "destructive", note: "This request was rejected.",
@@ -102,7 +102,7 @@ function Detail({
   return (
     <div className="flex items-start justify-between gap-4 text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value || "—"}</span>
+      <span className="text-right font-medium">{value || "-"}</span>
     </div>
   );
 }
@@ -429,7 +429,7 @@ export function DeviceRequestsTracker() {
           .map(request => request.useCase)
           .filter(Boolean)
           .join(" · ") || "Onboarding request",
-        charges: "—",
+        charges: "-",
       }
     : null;
 
@@ -444,7 +444,7 @@ export function DeviceRequestsTracker() {
       statusKey: request.status,
       itemTitle: `${request.quantity} × devices`,
       itemSubtitle: request.useCase,
-      charges: "—",
+      charges: "-",
     })),
   ];
 
@@ -476,7 +476,7 @@ export function DeviceRequestsTracker() {
       meta: { className: "text-sm" },
       cell: ({ row }) => row.original.submittedAt
         ? dateOnly(row.original.submittedAt)
-        : "—",
+        : "-",
     },
     {
       // ponytail: no quotation/charges field on setup requests yet.

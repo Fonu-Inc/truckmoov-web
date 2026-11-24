@@ -247,7 +247,7 @@ export function TenantOnboardingPanel() {
                                 {a.businessEmail}
                               </p>
                             </TableCell>
-                            <TableCell className="text-sm break-words">{a.contactFullName || "—"}</TableCell>
+                            <TableCell className="text-sm break-words">{a.contactFullName || "-"}</TableCell>
                             <TableCell>
                               <Badge
                                 variant="outline"
@@ -349,33 +349,33 @@ export function TenantOnboardingPanel() {
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
         <StatCard
           title="Total Applications"
-          value={summary?.total ?? "—"}
+          value={summary?.total ?? "-"}
           icon={FileText}
           loading={summaryQuery.isPending}
         />
         <StatCard
           title="Pending Review"
-          value={summary?.pendingReview ?? "—"}
+          value={summary?.pendingReview ?? "-"}
           icon={Clock}
           loading={summaryQuery.isPending}
         />
         <StatCard
           title="Approved"
-          value={summary?.approved ?? "—"}
+          value={summary?.approved ?? "-"}
           icon={CheckCircle}
           variant="success"
           loading={summaryQuery.isPending}
         />
         <StatCard
           title="More Information Needed"
-          value={summary?.changesRequested ?? "—"}
+          value={summary?.changesRequested ?? "-"}
           icon={AlertTriangle}
           variant="warning"
           loading={summaryQuery.isPending}
         />
         <StatCard
           title="Rejected"
-          value={summary?.rejected ?? "—"}
+          value={summary?.rejected ?? "-"}
           icon={XCircle}
           variant="danger"
           loading={summaryQuery.isPending}

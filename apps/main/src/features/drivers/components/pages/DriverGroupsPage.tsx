@@ -412,7 +412,7 @@ export default function DriverGroupsPage() {
                     : filteredGroups.map(group => (
                         <TableRow key={group.id}>
                           <TableCell className="font-medium">{group.name}</TableCell>
-                          <TableCell className="max-w-[320px] truncate text-muted-foreground">{group.description || "—"}</TableCell>
+                          <TableCell className="max-w-[320px] truncate text-muted-foreground">{group.description || "-"}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">
                               {group.driverCount}

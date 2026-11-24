@@ -88,7 +88,7 @@ const healthTone: Record<DeviceHealth, string> = {
 
 function formatSeconds(seconds: number | null | undefined) {
   if (seconds == null)
-    return "—";
+    return "-";
   if (seconds < 60)
     return `${Math.round(seconds)}s`;
   const mins = Math.floor(seconds / 60);
@@ -616,7 +616,7 @@ export function DeviceDetailsSheet({
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Protocol</span>
-                    <span className="font-medium uppercase">{firmware?.protocol || "—"}</span>
+                    <span className="font-medium uppercase">{firmware?.protocol || "-"}</span>
                   </div>
                   {connectivity && (
                     <div className="flex justify-between text-sm">

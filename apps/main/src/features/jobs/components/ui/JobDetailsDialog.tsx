@@ -82,7 +82,7 @@ function Field({
   return (
     <div className="min-w-0">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="text-sm font-medium break-words">{value ?? "—"}</div>
+      <div className="text-sm font-medium break-words">{value ?? "-"}</div>
     </div>
   );
 }
@@ -97,7 +97,7 @@ function fmt(iso: string | undefined, pattern: string) {
 function schedule(start?: string, end?: string) {
   const anchor = start ?? end;
   if (!anchor)
-    return "—";
+    return "-";
   const range = [
     fmt(
       start,
@@ -126,7 +126,7 @@ const DETAILS_REFRESH_MS = 15_000;
 
 function Chips({ values }: { values?: string[] }) {
   if (!values?.length)
-    return <>—</>;
+    return <>-</>;
   return (
     <div className="flex flex-wrap gap-1">
       {values.map(value => (
@@ -148,7 +148,7 @@ function dimensionsText(dimensions: DispatchJob["dimensions"]) {
   const {
     length_cm: length, width_cm: width, height_cm: height,
   } = dimensions;
-  return length || width || height ? `${length ?? "—"} × ${width ?? "—"} × ${height ?? "—"} cm` : undefined;
+  return length || width || height ? `${length ?? "-"} × ${width ?? "-"} × ${height ?? "-"} cm` : undefined;
 }
 
 const ROUTE_PIN = [
@@ -212,13 +212,13 @@ export function JobDetailsDialog({
 
   const routePoints = [
     {
-      label: "PICKUP ADDRESS", address: job.pickup?.address || "—",
+      label: "PICKUP ADDRESS", address: job.pickup?.address || "-",
     },
     ...stops.map(s => ({
       label: "INTERMEDIATE STOP", address: s.address,
     })),
     {
-      label: "DELIVERY ADDRESS", address: job.dropoff?.address || "—",
+      label: "DELIVERY ADDRESS", address: job.dropoff?.address || "-",
     },
   ];
 
@@ -272,7 +272,7 @@ export function JobDetailsDialog({
       <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="sr-only">
-            Job Details —
+            Job Details -
             {" "}
             {job.reference}
           </DialogTitle>
@@ -488,11 +488,11 @@ export function JobDetailsDialog({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Field
                 label="Cargo Type"
-                value={job.cargo_type || "—"}
+                value={job.cargo_type || "-"}
               />
               <Field
                 label="Cargo Category"
-                value={job.cargo_category || "—"}
+                value={job.cargo_category || "-"}
               />
               <Field
                 label="Packages"
@@ -500,19 +500,19 @@ export function JobDetailsDialog({
                   "kg",
                   "tons",
                   "lbs",
-                ].includes(job.cargo_unit) ? ` (${job.cargo_unit})` : ""}` : "—"}
+                ].includes(job.cargo_unit) ? ` (${job.cargo_unit})` : ""}` : "-"}
               />
               <Field
                 label="Declared Value"
-                value={job.cargo_value_ngn ? formatCurrency(job.cargo_value_ngn) : "—"}
+                value={job.cargo_value_ngn ? formatCurrency(job.cargo_value_ngn) : "-"}
               />
               <Field
                 label="Dimensions"
-                value={dimensionsText(job.dimensions) ?? "—"}
+                value={dimensionsText(job.dimensions) ?? "-"}
               />
               <Field
                 label="Cargo Weight"
-                value={job.load_weight_kg ? `${Number((job.load_weight_kg / 1000).toFixed(2))}t` : "—"}
+                value={job.load_weight_kg ? `${Number((job.load_weight_kg / 1000).toFixed(2))}t` : "-"}
               />
               <Field
                 label="Job Amount"
@@ -523,7 +523,7 @@ export function JobDetailsDialog({
                 value={fmt(
                   job.deadline,
                   "MMM dd, HH:mm",
-                ) ?? "—"}
+                ) ?? "-"}
               />
               <Field
                 label="Priority"
@@ -539,11 +539,11 @@ export function JobDetailsDialog({
                         {job.priority.toUpperCase()}
                       </Badge>
                     )
-                  : "—"}
+                  : "-"}
               />
               <Field
                 label="Vehicle Type"
-                value={<span className="capitalize">{job.required_vehicle_type || "—"}</span>}
+                value={<span className="capitalize">{job.required_vehicle_type || "-"}</span>}
               />
               <Field
                 label="Pickup Schedule"
@@ -747,14 +747,14 @@ export function JobDetailsDialog({
                             {fmt(
                               c.start,
                               "HH:mm",
-                            ) ?? "—"}
+                            ) ?? "-"}
                             {" "}
                             –
                             {" "}
                             {fmt(
                               c.end,
                               "HH:mm",
-                            ) ?? "—"}
+                            ) ?? "-"}
                           </span>
                         </p>
                       </>

@@ -145,7 +145,7 @@ function formatTime(date: Date) {
 function formatEventTime(iso: string) {
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime()))
-    return "—";
+    return "-";
   const today = new Date();
   const yesterday = new Date(
     today.getFullYear(),
@@ -575,7 +575,7 @@ export default function OperationsSafetyPage() {
         />
         <KpiCard
           title="Safety Score"
-          value={safetyScore ?? "—"}
+          value={safetyScore ?? "-"}
           icon={ShieldAlert}
           subtitle={`${summary?.safety.critical ?? 0} critical events`}
           trend={safetyScore === null ? undefined : safetyScore >= 80 ? "up" : safetyScore >= 60 ? "neutral" : "down"}
@@ -769,7 +769,7 @@ export default function OperationsSafetyPage() {
                   >
                     <span className="text-xs font-medium text-muted-foreground w-4">{index + 1}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{driver.driverName || "—"}</p>
+                      <p className="text-sm font-medium truncate">{driver.driverName || "-"}</p>
                       <p className="text-xs text-muted-foreground">{`${driver.incidents} events`}</p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -780,7 +780,7 @@ export default function OperationsSafetyPage() {
                         driver.safetyScore === null ? "text-muted-foreground" : driver.safetyScore >= 80 ? "text-success" : driver.safetyScore >= 60 ? "text-warning" : "text-destructive",
                       )}
                       >
-                        {driver.safetyScore ?? "—"}
+                        {driver.safetyScore ?? "-"}
                       </span>
                     </div>
                   </div>
@@ -819,7 +819,7 @@ export default function OperationsSafetyPage() {
                           " ",
                         ).toLowerCase()}
                       </p>
-                      <p className="text-xs text-muted-foreground break-words">{event.driverName ?? "—"}</p>
+                      <p className="text-xs text-muted-foreground break-words">{event.driverName ?? "-"}</p>
                       <p className="text-[10px] text-muted-foreground">{formatEventTime(event.triggeredAt)}</p>
                     </div>
                     <div className={`${BADGE} ${event.severity === "critical" ? BADGE_DESTRUCTIVE : BADGE_SECONDARY} text-[10px] px-1.5 shrink-0`}>{event.severity}</div>

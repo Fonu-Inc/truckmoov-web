@@ -129,14 +129,14 @@ export function AuditLogPanel() {
       );
       return (activityQuery.data?.data ?? []).map((log: ActivityLog) => ({
         id: log.id,
-        user: names.get(log.actorId) ?? (log.actorId || "—"),
-        role: log.actorRole ? getRoleLabel(log.actorRole) : "—",
+        user: names.get(log.actorId) ?? (log.actorId || "-"),
+        role: log.actorRole ? getRoleLabel(log.actorRole) : "-",
         roleKey: log.actorRole,
         verb: classifyAction(log.action),
         action: log.action,
-        category: log.entityType ? titleCase(log.entityType) : "—",
-        entity: log.entityId || "—",
-        details: log.summary || "—",
+        category: log.entityType ? titleCase(log.entityType) : "-",
+        entity: log.entityId || "-",
+        details: log.summary || "-",
         timestamp: new Date(log.occurredAt),
       }));
     },
@@ -147,7 +147,7 @@ export function AuditLogPanel() {
   );
 
   const categories = useMemo(
-    () => [...new Set(entries.map(e => e.category))].filter(c => c !== "—").sort(),
+    () => [...new Set(entries.map(e => e.category))].filter(c => c !== "-").sort(),
     [entries],
   );
 

@@ -99,19 +99,19 @@ export default function DriverViolationsPage() {
           ? [
               v.make,
               v.model,
-            ].filter(Boolean).join(" ") || "—"
-          : "—",
+            ].filter(Boolean).join(" ") || "-"
+          : "-",
         plate: v?.plateNumber || v?.registrationNumber || id,
       };
     },
     [vehiclesById],
   );
   const vehiclePlate = useCallback(
-    (id: string | null) => (id ? vehicle(id).plate : "—"),
+    (id: string | null) => (id ? vehicle(id).plate : "-"),
     [vehicle],
   );
   const driverName = useCallback(
-    (id: string | null) => (id && driversById.get(id)) || "—",
+    (id: string | null) => (id && driversById.get(id)) || "-",
     [driversById],
   );
 

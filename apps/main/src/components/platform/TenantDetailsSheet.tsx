@@ -929,7 +929,7 @@ export function TenantDetailsSheet({
                               <div className="flex items-center gap-3">
                                 <Truck className="h-4 w-4 text-muted-foreground" />
                                 <div>
-                                  <p className="text-sm font-medium">{v.plate_number || "—"}</p>
+                                  <p className="text-sm font-medium">{v.plate_number || "-"}</p>
                                   <p className="text-xs text-muted-foreground">
                                     {[
                                       v.make,
@@ -1026,14 +1026,14 @@ export function TenantDetailsSheet({
                                   <Cpu className="h-4 w-4 text-muted-foreground" />
                                   <div>
                                     <p className="text-sm font-medium">
-                                      {d.manufacturer || "—"}
+                                      {d.manufacturer || "-"}
                                       {" "}
                                       {d.model || ""}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
                                       IMEI:
                                       {" "}
-                                      {d.imei || "—"}
+                                      {d.imei || "-"}
                                       {d.vehicle_id ? " · Assigned" : " · Unassigned"}
                                     </p>
                                   </div>
@@ -1125,11 +1125,11 @@ export function TenantDetailsSheet({
                               <div className="flex items-center gap-3">
                                 <Smartphone className="h-4 w-4 text-muted-foreground" />
                                 <div>
-                                  <p className="text-sm font-medium">{s.msisdn || s.iccid || "—"}</p>
+                                  <p className="text-sm font-medium">{s.msisdn || s.iccid || "-"}</p>
                                   <p className="text-xs text-muted-foreground">
                                     {s.provider ? `${s.provider} · ` : ""}
                                     ICCID:
-                                    {s.iccid || "—"}
+                                    {s.iccid || "-"}
                                   </p>
                                 </div>
                               </div>
@@ -1190,7 +1190,7 @@ export function TenantDetailsSheet({
                                     trialStatus.trial_ends_at,
                                     "PPP",
                                   )
-                                : "—"}
+                                : "-"}
                               {(trialStatus as any).trial_extended_count > 0
                                 ? ` · Extended ${(trialStatus as any).trial_extended_count}×`
                                 : ""}
@@ -1290,7 +1290,7 @@ export function TenantDetailsSheet({
                       periodEnd,
                       "PPP",
                     )}${sub?.auto_renew === false ? " (auto-renew off)" : ""}`
-                    : "—";
+                    : "-";
                   const paymentStatus = (() => {
                     const s = lastPayment?.status?.toLowerCase();
                     if (!s) {
@@ -1354,7 +1354,7 @@ export function TenantDetailsSheet({
                                     ? plan.yearly_price_ngn
                                     : plan?.price_ngn ?? planDetails[tenant.plan]?.priceNGN ?? 0,
                                 ).toLocaleString()}`
-                                : `$${planDetails[tenant.plan]?.priceUSD?.toLocaleString() ?? "—"}`}
+                                : `$${planDetails[tenant.plan]?.priceUSD?.toLocaleString() ?? "-"}`}
                               {" / "}
                               {cycleRaw === "yearly" ? "year" : "month"}
                             </p>
@@ -1393,7 +1393,7 @@ export function TenantDetailsSheet({
                                     periodStart,
                                     "PPP",
                                   )
-                                : "—"}
+                                : "-"}
                             </p>
                           </div>
                           <div>
@@ -1403,14 +1403,14 @@ export function TenantDetailsSheet({
                           <div>
                             <p className="text-xs text-muted-foreground">Payment Method</p>
                             <p className="font-medium capitalize">
-                              {sub?.payment_method || lastPayment?.payment_method || "—"}
+                              {sub?.payment_method || lastPayment?.payment_method || "-"}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Auto-Renew</p>
                             <p className="font-medium">
                               {sub?.auto_renew === undefined || sub?.auto_renew === null
-                                ? "—"
+                                ? "-"
                                 : sub.auto_renew
                                   ? "Enabled"
                                   : "Disabled"}

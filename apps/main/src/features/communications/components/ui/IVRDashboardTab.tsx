@@ -511,7 +511,7 @@ export function IVRDashboardTab() {
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div className="space-y-1">
               <CardTitle className="text-base">Call Status Distribution</CardTitle>
-              <CardDescription>Share of IVR calls by outcome — answered, missed, failed.</CardDescription>
+              <CardDescription>Share of IVR calls by outcome: answered, missed, failed.</CardDescription>
             </div>
             <RangeSelect
               value={statusRange}
@@ -637,7 +637,7 @@ export function IVRDashboardTab() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle>Recent IVR Calls</CardTitle>
-            <CardDescription>Latest automated voice interactions with drivers — review outcomes and responses for follow-up.</CardDescription>
+            <CardDescription>Latest automated voice interactions with drivers. Review outcomes and responses for follow-up.</CardDescription>
           </div>
           <Button
             variant="outline"

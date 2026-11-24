@@ -110,12 +110,12 @@ const TOPICS: Topic[] = [
       {
         question: "Who installs and configures my devices?",
         answer:
-          "An approved Fleet Pro installer does both. Installation jobs are **assigned automatically** by the platform — nobody assigns them by hand. The installer links each device to a vehicle and each SIM to a device, completes a checklist and uploads photo evidence. Customers do not configure devices.",
+          "An approved Fleet Pro installer does both. Installation jobs are **assigned automatically** by the platform, so nobody assigns them by hand. The installer links each device to a vehicle and each SIM to a device, completes a checklist and uploads photo evidence. Customers do not configure devices.",
       },
       {
         question: "Device not showing online",
         answer:
-          "1. Confirm the installation job is completed.\n2. Check the vehicle has power and the ignition has been on recently.\n3. Check the device's last heartbeat — **online** means a signal within the last 3 minutes.\n4. Confirm the linked SIM is active with data left.\n5. Allow up to 10 minutes after a fresh installation, then report an issue.",
+          "1. Confirm the installation job is completed.\n2. Check the vehicle has power and the ignition has been on recently.\n3. Check the device's last heartbeat: **online** means a signal within the last 3 minutes.\n4. Confirm the linked SIM is active with data left.\n5. Allow up to 10 minutes after a fresh installation, then report an issue.",
       },
       {
         question: "How do I update firmware?",
@@ -143,7 +143,7 @@ const TOPICS: Topic[] = [
       {
         question: "How do I check data usage and bundle expiry?",
         answer:
-          "Open **My IoT SIMs** — each SIM shows its bundle, usage and expiry date. You get reminders before expiry and again when it is due. Unpaid bundles can lead to suspension, which stops telemetry for that vehicle.",
+          "Open **My IoT SIMs**. Each SIM shows its bundle, usage and expiry date. You get reminders before expiry and again when it is due. Unpaid bundles can lead to suspension, which stops telemetry for that vehicle.",
       },
     ],
   },
@@ -161,7 +161,7 @@ const TOPICS: Topic[] = [
       {
         question: "WhatsApp message not delivering",
         answer:
-          "Free-form WhatsApp only works within **24 hours** of the driver's last reply — outside that window use an approved template. Also check the number includes the country code, the template is approved, and that the driver hasn't replied **STOP** (opted-out numbers are blocked).",
+          "Free-form WhatsApp only works within **24 hours** of the driver's last reply. Outside that window use an approved template. Also check the number includes the country code, the template is approved, and that the driver hasn't replied **STOP** (opted-out numbers are blocked).",
       },
       {
         question: "Driver isn't receiving job offers",

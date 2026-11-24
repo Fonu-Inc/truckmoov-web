@@ -194,7 +194,7 @@ export function DeviceApprovalChecklist({
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {volumeFlag
-                ? "Elevated volume — please verify before approving"
+                ? "Elevated volume: please verify before approving"
                 : "Request volume is within normal parameters"}
             </p>
           </div>

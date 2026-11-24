@@ -331,7 +331,7 @@ function ProfitLossReport({ report }: { report: FleetProfitLoss }) {
       <div className="rounded-2xl surface-sleek text-card-foreground border-border/50">
         <div className="flex flex-col space-y-1.5 p-6 pb-4">
           <h3 className="font-semibold tracking-tight text-foreground font-display text-base">Monthly Breakdown</h3>
-          <p className="text-sm text-muted-foreground">Profit & loss split per month — compare revenue, costs, and net margin to spot trends.</p>
+          <p className="text-sm text-muted-foreground">Profit & loss split per month. Compare revenue, costs, and net margin to spot trends.</p>
         </div>
         <div className="p-6 pt-0 space-y-4">
           <div className="flex items-center gap-2">
@@ -476,7 +476,7 @@ function ProfitLossReport({ report }: { report: FleetProfitLoss }) {
                         {formatCurrency(m.profit)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {m.revenue > 0 ? `${marginOf(m).toFixed(1)}%` : "—"}
+                        {m.revenue > 0 ? `${marginOf(m).toFixed(1)}%` : "-"}
                       </TableCell>
                     </TableRow>
                   ))}

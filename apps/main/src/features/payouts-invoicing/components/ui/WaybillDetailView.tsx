@@ -270,7 +270,7 @@ export function WaybillDetailView({
                           <field.icon className="h-3 w-3" />
                           {field.label}
                         </div>
-                        <p className="text-sm font-medium">{field.value || "—"}</p>
+                        <p className="text-sm font-medium">{field.value || "-"}</p>
                       </div>
                     );
                   })}

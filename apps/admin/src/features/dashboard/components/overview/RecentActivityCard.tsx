@@ -77,7 +77,7 @@ export function RecentActivityCard({ period }: { period: DashboardPeriod }) {
           <Clock className="h-5 w-5 text-primary" />
           Recent Platform Activity
         </CardTitle>
-        <CardDescription>Latest events across tenants — onboarding, devices, SIMs, alerts and payments</CardDescription>
+        <CardDescription>Latest events across tenants: onboarding, devices, SIMs, alerts and payments</CardDescription>
       </CardHeader>
       <CardContent>
         <WidgetBody
