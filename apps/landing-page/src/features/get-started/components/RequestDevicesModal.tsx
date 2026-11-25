@@ -4,6 +4,7 @@ import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { Resolver } from "react-hook-form";
 import type { DeviceRequestValues } from "@/features/get-started/schemas/applySchemas";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { deviceUseCaseOptions } from "@truckmoov/app-core/apply/applyTypes";
 import {
   useEffect,
   useState,
@@ -179,12 +180,25 @@ export function RequestDevicesModal({
                   Use Case
                 </FormLabel>
                 <FormControl>
-                  <textarea
-                    rows={3}
-                    placeholder="Explain how these devices will be used across your fleet."
-                    className={TEXTAREA_CLASS}
+                  <select
                     {...field}
-                  />
+                    value={field.value ?? ""}
+                    className={cn(
+                      FIELD_CLASS,
+                      !field.value && "text-faint-foreground",
+                    )}
+                  >
+                    <option value="">Select use case</option>
+                    {deviceUseCaseOptions(initial?.useCase).map(option => (
+                      <option
+                        key={option}
+                        value={option}
+                        className="text-heading"
+                      >
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </FormControl>
                 <FormMessage className="text-xs" />
               </FormItem>

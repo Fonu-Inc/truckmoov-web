@@ -25,7 +25,6 @@ import {
   useAddOnboardingVehicle,
   useDeleteOnboardingDeviceRequest,
   useDeleteOnboardingVehicle,
-  useImportOnboardingVehicles,
   useSetOnboardingFulfilment,
   useUpdateOnboardingDeviceRequest,
   useUpdateOnboardingVehicle,
@@ -54,7 +53,7 @@ import {
   StepHeading,
   StepLayout,
 } from "@/features/get-started/components/StepParts";
-import { VehicleImportModal } from "@/features/get-started/components/VehicleImportModal";
+import { VehicleBulkUploadModal } from "@/features/get-started/components/VehicleBulkUploadModal";
 import { VehicleModal } from "@/features/get-started/components/VehicleModal";
 import { useConfirmDialog } from "@/features/get-started/hooks/useConfirmDialog";
 import {
@@ -94,7 +93,6 @@ export function FleetRequirementsStep({
   const updateVehicle = useUpdateOnboardingVehicle();
   const uploadDocument = useUploadOnboardingApplicationDocument();
   const deleteVehicle = useDeleteOnboardingVehicle();
-  const importVehicles = useImportOnboardingVehicles();
   const addDeviceRequest = useAddOnboardingDeviceRequest();
   const deleteDeviceRequest = useDeleteOnboardingDeviceRequest();
   const updateDeviceRequest = useUpdateOnboardingDeviceRequest();
@@ -558,19 +556,16 @@ export function FleetRequirementsStep({
           onSuccess(editingRequest ? "Device request updated." : "Device request added.");
         }}
       />
-      <VehicleImportModal
+      <VehicleBulkUploadModal
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        onUpload={async (file) => {
-          const res = await importVehicles.mutateAsync({
-            id,
-            file,
-          });
-          return {
-            message: res.message,
-            skipped: res.data.skipped ?? [],
-          };
-        }}
+        existingRegistrations={vehicles.map(vehicle => vehicle.registrationNumber)}
+        vehiclesLeft={isOwnerOperator ? OWNER_OPERATOR_VEHICLE_LIMIT - vehicles.length : Infinity}
+        onAdd={(data, licence) => addVehicle.mutateAsync({
+          id,
+          data,
+          licence,
+        })}
       />
       <DetailDialog
         detail={detail}

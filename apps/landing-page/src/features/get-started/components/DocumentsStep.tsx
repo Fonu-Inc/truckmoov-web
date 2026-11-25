@@ -341,7 +341,7 @@ export function DocumentsStep({
     >
       <StepHeading
         title="Required Documents"
-        description="Upload each document as a PDF file smaller than 10 MB. Files are validated as soon as they are added."
+        description="All requested documents are mandatory. Upload each document as a PDF file smaller than 10 MB. Files are validated as soon as they are added."
       />
 
       <div className={cn(
@@ -363,7 +363,7 @@ export function DocumentsStep({
           return (
             <UploadField
               key={slot.key}
-              title={slot.document.label}
+              title={`${slot.document.label} (Required)`}
               description={document?.rejectionReason ?? slot.document.requirement}
               fileName={document?.documentName ?? unsent?.file.name}
               status={document ? (document.status === "rejected" ? "rejected" : "uploaded") : unsent ? "pending" : null}

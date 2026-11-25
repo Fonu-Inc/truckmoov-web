@@ -14,7 +14,6 @@ import {
   useAddOnboardingVehicle,
   useDeleteOnboardingDeviceRequest,
   useDeleteOnboardingVehicle,
-  useImportOnboardingVehicles,
   useSetOnboardingFulfilment,
   useUpdateOnboardingDeviceRequest,
   useUpdateOnboardingVehicle,
@@ -51,9 +50,9 @@ import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   RequestDevicesModal,
-  VehicleImportModal,
   VehicleModal,
 } from "@/features/apply/components/forms/ApplyModals";
+import { VehicleBulkUploadModal } from "@/features/apply/components/forms/VehicleBulkUploadModal";
 import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
 import { DetailDialog } from "@/features/apply/components/ui/DetailDialog";
 import { DeviceFulfilmentCard } from "@/features/apply/components/ui/DeviceFulfilmentCard";
@@ -88,7 +87,6 @@ export function FleetRequirementsStep({
   const updateVehicle = useUpdateOnboardingVehicle();
   const uploadDocument = useUploadOnboardingApplicationDocument();
   const deleteVehicle = useDeleteOnboardingVehicle();
-  const importVehicles = useImportOnboardingVehicles();
   const addDeviceRequest = useAddOnboardingDeviceRequest();
   const deleteDeviceRequest = useDeleteOnboardingDeviceRequest();
   const updateDeviceRequest = useUpdateOnboardingDeviceRequest();
@@ -526,19 +524,16 @@ export function FleetRequirementsStep({
           toast.success(editing ? "Device request updated." : "Device request added.");
         }}
       />
-      <VehicleImportModal
+      <VehicleBulkUploadModal
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        onUpload={async (file) => {
-          const res = await importVehicles.mutateAsync({
-            id,
-            file,
-          });
-          return {
-            message: res.message,
-            skipped: res.data.skipped ?? [],
-          };
-        }}
+        existingRegistrations={vehicles.map(vehicle => vehicle.registrationNumber)}
+        vehiclesLeft={isOwnerOperator ? OWNER_OPERATOR_VEHICLE_LIMIT - vehicles.length : Infinity}
+        onAdd={(data, licence) => addVehicle.mutateAsync({
+          id,
+          data,
+          licence,
+        })}
       />
       <DetailDialog
         detail={detail}

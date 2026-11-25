@@ -220,9 +220,8 @@ The wizard follows the design app's two entries: **Apply for Account Creation** 
 - Returning changes two things. The heading copy becomes "Returning MTN customer
   onboarding", and the only required document is the **Customer Request Letter**
   (`RETURNING_DOCUMENTS` / `documentsForApplicant` in `@truckmoov/app-core/apply/applyTypes`).
-- ponytail: client-side only. The API doesn't know about returning customers yet. It still
-  lists every document in `missingDocuments`, so a returning submit can come back
-  `incomplete` until the backend supports it.
+- The flag is saved on the application (`returningCustomer`), so the server asks for the
+  same single document.
 
 ### Where the design and the API differ
 
@@ -232,29 +231,36 @@ field.
 **Dropped to match the design, though the API still expects them.** Submit shows the API's
 `incomplete` message on Review until the backend catches up:
 
-- the Indemnity Agreement section and its signature upload, which the API needs before submit
 - Proof of Ownership on Documents (still in the API's `missingDocuments`). Vehicle licences
   are attached in Add Vehicle, as in the design.
-- RC Number / TIN and ID Type / ID Number, which are optional server-side but feed
-  automated approval
+- RC Number / TIN and ID Number, which are optional server-side but feed automated approval
 
 **Adapted to the API:**
 
 - Customer Details' State and City are selects (state → city from `CITIES_BY_STATE`).
-- Installation scheduling takes the design's free-text street, city and state and a clock
-  time (08:00–16:00); the time picks the API's slot (before noon is the morning slot).
-- Vehicle Type and Type of Purchase use the API's values. The design's Pickup, Other
-  (vehicle type) and Rental have no API value.
+- Installation scheduling: Address, State, City and LGA, the last three as selects, and a
+  clock time (08:00–16:00); the time picks the API's slot (before noon is the morning slot).
+- Vehicle Type and Type of Purchase use the API's values. The design's Pickup and Other
+  (vehicle type) have no API value; in a bulk-upload sheet they are row errors, and Rental
+  goes in as Other with "Rental" as the detail.
+- Request Devices' Use Case is the design's select (`DEVICE_USE_CASES`); the API takes free
+  text, so the chosen label is saved.
+- **Bulk Upload Vehicles** is the design's two-step Excel wizard (`VehicleBulkUploadModal`
+  in each app). The server only imports CSV, with no licence per row, so the browser reads
+  the `.xlsx` (`@truckmoov/app-core/apply/vehicleSheetFile`, `read-excel-file`), the shared
+  rules in `apply/vehicleSheet.ts` check each row, and each ready vehicle is added through
+  the single add-vehicle endpoint with its licence, one at a time. The template is generated
+  in the browser (`write-excel-file`).
 
-**Built UI-only until the endpoint exists**, each marked `TODO(api)`:
+**Built UI-only until the endpoint exists**, each marked `TODO(api)` or `ponytail:`:
 
-- Device Fulfilment: the pickup store and area lists are empty, and the choice isn't sent
-- the ID type on the identification card upload
+- the installation LGA, held on screen and not sent
 - the quotation lines Delivery fee / Discount / Subtotal / VAT, shown only when the order
   returns them
 - device-request edit, done as delete + add
-- the Excel bulk-upload wizard: not built yet. It needs an xlsx parser, and adding one is
-  undecided.
+
+**Left out on purpose:** the design's payment-method and billing-email dialogs on Payment.
+Demo checkout settles server-side (see `PaymentGatewayDialog.md`).
 
 ## SEO
 

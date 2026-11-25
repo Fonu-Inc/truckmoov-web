@@ -8,6 +8,7 @@ import type { InstallationValues } from "@/features/apply/utils/applySchemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
+  CITIES_BY_STATE,
   getOnboardingOrderQueryOptions,
   useScheduleOnboardingInstallation,
 } from "@truckmoov/api/auth";
@@ -50,7 +51,9 @@ import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import {
   installationDateLimit,
   installationSchema,
+  NIGERIAN_STATES,
   normalizePhone,
+  normalizeState,
 } from "@/features/apply/utils/applySchemas";
 
 import { cn } from "@/lib/utils";
@@ -145,6 +148,20 @@ export function ScheduleInstallationStep({
   });
   // The summary line under the form reads what is typed.
   const watched = form.watch();
+  const installState = normalizeState(watched.state ?? "");
+  const lgaOptions = (installState && CITIES_BY_STATE[installState]) || [];
+  // A saved city outside the list (typed before the dropdown existed) stays selectable.
+  const cityOptions = watched.city && !lgaOptions.includes(watched.city)
+    ? [
+        watched.city,
+        ...lgaOptions,
+      ]
+    : lgaOptions;
+  // ponytail: the installation API has no LGA field yet, so this is held on screen only and not sent.
+  const [
+    lga,
+    setLga,
+  ] = useState("");
   // The design defaults the clock to 09:00 (the morning slot, the form default).
   const [
     time,
@@ -414,21 +431,61 @@ export function ScheduleInstallationStep({
               )}
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-3">
               <Label required>Installation Address</Label>
+              <FormField
+                control={form.control}
+                name="streetAddress"
+                render={({ field }) => (
+                  <FormItem className="space-y-1.5">
+                    <FormLabel htmlFor="install-address">Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        id="install-address"
+                        placeholder="e.g. 15 Marina Road, Victoria Island"
+                        maxLength={200}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="grid gap-3 sm:grid-cols-3">
                 <FormField
                   control={form.control}
-                  name="streetAddress"
+                  name="state"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          placeholder="Street"
-                          maxLength={200}
-                          {...field}
-                        />
-                      </FormControl>
+                    <FormItem className="space-y-1.5">
+                      <FormLabel>State</FormLabel>
+                      <Select
+                        value={normalizeState(field.value ?? "") ?? ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // A city belongs to one state: changing the state clears it.
+                          form.setValue(
+                            "city",
+                            "",
+                          );
+                          setLga("");
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger aria-label="State">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-72">
+                          {NIGERIAN_STATES.map(state => (
+                            <SelectItem
+                              key={state}
+                              value={state}
+                            >
+                              {state}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -437,33 +494,58 @@ export function ScheduleInstallationStep({
                   control={form.control}
                   name="city"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          placeholder="City"
-                          {...field}
-                        />
-                      </FormControl>
+                    <FormItem className="space-y-1.5">
+                      <FormLabel>City</FormLabel>
+                      <Select
+                        value={field.value ?? ""}
+                        disabled={!installState}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger aria-label="City">
+                            <SelectValue placeholder={installState ? "Select city" : "Select a state first"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-72">
+                          {cityOptions.map(city => (
+                            <SelectItem
+                              key={city}
+                              value={city}
+                            >
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          placeholder="State"
-                          {...field}
-                          value={field.value ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-1.5">
+                  <Label htmlFor="install-lga">LGA</Label>
+                  <Select
+                    value={lga}
+                    disabled={!installState}
+                    onValueChange={setLga}
+                  >
+                    <SelectTrigger
+                      id="install-lga"
+                      aria-label="Local Government Area"
+                    >
+                      <SelectValue placeholder="Select local government area" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {lgaOptions.map(option => (
+                        <SelectItem
+                          key={option}
+                          value={option}
+                        >
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 

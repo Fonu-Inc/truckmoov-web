@@ -304,7 +304,7 @@ export function PaymentStep({
             />
             {(order.telecomMasterSimNgn ?? 0) > 0 && (
               <Line
-                label="Telecom Master SIM"
+                label="New Telematics SIM"
                 value={formatCurrency(order.telecomMasterSimNgn ?? 0)}
               />
             )}

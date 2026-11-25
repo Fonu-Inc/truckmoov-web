@@ -133,6 +133,28 @@ export const PURCHASE_TYPE_LABELS: Record<OnboardingVehiclePurchaseType, string>
   other: "Other",
 };
 
+/**
+ * The design's Use Case choices for a device request. The API takes free text, so the
+ * chosen label is what gets saved.
+ */
+export const DEVICE_USE_CASES = [
+  "Vehicle tracking",
+  "Fleet telematics",
+  "Asset tracking",
+  "Fuel monitoring",
+  "Other",
+];
+
+/** The use-case options, plus an older free-text value so an existing request still shows it. */
+export function deviceUseCaseOptions(current?: string) {
+  return current && !DEVICE_USE_CASES.includes(current)
+    ? [
+        current,
+        ...DEVICE_USE_CASES,
+      ]
+    : DEVICE_USE_CASES;
+}
+
 export function vehicleSummary(vehicle: OnboardingApplicationVehicle) {
   return [
     vehicle.make,

@@ -60,15 +60,25 @@ export function SectionHeading({
   title,
   description,
   action,
+  leading,
 }: {
   title: string;
   description?: ReactNode;
   action?: ReactNode;
+  /** Sits before the title, e.g. an info button. */
+  leading?: ReactNode;
 }) {
   return (
     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
-        <h3 className="text-base leading-5 font-semibold text-heading">{title}</h3>
+        {leading
+          ? (
+              <div className="flex items-center gap-2">
+                {leading}
+                <h3 className="text-base leading-5 font-semibold text-heading">{title}</h3>
+              </div>
+            )
+          : <h3 className="text-base leading-5 font-semibold text-heading">{title}</h3>}
         {description && <p className="mt-1 text-xs leading-[17px] text-muted-foreground">{description}</p>}
       </div>
       {action}

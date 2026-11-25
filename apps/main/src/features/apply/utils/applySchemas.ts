@@ -480,8 +480,8 @@ export const deviceRequestSchema = z.object({
     "Enter the number of devices you need.",
   ),
   useCase: z.string().trim().min(
-    10,
-    "Describe the intended use in at least 10 characters.",
+    1,
+    "Select a use case.",
   ),
   notes: z.string().trim().optional(),
 });

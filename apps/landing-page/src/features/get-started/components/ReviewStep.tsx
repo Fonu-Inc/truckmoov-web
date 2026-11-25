@@ -61,7 +61,7 @@ export function ReviewStep({
   const deviceTotal = requestedDeviceTotal(application);
   const documentRows = requiredDocuments.map(document => ({
     key: document.type,
-    label: document.label,
+    label: `${document.label} (Required)`,
     fileName: application.documents.find(item => item.documentType === document.type)?.documentName,
   }));
 

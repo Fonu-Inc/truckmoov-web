@@ -251,8 +251,8 @@ export function DocumentsStep({
       <div>
         <h2 className="text-lg font-semibold text-foreground">Required Documents</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Upload each document as a PDF file smaller than 10 MB. Files are validated as soon as they
-          are added.
+          All requested documents are mandatory. Upload each document as a PDF file smaller than 10 MB. Files
+          are validated as soon as they are added.
         </p>
       </div>
 
@@ -283,7 +283,7 @@ export function DocumentsStep({
             <DocumentRow
               key={slot.key}
               index={index + 1}
-              label={slot.document.label}
+              label={`${slot.document.label} (Required)`}
               requirement={slot.document.requirement}
               idType={slot.document.type === "identification_card" ? idType : undefined}
               onIdType={value => void saveIdType(value)}

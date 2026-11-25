@@ -11,6 +11,8 @@
     "./eslint-config": "./src/lib/eslint-config.mjs",
     "./apply/applyTypes": "./src/apply/applyTypes.ts",
     "./apply/companyName": "./src/apply/companyName.ts",
+    "./apply/vehicleSheet": "./src/apply/vehicleSheet.ts",
+    "./apply/vehicleSheetFile": "./src/apply/vehicleSheetFile.ts",
     "./utils/general-utils": "./src/utils/general-utils.ts",
     "./utils/time-utils": "./src/utils/time-utils.ts"
   },
@@ -21,7 +23,9 @@
     "date-fns": "^3.6.0",
     "eslint-plugin-format": "^2.0.1",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.4"
+    "eslint-plugin-react-refresh": "^0.5.4",
+    "read-excel-file": "9.3.14",
+    "write-excel-file": "4.1.1"
   },
   "devDependencies": {
     "vitest": "^3.2.4"

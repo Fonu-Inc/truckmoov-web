@@ -1,13 +1,9 @@
 import type { UseFormReturn } from "react-hook-form";
 import type { BusinessDetailsValues } from "@/features/apply/utils/applySchemas";
-import { useQuery } from "@tanstack/react-query";
+import { useVerifyOnboardingTelecomMasterNumber } from "@truckmoov/api/auth";
 import {
-  getOnboardingM2mPlansQueryOptions, useVerifyOnboardingTelecomMasterNumber,
-} from "@truckmoov/api/auth";
-import {
-  CheckCircle2, Clock, HelpCircle, Info,
+  CheckCircle2, Clock, Info,
 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import {
   FormControl,
@@ -17,8 +13,13 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/shadcn/tooltip";
 import { toMtnMsisdn } from "@/features/apply/utils/applySchemas";
-import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 const OPTIONS = [
@@ -33,11 +34,6 @@ const OPTIONS = [
 /** Enterprise only, as in Settings → Telecom Master (landing: TelecomMasterSection). */
 export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDetailsValues> }) {
   const verify = useVerifyOnboardingTelecomMasterNumber();
-  const simNgn = useQuery(getOnboardingM2mPlansQueryOptions()).data?.data.telecomMasterSimNgn;
-  const [
-    explainerOpen,
-    setExplainerOpen,
-  ] = useState(false);
   const numberType = form.watch("telecomMasterNumberType");
   const msisdn = toMtnMsisdn(form.watch("telecomMasterMsisdn"));
   const verified = Boolean(msisdn) && form.watch("telecomMasterVerifiedMsisdn") === msisdn;
@@ -71,28 +67,30 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
   return (
     <section className="space-y-5 border-b border-border/60 pb-8">
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="What is a telematics number?"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Telecom Master number serves as the central number used to link and manage all your device numbers
+                on the platform.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <h3 className="text-base font-semibold text-foreground">Telecom Master Information</h3>
-          <button
-            type="button"
-            aria-expanded={explainerOpen}
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-            onClick={() => setExplainerOpen(open => !open)}
-          >
-            <HelpCircle className="h-4 w-4" />
-            What is a Telecom Master?
-          </button>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Choose whether you want to use an existing MTN number or request a new Telecom Master number
           for your fleet management service.
         </p>
-        {explainerOpen && (
-          <p className="mt-3 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
-            Your Telecom Master identifies your fleet’s tracking service and helps associate your devices and SIM
-            cards with your account.
-          </p>
-        )}
       </div>
 
       <FormField
@@ -104,7 +102,7 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
               className="text-sm"
               required
             >
-              Do you have an existing MTN number you would like to use as your Telecom Master number?
+              Do you have an existing MTN number you would like to use as your telematics number?
             </FormLabel>
             <div
               role="radiogroup"
@@ -174,7 +172,7 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Enter the MTN number you want to associate with your Telecom Master.
+                Enter the MTN number you want to associate with your Telecom service.
               </p>
               {verified && (
                 <p className="flex items-center gap-1.5 text-xs font-medium text-success">
@@ -192,11 +190,12 @@ export function TelecomMasterSection({ form }: { form: UseFormReturn<BusinessDet
         <div className="space-y-3">
           <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/15 p-3 text-sm text-warning">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            {`A new MTN SIM will be requested for your Telecom Master.${simNgn ? ` The ${formatCurrency(simNgn)} SIM charge will be included in your quotation.` : ""}`}
+            A new MTN SIM will be requested for your Telecom Master service. The applicable SIM charge will be
+            included in your quotation.
           </p>
           <p className="flex items-start gap-2 text-xs text-muted-foreground">
             <Clock className="mt-0.5 h-4 w-4 shrink-0" />
-            New Telecom Master SIM requested: Allocation Pending. Your number will appear in your
+            New Telecom Master SIM requested, Allocation Pending. Your number will appear in your
             account once MTN allocates it.
           </p>
         </div>

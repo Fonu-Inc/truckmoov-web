@@ -16,6 +16,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
 import {
+  CITIES_BY_STATE,
   getOnboardingOrderQueryOptions,
   useScheduleOnboardingInstallation,
 } from "@truckmoov/api/auth";
@@ -41,7 +42,9 @@ import {
 import {
   installationDateLimit,
   installationSchema,
+  NIGERIAN_STATES,
   normalizePhone,
+  normalizeState,
 } from "@/features/get-started/schemas/applySchemas";
 import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
 import {
@@ -150,6 +153,20 @@ export function ScheduleInstallationStep({
   });
   // The summary line under the form reads what is typed.
   const watched = useWatch({ control: form.control });
+  const installState = normalizeState(watched.state ?? "");
+  const lgaOptions = (installState && CITIES_BY_STATE[installState]) || [];
+  // A saved city outside the list (typed before the dropdown existed) stays selectable.
+  const cityOptions = watched.city && !lgaOptions.includes(watched.city)
+    ? [
+        watched.city,
+        ...lgaOptions,
+      ]
+    : lgaOptions;
+  // ponytail: the installation API has no LGA field yet, so this is held on screen only and not sent.
+  const [
+    lga,
+    setLga,
+  ] = useState("");
   // The design defaults the clock to 09:00 (the morning slot, the form default).
   const [
     time,
@@ -418,20 +435,61 @@ export function ScheduleInstallationStep({
                   *
                 </span>
               </span>
+              <FormField
+                control={form.control}
+                name="streetAddress"
+                render={({ field }) => (
+                  <FormItem className="gap-1.5">
+                    <FormLabel className={LABEL_CLASS}>Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. 15 Marina Road, Victoria Island"
+                        maxLength={200}
+                        className={FIELD_CLASS}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
               <div className="grid gap-[15px] sm:grid-cols-3">
                 <FormField
                   control={form.control}
-                  name="streetAddress"
+                  name="state"
                   render={({ field }) => (
                     <FormItem className="gap-1.5">
+                      <FormLabel className={LABEL_CLASS}>State</FormLabel>
                       <FormControl>
-                        <Input
-                          aria-label="Street"
-                          placeholder="Street"
-                          maxLength={200}
-                          className={FIELD_CLASS}
-                          {...field}
-                        />
+                        <select
+                          name={field.name}
+                          onBlur={field.onBlur}
+                          value={installState ?? ""}
+                          onChange={(event) => {
+                            field.onChange(event.target.value);
+                            // A city belongs to one state: changing the state clears it.
+                            form.setValue(
+                              "city",
+                              "",
+                            );
+                            setLga("");
+                          }}
+                          className={cn(
+                            FIELD_CLASS,
+                            !installState && "text-faint-foreground",
+                          )}
+                        >
+                          <option value="">Select state</option>
+                          {NIGERIAN_STATES.map(state => (
+                            <option
+                              key={state}
+                              value={state}
+                              className="text-heading"
+                            >
+                              {state}
+                            </option>
+                          ))}
+                        </select>
                       </FormControl>
                       <FormMessage className="text-xs" />
                     </FormItem>
@@ -442,36 +500,63 @@ export function ScheduleInstallationStep({
                   name="city"
                   render={({ field }) => (
                     <FormItem className="gap-1.5">
+                      <FormLabel className={LABEL_CLASS}>City</FormLabel>
                       <FormControl>
-                        <Input
-                          aria-label="City"
-                          placeholder="City"
-                          className={FIELD_CLASS}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem className="gap-1.5">
-                      <FormControl>
-                        <Input
-                          aria-label="State"
-                          placeholder="State"
-                          className={FIELD_CLASS}
+                        <select
                           {...field}
                           value={field.value ?? ""}
-                        />
+                          disabled={!installState}
+                          className={cn(
+                            FIELD_CLASS,
+                            !field.value && "text-faint-foreground",
+                          )}
+                        >
+                          <option value="">{installState ? "Select city" : "Select a state first"}</option>
+                          {cityOptions.map(city => (
+                            <option
+                              key={city}
+                              value={city}
+                              className="text-heading"
+                            >
+                              {city}
+                            </option>
+                          ))}
+                        </select>
                       </FormControl>
                       <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="install-lga"
+                    className={LABEL_CLASS}
+                  >
+                    LGA
+                  </label>
+                  <select
+                    id="install-lga"
+                    aria-label="Local Government Area"
+                    value={lga}
+                    disabled={!installState}
+                    onChange={event => setLga(event.target.value)}
+                    className={cn(
+                      FIELD_CLASS,
+                      !lga && "text-faint-foreground",
+                    )}
+                  >
+                    <option value="">Select local government area</option>
+                    {lgaOptions.map(option => (
+                      <option
+                        key={option}
+                        value={option}
+                        className="text-heading"
+                      >
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
             <FormField
