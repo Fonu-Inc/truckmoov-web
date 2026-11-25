@@ -1,13 +1,19 @@
 # Page Parity
 
-How to make a page in this repo look like its counterpart in **fleetflow-pro-main**.
+How to make a page in this repo look like its counterpart in the **design app**.
 
-`fleetflow-pro-main` (`http://localhost:8080`) is the **design reference** — the Figma.
-It is a separate repo sitting beside this one:
+The **design app** at **`https://fleetflow-pro-fork.vercel.app/`** is the source
+of truth for the UI (the "Figma") of `apps/main`, `apps/admin` and
+`apps/installer`. When a page here and the design app disagree, the design app
+wins. Check it before changing UI in any of those three apps.
+
+A local copy of the source sits beside this repo and is handy for reading
+`className`s and component code. If it differs from the deployed design app,
+follow the deployed app:
 
 ```
 Telconix-limited/
-  fleetflow-pro-main/   ← the reference ("Figma")
+  fleetflow-pro-main/   ← local source copy (http://localhost:8080)
   truckmoov-web/        ← this repo (the target)
 ```
 
@@ -38,11 +44,11 @@ Two consequences:
   `bg-card`, don't re-order utilities, don't swap a token for one you'd have
   picked yourself.
 
-> **Exception — the installer portal.** `apps/installer` (:3003) follows the live
-> demo at `https://appdemo.truckmoov.com/installer`, not `fleetflow-pro-main`:
-> the local fleetflow copy's installer pages are older than the demo. Copy
-> `className`s from the demo's rendered DOM (Playwright → `outerHTML`). To sign
-> in there, pick **Quick Demo Access → Installer** on `/auth`.
+> **Installer portal.** `apps/installer` (:3003) also follows the design app.
+> The local fleetflow copy's installer pages are out of date, so copy
+> `className`s from the design app's rendered DOM (Playwright → `outerHTML`).
+> The older demo at `https://appdemo.truckmoov.com/installer` is no longer the
+> reference.
 
 ## 1. Find the reference page
 
