@@ -84,7 +84,6 @@ import { SuspendAccessDialog } from "@/features/tenants/components/ui/SuspendAcc
 import { TenantDetailsSheet } from "@/features/tenants/components/ui/TenantDetailsSheet";
 import { TenantOnboardingPanel } from "@/features/tenants/components/ui/TenantOnboardingPanel";
 import { TerminateTenantDialog } from "@/features/tenants/components/ui/TerminateTenantDialog";
-import { TmNumbersPanel } from "@/features/tenants/components/ui/TmNumbersPanel";
 import {
   getBillingModel,
   inDateWindow,
@@ -208,18 +207,13 @@ function getStatusBadge(rawStatus: string) {
   }
 }
 
-/** Fleetflow's PlatformTenants (Tenants → All Tenants / Onboarding / Telecom Master). */
+/** Fleetflow's PlatformTenants (Tenants → All Tenants / Onboarding). */
 export default function TenantsPage() {
   const [
     searchParams,
     setSearchParams,
   ] = useSearchParams();
-  const activeTab = [
-    "kyc-review",
-    "tm-numbers",
-  ].includes(searchParams.get("tab") ?? "")
-    ? (searchParams.get("tab") as string)
-    : "all-tenants";
+  const activeTab = searchParams.get("tab") === "kyc-review" ? "kyc-review" : "all-tenants";
   const updateTenantStatusMutation = useUpdateTenantStatus();
 
   const [
@@ -432,16 +426,13 @@ export default function TenantsPage() {
         <TabsList className="flex w-fit mx-auto h-auto max-w-full flex-wrap gap-1">
           <TabsTrigger value="all-tenants">All Tenants</TabsTrigger>
           <TabsTrigger value="kyc-review">Onboarding</TabsTrigger>
-          <TabsTrigger value="tm-numbers">Telecom Master</TabsTrigger>
         </TabsList>
 
         <PageTitle
-          title={activeTab === "kyc-review" ? "Tenants Onboarding" : activeTab === "tm-numbers" ? "Telecom Master" : "Tenants"}
-          description={activeTab === "tm-numbers"
-            ? "Track Telecom Master verification and allocation requests."
-            : activeTab === "kyc-review"
-              ? "Review tenant applications and manage their approval and onboarding progress."
-              : "View and manage all tenants, their account status, and subscription details."}
+          title={activeTab === "kyc-review" ? "Tenants Onboarding" : "Tenants"}
+          description={activeTab === "kyc-review"
+            ? "Review tenant applications and manage their approval and onboarding progress."
+            : "View and manage all tenants, their account status, and subscription details."}
         />
 
         <TabsContent
@@ -783,10 +774,6 @@ export default function TenantsPage() {
 
         <TabsContent value="kyc-review">
           <TenantOnboardingPanel />
-        </TabsContent>
-
-        <TabsContent value="tm-numbers">
-          <TmNumbersPanel />
         </TabsContent>
       </Tabs>
 
