@@ -105,7 +105,7 @@ export function PlatformInstallationDetails({
               value={record.deviceCount == null ? "Not recorded" : String(record.deviceCount)}
             />
             <Field
-              label="Site address"
+              label="Installation Location"
               value={customer?.address || String(liveCustomer.address || "-")}
             />
             <Field

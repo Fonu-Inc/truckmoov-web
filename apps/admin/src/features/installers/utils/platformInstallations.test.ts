@@ -16,6 +16,7 @@ import {
   installerScheduleConflict,
   jobInstallationStatus,
   rankInstallationInstallers,
+  waitlistRecords,
 } from "./platformInstallations";
 
 // Ported from fleetflow's src/test/platformInstallations.test.ts — the cases that
@@ -392,6 +393,58 @@ describe(
     it(
       "locks in-progress assignments",
       () => expect(canChangeInstallationAssignment("in_progress")).toBe(false),
+    );
+  },
+);
+
+describe(
+  "installation waitlist",
+  () => {
+    const waiting = () => records([
+      {
+        status: "unassigned",
+        location: {
+          city: "Ikeja", state: "Lagos",
+        },
+      },
+      {
+        status: "unassigned",
+        location: {
+          city: "Calabar", state: "Cross River",
+        },
+      },
+      {
+        status: "assigned", installer: installer("inst-1"),
+      },
+    ]);
+    it(
+      "keeps only unassigned orders and flags locations no active installer covers",
+      () => {
+        const list = waitlistRecords(
+          waiting(),
+          [
+            {
+              ...account, state: "Lagos", serviceAreas: [],
+            },
+          ],
+        );
+        expect(list.map(r => r.status)).toEqual([
+          "awaiting_assignment",
+          "requires_attention",
+        ]);
+      },
+    );
+    it(
+      "flags nothing until the installer list has loaded",
+      () => {
+        expect(waitlistRecords(
+          waiting(),
+          null,
+        ).map(r => r.status)).toEqual([
+          "awaiting_assignment",
+          "awaiting_assignment",
+        ]);
+      },
     );
   },
 );

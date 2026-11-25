@@ -257,6 +257,25 @@ export function eligibleInstallers(record: InstallationRecord, installers: Syste
   return installers.filter(i => i.status === "active" && (!state || normalize(i.state) === normalize(state) || i.serviceAreas.some(area => normalize(area) === normalize(state))));
 }
 
+/**
+ * Fleetflow's installation waitlist: unassigned orders wait for automatic
+ * assignment, and one whose location no active installer covers is flagged
+ * "Requires Attention". Pass `null` until the installer list has loaded so
+ * nothing is flagged early.
+ */
+export function waitlistRecords(records: InstallationRecord[], installers: SystemInstaller[] | null): InstallationRecord[] {
+  return records
+    .filter(r => r.status === "awaiting_assignment" && !r.installerId)
+    .map(r => installers && eligibleInstallers(
+      r,
+      installers,
+    ).length === 0
+      ? {
+          ...r, status: "requires_attention" as const,
+        }
+      : r);
+}
+
 export function installerScheduleConflict(record: InstallationRecord, installerId: string, records: InstallationRecord[]) {
   return records.some(other => other.key !== record.key && other.installerId === installerId
     && [

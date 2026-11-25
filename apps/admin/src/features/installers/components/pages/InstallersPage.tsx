@@ -73,6 +73,7 @@ import { AddInstallerDialog } from "@/features/installers/components/ui/AddInsta
 import { InstallerProfileSheet } from "@/features/installers/components/ui/InstallerProfileSheet";
 import { InstallerStatusBadge } from "@/features/installers/components/ui/InstallerStatusBadge";
 import { PlatformInstallationsTab } from "@/features/installers/components/ui/PlatformInstallationsTab";
+import { PlatformWaitlistTab } from "@/features/installers/components/ui/PlatformWaitlistTab";
 import {
   INSTALLATIONS_FETCH_LIMIT, usePlatformInstallations,
 } from "@/features/installers/hooks/usePlatformInstallations";
@@ -142,11 +143,14 @@ export default function InstallersPage() {
     searchParams,
     setSearchParams,
   ] = useSearchParams();
-  const activeTab = searchParams.get("tab") === "installations" ? "installations" : "installers";
-  const pageTitle = activeTab === "installers" ? "Installer" : "Installations";
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam === "installations" || tabParam === "waitlist" ? tabParam : "installers";
+  const pageTitle = activeTab === "installers" ? "Installer" : activeTab === "waitlist" ? "Installation Waitlist" : "Installations";
   const pageDescription = activeTab === "installers"
     ? "Manage installer profiles, service areas, capabilities and availability."
-    : "Assign installers and track customer installations from scheduling to completion.";
+    : activeTab === "waitlist"
+      ? "Installations awaiting automatic installer assignment, with locations no installer currently covers flagged for review."
+      : "Assign installers and track customer installations from scheduling to completion.";
   // Occupancy comes from installation orders as in fleetflow, plus the API's own active-job count.
   const { allRecords } = usePlatformInstallations({ withInstallers: false });
   const {
@@ -274,13 +278,14 @@ export default function InstallersPage() {
       <div className="space-y-6">
         <Tabs
           value={activeTab}
-          onValueChange={tab => setSearchParams(tab === "installations" ? { tab } : {})}
+          onValueChange={tab => setSearchParams(tab === "installers" ? {} : { tab })}
           className="space-y-4 min-w-0"
         >
           <div className="flex justify-center">
             <TabsList className="h-auto max-w-full flex-wrap gap-1">
               <TabsTrigger value="installers">Installers</TabsTrigger>
               <TabsTrigger value="installations">Installations</TabsTrigger>
+              <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
             </TabsList>
           </div>
           <PageTitle
@@ -603,6 +608,12 @@ export default function InstallersPage() {
             className="space-y-6"
           >
             <PlatformInstallationsTab />
+          </TabsContent>
+          <TabsContent
+            value="waitlist"
+            className="space-y-6"
+          >
+            <PlatformWaitlistTab />
           </TabsContent>
         </Tabs>
       </div>

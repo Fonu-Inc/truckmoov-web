@@ -45,6 +45,7 @@ export function usePlatformInstallations({
     loading: jobs.isLoading,
     error: jobs.isError ? "Installation records could not be loaded. Please try again." : null,
     liveInstallers: installers.data?.data.items ?? [],
+    installersLoaded: installers.isSuccess,
     refresh: () => void jobs.refetch(),
   };
 }

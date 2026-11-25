@@ -18,7 +18,7 @@ export function InstallationStatusBadge({ status }: { status: InstallationStatus
   return (
     <Badge
       variant={variants[status]}
-      className="max-w-[160px] whitespace-normal"
+      className="max-w-[160px] whitespace-normal rounded-full px-2.5"
     >
       {INSTALLATION_STATUS_LABEL[status]}
     </Badge>
