@@ -1,11 +1,13 @@
 import type { InstallerProfile } from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  CITIES_BY_STATE,
   NIGERIAN_STATES,
   useUpdateInstallerProfile,
 } from "@truckmoov/api/auth";
 import { CityCombobox } from "@truckmoov/reusables/components/location/CityCombobox";
 import { Save } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -90,6 +92,16 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
       city: personal.city ?? "",
     },
   });
+
+  const state = form.watch("state");
+  const lgas = (state && CITIES_BY_STATE[state]) || [];
+  // ponytail: the installer profile API has no LGA field yet, so this is held on
+  // screen only and not saved. It starts on the city when the city is an LGA.
+  const [
+    lgaChoice,
+    setLgaChoice,
+  ] = useState(personal.city ?? "");
+  const lga = lgas.includes(lgaChoice) ? lgaChoice : "";
 
   function onSubmit(values: ProfileDetailsValues) {
     update.mutate(
@@ -202,11 +214,11 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
             control={form.control}
             name="city"
             render={({ field }) => (
-              <FormItem className="sm:col-span-2">
+              <FormItem>
                 <FormLabel required>City / base location</FormLabel>
                 <FormControl>
                   <CityCombobox
-                    state={form.watch("state") ?? ""}
+                    state={state ?? ""}
                     value={field.value ?? ""}
                     onChange={field.onChange}
                   />
@@ -215,6 +227,28 @@ export function ProfileDetailsForm({ personal }: { personal: InstallerProfile["p
               </FormItem>
             )}
           />
+          <div className="space-y-2">
+            <Label htmlFor="installer-profile-lga">Local Government Area</Label>
+            <Select
+              value={lga}
+              onValueChange={setLgaChoice}
+              disabled={!lgas.length}
+            >
+              <SelectTrigger id="installer-profile-lga">
+                <SelectValue placeholder="Select an LGA" />
+              </SelectTrigger>
+              <SelectContent>
+                {lgas.map(l => (
+                  <SelectItem
+                    key={l}
+                    value={l}
+                  >
+                    {l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Button
           type="submit"

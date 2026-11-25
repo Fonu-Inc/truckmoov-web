@@ -45,6 +45,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
@@ -251,6 +252,7 @@ export default function JobsPage() {
         >
           <JobsTable
             title="Issues Reported"
+            description="Reported issues, support requests, and resolution progress."
             query={{ status: "issue_reported" }}
             empty={{
               title: "No issues reported",
@@ -311,6 +313,7 @@ function InstallationsTab({
 
       <JobsTable
         title="Installation Jobs"
+        description="Transport jobs, their assigned resources, and delivery progress."
         query={statusQuery(status)}
         searchPlaceholder="Search company, job, location or vehicle"
         statusFilter={{
@@ -328,24 +331,32 @@ function InstallationsTab({
 }
 
 function SectionCard({
-  title, action, children, toolbar,
+  title, description, action, children, toolbar,
 }: {
   title: string;
+  description: string;
   action?: ReactNode;
   toolbar?: ReactNode;
   children: ReactNode;
 }) {
+  // Fleetflow puts the description inside the title row when the card has an action.
+  const heading = (
+    <>
+      <CardTitle className="font-display">{title}</CardTitle>
+      <CardDescription className="mt-1.5">{description}</CardDescription>
+    </>
+  );
   return (
     <Card className="rounded-2xl surface-sleek">
       <CardHeader className={toolbar ? "p-6 pb-4 space-y-4" : "p-6 pb-4 space-y-1.5"}>
         {action
           ? (
               <div className="flex items-center justify-between gap-3">
-                <CardTitle className="font-display">{title}</CardTitle>
+                {heading}
                 {action}
               </div>
             )
-          : <CardTitle className="font-display">{title}</CardTitle>}
+          : heading}
         {toolbar}
       </CardHeader>
       <CardContent className="p-6 pt-0 space-y-4">{children}</CardContent>
@@ -445,7 +456,10 @@ function OffersTable({ query }: { query: ReturnType<typeof useInstallerJobs> }) 
   );
 
   return (
-    <SectionCard title="Installation Offers">
+    <SectionCard
+      title="Installation Offers"
+      description="Details and current information for installation offers."
+    >
       <div className="overflow-x-auto rounded-2xl border">
         <DataTable
           columns={columns}
@@ -681,9 +695,10 @@ function DateFilter({
 }
 
 function JobsTable({
-  title, query, searchPlaceholder, statusFilter, dateFilter, empty,
+  title, description, query, searchPlaceholder, statusFilter, dateFilter, empty,
 }: {
   title: string;
+  description: string;
   query: InstallerJobsQuery;
   searchPlaceholder?: string;
   statusFilter?: {
@@ -775,7 +790,10 @@ function JobsTable({
   );
 
   return (
-    <SectionCard title={title}>
+    <SectionCard
+      title={title}
+      description={description}
+    >
       {searchPlaceholder && (
         <div className="flex flex-wrap items-center gap-2 w-full px-1">
           <SearchBox
@@ -966,6 +984,7 @@ function HistoryTable() {
   return (
     <SectionCard
       title="Installation History"
+      description="Recorded activity and changes, listed with their dates and details."
       action={(
         <Button
           size="sm"

@@ -15,6 +15,8 @@ import {
 export type SidebarNavItem = {
   /** Nav link text. Doubles as the top-bar title — a route is called one thing. */
   label: string;
+  /** Subtitle under the top-bar title, as in fleetflow. */
+  description?: string;
   href: string;
   icon: ElementType;
   /** Page owns its own padding — DashboardLayout drops the `p-6` on `<main>`. */
@@ -48,13 +50,13 @@ export const SIDEBAR_ENTRIES: (SidebarNavItem & { hasPermission: UserRole[] })[]
     label: "Dashboard", href: "/", icon: LayoutDashboard, hasPermission: INSTALLER_ROLES,
   },
   {
-    label: "Installation Jobs", href: "/jobs", icon: Wrench, hasPermission: INSTALLER_ROLES,
+    label: "Installation Jobs", description: "Review offers, complete field work, track issues, and access history", href: "/jobs", icon: Wrench, hasPermission: INSTALLER_ROLES,
   },
   {
-    label: "Support", href: "/support", icon: LifeBuoy, hasPermission: INSTALLER_ROLES,
+    label: "Support", description: "Raise field issues with the Fleet Pro installation desk and track your tickets", href: "/support", icon: LifeBuoy, hasPermission: INSTALLER_ROLES,
   },
   {
-    label: "Settings", href: "/settings", icon: Settings, hasPermission: INSTALLER_ROLES,
+    label: "Settings", description: "Manage your installer account", href: "/settings", icon: Settings, hasPermission: INSTALLER_ROLES,
   },
 ];
 

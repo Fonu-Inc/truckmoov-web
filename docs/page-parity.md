@@ -49,6 +49,13 @@ Two consequences:
 > `className`s from the design app's rendered DOM (Playwright → `outerHTML`).
 > The older demo at `https://appdemo.truckmoov.com/installer` is no longer the
 > reference.
+>
+> Some design-app Settings controls have no installer API field yet. They are
+> shown but not saved, and each is marked `ponytail:` in code: Local Government
+> Area, Default Language, Installation capabilities, Portal Session Timeout and
+> Data Retention. The availability option "Busy, on a job" and the period
+> option "Flexible" show disabled until the API accepts them. Wire them to
+> `packages/api` when the backend adds them.
 
 ## 1. Find the reference page
 

@@ -43,20 +43,24 @@ import { UserProfileDropdown } from "./UserProfileDropdown";
 type DashboardHeaderProps = {
   /** The page's name, resolved from `sidebarNav.ts` by DashboardLayout. */
   title: string;
+  /** The page's subtitle, when its nav entry has one. */
+  description?: string;
 };
 
 /**
- * The collapse toggle, the page title, job search, the shortcut sheet, the
- * notification bell and the profile menu — the appdemo installer header.
+ * The collapse toggle, the page title and subtitle, job search, the shortcut
+ * sheet, the notification bell and the profile menu, as in fleetflow.
  */
-export function DashboardHeader({ title }: DashboardHeaderProps) {
+export function DashboardHeader({
+  title, description,
+}: DashboardHeaderProps) {
   const collapsed = useSidebarStore(s => s.collapsed);
   const toggle = useSidebarStore(s => s.toggle);
   const openMobile = useSidebarStore(s => s.openMobile);
   const isMobile = useIsMobile();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/98 px-4 md:px-6 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-border bg-background/98 px-4 py-2 md:px-6 backdrop-blur-sm">
       <div className="flex items-center gap-2 min-w-0">
         <button
           onClick={isMobile ? openMobile : toggle}
@@ -71,7 +75,10 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
             ? <PanelLeftOpen className="h-4 w-4" />
             : <PanelLeftClose className="h-4 w-4" />}
         </button>
-        <h1 className="text-base font-semibold text-foreground ml-1 truncate">{title}</h1>
+        <div className="min-w-0 ml-1">
+          <h1 className="text-base font-semibold text-foreground truncate">{title}</h1>
+          {description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>}
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5">

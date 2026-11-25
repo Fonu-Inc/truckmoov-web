@@ -48,7 +48,10 @@ export function DashboardLayout() {
         )}
       >
         <ErrorBoundary>
-          <DashboardHeader title={entry?.label ?? ""} />
+          <DashboardHeader
+            title={entry?.label ?? ""}
+            description={entry?.description}
+          />
         </ErrorBoundary>
         <main className={cn(
           "flex-1 p-4 md:p-6",

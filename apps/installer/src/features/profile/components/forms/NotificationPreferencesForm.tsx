@@ -121,8 +121,13 @@ export function NotificationPreferencesForm({ preferences }: { preferences: Inst
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-4"
       >
-        {TYPES.map(toggle)}
+        {/* Fleetflow draws the divider above "Support ticket updates", not above the channels. */}
+        {TYPES.slice(
+          0,
+          3,
+        ).map(toggle)}
         <Separator />
+        {TYPES.slice(3).map(toggle)}
         {CHANNELS.map(toggle)}
         <Button
           type="submit"

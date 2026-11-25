@@ -78,36 +78,37 @@ export default function SettingsPage() {
   const work = useInstallerWorkPreferences();
 
   return (
-    <Tabs defaultValue="profile">
-      <div className="flex justify-center">
-        <TabsList>
-          <TabsTrigger
-            value="profile"
-            className="gap-2"
-          >
-            <User className="h-4 w-4" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger
-            value="notifications"
-            className="gap-2"
-          >
-            <Bell className="h-4 w-4" />
-            Notification Settings
-          </TabsTrigger>
-          <TabsTrigger
-            value="work"
-            className="gap-2"
-          >
-            <Wrench className="h-4 w-4" />
-            Work Preferences
-          </TabsTrigger>
-        </TabsList>
-      </div>
+    <Tabs
+      defaultValue="profile"
+      className="space-y-6"
+    >
+      <TabsList className="mx-auto flex h-auto w-fit max-w-full flex-wrap justify-center gap-1">
+        <TabsTrigger
+          value="profile"
+          className="gap-2"
+        >
+          <User className="h-4 w-4" />
+          Profile
+        </TabsTrigger>
+        <TabsTrigger
+          value="notifications"
+          className="gap-2"
+        >
+          <Bell className="h-4 w-4" />
+          Notification Settings
+        </TabsTrigger>
+        <TabsTrigger
+          value="work"
+          className="gap-2"
+        >
+          <Wrench className="h-4 w-4" />
+          Work Preferences
+        </TabsTrigger>
+      </TabsList>
 
       <TabsContent
         value="profile"
-        className="mt-6 space-y-6"
+        className="mt-3 space-y-6"
       >
         <Loaded query={profile}>
           {({ data }) => (
@@ -126,7 +127,7 @@ export default function SettingsPage() {
         <Section
           icon={Globe}
           title="Display Preferences"
-          description="Time and date defaults used for charts, tables, and reports."
+          description="Time and language defaults used for charts, tables, and reports."
         >
           <Loaded query={display}>
             {({ data }) => <DisplayPreferencesForm preferences={data} />}
@@ -137,7 +138,7 @@ export default function SettingsPage() {
 
       <TabsContent
         value="notifications"
-        className="mt-6 space-y-6"
+        className="mt-3 space-y-6"
       >
         <Section
           title="Job Notifications"
@@ -151,7 +152,7 @@ export default function SettingsPage() {
 
       <TabsContent
         value="work"
-        className="mt-6 space-y-6"
+        className="mt-3 space-y-6"
       >
         <Section
           title="Work Preferences"
