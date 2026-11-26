@@ -306,7 +306,7 @@ export default function JobDetailPage() {
                 </Button>
               </>
             )}
-            {job.status === "scheduled" && (
+            {(job.status === "scheduled" || job.status === "overdue") && (
               <Button
                 loading={start.isPending}
                 disabled={!actions.canStart}

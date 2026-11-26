@@ -45,7 +45,7 @@ export function StatCard({
         className,
       )}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
         <div className={cn(
           "rounded-lg p-2.5 shrink-0",
           iconBgStyles[variant],

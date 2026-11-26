@@ -211,6 +211,7 @@ export default function JobsPage() {
             <TabsTrigger
               value="installations"
               className="flex items-center gap-2"
+              aria-label="Installations"
             >
               <CalendarClock className="h-4 w-4" />
               <span className="hidden sm:inline">Installations</span>
@@ -218,6 +219,7 @@ export default function JobsPage() {
             <TabsTrigger
               value="issues"
               className="flex items-center gap-2"
+              aria-label="Issues Reported"
             >
               <AlertTriangle className="h-4 w-4" />
               <span className="hidden sm:inline">Issues Reported</span>
@@ -225,6 +227,7 @@ export default function JobsPage() {
             <TabsTrigger
               value="history"
               className="flex items-center gap-2"
+              aria-label="Installation History"
             >
               <CheckCircle2 className="h-4 w-4" />
               <span className="hidden sm:inline">Installation History</span>
@@ -301,7 +304,7 @@ function InstallationsTab({
                 <c.icon className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-xs text-muted-foreground">{c.label}</p>
+                <p className="text-xs leading-tight text-muted-foreground">{c.label}</p>
                 <p className="truncate text-xl font-semibold">{offers.isLoading ? "–" : (counters?.[c.id] ?? 0)}</p>
               </div>
             </CardContent>
@@ -620,6 +623,7 @@ function DateFilter({
       </PopoverTrigger>
       <PopoverContent
         align="end"
+        collisionPadding={16}
         className="w-80 p-4 space-y-4 max-h-[70vh] overflow-y-auto"
       >
         <h4 className="text-xs font-medium text-foreground px-0.5">Only show installations by...</h4>

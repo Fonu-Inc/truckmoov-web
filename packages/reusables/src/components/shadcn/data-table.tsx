@@ -198,7 +198,10 @@ export function DataTable<TData>({
           ) : table.getRowModel().rows.length === 0 ? (
             <TableRow>
               <TableCell colSpan={colCount} className="text-center py-8 text-muted-foreground">
-                {hasActiveFilters ? filteredEmptyState : emptyState}
+                {/* Pinned to the visible scroll area so it isn't centered off-screen in a wide table */}
+                <div className="sticky left-0 max-w-[calc(100vw-4rem)]">
+                  {hasActiveFilters ? filteredEmptyState : emptyState}
+                </div>
               </TableCell>
             </TableRow>
           ) : (
