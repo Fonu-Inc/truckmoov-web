@@ -20,6 +20,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { TripDetailsDialog } from "@/features/fleet/components/ui/TripDetailsDialog";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 
@@ -116,7 +117,7 @@ function formatTripDate(iso?: string) {
 function Stat({
   icon: Icon, label, value,
 }: {
-  icon: React.ElementType; label: string; value: string;
+  icon: React.ElementType; label: string; value: string | null;
 }) {
   return (
     <div className={CARD_CLASS}>
@@ -127,7 +128,9 @@ function Stat({
           </div>
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground truncate">{label}</p>
-            <p className="text-xl font-bold truncate">{value}</p>
+            {value === null
+              ? <Skeleton className="mt-1 h-7 w-12" />
+              : <p className="text-xl font-bold truncate">{value}</p>}
           </div>
         </div>
       </div>
@@ -313,6 +316,7 @@ export function TripsTab() {
   };
 
   const count = (s: TripStatus) => trips.filter(t => t.status === s).length;
+  const kpi = (n: number) => (jobsQuery.isLoading ? null : `${n}`);
   const hasFilters = Boolean(q) || statusFilter !== "all" || vehicleFilter !== "all";
   const tableState = jobsQuery.isLoading
     ? "Loading trips..."
@@ -334,22 +338,22 @@ export function TripsTab() {
             <Stat
               icon={Route}
               label="Total trips"
-              value={`${trips.length}`}
+              value={kpi(trips.length)}
             />
             <Stat
               icon={Truck}
               label="Active trips"
-              value={`${count("active")}`}
+              value={kpi(count("active"))}
             />
             <Stat
               icon={MapPin}
               label="Scheduled trips"
-              value={`${count("scheduled")}`}
+              value={kpi(count("scheduled"))}
             />
             <Stat
               icon={CircleCheckBig}
               label="Completed trips"
-              value={`${count("completed")}`}
+              value={kpi(count("completed"))}
             />
           </div>
 

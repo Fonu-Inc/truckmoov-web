@@ -12,6 +12,7 @@ import {
   useCallback, useMemo, useState,
 } from "react";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { BehaviourEventItem } from "@/features/drivers/components/ui/behaviour/BehaviourEventItem";
 import { BehaviourScoreCard } from "@/features/drivers/components/ui/behaviour/BehaviourScoreCard";
 import { CARD_CLASS } from "@/features/fleet/components/ui/violations/violationsUi";
@@ -27,13 +28,15 @@ function StateMessage({ children }: { children: React.ReactNode }) {
 function Stat({
   icon: Icon, tint, value, label,
 }: {
-  icon: React.ElementType; tint: string; value: string; label: string;
+  icon: React.ElementType; tint: string; value: string | null; label: string;
 }) {
   return (
     <div className={CARD_CLASS}>
       <div className="p-4 text-center">
         <Icon className={`h-5 w-5 mx-auto mb-1 ${tint}`} />
-        <p className="text-2xl font-bold">{value}</p>
+        {value === null
+          ? <Skeleton className="mx-auto h-8 w-12" />
+          : <p className="text-2xl font-bold">{value}</p>}
         <p className="text-xs text-muted-foreground">{label}</p>
       </div>
     </div>
@@ -74,7 +77,7 @@ export default function BehaviourPage() {
     [driversById],
   );
 
-  const stat = (value: number | null | undefined) => (summaryQuery.isLoading ? "…" : `${value ?? "-"}`);
+  const stat = (value: number | null | undefined) => (summaryQuery.isLoading ? null : `${value ?? "-"}`);
 
   return (
     <>
@@ -183,7 +186,9 @@ export default function BehaviourPage() {
                   <div className={CARD_CLASS}>
                     <div className="flex flex-col space-y-1.5 p-6 pb-2">
                       <h3 className="font-semibold tracking-tight text-foreground font-display text-sm">Recent Behavior Events</h3>
-                      <p className="text-sm text-muted-foreground">{`${eventsTotal} total events recorded`}</p>
+                      {eventsQuery.isLoading
+                        ? <Skeleton className="h-4 w-40" />
+                        : <p className="text-sm text-muted-foreground">{`${eventsTotal} total events recorded`}</p>}
                     </div>
                     <div className="p-6 pt-0">
                       <ScrollArea className="h-[500px] pr-4">

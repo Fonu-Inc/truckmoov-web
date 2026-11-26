@@ -5,12 +5,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   isTwoFactorChallenge, useSystemLogin,
 } from "@truckmoov/api/auth";
+import { returnPathFromState } from "@truckmoov/app-core/utils/general-utils";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
   ArrowRight, Mail,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import {
+  useLocation, useNavigate,
+} from "react-router";
 import { toast } from "sonner";
 import * as z from "zod";
 import { Button } from "@/components/shadcn/button";
@@ -40,6 +43,7 @@ export const ADMIN_SIGN_IN_FORM_ID = "admin-sign-in-form";
 export function AdminSignInForm({ onChallenge }: { onChallenge: (challenge: TwoFactorChallenge | TwoFactorEnrolmentChallenge) => void }) {
   const systemLogin = useSystemLogin();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const form = useForm<AdminSignInFormValues>({
     resolver: zodResolver(adminSignInSchema),
@@ -67,7 +71,7 @@ export function AdminSignInForm({ onChallenge }: { onChallenge: (challenge: TwoF
           await useAuthStore.getState().bootstrapFromSession();
           toast.success("System login request completed.");
           navigate(
-            "/",
+            returnPathFromState(location.state) ?? "/",
             { replace: true },
           );
         },

@@ -80,14 +80,20 @@ import {
 const jobSchema = z.object({
   reference: z.string().min(3).max(50),
   pickupAddress: z.string().min(
+    1,
+    "Pickup address is required. Search and select a location.",
+  ).min(
     5,
-    "Pickup address required",
+    "Enter a full pickup address",
   ).max(200),
   pickupLat: z.coerce.number().min(-90).max(90),
   pickupLng: z.coerce.number().min(-180).max(180),
   deliveryAddress: z.string().min(
+    1,
+    "Delivery address is required. Search and select a location.",
+  ).min(
     5,
-    "Delivery address required",
+    "Enter a full delivery address",
   ).max(200),
   deliveryLat: z.coerce.number().min(-90).max(90),
   deliveryLng: z.coerce.number().min(-180).max(180),
@@ -677,6 +683,7 @@ export function JobFormDialog({
                   <MapLocationInput
                     label="Pickup address"
                     required
+                    error={form.formState.errors.pickupAddress?.message}
                     placeholder="e.g. Apapa Port, Lagos"
                     pinColor="#22c55e"
                     value={pickupValue}
@@ -701,6 +708,7 @@ export function JobFormDialog({
                   <MapLocationInput
                     label="Delivery address"
                     required
+                    error={form.formState.errors.deliveryAddress?.message}
                     placeholder="e.g. Wuse Zone 5, Abuja"
                     pinColor="#ef4444"
                     value={deliveryValue}

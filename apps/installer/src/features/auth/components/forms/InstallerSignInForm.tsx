@@ -1,13 +1,14 @@
 import type { TwoFactorChallenge } from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useInstallerLogin } from "@truckmoov/api/auth";
+import { returnPathFromState } from "@truckmoov/app-core/utils/general-utils";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
   ArrowRight, Mail,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import {
-  Link, useNavigate,
+  Link, useLocation, useNavigate,
 } from "react-router";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -49,6 +50,7 @@ type InstallerSignInFormProps = {
 export function InstallerSignInForm({ onChallenge }: InstallerSignInFormProps) {
   const login = useInstallerLogin();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const form = useForm<InstallerSignInFormValues>({
     resolver: zodResolver(installerSignInSchema),
@@ -74,7 +76,7 @@ export function InstallerSignInForm({ onChallenge }: InstallerSignInFormProps) {
           }
           await useAuthStore.getState().bootstrapFromSession();
           navigate(
-            "/",
+            returnPathFromState(location.state) ?? "/",
             { replace: true },
           );
         },

@@ -87,6 +87,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DeviceDetailsSheet } from "@/features/device/components/ui/DeviceDetailsSheet";
 import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDialog";
@@ -260,6 +261,7 @@ export default function DeviceManagement() {
     [devicesQuery.data?.data],
   );
   const summary = devicesSummaryQuery.data?.data ?? null;
+  const kpiPending = devicesSummaryQuery.isLoading || devicesQuery.isLoading;
   const vehicles = useMemo(
     () => new Map((vehiclesResponse?.data ?? []).map(v => [
       v.id,
@@ -701,13 +703,17 @@ export default function DeviceManagement() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-muted-foreground truncate">{k.label}</p>
-                      <p className={cn(
-                        "text-xl font-bold mt-1 truncate",
-                        k.tone,
-                      )}
-                      >
-                        {k.value}
-                      </p>
+                      {kpiPending
+                        ? <Skeleton className="mt-1 h-7 w-12" />
+                        : (
+                            <p className={cn(
+                              "text-xl font-bold mt-1 truncate",
+                              k.tone,
+                            )}
+                            >
+                              {k.value}
+                            </p>
+                          )}
                     </div>
                   </div>
                 </CardContent>
@@ -735,9 +741,8 @@ export default function DeviceManagement() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Cpu className="h-5 w-5 text-primary" />
-                    Devices (
-                    {filteredDevices.length}
-                    )
+                    Devices
+                    {devicesQuery.isLoading ? <Skeleton className="h-4 w-8" /> : ` (${filteredDevices.length})`}
                   </CardTitle>
                   <CardDescription className="mt-1">All trackers in your fleet. Monitor lifecycle status, signal health, and last-seen timestamps.</CardDescription>
                 </div>

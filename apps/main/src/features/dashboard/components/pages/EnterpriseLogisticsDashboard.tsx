@@ -232,21 +232,6 @@ export default function EnterpriseLogisticsDashboard() {
     [overview],
   );
 
-  // The heading stays put while the overview loads: the top bar no longer
-  // carries the title for this route.
-  if (isLoading) {
-    return (
-      <>
-        <OverviewHeader
-          period={period}
-          onPeriodChange={setPeriod}
-          isOwnerOperator={isOwnerOperator}
-        />
-        <EnterpriseLogisticsDashboardSkeleton />
-      </>
-    );
-  }
-
   const violationState = (q: typeof driverViolations) => ({
     summary: q.data?.data,
     driverName,
@@ -277,34 +262,40 @@ export default function EnterpriseLogisticsDashboard() {
           <StatCard
             title="Total Vehicles"
             value={overview?.cards.totalVehicles ?? "-"}
+            loading={isLoading}
             icon={Truck}
           />
           <StatCard
             title="Total Jobs"
             value={overview?.cards.totalJobs ?? "-"}
+            loading={isLoading}
             icon={Package}
           />
           <StatCard
             title="Total Drivers"
             value={overview?.cards.totalDrivers ?? "-"}
+            loading={isLoading}
             icon={Users}
           />
           <StatCard
             title="Total Devices"
-            value={devicesSummary.isLoading ? "…" : devicesSummary.isError ? "-" : (devicesSummary.data?.data.total ?? 0)}
+            value={devicesSummary.isError ? "-" : (devicesSummary.data?.data.total ?? 0)}
+            loading={devicesSummary.isLoading}
             icon={Cpu}
           />
         </div>
 
-        {overview
-          ? (
-              <RecentActivityCard items={recentActivity.slice(
-                0,
-                ACTIVITY_LIMIT,
-              )}
-              />
-            )
-          : <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />}
+        {isLoading
+          ? <ListCardSkeleton rows={5} />
+          : overview
+            ? (
+                <RecentActivityCard items={recentActivity.slice(
+                  0,
+                  ACTIVITY_LIMIT,
+                )}
+                />
+              )
+            : <EnterpriseLogisticsDashboardError onRetry={() => refetch()} />}
 
         <div className="space-y-6">
           <ViolationsCard
@@ -329,8 +320,8 @@ export default function EnterpriseLogisticsDashboard() {
             />
             <VehiclesInOperationCard
               vehicles={overview?.vehiclesInOperation?.items ?? []}
-              isLoading={false}
-              isError={isError || !overview}
+              isLoading={isLoading}
+              isError={!isLoading && (isError || !overview)}
               onRetry={() => refetch()}
             />
             <VehiclesInMaintenanceCard
@@ -342,6 +333,16 @@ export default function EnterpriseLogisticsDashboard() {
             />
           </div>
         </div>
+
+        {isLoading && (
+          <>
+            <ListCardSkeleton rows={5} />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ListCardSkeleton rows={4} />
+              <ListCardSkeleton rows={4} />
+            </div>
+          </>
+        )}
 
         {overview && (
           <>
@@ -412,10 +413,6 @@ function OverviewHeader({
   );
 }
 
-function StatCardSkeleton() {
-  return <Skeleton className="h-[98px] w-full rounded-lg" />;
-}
-
 function ListCardSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <Card className="rounded-2xl surface-sleek">
@@ -432,33 +429,6 @@ function ListCardSkeleton({ rows = 5 }: { rows?: number }) {
         ))}
       </CardContent>
     </Card>
-  );
-}
-
-function EnterpriseLogisticsDashboardSkeleton() {
-  return (
-    <div
-      className="space-y-6"
-      aria-busy="true"
-      aria-live="polite"
-    >
-      <ListCardSkeleton rows={1} />
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCardSkeleton />
-        <StatCardSkeleton />
-        <StatCardSkeleton />
-        <StatCardSkeleton />
-      </div>
-
-      <ListCardSkeleton rows={5} />
-      <ListCardSkeleton rows={5} />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ListCardSkeleton rows={4} />
-        <ListCardSkeleton rows={4} />
-      </div>
-    </div>
   );
 }
 

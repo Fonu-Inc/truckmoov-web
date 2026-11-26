@@ -2,12 +2,14 @@ import { useLoginTwoFactor } from "@truckmoov/api/auth";
 import { TwoFactorCodeForm } from "@truckmoov/reusables/components/auth/TwoFactorCodeForm";
 import { useState } from "react";
 import {
-  Link, useNavigate,
+  Link, useLocation, useNavigate,
 } from "react-router";
 
 import { SignInForm } from "@/features/auth/components/forms/SignInForm";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-import { resolvePostLoginPath } from "@/features/auth/utils/authRedirect";
+import {
+  getReturnPath, resolvePostLoginPath,
+} from "@/features/auth/utils/authRedirect";
 
 /** Rendered inside AuthLayout, which supplies the branding panel and mobile logo. */
 export default function AuthPage() {
@@ -17,6 +19,7 @@ export default function AuthPage() {
     setChallengeToken,
   ] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const verify = useLoginTwoFactor();
 
   return (
@@ -42,7 +45,10 @@ export default function AuthPage() {
                   },
                 });
                 // Resolve before syncing, same reason as SignInForm.
-                const to = await resolvePostLoginPath(res.data.user.role);
+                const to = await resolvePostLoginPath(
+                  res.data.user.role,
+                  getReturnPath(location.state),
+                );
                 useAuthStore.getState().syncFromSession();
                 navigate(
                   to,

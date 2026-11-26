@@ -2,13 +2,18 @@ import {
   Keyboard, PanelLeftClose, PanelLeftOpen, Search, X,
 } from "lucide-react";
 import {
-  useEffect, useRef, useState,
+  useEffect, useMemo, useRef, useState,
 } from "react";
+import { useNavigate } from "react-router";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
+import {
+  getEntriesForRole, isNavGroup,
+} from "@/features/dashboard/utils/sidebarNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   SHORTCUTS, useGlobalShortcuts,
@@ -42,6 +47,16 @@ export function DashboardHeader({
   const toggle = useSidebarStore(s => s.toggle);
   const openMobile = useSidebarStore(s => s.openMobile);
   const isMobile = useIsMobile();
+  const role = useAuthStore(s => s.user?.role);
+  const navigate = useNavigate();
+
+  // No page owns this box, so it searches the pages the signed-in role can open.
+  const pages = useMemo(
+    () => (role ? getEntriesForRole(role) : []).flatMap(e => (isNavGroup(e) ? e.items : [e])),
+    [role],
+  );
+  const query = searchValue.trim().toLowerCase();
+  const matches = query ? pages.filter(p => p.label.toLowerCase().includes(query)) : [];
 
   useGlobalShortcuts({
     onSearch: () => {
@@ -65,6 +80,11 @@ export function DashboardHeader({
   const closeSearch = () => {
     setSearchOpen(false);
     setSearchValue("");
+  };
+
+  const goTo = (href: string) => {
+    closeSearch();
+    navigate(href);
   };
 
   return (
@@ -95,10 +115,16 @@ export function DashboardHeader({
                   <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     ref={searchInputRef}
-                    placeholder="Search..."
+                    placeholder="Search pages..."
+                    aria-label="Search pages"
                     value={searchValue}
                     onChange={e => setSearchValue(e.target.value)}
-                    onKeyDown={e => e.key === "Escape" && closeSearch()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape")
+                        closeSearch();
+                      else if (e.key === "Enter" && matches[0])
+                        goTo(matches[0].href);
+                    }}
                     className="w-64 h-8 bg-secondary/50 border-border/50 pl-8 pr-8 text-sm focus:bg-background focus:border-primary/50"
                   />
                   <button
@@ -108,6 +134,24 @@ export function DashboardHeader({
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
+                  {query && (
+                    <ul className="absolute right-0 top-full z-50 mt-1 max-h-72 w-64 overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md">
+                      {matches.length === 0
+                        ? <li className="px-2 py-1.5 text-sm text-muted-foreground">No matching pages</li>
+                        : matches.map(p => (
+                            <li key={p.href}>
+                              <button
+                                type="button"
+                                onClick={() => goTo(p.href)}
+                                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                              >
+                                <p.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                <span className="truncate">{p.label}</span>
+                              </button>
+                            </li>
+                          ))}
+                    </ul>
+                  )}
                 </div>
               )
             : (

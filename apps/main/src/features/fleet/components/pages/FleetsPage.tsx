@@ -51,6 +51,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/shadcn/popover";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { Switch } from "@/components/shadcn/switch";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useAuthStore } from "@/features/auth/stores/authStore";
@@ -167,6 +168,7 @@ export default function FleetsPage() {
   const totalVehiclesAssigned = new Set(fleets.flatMap(f => f.vehicleIds)).size;
   const avgPerFleet = fleets.length > 0 ? Math.round((totalVehiclesAssigned / fleets.length) * 10) / 10 : 0;
   const loaded = !fleetsQuery.isLoading;
+  const vehiclesPending = vehiclesQuery.isLoading;
 
   const kpis = [
     {
@@ -180,6 +182,7 @@ export default function FleetsPage() {
     },
     {
       label: "Unassigned Vehicles",
+      pending: vehiclesPending,
       value: Math.max(
         0,
         vehicles.length - totalVehiclesAssigned,
@@ -304,7 +307,9 @@ export default function FleetsPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-muted-foreground">{tile.label}</p>
-                      <p className="text-xl font-bold mt-1 truncate">{loaded ? tile.value : "-"}</p>
+                      {loaded && !tile.pending
+                        ? <p className="text-xl font-bold mt-1 truncate">{tile.value}</p>
+                        : <Skeleton className="mt-1 h-7 w-12" />}
                     </div>
                   </div>
                 </div>
@@ -318,9 +323,8 @@ export default function FleetsPage() {
                 <div>
                   <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display flex items-center gap-2">
                     <Boxes className="h-5 w-5 text-primary" />
-                    Fleets (
-                    {loaded ? filteredFleets.length : "-"}
-                    )
+                    Fleets
+                    {loaded ? ` (${filteredFleets.length})` : <Skeleton className="h-4 w-8" />}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">Group your vehicles into fleets for easier management and reporting.</p>
                 </div>
@@ -418,6 +422,19 @@ export default function FleetsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
+                    {!loaded && Array.from(
+                      { length: 4 },
+                      (_, i) => (
+                        <tr key={i}>
+                          <td
+                            colSpan={6}
+                            className="py-4"
+                          >
+                            <Skeleton className="h-9 w-full" />
+                          </td>
+                        </tr>
+                      ),
+                    )}
                     {filteredFleets.map(fleet => (
                       <tr
                         key={fleet.id}

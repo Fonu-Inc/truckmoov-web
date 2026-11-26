@@ -59,6 +59,8 @@ export type MapLocationInputProps = {
   label?: string;
   /** Marks the label with a red asterisk. */
   required?: boolean;
+  /** Validation message from the parent form; marks the field invalid. */
+  error?: string;
   pinColor?: string;
   suggestionsSide?: "top" | "bottom";
   inputClassName?: string;
@@ -239,6 +241,7 @@ export function MapLocationInput({
   placeholder = "Enter a location and press Enter",
   label,
   required,
+  error: fieldError,
   pinColor = "hsl(var(--primary))",
   suggestionsSide = "bottom",
   inputClassName,
@@ -246,6 +249,7 @@ export function MapLocationInput({
 }: MapLocationInputProps) {
   const inputId = useId();
   const suggestionsId = `${inputId}-suggestions`;
+  const fieldErrorId = `${inputId}-error`;
   const [
     query,
     setQuery,
@@ -443,7 +447,10 @@ export function MapLocationInput({
       {label && (
         <Label
           htmlFor={inputId}
-          className="text-foreground"
+          className={cn(
+            "text-foreground",
+            fieldError && "text-destructive",
+          )}
           required={required}
         >
           {label}
@@ -478,9 +485,11 @@ export function MapLocationInput({
               ? `${suggestionsId}-${highlightedIndex}`
               : undefined
           }
-          aria-invalid={Boolean(error)}
+          aria-invalid={Boolean(error || fieldError)}
+          aria-describedby={fieldError && !error ? fieldErrorId : undefined}
           className={cn(
             "h-10 rounded-md bg-background pl-10 pr-10",
+            fieldError && "border-destructive",
             inputClassName,
           )}
         />
@@ -523,6 +532,15 @@ export function MapLocationInput({
           </div>
         )}
       </div>
+
+      {fieldError && !error && (
+        <p
+          id={fieldErrorId}
+          className="text-sm font-medium text-destructive"
+        >
+          {fieldError}
+        </p>
+      )}
 
       {error && (
         <p

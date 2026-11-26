@@ -64,6 +64,7 @@ import { Progress } from "@/components/shadcn/progress";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -310,6 +311,7 @@ function KPICard({
   icon: Icon,
   trend,
   trendValue,
+  loading,
 }: {
   title: string;
   value: string | number;
@@ -317,7 +319,19 @@ function KPICard({
   icon: React.ElementType;
   trend?: "up" | "down" | "neutral";
   trendValue?: string;
+  loading?: boolean;
 }) {
+  if (loading) {
+    return (
+      <Card className="border-border/50">
+        <CardContent className="space-y-2 p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
+          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-3 w-24" />
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card className="relative overflow-hidden border-border/50">
       <CardContent className="p-4">
@@ -655,18 +669,21 @@ export function FleetAnalyticsTab() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <KPICard
           title="Fleet Utilization"
+          loading={summaryQuery.isPending}
           value={`${fleetUtilization}%`}
           icon={Truck}
           subtitle={`${activeVehicles}/${totalVehicles} active`}
         />
         <KPICard
           title="Driver Utilization"
+          loading={summaryQuery.isPending}
           value={`${driverUtilization}%`}
           icon={Users}
           subtitle={`${activeDrivers}/${totalDrivers} active`}
         />
         <KPICard
           title="Active Jobs"
+          loading={summaryQuery.isPending}
           value={inProgressJobs}
           icon={Package}
           subtitle={`${completedJobs} completed`}
@@ -678,6 +695,7 @@ export function FleetAnalyticsTab() {
         />
         <KPICard
           title="Safety Score"
+          loading={summaryQuery.isPending || safetyScoresQuery.isPending}
           value={averageSafetyScore || "-"}
           icon={ShieldAlert}
           subtitle={`${summary?.safety.critical ?? 0} critical events`}
@@ -686,6 +704,7 @@ export function FleetAnalyticsTab() {
         />
         <KPICard
           title="Maintenance"
+          loading={summaryQuery.isPending}
           value={maintenanceVehicles}
           icon={Wrench}
           subtitle="vehicles in service"

@@ -24,6 +24,7 @@ import {
   useEffect, useMemo, useState,
 } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   Avatar, AvatarFallback,
 } from "@/components/shadcn/avatar";
@@ -138,6 +139,11 @@ const TEAM_ROLE_OPTIONS: {
 
 const USER_COLUMN_COUNT = 5;
 
+const inviteEmailSchema = z.string().trim().min(
+  1,
+  "Email is required",
+).email("Enter a valid email address");
+
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success border-success/30",
   invited: "bg-warning/20 text-warning border-warning/30",
@@ -167,6 +173,10 @@ export default function UsersSettingsPage() {
     inviteEmail,
     setInviteEmail,
   ] = useState("");
+  const [
+    inviteEmailError,
+    setInviteEmailError,
+  ] = useState<string | null>(null);
   const [
     inviteRole,
     setInviteRole,
@@ -318,14 +328,15 @@ export default function UsersSettingsPage() {
   const isRemovingUser = deleteUserMutation.isPending;
 
   const handleInviteUser = async () => {
-    if (!inviteEmail) {
-      toast.error("Please enter an email address");
+    const parsed = inviteEmailSchema.safeParse(inviteEmail);
+    if (!parsed.success) {
+      setInviteEmailError(parsed.error.issues[0].message);
       return;
     }
     inviteUserMutation.mutate(
       {
         data: {
-          email: inviteEmail.trim(),
+          email: parsed.data,
           role: inviteRole,
         },
       },
@@ -511,7 +522,11 @@ export default function UsersSettingsPage() {
         {canInviteUsers && (
           <Dialog
             open={isInviteDialogOpen}
-            onOpenChange={setIsInviteDialogOpen}
+            onOpenChange={(open) => {
+              setIsInviteDialogOpen(open);
+              if (!open)
+                setInviteEmailError(null);
+            }}
           >
             <DialogTrigger asChild>
               <Button variant="gradient">
@@ -529,6 +544,7 @@ export default function UsersSettingsPage() {
                   <Label
                     htmlFor="inviteEmail"
                     required
+                    className={inviteEmailError ? "text-destructive" : undefined}
                   >
                     Email Address
                   </Label>
@@ -537,8 +553,21 @@ export default function UsersSettingsPage() {
                     type="email"
                     placeholder="colleague@company.com"
                     value={inviteEmail}
-                    onChange={e => setInviteEmail(e.target.value)}
+                    onChange={(e) => {
+                      setInviteEmail(e.target.value);
+                      setInviteEmailError(null);
+                    }}
+                    aria-invalid={Boolean(inviteEmailError)}
+                    aria-describedby={inviteEmailError ? "inviteEmail-error" : undefined}
                   />
+                  {inviteEmailError && (
+                    <p
+                      id="inviteEmail-error"
+                      className="text-sm font-medium text-destructive"
+                    >
+                      {inviteEmailError}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="inviteRole">Role</Label>
@@ -565,7 +594,10 @@ export default function UsersSettingsPage() {
               <div className="flex justify-end gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => setIsInviteDialogOpen(false)}
+                  onClick={() => {
+                    setIsInviteDialogOpen(false);
+                    setInviteEmailError(null);
+                  }}
                   disabled={isInviting}
                 >
                   Cancel

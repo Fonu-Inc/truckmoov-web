@@ -1,10 +1,13 @@
 import { useInstallerLoginTwoFactor } from "@truckmoov/api/auth";
+import { returnPathFromState } from "@truckmoov/app-core/utils/general-utils";
 import { TwoFactorCodeForm } from "@truckmoov/reusables/components/auth/TwoFactorCodeForm";
 import {
   ShieldCheck, Wrench,
 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import {
+  useLocation, useNavigate,
+} from "react-router";
 import { InstallerSignInForm } from "@/features/auth/components/forms/InstallerSignInForm";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -16,6 +19,7 @@ export default function AuthPage() {
     setChallengeToken,
   ] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const verify = useInstallerLoginTwoFactor();
 
   const Icon = challengeToken ? ShieldCheck : Wrench;
@@ -47,7 +51,7 @@ export default function AuthPage() {
                 });
                 await useAuthStore.getState().bootstrapFromSession();
                 navigate(
-                  "/",
+                  returnPathFromState(location.state) ?? "/",
                   { replace: true },
                 );
               }}

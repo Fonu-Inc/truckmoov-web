@@ -186,7 +186,13 @@ Scrollbars are restyled globally to a 6px muted thumb.
 - Header `title` is auto-overridden by the active sidebar entry's label, so the
   top bar and nav never disagree. The `title` prop is the fallback.
 - Global search (`⌘K`-style shortcuts in `hooks/useKeyboardShortcuts.ts`) and
-  the notification center live in the header.
+  the notification center live in the header. In `apps/main` the search box
+  finds pages: it matches the sidebar entries the signed-in role can open and
+  navigates on click or Enter. No page consumes it for in-page filtering; each
+  page has its own `TableToolbar` search.
+- Counts and KPI tiles never render `0` while their query is loading: show a
+  `Skeleton` in place of the number (and of the `(n)` in a list heading) until
+  the query settles.
 - **Page heading (admin).** The admin top bar carries no title — fleetflow's
   fork moved it into the content area. `apps/admin/src/shared/components/layout/PageTitle.tsx`
   (`PageTitle`, `PageActions`) is the heading: large `h1` + description, actions

@@ -26,6 +26,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { Switch } from "@/components/shadcn/switch";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -277,7 +278,9 @@ export default function DriverGroupsPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-muted-foreground truncate">{tile.label}</p>
-                      <p className={`text-xl font-bold mt-1 truncate${tile.valueClass}`}>{loaded ? tile.value : "-"}</p>
+                      {loaded
+                        ? <p className={`text-xl font-bold mt-1 truncate${tile.valueClass}`}>{tile.value}</p>
+                        : <Skeleton className="mt-1 h-7 w-12" />}
                     </div>
                   </div>
                 </div>
@@ -291,9 +294,8 @@ export default function DriverGroupsPage() {
                 <div className="space-y-1">
                   <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display flex items-center gap-2">
                     <UsersRound className="h-5 w-5 text-primary" />
-                    Driver Groups (
-                    {loaded ? filteredGroups.length : "-"}
-                    )
+                    Driver Groups
+                    {loaded ? ` (${filteredGroups.length})` : <Skeleton className="h-4 w-8" />}
                   </h3>
                   <p className="text-sm text-muted-foreground">Organise drivers into groups for easier management.</p>
                 </div>
@@ -398,75 +400,86 @@ export default function DriverGroupsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredGroups.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={6}
-                            className="text-center text-muted-foreground py-8"
-                          >
-                            {!loaded ? "-" : groupsQuery.isError ? "We couldn't load driver groups." : "No driver groups found."}
-                          </TableCell>
-                        </TableRow>
+                  {!loaded
+                    ? Array.from(
+                        { length: 4 },
+                        (_, i) => (
+                          <TableRow key={i}>
+                            <TableCell colSpan={6}>
+                              <Skeleton className="h-5 w-full" />
+                            </TableCell>
+                          </TableRow>
+                        ),
                       )
-                    : filteredGroups.map(group => (
-                        <TableRow key={group.id}>
-                          <TableCell className="font-medium">{group.name}</TableCell>
-                          <TableCell className="max-w-[320px] truncate text-muted-foreground">{group.description || "-"}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">
-                              {group.driverCount}
-                              {" "}
-                              driver
-                              {group.driverCount === 1 ? "" : "s"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={group.violationsEnabled ? "default" : "outline"}>{group.violationsEnabled ? "Enabled" : "Disabled"}</Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">
-                            {new Date(group.createdAt).toLocaleString(
-                              "en-US",
-                              {
-                                month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
-                              },
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1.5">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDetailsId(group.id)}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </Button>
-                              {mayManage && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label={`Edit ${group.name}`}
-                                    onClick={() => openEdit(group)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label={`Delete ${group.name}`}
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => setDeleteTarget(group)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
+                    : filteredGroups.length === 0
+                      ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={6}
+                              className="text-center text-muted-foreground py-8"
+                            >
+                              {groupsQuery.isError ? "We couldn't load driver groups." : "No driver groups found."}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      : filteredGroups.map(group => (
+                          <TableRow key={group.id}>
+                            <TableCell className="font-medium">{group.name}</TableCell>
+                            <TableCell className="max-w-[320px] truncate text-muted-foreground">{group.description || "-"}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">
+                                {group.driverCount}
+                                {" "}
+                                driver
+                                {group.driverCount === 1 ? "" : "s"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={group.violationsEnabled ? "default" : "outline"}>{group.violationsEnabled ? "Enabled" : "Disabled"}</Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs">
+                              {new Date(group.createdAt).toLocaleString(
+                                "en-US",
+                                {
+                                  month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
+                                },
                               )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1.5">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setDetailsId(group.id)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </Button>
+                                {mayManage && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      aria-label={`Edit ${group.name}`}
+                                      onClick={() => openEdit(group)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      aria-label={`Delete ${group.name}`}
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() => setDeleteTarget(group)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                 </TableBody>
               </Table>
             </div>

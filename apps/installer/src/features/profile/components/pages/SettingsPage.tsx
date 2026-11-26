@@ -14,7 +14,6 @@ import {
 import { TwoFactorSetupCard } from "@truckmoov/reusables/components/auth/TwoFactorSetupCard";
 import {
   Bell,
-  Database,
   Globe,
   Shield,
   Upload,
@@ -47,7 +46,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Label } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -133,7 +131,6 @@ export default function SettingsPage() {
             {({ data }) => <DisplayPreferencesForm preferences={data} />}
           </Loaded>
         </Section>
-        <DataRetention />
       </TabsContent>
 
       <TabsContent
@@ -314,107 +311,6 @@ function AccountSecurity() {
           <PasswordForm />
         </DialogContent>
       </Dialog>
-    </Section>
-  );
-}
-
-/** ponytail: mock from appdemo parity — no data-retention endpoint for installers; wire to packages/api when one lands. */
-const RETENTION = [
-  {
-    label: "GPS Data Retention",
-    value: "1y",
-    options: [
-      [
-        "90d",
-        "90 Days",
-      ],
-      [
-        "6m",
-        "6 Months",
-      ],
-      [
-        "1y",
-        "1 Year",
-      ],
-      [
-        "2y",
-        "2 Years",
-      ],
-    ],
-  },
-  {
-    label: "Log Retention",
-    value: "30d",
-    options: [
-      [
-        "7d",
-        "7 Days",
-      ],
-      [
-        "30d",
-        "30 Days",
-      ],
-      [
-        "90d",
-        "90 Days",
-      ],
-    ],
-  },
-  {
-    label: "Backup Frequency",
-    value: "daily",
-    options: [
-      [
-        "daily",
-        "Daily",
-      ],
-      [
-        "weekly",
-        "Weekly",
-      ],
-      [
-        "monthly",
-        "Monthly",
-      ],
-    ],
-  },
-] as const;
-
-function DataRetention() {
-  return (
-    <Section
-      icon={Database}
-      title="Data Retention"
-      description="Configure how long data is retained in the system"
-    >
-      <div className="grid gap-4 md:grid-cols-3">
-        {RETENTION.map(r => (
-          <div
-            key={r.label}
-            className="space-y-2"
-          >
-            <Label>{r.label}</Label>
-            <Select defaultValue={r.value}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {r.options.map(([
-                  v,
-                  l,
-                ]) => (
-                  <SelectItem
-                    key={v}
-                    value={v}
-                  >
-                    {l}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ))}
-      </div>
     </Section>
   );
 }

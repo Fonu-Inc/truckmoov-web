@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn } from "@/lib/utils";
 
 type StatCardProps = {
@@ -9,6 +10,7 @@ type StatCardProps = {
   icon: LucideIcon;
   variant?: "default" | "success" | "warning" | "danger";
   className?: string;
+  loading?: boolean;
 };
 
 export function StatCard({
@@ -19,6 +21,7 @@ export function StatCard({
   icon: Icon,
   variant = "default",
   className,
+  loading,
 }: StatCardProps) {
   const variantStyles = {
     default: "border-border hover:border-primary/40",
@@ -52,7 +55,9 @@ export function StatCard({
         </div>
         <div className="space-y-1.5 min-w-0 flex-1">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+          {loading
+            ? <Skeleton className="h-8 w-16" />
+            : <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>}
           {change !== undefined && (
             <div className="flex items-center gap-1.5 pt-1">
               <span

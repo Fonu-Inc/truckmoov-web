@@ -196,7 +196,10 @@ export default function VehiclesPage() {
   const {
     data: vehiclesResp, isLoading,
   } = useVehicles({ params: vehicleQueryParams });
-  const { data: vehiclesSummaryResp } = useVehiclesSummary();
+  const {
+    data: vehiclesSummaryResp, isLoading: summaryLoading,
+  } = useVehiclesSummary();
+  const kpiPending = !vehiclesSummaryResp && (summaryLoading || isLoading);
   const fleetGroupsQuery = useFleetGroups();
   const fleetNameByVehicle = useMemo(
     () => new Map((fleetGroupsQuery.data?.data ?? []).flatMap(f => f.vehicleIds.map(id => [
@@ -369,7 +372,9 @@ export default function VehiclesPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-muted-foreground">Total Vehicles</p>
-                  <p className="text-xl font-bold mt-1 truncate">{statusCounts.all}</p>
+                  {kpiPending
+                    ? <Skeleton className="mt-1 h-7 w-12" />
+                    : <p className="text-xl font-bold mt-1 truncate">{statusCounts.all}</p>}
                 </div>
               </div>
             </div>
@@ -382,7 +387,9 @@ export default function VehiclesPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Active</p>
-                  <p className="text-2xl font-bold mt-1 text-success">{statusCounts.active}</p>
+                  {kpiPending
+                    ? <Skeleton className="mt-1 h-7 w-12" />
+                    : <p className="text-2xl font-bold mt-1 text-success">{statusCounts.active}</p>}
                 </div>
               </div>
             </div>
@@ -395,7 +402,9 @@ export default function VehiclesPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">In Maintenance</p>
-                  <p className="text-2xl font-bold mt-1 text-warning">{statusCounts.maintenance}</p>
+                  {kpiPending
+                    ? <Skeleton className="mt-1 h-7 w-12" />
+                    : <p className="text-2xl font-bold mt-1 text-warning">{statusCounts.maintenance}</p>}
                 </div>
               </div>
             </div>
@@ -408,7 +417,9 @@ export default function VehiclesPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Inactive</p>
-                  <p className="text-2xl font-bold mt-1 text-muted-foreground">{statusCounts.inactive}</p>
+                  {kpiPending
+                    ? <Skeleton className="mt-1 h-7 w-12" />
+                    : <p className="text-2xl font-bold mt-1 text-muted-foreground">{statusCounts.inactive}</p>}
                 </div>
               </div>
             </div>
@@ -421,7 +432,8 @@ export default function VehiclesPage() {
               <div>
                 <h3 className="text-base font-semibold leading-none tracking-tight text-foreground font-display flex items-center gap-2">
                   <Truck className="h-5 w-5 text-primary" />
-                  {`Vehicles (${filteredVehicles.length})`}
+                  Vehicles
+                  {isLoading ? <Skeleton className="h-4 w-8" /> : ` (${filteredVehicles.length})`}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">All vehicles in your fleet: registration, assigned driver, and operational status at a glance.</p>
               </div>

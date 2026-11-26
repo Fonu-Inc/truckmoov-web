@@ -2,11 +2,14 @@ import type {
   TwoFactorChallenge, TwoFactorEnrolmentChallenge,
 } from "@truckmoov/api/auth";
 import { useSystemLoginTwoFactor } from "@truckmoov/api/auth";
+import { returnPathFromState } from "@truckmoov/app-core/utils/general-utils";
 import { TwoFactorCodeForm } from "@truckmoov/reusables/components/auth/TwoFactorCodeForm";
 import { TwoFactorEnrolmentStep } from "@truckmoov/reusables/components/auth/TwoFactorEnrolmentStep";
 import { ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import {
+  useLocation, useNavigate,
+} from "react-router";
 import { AdminSignInForm } from "@/features/auth/components/forms/AdminSignInForm";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -33,6 +36,7 @@ export default function AuthPage() {
     setChallenge,
   ] = useState<TwoFactorChallenge | TwoFactorEnrolmentChallenge | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const verify = useSystemLoginTwoFactor();
   const [
     title,
@@ -47,7 +51,7 @@ export default function AuthPage() {
   const finish = async () => {
     await useAuthStore.getState().bootstrapFromSession();
     navigate(
-      "/",
+      returnPathFromState(location.state) ?? "/",
       { replace: true },
     );
   };

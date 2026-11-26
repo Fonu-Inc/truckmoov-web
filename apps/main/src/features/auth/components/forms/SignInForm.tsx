@@ -9,7 +9,7 @@ import {
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  Link, useNavigate,
+  Link, useLocation, useNavigate,
 } from "react-router";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -24,7 +24,9 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-import { resolvePostLoginPath } from "@/features/auth/utils/authRedirect";
+import {
+  getReturnPath, resolvePostLoginPath,
+} from "@/features/auth/utils/authRedirect";
 import { emailSchema } from "@/features/auth/utils/schemas";
 
 const signInSchema = z.object({
@@ -41,6 +43,7 @@ export const SIGN_IN_FORM_ID = "main-sign-in-form";
 
 export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: string) => void }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const login = useLogin();
   // The mutation settles before resolvePostLoginPath (GET /auth/two-factor) returns, so track that gap too.
   const [
@@ -73,7 +76,10 @@ export function SignInForm({ onChallenge }: { onChallenge: (challengeToken: stri
           }
           // Resolve before syncing: once the store says "authenticated", AuthGuard redirects off /auth on its own.
           setIsResolving(true);
-          const to = await resolvePostLoginPath(res.data.user.role);
+          const to = await resolvePostLoginPath(
+            res.data.user.role,
+            getReturnPath(location.state),
+          );
           useAuthStore.getState().syncFromSession();
           toast.success("Login request completed.");
           navigate(

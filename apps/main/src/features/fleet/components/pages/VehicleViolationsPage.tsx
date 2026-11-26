@@ -8,6 +8,7 @@ import {
 import {
   useCallback, useMemo, useState,
 } from "react";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { VehicleViolationsTab } from "@/features/fleet/components/ui/violations/VehicleViolationsTab";
 import { ViolationEventsTab } from "@/features/fleet/components/ui/violations/ViolationEventsTab";
 import { ViolationRulesTab } from "@/features/fleet/components/ui/violations/ViolationRulesTab";
@@ -20,7 +21,7 @@ const TAB_CONTENT_CLASS = "ring-offset-background focus-visible:outline-none foc
 function Kpi({
   icon: Icon, label, value, tint,
 }: {
-  icon: React.ElementType; label: string; value: string; tint: "primary" | "destructive" | "warning" | "accent";
+  icon: React.ElementType; label: string; value: string | null; tint: "primary" | "destructive" | "warning" | "accent";
 }) {
   const chip = {
     primary: "bg-primary/10",
@@ -43,7 +44,9 @@ function Kpi({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-xl font-bold mt-1 truncate">{value}</p>
+            {value === null
+              ? <Skeleton className="mt-1 h-7 w-12" />
+              : <p className="text-xl font-bold mt-1 truncate">{value}</p>}
           </div>
         </div>
       </div>
@@ -133,25 +136,25 @@ export default function VehicleViolationsPage() {
             <Kpi
               icon={TriangleAlert}
               label="Total Violations"
-              value={loading ? "…" : `${summary?.total ?? 0}`}
+              value={loading ? null : `${summary?.total ?? 0}`}
               tint="primary"
             />
             <Kpi
               icon={ShieldAlert}
               label="Critical Violations"
-              value={loading ? "…" : `${summary?.criticalCount ?? 0}`}
+              value={loading ? null : `${summary?.criticalCount ?? 0}`}
               tint="destructive"
             />
             <Kpi
               icon={Truck}
               label="Vehicles With Violations"
-              value={loading ? "…" : `${summary?.subjectsWithViolations ?? 0}`}
+              value={loading ? null : `${summary?.subjectsWithViolations ?? 0}`}
               tint="warning"
             />
             <Kpi
               icon={Repeat}
               label="Repeat Violations"
-              value={loading ? "…" : `${summary?.repeatOffenders ?? 0}`}
+              value={loading ? null : `${summary?.repeatOffenders ?? 0}`}
               tint="accent"
             />
           </div>

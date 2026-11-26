@@ -16,6 +16,7 @@ import {
 import {
   NavLink, Outlet,
 } from "react-router";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { VehicleFinancialConfigDialog } from "@/features/fleet/components/ui/VehicleFinancialConfigDialog";
 import { VehiclePLStatementBuilder } from "@/features/fleet/components/ui/VehiclePLStatementBuilder";
@@ -55,7 +56,9 @@ export function FleetFinancialsLayout() {
     setProfitabilityPeriod,
   ] = useState<PeriodValue>("30");
   // KPI cards follow the same period picker as the profitability table.
-  const { data: financialSummaryResp } = useFleetFinancialSummary({ params: { periodMonths: periodToMonths(profitabilityPeriod) } });
+  const {
+    data: financialSummaryResp, isLoading: isSummaryLoading,
+  } = useFleetFinancialSummary({ params: { periodMonths: periodToMonths(profitabilityPeriod) } });
   const profitabilityPayload = useMemo(
     () => ({ data: { periodMonths: periodToMonths(profitabilityPeriod) } }),
     [profitabilityPeriod],
@@ -63,6 +66,7 @@ export function FleetFinancialsLayout() {
   const {
     data: profitabilityResp,
     isFetching: isProfitabilityFetching,
+    isLoading: isProfitabilityLoading,
   } = useFleetProfitability(profitabilityPayload);
   const profitabilityData = useMemo(
     () => (profitabilityResp?.data ?? []).map(normalizeProfitabilityRow),
@@ -201,6 +205,14 @@ export function FleetFinancialsLayout() {
     getTierBadge,
   };
 
+  const kpiPending = isSummaryLoading || isProfitabilityLoading;
+  const kpiSkeleton = (
+    <div className="space-y-2">
+      <Skeleton className="h-8 w-28" />
+      <Skeleton className="h-3 w-36" />
+    </div>
+  );
+
   return (
     <>
       <PageHeader
@@ -217,10 +229,14 @@ export function FleetFinancialsLayout() {
                   <div className="p-2 rounded-lg bg-success/20">
                     <TrendingUp className="h-5 w-5 text-success" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-green-600">{format(summaryStats.totalRevenue)}</p>
-                    <p className="text-xs text-muted-foreground">{`Total Revenue · ${fleetTotals.jobsCompleted} jobs`}</p>
-                  </div>
+                  {kpiPending
+                    ? kpiSkeleton
+                    : (
+                        <div>
+                          <p className="text-2xl font-bold text-green-600">{format(summaryStats.totalRevenue)}</p>
+                          <p className="text-xs text-muted-foreground">{`Total Revenue · ${fleetTotals.jobsCompleted} jobs`}</p>
+                        </div>
+                      )}
                 </div>
               </div>
             </div>
@@ -231,10 +247,14 @@ export function FleetFinancialsLayout() {
                   <div className="p-2 rounded-lg bg-destructive/20">
                     <TrendingDown className="h-5 w-5 text-destructive" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-red-600">{format(summaryStats.totalCost)}</p>
-                    <p className="text-xs text-muted-foreground">{`Total Costs · ${fleetTotals.totalKm.toFixed(0)} km`}</p>
-                  </div>
+                  {kpiPending
+                    ? kpiSkeleton
+                    : (
+                        <div>
+                          <p className="text-2xl font-bold text-red-600">{format(summaryStats.totalCost)}</p>
+                          <p className="text-xs text-muted-foreground">{`Total Costs · ${fleetTotals.totalKm.toFixed(0)} km`}</p>
+                        </div>
+                      )}
                 </div>
               </div>
             </div>
@@ -245,12 +265,16 @@ export function FleetFinancialsLayout() {
                   <div className="p-2 rounded-lg bg-primary/20">
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
-                  <div>
-                    <p className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                      {format(summaryStats.totalProfit)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{`Net Profit · ${summaryStats.avgMarginPercent.toFixed(1)}% margin`}</p>
-                  </div>
+                  {kpiPending
+                    ? kpiSkeleton
+                    : (
+                        <div>
+                          <p className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                            {format(summaryStats.totalProfit)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{`Net Profit · ${summaryStats.avgMarginPercent.toFixed(1)}% margin`}</p>
+                        </div>
+                      )}
                 </div>
               </div>
             </div>
@@ -261,12 +285,16 @@ export function FleetFinancialsLayout() {
                   <div className="p-2 rounded-lg bg-accent/20">
                     <Calculator className="h-5 w-5 text-accent" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">
-                      {fleetTotals.totalKm > 0 ? format(fleetTotals.totalCosts / fleetTotals.totalKm) : "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Cost per KM · Fleet average</p>
-                  </div>
+                  {kpiPending
+                    ? kpiSkeleton
+                    : (
+                        <div>
+                          <p className="text-2xl font-bold">
+                            {fleetTotals.totalKm > 0 ? format(fleetTotals.totalCosts / fleetTotals.totalKm) : "-"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Cost per KM · Fleet average</p>
+                        </div>
+                      )}
                 </div>
               </div>
             </div>

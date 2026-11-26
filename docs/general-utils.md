@@ -79,6 +79,19 @@ into such a string goes through it. `null`/`undefined` become `""`.
 `<td>${escapeHtml(invoice.customer_name)}</td>`
 ```
 
+**`safeReturnPath(value)`** — the post-login "go back where you were" guard. Returns
+the value only when it is a same-origin relative path (single leading `/`, no
+`//`, backslash, control character or scheme, and not an `/auth` screen),
+otherwise `null` so the caller falls back to the normal landing. Used by
+`apps/main`'s sign-in flow with the `from` location AuthGuard leaves in router
+state.
+
+```tsx
+safeReturnPath("/fleet/violations?tab=open") // "/fleet/violations?tab=open"
+safeReturnPath("//evil.com")                 // null
+safeReturnPath("/auth")                      // null
+```
+
 ## Adding a function
 
 1. Write it in `general-utils.ts`, with a comment saying **when to reach for it**.

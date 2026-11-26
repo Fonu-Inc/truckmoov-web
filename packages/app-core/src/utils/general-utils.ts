@@ -99,3 +99,27 @@ export function formatBytes(bytes: number | null | undefined): string {
 export function escapeHtml(value: unknown): string {
   return String(value ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
 }
+
+/**
+ * A same-origin relative path that is safe to navigate to after sign-in, or null.
+ * Reach for it before sending anyone to a path that came from state, a query
+ * param or a link: it must start with a single "/", carry no backslash, control
+ * character or scheme, and must not be an /auth screen.
+ */
+export function safeReturnPath(value: unknown): string | null {
+  if (typeof value !== 'string' || !/^\/(?![/\\])/.test(value))
+    return null
+  // eslint-disable-next-line no-control-regex
+  if (/[\\\u0000-\u001F\u007F]/.test(value))
+    return null
+  const pathname = value.split(/[?#]/, 1)[0]!.toLowerCase()
+  if (pathname === '/auth' || pathname.startsWith('/auth/'))
+    return null
+  return value
+}
+
+/** The page a guard bounced the visitor from (router state `from`), if it is safe to return to. */
+export function returnPathFromState(state: unknown): string | null {
+  const from = (state as { from?: { pathname?: string, search?: string, hash?: string } } | null)?.from
+  return from?.pathname ? safeReturnPath(`${from.pathname}${from.search ?? ''}${from.hash ?? ''}`) : null
+}
