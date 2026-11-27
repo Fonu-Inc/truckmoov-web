@@ -10,6 +10,7 @@ import {
   getSystemDevicesQueryOptions,
   getSystemSimsQueryOptions,
   useReinstateSystemDevice,
+  useRetryDeviceProvisioning,
   useSuspendSystemDevice,
 } from "@truckmoov/api/auth";
 import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
@@ -26,6 +27,7 @@ import {
   Pencil,
   PowerOff,
   Radio,
+  RefreshCw,
   Search,
   Signal,
   SignalLow,
@@ -78,12 +80,15 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import { PageActions } from "@/shared/components/layout/PageTitle";
+import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 import { DeviceDetailSheet } from "./management/DeviceDetailSheet";
 import {
   formatLastSeen,
+  isRetryableProvisionFailure,
   LAST_SEEN_DAYS,
   lifecycleStatuses,
   normalizeDeviceStatus,
+  provisionFailureMessage,
   seenWithinDays,
   statusClasses,
   statusLabels,
@@ -118,6 +123,10 @@ export function PlatformDeviceManagement() {
   const simsQuery = useQuery(getSystemSimsQueryOptions());
   const suspendMutation = useSuspendSystemDevice();
   const reinstateMutation = useReinstateSystemDevice();
+  const retryMutation = useRetryDeviceProvisioning();
+  const {
+    confirm, confirmDialog,
+  } = useConfirmAction();
 
   const [
     searchQuery,
@@ -247,6 +256,33 @@ export function PlatformDeviceManagement() {
     );
   };
 
+  const retryRegistration = (deviceIds?: string[]) =>
+    retryMutation.mutateAsync(
+      deviceIds ? { deviceIds } : {},
+      {
+        onSuccess: res => toast.success(`${res.data.requeued} device(s) queued for registration retry`),
+        onError: error => toast.error(error.message),
+      },
+    ).catch(() => undefined);
+
+  const provisionKnown = devices.some(d => d.provisionStatus);
+  const failedCount = devices.filter(isRetryableProvisionFailure).length;
+  const noFailed = provisionKnown && failedCount === 0;
+
+  const handleRetryAllFailed = () => {
+    const known = provisionKnown;
+    const count = failedCount;
+    confirm({
+      title: "Retry failed registrations?",
+      description: known
+        ? `${count} device(s) that failed to register with the tracking network will be retried.`
+        : "Every device that failed to register with the tracking network will be retried.",
+      confirmLabel: "Retry",
+      destructive: false,
+      onConfirm: () => retryRegistration(),
+    });
+  };
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
@@ -298,6 +334,15 @@ export function PlatformDeviceManagement() {
         >
           <PackagePlus className="mr-2 h-4 w-4" />
           Import stock
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={retryMutation.isPending || noFailed}
+          onClick={handleRetryAllFailed}
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          {noFailed ? "No failed registrations" : "Retry failed registrations"}
         </Button>
         <Button
           size="sm"
@@ -508,6 +553,7 @@ export function PlatformDeviceManagement() {
                           const normalizedStatus = normalizeDeviceStatus(device);
                           const sim = simByDevice[device.id];
                           const isSuspended = device.operationalStatus === "suspended" || lifecycleStatus === "suspended";
+                          const provisionMessage = provisionFailureMessage(device);
 
                           return (
                             <TableRow key={device.id}>
@@ -566,6 +612,14 @@ export function PlatformDeviceManagement() {
                                 >
                                   {statusLabels[normalizedStatus]}
                                 </Badge>
+                                {provisionMessage && (
+                                  <p
+                                    className="mt-1 max-w-[220px] text-xs text-destructive"
+                                    title={device.provisionError ?? undefined}
+                                  >
+                                    {provisionMessage}
+                                  </p>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
@@ -609,6 +663,15 @@ export function PlatformDeviceManagement() {
                                       <Pencil className="h-4 w-4 mr-2" />
                                       Edit Details
                                     </DropdownMenuItem>
+                                    {isRetryableProvisionFailure(device) && (
+                                      <DropdownMenuItem
+                                        disabled={retryMutation.isPending}
+                                        onClick={() => retryRegistration([device.id])}
+                                      >
+                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                        Retry registration
+                                      </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuSeparator />
                                     {device.tenantId && (
                                       isSuspended
@@ -673,6 +736,7 @@ export function PlatformDeviceManagement() {
         open={telemetryOpen}
         onOpenChange={setTelemetryOpen}
       />
+      {confirmDialog}
     </>
   );
 }

@@ -2966,6 +2966,10 @@ export type SystemDeviceInventoryItem = {
   assignedAt: string | null
   firmwareVersion?: string | null
   protocol?: string | null
+  provisionStatus?: 'pending' | 'registered' | 'failed'
+  provisionAttempts?: number
+  provisionNextAttemptAt?: string | null
+  provisionError?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -3041,6 +3045,13 @@ export type TestTelemetryResult = {
 }
 
 export type SendTestTelemetryResponse = ServerResponse<TestTelemetryResult>
+
+/** Omit `deviceIds` to re-queue every device whose registration failed (max 500 ids). */
+export type RetryDeviceProvisioningPayload = {
+  deviceIds?: string[]
+}
+
+export type RetryDeviceProvisioningResponse = ServerResponse<{ requeued: number }>
 
 export type AssignSystemInstallationPayload = {
   id: string

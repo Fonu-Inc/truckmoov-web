@@ -16,6 +16,7 @@ import {
   assignSystemDeviceSetupRequest,
   assignSystemDevices,
   importPlatformStock,
+  retryDeviceProvisioning,
   sendTestTelemetry,
   assignSystemInstallationOrder,
   getSystemDeviceSetupSummary,
@@ -1736,6 +1737,16 @@ export function useSendTestTelemetry() {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
       queryClient.invalidateQueries({ queryKey: ['systemInstallationJobs'] })
+    },
+  })
+}
+
+export function useRetryDeviceProvisioning() {
+  return useMutation({
+    mutationFn: retryDeviceProvisioning,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
     },
   })
 }

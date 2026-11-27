@@ -469,6 +469,8 @@ import type {
   AssignSystemDevicesPayload,
   ImportPlatformStockPayload,
   PlatformStockImportResponse,
+  RetryDeviceProvisioningPayload,
+  RetryDeviceProvisioningResponse,
   SendTestTelemetryPayload,
   SendTestTelemetryResponse,
   SystemDeviceWriteResponse,
@@ -1227,6 +1229,11 @@ export async function importPlatformStock({ file }: ImportPlatformStockPayload) 
 
 export async function sendTestTelemetry(body: SendTestTelemetryPayload) {
   const { data } = await axiosInstance.post<SendTestTelemetryResponse>('/auth/system/devices/test-telemetry', body)
+  return data
+}
+
+export async function retryDeviceProvisioning(body: RetryDeviceProvisioningPayload) {
+  const { data } = await axiosInstance.post<RetryDeviceProvisioningResponse>('/auth/system/devices/retry-provisioning', body)
   return data
 }
 

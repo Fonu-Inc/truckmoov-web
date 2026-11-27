@@ -1,5 +1,8 @@
 import type { SystemDeviceInventoryItem } from "@truckmoov/api/auth";
-import { minutesBetween } from "@truckmoov/app-core/utils/time-utils";
+import {
+  formatDayMonthTime,
+  minutesBetween,
+} from "@truckmoov/app-core/utils/time-utils";
 
 // Assigned Devices table only uses Active, Inactive, Assigned and Unassigned (fork PlatformDeviceManagement).
 export type DeviceBucket = "active" | "inactive" | "assigned" | "unassigned";
@@ -94,4 +97,29 @@ export function seenWithinDays(lastSeen: string | null, days: number) {
     new Date(),
   );
   return mins !== null && mins <= days * 1440;
+}
+
+const MAX_PROVISION_ATTEMPTS = 8;
+
+type ProvisionFields = Pick<PlatformDevice, "provisionStatus" | "provisionAttempts" | "provisionNextAttemptAt" | "lifecycleStatus">;
+
+/** Decommissioned devices are never re-registered, so they are not retryable. */
+export function isRetryableProvisionFailure(device: Pick<ProvisionFields, "provisionStatus" | "lifecycleStatus">) {
+  return device.provisionStatus === "failed" && device.lifecycleStatus !== "decommissioned";
+}
+
+/** Why a failed tracking-network registration is stuck; null when the device did not fail. */
+export function provisionFailureMessage(device: ProvisionFields): string | null {
+  if (!isRetryableProvisionFailure(device))
+    return null;
+  if (!device.provisionNextAttemptAt)
+    return "Gave up registering with the tracking network";
+  // Attempts reset to 0 on re-queue.
+  if (device.provisionAttempts === 0)
+    return `Retry queued, next attempt at ${formatDayMonthTime(device.provisionNextAttemptAt)}`;
+  const attempt = Math.min(
+    device.provisionAttempts ?? 1,
+    MAX_PROVISION_ATTEMPTS,
+  );
+  return `Could not register with the tracking network, retrying at ${formatDayMonthTime(device.provisionNextAttemptAt)} (attempt ${attempt} of ${MAX_PROVISION_ATTEMPTS})`;
 }
