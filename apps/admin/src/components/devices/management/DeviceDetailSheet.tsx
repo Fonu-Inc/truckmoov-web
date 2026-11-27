@@ -30,11 +30,23 @@ import { DeviceLifecycleBadge } from "../DeviceLifecycleBadge";
 type DeviceDetailSheetProps = {
   device: PlatformDevice | null;
   sim: SystemSimItem | undefined;
+  simLoading: boolean;
+  simError: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-function SimCardContent({ sim }: { sim: SystemSimItem | undefined }) {
+function SimCardContent({ sim, loading, error }: {
+  sim: SystemSimItem | undefined;
+  loading: boolean;
+  error: boolean;
+}) {
+  if (!sim && loading) {
+    return <p className="text-sm text-muted-foreground">Loading SIM…</p>;
+  }
+  if (!sim && error) {
+    return <p className="text-sm text-muted-foreground">Unable to load SIM.</p>;
+  }
   if (!sim) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -115,6 +127,8 @@ function SimCardContent({ sim }: { sim: SystemSimItem | undefined }) {
 export function DeviceDetailSheet({
   device,
   sim,
+  simLoading,
+  simError,
   open,
   onOpenChange,
 }: DeviceDetailSheetProps) {
@@ -202,7 +216,7 @@ export function DeviceDetailSheet({
                 <CardTitle className="text-sm font-medium">SIM Card</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <SimCardContent sim={sim} />
+                <SimCardContent sim={sim} loading={simLoading} error={simError} />
               </CardContent>
             </Card>
 

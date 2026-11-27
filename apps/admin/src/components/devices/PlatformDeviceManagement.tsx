@@ -777,6 +777,8 @@ export function PlatformDeviceManagement() {
         <DeviceDetailSheet
           device={selectedDevice}
           sim={selectedDevice ? simByDevice[selectedDevice.id] : undefined}
+          simLoading={simsLoading}
+          simError={simsQuery.isError}
           open={showDetailsSheet}
           onOpenChange={setShowDetailsSheet}
         />

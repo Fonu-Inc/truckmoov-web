@@ -157,13 +157,7 @@ export function ScheduleInstallationStep({
   const watched = useWatch({ control: form.control });
   const installState = normalizeState(watched.state ?? "");
   const lgaOptions = (installState && CITIES_BY_STATE[installState]) || [];
-  // A saved city outside the list (typed before the dropdown existed) stays selectable.
-  const cityOptions = watched.city && !lgaOptions.includes(watched.city)
-    ? [
-        watched.city,
-        ...lgaOptions,
-      ]
-    : lgaOptions;
+  const cityOptions = lgaOptions;
   // ponytail: the installation API has no LGA field yet, so this is held on screen only and not sent.
   const [
     lga,

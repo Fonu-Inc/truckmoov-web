@@ -193,6 +193,9 @@ const businessDetailsBase = z.object({
   ).max(
     MAX_ADDRESS_LENGTH,
     "Address is too long.",
+  ).refine(
+    v => /\p{L}/u.test(v),
+    "Address must contain letters.",
   ),
   addressVerification: addressVerificationField,
   city: z.string().trim().min(
@@ -542,6 +545,9 @@ export const installationSchema = z.object({
   ).max(
     MAX_ADDRESS_LENGTH,
     "Address is too long.",
+  ).refine(
+    v => /\p{L}/u.test(v),
+    "Address must contain letters.",
   ),
   addressVerification: addressVerificationField,
   city: z.string().trim().min(
