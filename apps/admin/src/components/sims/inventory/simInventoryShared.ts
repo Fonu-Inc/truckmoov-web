@@ -88,7 +88,7 @@ export function mapSimToRow(sim: SystemSimItem, lookups: SimLookups): SimRow {
     tenant: sim.tenantId ? sim.tenantName ?? lookups.tenantNames.get(sim.tenantId) ?? sim.tenantId : null,
     tenantId: sim.tenantId,
     deviceId: sim.deviceId,
-    deviceImei: sim.deviceId ? lookups.deviceImeis.get(sim.deviceId) ?? null : null,
+    deviceImei: sim.deviceId ? lookups.deviceImeis.get(sim.deviceId) ?? sim.deviceImei : null,
     dataUsage: sim.dataUsageMb,
     dataLimit: sim.dataLimitMb,
     smsUsage: sim.smsUsage,

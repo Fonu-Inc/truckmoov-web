@@ -941,6 +941,16 @@ export type SystemDevicesQuery = {
     manufacturer?: string
     status?: 'registered' | 'configured' | 'assigned' | 'active' | 'suspended' | 'faulty' | 'decommissioned'
     lifecycleStatus?: 'registered' | 'config_pending' | 'configured' | 'verified_online' | 'assignable' | 'assigned' | 'suspended' | 'faulty' | 'decommissioned'
+    /** Ignored by the CSV export, which always returns every matching row. */
+    page?: number
+    limit?: number
+    scope?: 'assigned' | 'stock' | 'all'
+    tenantId?: string
+    bucket?: SystemDeviceBucket
+    lastSeenDays?: 7 | 30 | 90
+    hideFaulty?: boolean
+    /** At most 100 device ids. */
+    ids?: string[]
   }
 }
 
@@ -2950,6 +2960,8 @@ export type SystemFeatureFlagsList = {
   generatedAt: string
 }
 
+export type SystemDeviceBucket = 'active' | 'inactive' | 'assigned' | 'unassigned'
+
 export type SystemDeviceInventoryItem = {
   id: string
   imei: string
@@ -2970,14 +2982,27 @@ export type SystemDeviceInventoryItem = {
   provisionAttempts?: number
   provisionNextAttemptAt?: string | null
   provisionError?: string | null
+  bucket: SystemDeviceBucket
+  isPlatformStock: boolean
   createdAt: string
   updatedAt: string
 }
 
 export type SystemDeviceInventoryList = {
+  items: SystemDeviceInventoryItem[]
+  /** Rows matching every filter; what the pager uses. */
   total: number
-  devices: SystemDeviceInventoryItem[]
-  generatedAt: string
+  page: number
+  limit: number
+  /** Counts over the scope set only (ignores search, bucket and the other filters). */
+  summary: {
+    all: number
+    active: number
+    inactive: number
+    assigned: number
+    unassigned: number
+    failedProvision: number
+  }
 }
 
 export type SystemDeviceUpdate = {

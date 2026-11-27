@@ -1,11 +1,13 @@
-import type { SystemDeviceInventoryItem } from "@truckmoov/api/auth";
+import type {
+  SystemDeviceBucket, SystemDeviceInventoryItem,
+} from "@truckmoov/api/auth";
 import {
   formatDayMonthTime,
   minutesBetween,
 } from "@truckmoov/app-core/utils/time-utils";
 
 // Assigned Devices table only uses Active, Inactive, Assigned and Unassigned (fork PlatformDeviceManagement).
-export type DeviceBucket = "active" | "inactive" | "assigned" | "unassigned";
+export type DeviceBucket = SystemDeviceBucket;
 
 export const lifecycleStatuses = [
   {
@@ -44,28 +46,8 @@ export const statusClasses: Record<DeviceBucket, string> = {
   unassigned: "bg-warning/10 text-warning",
 };
 
-const OUT_OF_SERVICE = [
-  "inactive",
-  "offline",
-  "suspended",
-];
-
-/** Platform-side view of a device: the live record plus any local Edit Details / Record Assignment overrides. */
-export type PlatformDevice = SystemDeviceInventoryItem & { statusOverride?: DeviceBucket };
-
-export function normalizeDeviceStatus(device: PlatformDevice): DeviceBucket {
-  if (device.statusOverride)
-    return device.statusOverride;
-  const lifecycle = device.lifecycleStatus ?? "";
-  const operational = device.operationalStatus ?? "";
-  if (OUT_OF_SERVICE.includes(operational) || OUT_OF_SERVICE.includes(lifecycle))
-    return "inactive";
-  if (operational === "active")
-    return "active";
-  if (lifecycle === "assigned" || operational === "assigned" || device.vehicleId)
-    return "assigned";
-  return "unassigned";
-}
+/** Platform-side view of a device row from the inventory list. */
+export type PlatformDevice = SystemDeviceInventoryItem;
 
 export function formatLastSeen(lastSeen: string | null) {
   if (!lastSeen)
@@ -83,21 +65,11 @@ export function formatLastSeen(lastSeen: string | null) {
   return `${Math.floor(diffMins / 1440)} days ago`;
 }
 
-export const LAST_SEEN_DAYS: Record<string, number> = {
+export const LAST_SEEN_DAYS: Record<string, 7 | 30 | 90> = {
   "7d": 7,
   "30d": 30,
   "90d": 90,
 };
-
-export function seenWithinDays(lastSeen: string | null, days: number) {
-  if (!lastSeen)
-    return false;
-  const mins = minutesBetween(
-    lastSeen,
-    new Date(),
-  );
-  return mins !== null && mins <= days * 1440;
-}
 
 const MAX_PROVISION_ATTEMPTS = 8;
 

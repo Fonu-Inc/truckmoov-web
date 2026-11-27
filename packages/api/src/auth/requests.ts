@@ -1088,9 +1088,15 @@ export async function resendTenantInvite({ id }: { id: string }) {
 
 // ─── System admin — devices ───────────────────────────────────────────────────
 
+// ids travel as one comma-separated param.
+function deviceInventoryParams(payload?: SystemDevicesQuery) {
+  const params = payload?.params
+  return params && { ...params, ids: params.ids?.join(',') }
+}
+
 export async function getSystemDevices(payload?: SystemDevicesQuery) {
   const { data } = await axiosInstance.get<SystemDeviceInventoryListResponse>('/auth/system/devices', {
-    params: payload?.params,
+    params: deviceInventoryParams(payload),
   })
   return data
 }
@@ -1159,7 +1165,7 @@ export async function getSystemDevice({ id }: { id: string }) {
 export async function exportSystemDevices(payload?: SystemDevicesQuery) {
   const { data } = await axiosInstance.get<Blob>('/auth/system/devices/export', {
     responseType: 'blob',
-    params: payload?.params,
+    params: deviceInventoryParams(payload),
   })
   return data
 }

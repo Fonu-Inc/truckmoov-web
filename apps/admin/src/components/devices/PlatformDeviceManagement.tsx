@@ -1,20 +1,27 @@
-import type { SystemSimItem } from "@truckmoov/api/auth";
+import type { ColumnDef } from "@tanstack/react-table";
+import type {
+  SystemDevicesQuery, SystemSimItem,
+} from "@truckmoov/api/auth";
 import type { PlatformDevice } from "./management/deviceStatus";
 import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import {
+  keepPreviousData,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  getSystemDeviceManufacturersQueryOptions,
   getSystemDevicesExportQueryOptions,
   getSystemDevicesQueryOptions,
   getSystemSimsQueryOptions,
+  getSystemTenantsQueryOptions,
   useReinstateSystemDevice,
   useRetryDeviceProvisioning,
   useSuspendSystemDevice,
 } from "@truckmoov/api/auth";
 import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
+import { useServerPagination } from "@truckmoov/reusables/hooks/useServerPagination";
 import {
   Activity,
   Building2,
@@ -38,6 +45,7 @@ import {
   XCircle,
 } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -51,6 +59,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,14 +80,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import { useDebouncedValue } from "@/features/communications/useDebouncedValue";
 import { PageActions } from "@/shared/components/layout/PageTitle";
 import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 import { DeviceDetailSheet } from "./management/DeviceDetailSheet";
@@ -87,9 +89,7 @@ import {
   isRetryableProvisionFailure,
   LAST_SEEN_DAYS,
   lifecycleStatuses,
-  normalizeDeviceStatus,
   provisionFailureMessage,
-  seenWithinDays,
   statusClasses,
   statusLabels,
 } from "./management/deviceStatus";
@@ -97,6 +97,18 @@ import { EditDeviceDialog } from "./management/EditDeviceDialog";
 import { ImportPlatformStockDialog } from "./management/ImportPlatformStockDialog";
 import { RecordDeviceAssignmentDialog } from "./management/RecordDeviceAssignmentDialog";
 import { SendTestTelemetryDialog } from "./management/SendTestTelemetryDialog";
+
+const SCOPE_OPTIONS = [
+  {
+    value: "assigned", label: "Assigned to tenants",
+  },
+  {
+    value: "stock", label: "In stock",
+  },
+  {
+    value: "all", label: "All devices",
+  },
+] as const;
 
 const ONLINE_STATUSES = [
   "active",
@@ -119,8 +131,9 @@ function getSignalIcon(strength: number | null, status: string) {
 
 export function PlatformDeviceManagement() {
   const queryClient = useQueryClient();
-  const devicesQuery = useQuery(getSystemDevicesQueryOptions());
   const simsQuery = useQuery(getSystemSimsQueryOptions());
+  const tenantsQuery = useQuery(getSystemTenantsQueryOptions());
+  const manufacturersQuery = useQuery(getSystemDeviceManufacturersQueryOptions("all"));
   const suspendMutation = useSuspendSystemDevice();
   const reinstateMutation = useReinstateSystemDevice();
   const retryMutation = useRetryDeviceProvisioning();
@@ -136,6 +149,10 @@ export function PlatformDeviceManagement() {
     statusFilter,
     setStatusFilter,
   ] = useState("all");
+  const [
+    scope,
+    setScope,
+  ] = useState<"assigned" | "stock" | "all">("assigned");
   const [
     filterDraft,
     setFilterDraft,
@@ -173,7 +190,68 @@ export function PlatformDeviceManagement() {
     setIsExporting,
   ] = useState(false);
 
-  const devices = devicesQuery.data?.data?.devices ?? [];
+  const debouncedSearch = useDebouncedValue(
+    searchQuery.trim(),
+    300,
+  );
+  const tenantId = filterDraft.tenant?.enabled ? filterDraft.tenant.value : undefined;
+  const manufacturer = filterDraft.manufacturer?.enabled ? filterDraft.manufacturer.value : undefined;
+  const lastSeen = filterDraft.lastSeen?.enabled && filterDraft.lastSeen.value ? LAST_SEEN_DAYS[filterDraft.lastSeen.value] : undefined;
+  const filters: NonNullable<SystemDevicesQuery["params"]> = {
+    scope,
+    search: debouncedSearch || undefined,
+    bucket: statusFilter === "all" ? undefined : statusFilter as PlatformDevice["bucket"],
+    tenantId,
+    manufacturer,
+    lastSeenDays: lastSeen,
+    hideFaulty: true,
+  };
+  const {
+    page, pageSize, pagination, setPage,
+  } = useServerPagination(
+    [
+      debouncedSearch,
+      statusFilter,
+      scope,
+      tenantId,
+      manufacturer,
+      lastSeen,
+    ],
+    50,
+  );
+  const devicesQuery = useQuery({
+    ...getSystemDevicesQueryOptions({
+      params: {
+        ...filters,
+        page,
+        limit: pageSize,
+      },
+    }),
+    placeholderData: keepPreviousData,
+  });
+
+  const devices = devicesQuery.data?.data.items ?? [];
+  const stats = devicesQuery.data?.data.summary;
+  const total = devicesQuery.data?.data.total ?? 0;
+  // Last row of the last page was removed: step back to the last valid page.
+  useEffect(
+    () => {
+      if (devices.length === 0 && total > 0 && page > 1) {
+        setPage(Math.max(
+          1,
+          Math.ceil(total / pageSize),
+        ));
+      }
+    },
+    [
+      devices.length,
+      total,
+      page,
+      pageSize,
+      setPage,
+    ],
+  );
+  const hasActiveFilters = Boolean(debouncedSearch || tenantId || manufacturer || lastSeen || statusFilter !== "all");
 
   // SIM cards linked to devices (the system links SIMs; admins only view)
   const simByDevice = useMemo(
@@ -187,49 +265,6 @@ export function PlatformDeviceManagement() {
     },
     [simsQuery.data],
   );
-
-  const tenantName = (device: PlatformDevice) => device.tenantId ? device.tenantName || "Unknown tenant" : "Unknown tenant";
-
-  // Get unique manufacturers from devices
-  const manufacturers = [
-    "all",
-    ...new Set(devices.map(d => d.manufacturer)),
-  ];
-
-  const visibleDevices = devices.filter(
-    d => d.operationalStatus !== "faulty" && d.lifecycleStatus !== "faulty",
-  );
-
-  const filteredDevices = visibleDevices.filter((device) => {
-    const name = tenantName(device);
-    const q = searchQuery.toLowerCase();
-    const matchesSearch
-      = device.id.toLowerCase().includes(q)
-        || device.imei.includes(searchQuery)
-        || name.toLowerCase().includes(q)
-        || !!device.tenantId?.toLowerCase().includes(q);
-
-    const matchesStatus = statusFilter === "all" || normalizeDeviceStatus(device) === statusFilter;
-
-    const mfgFilter = filterDraft.manufacturer;
-    const matchesManufacturer
-      = !mfgFilter?.enabled || !mfgFilter.value || device.manufacturer === mfgFilter.value;
-
-    const tenantFilterDraft = filterDraft.tenant;
-    const matchesTenantFilter
-      = !tenantFilterDraft?.enabled
-        || !tenantFilterDraft.value
-        || name === tenantFilterDraft.value;
-
-    const lastSeenFilter = filterDraft.lastSeen;
-    const days = lastSeenFilter?.enabled && lastSeenFilter.value ? LAST_SEEN_DAYS[lastSeenFilter.value] ?? 0 : 0;
-    const matchesLastSeen = days > 0 ? seenWithinDays(
-      device.lastSeen,
-      days,
-    ) : true;
-
-    return matchesSearch && matchesStatus && matchesManufacturer && matchesTenantFilter && matchesLastSeen;
-  });
 
   const handleViewDetails = (device: PlatformDevice) => {
     setSelectedDevice(device);
@@ -265,18 +300,15 @@ export function PlatformDeviceManagement() {
       },
     ).catch(() => undefined);
 
-  const provisionKnown = devices.some(d => d.provisionStatus);
-  const failedCount = devices.filter(isRetryableProvisionFailure).length;
-  const noFailed = provisionKnown && failedCount === 0;
+  const failedCount = stats?.failedProvision;
+  const noFailed = failedCount === 0;
 
   const handleRetryAllFailed = () => {
-    const known = provisionKnown;
-    const count = failedCount;
     confirm({
       title: "Retry failed registrations?",
-      description: known
-        ? `${count} device(s) that failed to register with the tracking network will be retried.`
-        : "Every device that failed to register with the tracking network will be retried.",
+      description: failedCount === undefined
+        ? "Every device that failed to register with the tracking network will be retried."
+        : `${failedCount} device(s) that failed to register with the tracking network will be retried.`,
       confirmLabel: "Retry",
       destructive: false,
       onConfirm: () => retryRegistration(),
@@ -286,7 +318,7 @@ export function PlatformDeviceManagement() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const blob = await queryClient.fetchQuery(getSystemDevicesExportQueryOptions());
+      const blob = await queryClient.fetchQuery(getSystemDevicesExportQueryOptions({ params: filters }));
       downloadBlob(
         blob as Blob,
         "devices.csv",
@@ -300,30 +332,213 @@ export function PlatformDeviceManagement() {
     }
   };
 
-  const countStatus = (v: string) => visibleDevices.filter(d => normalizeDeviceStatus(d) === v).length;
-  const stats = {
-    all: visibleDevices.length,
-    active: countStatus("active"),
-    inactive: countStatus("inactive"),
-    assigned: countStatus("assigned"),
-    unassigned: countStatus("unassigned"),
-  };
-
-  if (devicesQuery.isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Assigned Devices</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full" />
+  const columns: ColumnDef<PlatformDevice>[] = [
+    {
+      id: "imei",
+      header: "IMEI",
+      cell: ({ row }) => <span className="font-mono text-sm">{row.original.imei}</span>,
+    },
+    {
+      id: "model",
+      header: "Manufacturer / Model",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium">{row.original.manufacturer}</p>
+          {row.original.model && (
+            <p className="text-xs text-muted-foreground">{row.original.model}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "tenant",
+      header: "Tenant",
+      cell: ({ row }) => {
+        const device = row.original;
+        return (
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            {device.isPlatformStock
+              ? (
+                  <Badge
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    Platform stock
+                  </Badge>
+                )
+              : device.tenantId
+                ? (
+                    <span
+                      className="text-sm truncate max-w-[150px]"
+                      title={device.tenantName ?? device.tenantId}
+                    >
+                      {device.tenantName ?? device.tenantId}
+                    </span>
+                  )
+                : (
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
+                      Unassigned
+                    </Badge>
+                  )}
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
+        );
+      },
+    },
+    {
+      id: "sim",
+      header: "SIM Card",
+      cell: ({ row }) => {
+        const sim = simByDevice[row.original.id];
+        return sim
+          ? (
+              <div>
+                <p className="font-mono text-xs">{sim.iccid}</p>
+                <p className="text-xs text-muted-foreground">
+                  {[
+                    sim.msisdn,
+                    sim.carrier,
+                  ].filter(Boolean).join(" · ") || "-"}
+                </p>
+              </div>
+            )
+          : <span className="text-xs text-muted-foreground">No SIM linked</span>;
+      },
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const device = row.original;
+        const provisionMessage = provisionFailureMessage(device);
+        return (
+          <>
+            <Badge
+              variant="outline"
+              className={`border-transparent ${statusClasses[device.bucket]}`}
+            >
+              {statusLabels[device.bucket]}
+            </Badge>
+            {provisionMessage && (
+              <p
+                className="mt-1 max-w-[220px] text-xs text-destructive"
+                title={device.provisionError ?? undefined}
+              >
+                {provisionMessage}
+              </p>
+            )}
+          </>
+        );
+      },
+    },
+    {
+      id: "signal",
+      header: "Signal",
+      cell: ({ row }) => {
+        const device = row.original;
+        return (
+          <div className="flex items-center gap-2">
+            {getSignalIcon(
+              device.signalStrength,
+              device.lifecycleStatus || device.operationalStatus,
+            )}
+            {device.signalStrength !== null && (
+              <span className="text-sm">{`${device.signalStrength}%`}</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "lastSeen",
+      header: "Last Seen",
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatLastSeen(row.original.lastSeen)}</span>,
+    },
+    {
+      id: "assignedAt",
+      header: "Date Assigned",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {row.original.isPlatformStock || !row.original.assignedAt
+            ? "-"
+            : formatWithPattern(
+                row.original.assignedAt,
+                "M/d/yyyy, h:mm:ss a",
+              )}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[50px]" },
+      cell: ({ row }) => {
+        const device = row.original;
+        const lifecycleStatus = device.lifecycleStatus || device.operationalStatus;
+        const isSuspended = device.operationalStatus === "suspended" || lifecycleStatus === "suspended";
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleViewDetails(device)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditingDevice(device)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Details
+              </DropdownMenuItem>
+              {isRetryableProvisionFailure(device) && (
+                <DropdownMenuItem
+                  disabled={retryMutation.isPending}
+                  onClick={() => retryRegistration([device.id])}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry registration
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              {device.tenantId && (
+                isSuspended
+                  ? (
+                      <DropdownMenuItem
+                        className="text-success"
+                        disabled={reinstateMutation.isPending}
+                        onClick={() => handleReactivate(device)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Reactivate
+                      </DropdownMenuItem>
+                    )
+                  : (
+                      <DropdownMenuItem
+                        className="text-warning"
+                        disabled={suspendMutation.isPending}
+                        onClick={() => handleSuspend(device)}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Suspend Device
+                      </DropdownMenuItem>
+                    )
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   return (
     <>
       <PageActions>
@@ -389,19 +604,19 @@ export function PlatformDeviceManagement() {
           <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
             {[
               {
-                label: "All Devices", value: stats.all, icon: Cpu, tone: "text-primary bg-primary/10",
+                label: "All Devices", value: stats?.all, icon: Cpu, tone: "text-primary bg-primary/10",
               },
               {
-                label: "Active", value: stats.active, icon: Activity, tone: "text-success bg-success/10",
+                label: "Active", value: stats?.active, icon: Activity, tone: "text-success bg-success/10",
               },
               {
-                label: "Inactive", value: stats.inactive, icon: PowerOff, tone: "text-muted-foreground bg-muted",
+                label: "Inactive", value: stats?.inactive, icon: PowerOff, tone: "text-muted-foreground bg-muted",
               },
               {
-                label: "Assigned", value: stats.assigned, icon: UserCheck, tone: "text-info bg-info/10",
+                label: "Assigned", value: stats?.assigned, icon: UserCheck, tone: "text-info bg-info/10",
               },
               {
-                label: "Unassigned", value: stats.unassigned, icon: UserX, tone: "text-warning bg-warning/10",
+                label: "Unassigned", value: stats?.unassigned, icon: UserX, tone: "text-warning bg-warning/10",
               },
             ].map((k) => {
               const Icon = k.icon;
@@ -416,7 +631,9 @@ export function PlatformDeviceManagement() {
                     </span>
                     <p className="text-sm text-muted-foreground">{k.label}</p>
                   </div>
-                  <p className="mt-2 text-2xl font-bold">{k.value}</p>
+                  {k.value === undefined
+                    ? <Skeleton className="mt-2 h-8 w-16" />
+                    : <p className="mt-2 text-2xl font-bold">{k.value}</p>}
                 </div>
               );
             })}
@@ -427,12 +644,30 @@ export function PlatformDeviceManagement() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by ID, IMEI, or tenant..."
+                placeholder="Search by ID, IMEI, model or tenant..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
+            <Select
+              value={scope}
+              onValueChange={value => setScope(value as typeof scope)}
+            >
+              <SelectTrigger className="w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SCOPE_OPTIONS.map(o => (
+                  <SelectItem
+                    key={o.value}
+                    value={o.value}
+                  >
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select
               value={statusFilter}
               onValueChange={setStatusFilter}
@@ -474,22 +709,19 @@ export function PlatformDeviceManagement() {
                   key: "tenant",
                   label: "Tenant",
                   type: "select",
-                  options: Array.from(
-                    new Set(devices.map(d => tenantName(d))),
-                  )
-                    .filter(n => n && n !== "Unknown tenant")
-                    .map(n => ({
-                      value: n, label: n,
-                    })),
+                  options: (tenantsQuery.data?.data.tenants ?? [])
+                    .map(t => ({
+                      value: t.id, label: t.name,
+                    }))
+                    .sort((a, b) => a.label.localeCompare(b.label)),
                 },
                 {
                   key: "manufacturer",
                   label: "Manufacturer",
                   type: "select",
-                  options: manufacturers
-                    .filter(m => m !== "all")
+                  options: (manufacturersQuery.data?.data.manufacturers ?? [])
                     .map(m => ({
-                      value: m, label: m,
+                      value: m.manufacturer, label: m.manufacturer,
                     })),
                 },
               ]}
@@ -499,212 +731,32 @@ export function PlatformDeviceManagement() {
             />
           </div>
 
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>IMEI</TableHead>
-                  <TableHead>Manufacturer / Model</TableHead>
-                  <TableHead>Tenant</TableHead>
-                  <TableHead>SIM Card</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Signal</TableHead>
-                  <TableHead>Last Seen</TableHead>
-                  <TableHead>Date Assigned</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {devicesQuery.isError
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={9}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          Unable to load devices.
-                          {" "}
-                          <Button
-                            variant="link"
-                            className="h-auto p-0"
-                            onClick={() => devicesQuery.refetch()}
-                          >
-                            Try again
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : filteredDevices.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={9}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            {devices.length === 0
-                              ? "No devices registered across tenants."
-                              : "No devices match your filters."}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : (
-                        filteredDevices.map((device) => {
-                          const lifecycleStatus = device.lifecycleStatus || device.operationalStatus;
-                          const normalizedStatus = normalizeDeviceStatus(device);
-                          const sim = simByDevice[device.id];
-                          const isSuspended = device.operationalStatus === "suspended" || lifecycleStatus === "suspended";
-                          const provisionMessage = provisionFailureMessage(device);
-
-                          return (
-                            <TableRow key={device.id}>
-                              <TableCell className="font-mono text-sm">{device.imei}</TableCell>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium">{device.manufacturer}</p>
-                                  {device.model && (
-                                    <p className="text-xs text-muted-foreground">{device.model}</p>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                                  {device.tenantId
-                                    ? (
-                                        <span
-                                          className="text-sm truncate max-w-[150px]"
-                                          title={device.tenantName ?? device.tenantId}
-                                        >
-                                          {tenantName(device)}
-                                        </span>
-                                      )
-                                    : (
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs"
-                                        >
-                                          Unassigned
-                                        </Badge>
-                                      )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {sim
-                                  ? (
-                                      <div>
-                                        <p className="font-mono text-xs">{sim.iccid}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                          {[
-                                            sim.msisdn,
-                                            sim.carrier,
-                                          ].filter(Boolean).join(" · ") || "-"}
-                                        </p>
-                                      </div>
-                                    )
-                                  : (
-                                      <span className="text-xs text-muted-foreground">No SIM linked</span>
-                                    )}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={`border-transparent ${statusClasses[normalizedStatus]}`}
-                                >
-                                  {statusLabels[normalizedStatus]}
-                                </Badge>
-                                {provisionMessage && (
-                                  <p
-                                    className="mt-1 max-w-[220px] text-xs text-destructive"
-                                    title={device.provisionError ?? undefined}
-                                  >
-                                    {provisionMessage}
-                                  </p>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {getSignalIcon(
-                                    device.signalStrength,
-                                    lifecycleStatus,
-                                  )}
-                                  {device.signalStrength !== null && (
-                                    <span className="text-sm">{`${device.signalStrength}%`}</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {formatLastSeen(device.lastSeen)}
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                                {device.tenantId
-                                  ? formatWithPattern(
-                                      device.assignedAt,
-                                      "M/d/yyyy, h:mm:ss a",
-                                    )
-                                  : "-"}
-                              </TableCell>
-                              <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleViewDetails(device)}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Details
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setEditingDevice(device)}>
-                                      <Pencil className="h-4 w-4 mr-2" />
-                                      Edit Details
-                                    </DropdownMenuItem>
-                                    {isRetryableProvisionFailure(device) && (
-                                      <DropdownMenuItem
-                                        disabled={retryMutation.isPending}
-                                        onClick={() => retryRegistration([device.id])}
-                                      >
-                                        <RefreshCw className="h-4 w-4 mr-2" />
-                                        Retry registration
-                                      </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuSeparator />
-                                    {device.tenantId && (
-                                      isSuspended
-                                        ? (
-                                            <DropdownMenuItem
-                                              className="text-success"
-                                              disabled={reinstateMutation.isPending}
-                                              onClick={() => handleReactivate(device)}
-                                            >
-                                              <CheckCircle className="h-4 w-4 mr-2" />
-                                              Reactivate
-                                            </DropdownMenuItem>
-                                          )
-                                        : (
-                                            <DropdownMenuItem
-                                              className="text-warning"
-                                              disabled={suspendMutation.isPending}
-                                              onClick={() => handleSuspend(device)}
-                                            >
-                                              <XCircle className="h-4 w-4 mr-2" />
-                                              Suspend Device
-                                            </DropdownMenuItem>
-                                          )
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      )}
-              </TableBody>
-            </Table>
+          {devicesQuery.isError && devicesQuery.data && (
+            <p className="mb-3 text-sm text-destructive">
+              Unable to refresh devices.
+              {" "}
+              <Button
+                variant="link"
+                className="h-auto p-0"
+                onClick={() => devicesQuery.refetch()}
+              >
+                Try again
+              </Button>
+            </p>
+          )}
+          <div className={`rounded-lg border transition-opacity ${devicesQuery.isPlaceholderData ? "opacity-60" : ""}`}>
+            <DataTable
+              columns={columns}
+              data={devices}
+              isLoading={devicesQuery.isLoading}
+              isError={devicesQuery.isError && !devicesQuery.data}
+              errorMessage="Unable to load devices."
+              onRetry={() => devicesQuery.refetch()}
+              hasActiveFilters={hasActiveFilters}
+              emptyState={scope === "stock" ? "No devices in platform stock." : "No devices registered across tenants."}
+              filteredEmptyState="No devices match your filters."
+              pagination={pagination(devicesQuery.data?.data.total ?? 0)}
+            />
           </div>
 
         </CardContent>
@@ -724,7 +776,6 @@ export function PlatformDeviceManagement() {
         onOpenChange={open => !open && setEditingDevice(null)}
       />
       <RecordDeviceAssignmentDialog
-        devices={visibleDevices}
         open={assignmentOpen}
         onOpenChange={setAssignmentOpen}
       />

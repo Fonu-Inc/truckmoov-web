@@ -170,9 +170,7 @@ export function SimInventoryTab() {
     simsQuery,
     summaryQuery,
     tenantsQuery,
-    devicesQuery,
     tenants,
-    devices,
     lookups,
     sims,
   } = useSimInventoryData(query);
@@ -363,8 +361,7 @@ export function SimInventoryTab() {
       <SimAssignDialog
         sim={assignSim}
         tenants={activeTenants}
-        devices={devices}
-        loadingOptions={tenantsQuery.isLoading || devicesQuery.isLoading}
+        loadingOptions={tenantsQuery.isLoading}
         onOpenChange={open => !open && setAssignSim(null)}
       />
       <SimAddDialog

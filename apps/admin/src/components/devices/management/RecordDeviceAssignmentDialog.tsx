@@ -1,12 +1,16 @@
-import type { PlatformDevice } from "./deviceStatus";
-import { useQuery } from "@tanstack/react-query";
 import {
+  keepPreviousData, useQuery,
+} from "@tanstack/react-query";
+import {
+  getSystemDevicesQueryOptions,
   getSystemTenantsQueryOptions,
   useAssignSystemDevices,
 } from "@truckmoov/api/auth";
-import { Search } from "lucide-react";
 import {
-  useMemo, useState,
+  ChevronLeft, ChevronRight, Search,
+} from "lucide-react";
+import {
+  useEffect, useMemo, useState,
 } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
@@ -29,16 +33,17 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
+import { useDebouncedValue } from "@/features/communications/useDebouncedValue";
+
+const PAGE_SIZE = 50;
 
 type Props = {
-  devices: PlatformDevice[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
 /** Records that one or more stock devices now belong to a tenant. */
 export function RecordDeviceAssignmentDialog({
-  devices,
   open,
   onOpenChange,
 }: Props) {
@@ -47,6 +52,10 @@ export function RecordDeviceAssignmentDialog({
     enabled: open,
   });
   const assignDevices = useAssignSystemDevices();
+  const [
+    page,
+    setPage,
+  ] = useState(1);
   const [
     tenantId,
     setTenantId,
@@ -79,18 +88,50 @@ export function RecordDeviceAssignmentDialog({
     [tenantsQuery.data],
   );
 
-  const visible = useMemo(
+  const debouncedSearch = useDebouncedValue(
+    search.trim(),
+    300,
+  );
+  const [
+    lastSearch,
+    setLastSearch,
+  ] = useState(debouncedSearch);
+  let currentPage = page;
+  if (debouncedSearch !== lastSearch) {
+    setLastSearch(debouncedSearch);
+    setPage(1);
+    currentPage = 1;
+  }
+  const devicesQuery = useQuery({
+    ...getSystemDevicesQueryOptions({
+      params: {
+        scope: "stock",
+        hideFaulty: true,
+        search: debouncedSearch || undefined,
+        page: currentPage,
+        limit: PAGE_SIZE,
+      },
+    }),
+    enabled: open,
+    placeholderData: keepPreviousData,
+  });
+  const visible = devicesQuery.data?.data.items ?? [];
+  const total = devicesQuery.data?.data.total ?? 0;
+  const lastPage = Math.max(
+    1,
+    Math.ceil(total / PAGE_SIZE),
+  );
+  // Stock shrank under the current page: step back to the last valid page.
+  useEffect(
     () => {
-      const query = search.trim().toLowerCase();
-      return devices.filter(d =>
-        !query
-        || d.imei.toLowerCase().includes(query)
-        || `${d.manufacturer} ${d.model}`.toLowerCase().includes(query)
-        || (d.tenantName ?? "").toLowerCase().includes(query));
+      if (visible.length === 0 && total > 0 && currentPage > 1)
+        setPage(lastPage);
     },
     [
-      devices,
-      search,
+      visible.length,
+      total,
+      currentPage,
+      lastPage,
     ],
   );
 
@@ -98,6 +139,7 @@ export function RecordDeviceAssignmentDialog({
     setTenantId("");
     setSelected([]);
     setSearch("");
+    setPage(1);
     setConfirmed(false);
     setNotes("");
     setError("");
@@ -223,14 +265,47 @@ export function RecordDeviceAssignmentDialog({
                     </span>
                     <span className="block font-mono text-xs text-muted-foreground">
                       {device.imei}
-                      {device.tenantName ? ` · ${device.tenantName}` : ""}
                     </span>
                   </span>
                 </label>
               ))}
               {visible.length === 0 && (
-                <p className="py-6 text-center text-sm text-muted-foreground">No devices match your search.</p>
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  {devicesQuery.isLoading ? "Loading devices..." : devicesQuery.isError ? "Unable to load devices." : "No devices match your search."}
+                </p>
               )}
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {`Page ${Math.min(
+                  currentPage,
+                  lastPage,
+                )} of ${lastPage} · ${total} in stock`}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label="Previous page"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage(currentPage - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label="Next page"
+                  disabled={currentPage >= lastPage}
+                  onClick={() => setPage(currentPage + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             {visible.length > 0 && (
               <Button
@@ -238,9 +313,14 @@ export function RecordDeviceAssignmentDialog({
                 variant="link"
                 size="sm"
                 className="h-auto p-0"
-                onClick={() => setSelected(visible.map(d => d.id))}
+                onClick={() => setSelected(current => [
+                  ...new Set([
+                    ...current,
+                    ...visible.map(d => d.id),
+                  ]),
+                ])}
               >
-                Select all
+                Select all on this page
               </Button>
             )}
           </div>

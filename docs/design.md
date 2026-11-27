@@ -504,6 +504,15 @@ const query = useQuery({
 <DataTable columns={columns} data={query.data?.data.items ?? []} pagination={pagination(query.data?.data.total ?? 0)} />
 ```
 
+A list page never early-returns a skeleton for `query.isLoading`: that swaps the
+whole tree, so every filter, dialog and sheet unmounts (and a cold page/search key
+is `isLoading` again). Render the page always, pass `isLoading` / `isError` to
+`DataTable`, and show `Skeleton` in the stat cards until the server `summary`
+arrives. Pickers and dialogs run their own query with `enabled: open` and
+`keepPreviousData` instead of taking the page's rows as a prop. Debounce search
+(`useDebouncedValue`, 300 ms) before it reaches the query key.
+`PlatformDeviceManagement` is the worked example.
+
 For a list backed by an `offset` + `limit` endpoint (server returns `{ total, items }`),
 pair `DataTable` with `useBatchedQuery`
 (`packages/reusables/src/hooks/useBatchedQuery.ts`):
