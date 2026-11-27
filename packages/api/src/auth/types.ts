@@ -4672,6 +4672,8 @@ export type SystemOnboardingApplicationDetail = Omit<SystemOnboardingApplication
   paymentReviews: SystemOnboardingPaymentReview[]
   vehicles: { id: string, registrationNumber: string, vehicleType: string, make: string, model: string }[]
   deviceRequests: { id: string, quantity: number, useCase: string }[]
+  /** Devices requested, held by the tenant now, and still to allocate. Null when the count could not be read. */
+  deviceAllocation: { requested: number, allocated: number, owed: number } | null
   verifications: SystemOnboardingVerification[]
   documents: SystemOnboardingDocument[]
 }

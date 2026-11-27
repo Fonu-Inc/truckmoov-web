@@ -514,7 +514,7 @@ export default function OnboardingApplicationPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{dialog === "approved" ? "Approve Application" : dialog === "rejected" ? "Reject Application" : "Request More Information"}</DialogTitle>
-            <DialogDescription>{dialog === "approved" ? `Approve ${app.organizationName}? Devices and SIMs must be allocated separately after approval.` : "Record the reason for this decision."}</DialogDescription>
+            <DialogDescription>{dialog === "approved" ? `Approve ${app.organizationName}? Devices are allocated automatically from platform stock. SIMs must still be allocated separately.` : "Record the reason for this decision."}</DialogDescription>
           </DialogHeader>
           {dialog === "more_info" && (
             <div className="space-y-2">
