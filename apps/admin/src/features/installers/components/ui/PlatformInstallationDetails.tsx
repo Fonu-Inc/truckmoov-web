@@ -300,6 +300,7 @@ export function PlatformInstallationDetails({
                         >
                           <span>
                             <span className="font-medium">{item.label}</span>
+                            {item.vehicleId && <span className="ml-2 text-xs">{units.find(u => u.vehicleId === item.vehicleId)?.vehicle?.registrationNumber}</span>}
                             <span className="ml-2 text-xs text-muted-foreground">{item.fileName}</span>
                           </span>
                           <span className="text-xs text-muted-foreground">

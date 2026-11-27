@@ -822,9 +822,10 @@ export async function saveInstallerJobNotes({ jobId, data: body }: SaveInstaller
   return data
 }
 
-export async function uploadInstallerEvidence({ jobId, category, file }: UploadInstallerEvidencePayload) {
+export async function uploadInstallerEvidence({ jobId, vehicleId, category, file }: UploadInstallerEvidencePayload) {
   const form = new FormData()
   form.append('category', category || 'device_installation')
+  form.append('vehicleId', vehicleId)
   form.append('file', file)
   const { data } = await axiosInstance.post<ServerResponse<unknown>>(`/auth/installer/jobs/${jobId}/evidence`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },

@@ -1,3 +1,5 @@
+import type { InstallerJobDetail } from "@truckmoov/api/auth";
+
 export const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
 export const EVIDENCE_TYPES = [
   "image/jpeg",
@@ -9,6 +11,19 @@ export const DEFAULT_EVIDENCE_CATEGORY = "device_installation";
 
 /** Same file picked twice arrives as two File objects, so identity is name + size + mtime. */
 export const evidenceFileKey = (file: File) => `${file.name}:${file.size}:${file.lastModified}`;
+
+export type JobEvidence = InstallerJobDetail["evidence"][number];
+
+/** Legacy photos (no vehicleId) cover every vehicle, the same as the server's gate. */
+export function evidenceCoverage(units: InstallerJobDetail["units"], evidence: JobEvidence[]) {
+  const vehicleIds = units.flatMap(u => (u.vehicleId ? [u.vehicleId] : []));
+  const covered = vehicleIds.filter(id => evidence.some(e => !e.vehicleId || e.vehicleId === id)).length;
+  return {
+    covered,
+    total: vehicleIds.length,
+    met: evidence.length > 0 && covered === vehicleIds.length,
+  };
+}
 
 export function evidenceErrorMessage(statusCode?: number) {
   switch (statusCode) {

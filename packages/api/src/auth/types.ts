@@ -382,6 +382,8 @@ export type InstallerJobDetail = {
   }
   units: {
     index: number
+    /** The id evidence is attached to; null when the vehicle is unknown. */
+    vehicleId: string | null
     vehicle: {
       registrationNumber: string
       vehicleType: string
@@ -420,7 +422,8 @@ export type InstallerJobDetail = {
     completed: number
     total: number
   }
-  evidence: { id: string, category: string, label: string, fileName: string, size: number, createdAt: string }[]
+  /** vehicleId is null on legacy photos, which count for every vehicle. */
+  evidence: { id: string, category: string, label: string, fileName: string, size: number, createdAt: string, vehicleId: string | null }[]
   notes: string | null
   completion: {
     customer: string
@@ -462,7 +465,7 @@ export type SetInstallerChecklistItemPayload = { jobId: string, itemKey: string,
 export type DeleteInstallerEvidencePayload = { jobId: string, evidenceId: string }
 export type SaveInstallerJobNotesPayload = { jobId: string, data: { notes: string | null } }
 /** JPG, PNG or WebP, up to 10 MB. */
-export type UploadInstallerEvidencePayload = { jobId: string, category: string, file: File }
+export type UploadInstallerEvidencePayload = { jobId: string, vehicleId: string, category: string, file: File }
 export type ReportInstallerJobIssuePayload = {
   jobId: string
   issueType: InstallerIssueType
@@ -567,6 +570,7 @@ export type SystemInstallationJob = {
 
 export type SystemInstallationJobUnit = {
   index: number
+  vehicleId: string | null
   vehicle: {
     registrationNumber: string
     vehicleType: string | null
@@ -644,6 +648,7 @@ export type SystemInstallationJobDetail = {
     fileName: string
     size: number
     createdAt: string
+    vehicleId: string | null
   }>
   notes: string | null
   completion: {

@@ -6,6 +6,7 @@ import type {
   ElementType, MutableRefObject, ReactNode,
 } from "react";
 import type { JobVerification } from "@/features/jobs/hooks/useJobVerification";
+import type { JobEvidence } from "@/features/jobs/utils/evidenceUpload";
 import {
   getInstallerEvidenceLink,
   useAcceptInstallerJob,
@@ -103,6 +104,7 @@ import { useJobVerification } from "@/features/jobs/hooks/useJobVerification";
 import {
   DEFAULT_EVIDENCE_CATEGORY,
   EVIDENCE_TYPES,
+  evidenceCoverage,
   evidenceErrorMessage,
   evidenceFileKey,
   MAX_EVIDENCE_BYTES,
@@ -209,8 +211,16 @@ function gateReason(job: InstallerJobDetail, item: InstallerChecklistItem): stri
     if (job.units.some(u => u.device?.verificationStatus !== "verified"))
       return "Verify the device in the Devices tab first (it must be verified and communicating).";
   }
-  if (item.gated === "evidence" && job.evidence.length === 0)
-    return "Upload at least one evidence photo first.";
+  if (item.gated === "evidence") {
+    const {
+      covered, total, met,
+    } = evidenceCoverage(
+      job.units,
+      job.evidence,
+    );
+    if (!met)
+      return `Upload at least one photo for each vehicle first (${covered} of ${total} vehicles covered)`;
+  }
   return null;
 }
 
@@ -987,14 +997,14 @@ function ChecklistCard({ job }: { job: InstallerJobDetail }) {
 
 type PendingPhoto = {
   file: File;
+  vehicleId: string;
   category: string;
   message?: string;
 };
 
 /**
- * appdemo lists evidence per vehicle. The API keeps it per job with a category; with one
- * category (today) "Attach Photos" opens the picker straight away, with several it asks first.
- * ponytail: the photo count is the job's — per-unit counts need a unit id on evidence.
+ * Evidence is per vehicle: each vehicle has its own picker, count and list. With one category
+ * (today) "Attach Photos" opens the picker straight away, with several it asks first.
  */
 function EvidenceCard({
   job, zone, notesFlushRef,
@@ -1012,6 +1022,7 @@ function EvidenceCard({
   const defaultCategory = categories[0]?.key ?? DEFAULT_EVIDENCE_CATEGORY;
   const fileRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef("");
+  const vehicleRef = useRef("");
   const sendingRef = useRef(false);
   const canUpload = job.actions.canUploadEvidence;
 
@@ -1020,16 +1031,18 @@ function EvidenceCard({
     setFailed,
   ] = useState<PendingPhoto[]>([]);
   const [
-    sending,
-    setSending,
-  ] = useState(false);
+    sendingVehicle,
+    setSendingVehicle,
+  ] = useState<string | null>(null);
+  const sending = sendingVehicle !== null;
 
   // One request per photo, in turn, so each photo gets its own result.
   async function send(items: PendingPhoto[]) {
     if (sendingRef.current)
       return;
+    const keyOf = (item: PendingPhoto) => `${item.vehicleId}:${evidenceFileKey(item.file)}`;
     const unique = new Map(items.map(item => [
-      evidenceFileKey(item.file),
+      keyOf(item),
       item,
     ]));
     const valid = [...unique.values()].filter(({ file }) => {
@@ -1046,12 +1059,13 @@ function EvidenceCard({
     if (!valid.length)
       return;
     sendingRef.current = true;
-    setSending(true);
+    setSendingVehicle(valid[0].vehicleId);
     const failures: PendingPhoto[] = [];
     for (const item of valid) {
       try {
         await upload.mutateAsync({
           jobId: job.id,
+          vehicleId: item.vehicleId,
           file: item.file,
           category: item.category || defaultCategory,
         });
@@ -1064,10 +1078,10 @@ function EvidenceCard({
       }
     }
     sendingRef.current = false;
-    setSending(false);
+    setSendingVehicle(null);
     // Every file in this batch is settled: it either uploaded or is back in the queue once.
     setFailed(prev => [
-      ...prev.filter(p => !unique.has(evidenceFileKey(p.file))),
+      ...prev.filter(p => !unique.has(keyOf(p))),
       ...failures,
     ]);
     const uploaded = valid.length - failures.length;
@@ -1095,10 +1109,18 @@ function EvidenceCard({
   }
 
   function askRemove(evidenceId: string) {
+    const before = evidenceCoverage(
+      job.units,
+      job.evidence,
+    );
+    const after = evidenceCoverage(
+      job.units,
+      job.evidence.filter(e => e.id !== evidenceId),
+    );
     confirm({
       title: "Remove this photo?",
-      description: job.evidence.length === 1
-        ? "It cannot be undone. It is the last photo, so \"Capture installation evidence\" will be unticked."
+      description: before.met && !after.met
+        ? "It cannot be undone. It is the last photo for this vehicle, so \"Capture installation evidence\" will be unticked."
         : "It cannot be undone.",
       confirmLabel: "Remove",
       onConfirm: async () => {
@@ -1115,20 +1137,62 @@ function EvidenceCard({
     });
   }
 
-  const attachButton = (
-    <Button
-      size="sm"
-      variant="outline"
-      className="gap-2"
-      disabled={!canUpload || sending}
-      loading={sending}
-      onClick={categories.length > 1 ? undefined : () => fileRef.current?.click()}
-    >
-      <Upload className="h-4 w-4" />
-      {" "}
-      Attach Photos
-    </Button>
-  );
+  const vehicleUnits = job.units.filter(u => u.vehicleId);
+  const legacy = job.evidence.filter(e => !e.vehicleId);
+  const plateOf = (vehicleId: string) => job.units.find(u => u.vehicleId === vehicleId)?.vehicle?.registrationNumber ?? "vehicle";
+
+  function pick(vehicleId: string, category = "") {
+    vehicleRef.current = vehicleId;
+    categoryRef.current = category;
+    fileRef.current?.click();
+  }
+
+  function photoTiles(items: JobEvidence[]) {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map(e => (
+          <div
+            key={e.id}
+            className="space-y-1 rounded-xl border p-3"
+          >
+            <p className="truncate text-sm font-medium">{e.label}</p>
+            <p className="truncate text-xs text-muted-foreground">{e.fileName}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatDateInTimezone(
+                e.createdAt,
+                zone,
+              )}
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 px-2"
+                aria-label={`View photo ${e.fileName}`}
+                onClick={() => view(e.id)}
+              >
+                <ExternalLink className="h-3 w-3" />
+                View photo
+              </Button>
+              {canUpload && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 px-2 text-destructive hover:text-destructive"
+                  disabled={remove.isPending}
+                  aria-label={`Remove photo ${e.fileName}`}
+                  onClick={() => askRemove(e.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <SleekCard
@@ -1145,56 +1209,87 @@ function EvidenceCard({
           disabled={sending}
           onChange={(e) => {
             const category = categoryRef.current || defaultCategory;
+            const vehicleId = vehicleRef.current;
             categoryRef.current = "";
-            void send(Array.from(
-              e.target.files ?? [],
-              file => ({
-                file, category,
-              }),
-            ));
+            vehicleRef.current = "";
+            if (vehicleId) {
+              void send(Array.from(
+                e.target.files ?? [],
+                file => ({
+                  file, category, vehicleId,
+                }),
+              ));
+            }
             e.target.value = "";
           }}
         />
-        {job.units.map(u => (
-          <div
-            key={u.index}
-            className="rounded-xl border p-4"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold">{u.vehicle?.registrationNumber ?? `Unit ${u.index + 1}`}</p>
-                <p className="text-xs text-muted-foreground">
-                  {[
-                    u.vehicle && `${u.vehicle.make} ${u.vehicle.model}`,
-                    u.device?.name ?? u.device?.imei,
-                    `${job.evidence.length} photo(s)`,
-                  ].filter(Boolean).join(" · ")}
-                </p>
+        {vehicleUnits.map((u) => {
+          const vehicleId = u.vehicleId as string;
+          const own = job.evidence.filter(e => e.vehicleId === vehicleId);
+          const attachButton = (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              disabled={!canUpload || sending}
+              loading={sendingVehicle === vehicleId}
+              aria-label={`Attach photos for ${plateOf(vehicleId)}`}
+              onClick={categories.length > 1 ? undefined : () => pick(vehicleId)}
+            >
+              <Upload className="h-4 w-4" />
+              {" "}
+              Attach photos
+            </Button>
+          );
+          return (
+            <div
+              key={u.index}
+              className="space-y-3 rounded-xl border p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">{u.vehicle?.registrationNumber ?? `Unit ${u.index + 1}`}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {[
+                      u.vehicle && `${u.vehicle.make} ${u.vehicle.model}`,
+                      `${own.length} photo(s)`,
+                    ].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                {categories.length > 1
+                  ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>{attachButton}</DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Photo of…</DropdownMenuLabel>
+                          {categories.map(c => (
+                            <DropdownMenuItem
+                              key={c.key}
+                              onSelect={() => pick(
+                                vehicleId,
+                                c.key,
+                              )}
+                            >
+                              {c.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )
+                  : attachButton}
               </div>
-              {categories.length > 1
-                ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>{attachButton}</DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Photo of…</DropdownMenuLabel>
-                        {categories.map(c => (
-                          <DropdownMenuItem
-                            key={c.key}
-                            onSelect={() => {
-                              categoryRef.current = c.key;
-                              fileRef.current?.click();
-                            }}
-                          >
-                            {c.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )
-                : attachButton}
+              {own.length > 0 && photoTiles(own)}
             </div>
+          );
+        })}
+
+        {legacy.length > 0 && (
+          <div className="space-y-3 rounded-xl border p-4">
+            <p className="text-sm font-semibold">Earlier photos</p>
+            <p className="text-xs text-muted-foreground">Uploaded before photos were kept per vehicle. They count for every vehicle.</p>
+            {photoTiles(legacy)}
           </div>
-        ))}
+        )}
 
         {failed.length > 0 && !sending && (
           <div className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm">
@@ -1212,12 +1307,12 @@ function EvidenceCard({
             <ul className="space-y-1">
               {failed.map(f => (
                 <li
-                  key={evidenceFileKey(f.file)}
+                  key={`${f.vehicleId}:${evidenceFileKey(f.file)}`}
                   className="flex items-center justify-between gap-2"
                 >
                   <span className="min-w-0">
                     <span className="block truncate">{f.file.name}</span>
-                    <span className="block text-xs text-muted-foreground">{f.message}</span>
+                    <span className="block text-xs text-muted-foreground">{`${plateOf(f.vehicleId)}: ${f.message}`}</span>
                   </span>
                   <Button
                     size="icon-sm"
@@ -1230,49 +1325,6 @@ function EvidenceCard({
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-
-        {job.evidence.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {job.evidence.map(e => (
-              <div
-                key={e.id}
-                className="space-y-1 rounded-xl border p-3"
-              >
-                <p className="truncate text-sm font-medium">{e.label}</p>
-                <p className="truncate text-xs text-muted-foreground">{e.fileName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDateInTimezone(
-                    e.createdAt,
-                    zone,
-                  )}
-                </p>
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1 px-2"
-                    onClick={() => view(e.id)}
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    View photo
-                  </Button>
-                  {canUpload && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-destructive hover:text-destructive"
-                      disabled={remove.isPending}
-                      onClick={() => askRemove(e.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
           </div>
         )}
 
