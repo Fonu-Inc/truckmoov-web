@@ -284,6 +284,7 @@ export function GetStartedDialog({
   // Compiler can't serve a value cached from an earlier render.
   const [
     streetAddress,
+    addressVerification,
     city,
     state,
     contactName,
@@ -292,6 +293,7 @@ export function GetStartedDialog({
     control: form.control,
     name: [
       "streetAddress",
+      "addressVerification",
       "city",
       "state",
       "contactName",
@@ -816,6 +818,7 @@ export function GetStartedDialog({
           vehicles={application?.vehicles ?? []}
           defaults={{
             streetAddress,
+            addressVerification,
             city,
             state,
             contactName: contactName || undefined,

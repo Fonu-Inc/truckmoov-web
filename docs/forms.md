@@ -244,6 +244,7 @@ A free-text address that must be real is not an `<Input>`. Use `AddressField`
   while the lookup was down): `isAddressVerified` in `features/apply/utils/addressVerification.ts`. Add
   `refineAddressVerified` from `applySchemas.ts` to the schema; the message is "Select your address from the suggestions".
 - A pick prefills State / City only when they are empty, and warns (never blocks) when they disagree.
+- The landing page wizard has its own copy (`apps/landing-page/src/features/get-started`: `AddressField`, `AddressLookupInput`, `utils/addressVerification.ts`); keep the pure logic in step.
 - `addressVerification` (with coordinates) lives in the form and its drafts only. It is not sent: the
   onboarding DTOs are `forbidNonWhitelisted`.
 

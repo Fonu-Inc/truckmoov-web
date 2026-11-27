@@ -14,6 +14,7 @@ import {
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { useWatch } from "react-hook-form";
+import { AddressField } from "@/features/get-started/components/AddressField";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
 import { IndemnityDialog } from "@/features/get-started/components/IndemnityDialog";
 import {
@@ -53,7 +54,7 @@ import { SIGN_IN_URL } from "@/shared/utils/routes";
 
 const FORM_ID = "apply-business-details-form";
 
-type TextFieldName = Exclude<keyof BusinessDetailsValues, "identificationType">;
+type TextFieldName = Exclude<keyof BusinessDetailsValues, "identificationType" | "addressVerification">;
 
 /**
  * Customer details, the M2M licence plan and the indemnity signature (main app:
@@ -334,14 +335,14 @@ export function BusinessDetailsStep({
                 "Contact Person’s Full Name",
                 { placeholder: "Adaeze Okonkwo" },
               )}
-              {textField(
-                "streetAddress",
-                isEnterprise ? "Company Address" : "Business Address",
-                {
-                  placeholder: "123 Apapa-Oshodi Expressway",
-                  wide: isEnterprise,
-                },
-              )}
+              <AddressField
+                label={isEnterprise ? "Company Address" : "Business Address"}
+                placeholder={isEnterprise ? "Search your company address" : "Search your business address"}
+                className={cn(
+                  "col-span-2",
+                  !isEnterprise && "sm:col-span-1",
+                )}
+              />
               {selectField(
                 "state",
                 "State",

@@ -240,6 +240,16 @@ field.
 - Customer Details' State and City are selects (state → city from `CITIES_BY_STATE`).
 - Installation scheduling: Address, State, City and LGA, the last three as selects, and a
   clock time (08:00–16:00); the time picks the API's slot (before noon is the morning slot).
+- Business address (step 1) and installation address must be picked from a Nigeria-only address
+  lookup (`AddressField` / `AddressLookupInput`, keyless Photon, 350 ms debounce, 3+ characters,
+  Nigeria bbox and country `NG`), the same rule as the main app (`docs/forms.md`, "Address
+  (Nigeria lookup)"). Typed text fails with "Select your address from the suggestions". A pick
+  prefills an empty State / City and only warns when they disagree. If the lookup is down
+  ("Couldn't look up addresses right now") the applicant ticks "I confirm this address is
+  correct". `addressVerification` lives in the form, the details draft and the installation
+  draft, never in an API body; a saved address comes back as "needs to be verified". The pure
+  logic is `utils/addressVerification.ts`, a copy of the main app's; keep the two in step. The
+  landing app has no test runner, so only the main app's copy has a unit test.
 - Vehicle Type and Type of Purchase use the API's values. The design's Pickup and Other
   (vehicle type) have no API value; in a bulk-upload sheet they are row errors, and Rental
   goes in as Other with "Rental" as the detail.

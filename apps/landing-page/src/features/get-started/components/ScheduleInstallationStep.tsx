@@ -29,6 +29,7 @@ import {
   useForm,
   useWatch,
 } from "react-hook-form";
+import { AddressField } from "@/features/get-started/components/AddressField";
 import {
   LoadingBlock,
   Notice,
@@ -142,6 +143,7 @@ export function ScheduleInstallationStep({
     mode: "onTouched",
     defaultValues: installation ?? {
       streetAddress: defaults.streetAddress ?? "",
+      addressVerification: defaults.addressVerification ?? null,
       city: defaults.city ?? "",
       state: defaults.state ?? (undefined as unknown as InstallationValues["state"]),
       date: "",
@@ -426,32 +428,10 @@ export function ScheduleInstallationStep({
             onSubmit={form.handleSubmit(handleSubmit)}
           >
             <div className="col-span-2 space-y-1.5">
-              <span className={LABEL_CLASS}>
-                Installation Address
-                <span
-                  aria-hidden="true"
-                  className="ml-0.5 text-destructive"
-                >
-                  *
-                </span>
-              </span>
-              <FormField
-                control={form.control}
-                name="streetAddress"
-                render={({ field }) => (
-                  <FormItem className="gap-1.5">
-                    <FormLabel className={LABEL_CLASS}>Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g. 15 Marina Road, Victoria Island"
-                        maxLength={200}
-                        className={FIELD_CLASS}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
+              <AddressField
+                label="Installation Address"
+                placeholder="Search the installation address, e.g. 15 Marina Road, Victoria Island"
+                onRegionPrefilled={region => region.city && setLga(region.city)}
               />
               <div className="grid gap-[15px] sm:grid-cols-3">
                 <FormField
