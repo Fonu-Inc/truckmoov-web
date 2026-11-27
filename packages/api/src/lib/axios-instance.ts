@@ -16,11 +16,35 @@ export const axiosInstance = axios.create({
 
 // ─── Request interceptor: inject access token ─────────────────────────────────
 
-axiosInstance.interceptors.request.use((config) => {
+const NO_PROACTIVE_REFRESH = /^\/?auth\/(refresh|logout|(system\/|installer\/)?login(\/two-factor)?)$/
+const EXPIRY_SKEW_MS = 30_000
+
+/** False when the token is not a decodable JWT, so opaque tokens keep the 401 flow. */
+function expiresSoon(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: unknown }
+    return typeof payload.exp === 'number' && payload.exp * 1000 - Date.now() < EXPIRY_SKEW_MS
+  } catch {
+    return false
+  }
+}
+
+let proactiveRefresh: Promise<unknown> | null = null
+
+// Parallel first-paint queries share one refresh instead of each sending a doomed request and a red 401.
+axiosInstance.interceptors.request.use(async (config) => {
   requireBackendUrl()
-  const { accessToken } = useAuthStore.getState()
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`
+  const { accessToken, refreshToken } = useAuthStore.getState()
+  if (accessToken && refreshToken && !NO_PROACTIVE_REFRESH.test(config.url ?? '') && expiresSoon(accessToken)) {
+    // On failure the old token goes out and the 401 handler below decides.
+    proactiveRefresh ??= withRefreshLock(() => refreshSession(refreshToken))
+      .catch(() => null)
+      .finally(() => { proactiveRefresh = null })
+    await proactiveRefresh
+  }
+  const token = useAuthStore.getState().accessToken
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })

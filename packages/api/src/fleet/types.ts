@@ -2708,3 +2708,27 @@ export type CreateViolationRulePayload = { data: ViolationRuleBody }
 export type UpdateViolationRulePayload = { id: string, data: Partial<ViolationRuleBody> }
 export type ViolationsQuery = { entity: ViolationRuleEntity, periodDays?: number }
 export type SetViolationStatusPayload = { id: string, status: ViolationStatus }
+
+// ─── Installer device verification ───────────────────────────────────────────
+
+export type InstallerDeviceVerificationItem = {
+  deviceId: string
+  jobNumber: string
+  name: string | null
+  manufacturer: string
+  model: string
+  imei: string
+  status: 'not_started' | 'waiting' | 'failed' | 'verified'
+  statusLabel: string
+  configuredAt: string | null
+  secondsSinceConfigured: number | null
+  lastSeenAt: string | null
+  errors: { code: string, message: string }[]
+}
+
+export type InstallerDeviceVerification = {
+  summary: { awaitingSignal: number, failed: number, verifiedToday: number }
+  items: InstallerDeviceVerificationItem[]
+}
+
+export type InstallerDeviceVerificationResponse = ServerResponse<InstallerDeviceVerification>

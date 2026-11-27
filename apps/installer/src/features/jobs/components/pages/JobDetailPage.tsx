@@ -3,25 +3,23 @@ import type {
   InstallerChecklistItem, InstallerJobDetail,
 } from "@truckmoov/api/auth";
 import type {
-  ElementType, ReactNode,
+  ElementType, MutableRefObject, ReactNode,
 } from "react";
+import type { JobVerification } from "@/features/jobs/hooks/useJobVerification";
 import {
   getInstallerEvidenceLink,
   useAcceptInstallerJob,
   useCompleteInstallerJob,
+  useDeleteInstallerEvidence,
   useInstallerDisplayPreferences,
   useInstallerJob,
   useInstallerOptions,
   useInstallerSupportTicket,
-  useSaveInstallerJobNotes,
   useSetInstallerChecklistItem,
   useStartInstallerJob,
   useUploadInstallerEvidence,
 } from "@truckmoov/api/auth";
-import {
-  debounce,
-  downloadBlob,
-} from "@truckmoov/app-core/utils/general-utils";
+import { downloadBlob } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDateInTimezone,
   formatTime12InTimezone,
@@ -35,11 +33,14 @@ import {
   ExternalLink,
   Eye,
   SignalHigh,
+  Trash2,
   Truck,
   Upload,
+  X,
 } from "lucide-react";
 import {
-  useEffect,
+  createContext,
+  useContext,
   useMemo,
   useRef,
   useState,
@@ -85,7 +86,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import { Label } from "@/components/shadcn/label";
 import { Progress } from "@/components/shadcn/progress";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
@@ -94,33 +94,70 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { Textarea } from "@/components/shadcn/textarea";
 import { RejectOfferForm } from "@/features/jobs/components/forms/RejectOfferForm";
 import { ReportIssueForm } from "@/features/jobs/components/forms/ReportIssueForm";
+import { DeviceVerificationCell } from "@/features/jobs/components/ui/DeviceVerificationCell";
 import { InstallerJobStatusBadge } from "@/features/jobs/components/ui/InstallerJobStatusBadge";
+import { JobNotesField } from "@/features/jobs/components/ui/JobNotesField";
+import { useJobVerification } from "@/features/jobs/hooks/useJobVerification";
+import {
+  DEFAULT_EVIDENCE_CATEGORY,
+  EVIDENCE_TYPES,
+  evidenceErrorMessage,
+  evidenceFileKey,
+  MAX_EVIDENCE_BYTES,
+  removeErrorMessage,
+} from "@/features/jobs/utils/evidenceUpload";
+import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
 
 type Unit = InstallerJobDetail["units"][number];
 
-const deviceLabel = (u: Unit) => u.device?.name ?? u.device?.imei ?? "-";
+const deviceLabel = (u: Unit) => u.device ? (u.device.name ?? `${u.device.manufacturer} ${u.device.model}`.trim()) : "-";
+
+const deviceName = (u: Unit) => u.device?.name ?? "Unnamed device";
+
+const VerificationContext = createContext<JobVerification | null>(null);
 
 const DEVICE_COLUMNS: ColumnDef<Unit>[] = [
   {
-    header: "Device ID",
+    header: "Device",
     meta: { className: "font-medium" },
-    cell: ({ row }) => row.original.device?.name ?? "-",
+    cell: ({ row }) => deviceName(row.original),
   },
   {
     header: "IMEI",
     cell: ({ row }) => <span className="font-mono text-xs">{row.original.device?.imei}</span>,
   },
   {
-    header: "Manufacturer / Model",
-    meta: { className: "whitespace-nowrap" },
-    cell: ({ row }) => `${row.original.device?.manufacturer} ${row.original.device?.model}`,
+    header: "Manufacturer",
+    cell: ({ row }) => row.original.device?.manufacturer,
   },
   {
-    header: "SIM attached",
-    cell: ({ row }) => row.original.sim?.iccid ?? <span className="text-muted-foreground">Not attached</span>,
+    header: "Model",
+    cell: ({ row }) => row.original.device?.model,
+  },
+  {
+    header: "Verification",
+    cell: ({ row }) => <UnitVerification unit={row.original} />,
+  },
+  {
+    header: "SIM",
+    cell: ({ row }) => {
+      const sim = row.original.sim;
+      return sim
+        ? (
+            <div className="text-xs">
+              <span className="font-mono">{sim.iccid}</span>
+              <p className="text-muted-foreground">
+                {[
+                  sim.msisdn,
+                  sim.carrier,
+                ].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+          )
+        : <span className="text-muted-foreground">No SIM linked to this device yet</span>;
+    },
   },
   {
     header: "Vehicle",
@@ -157,13 +194,6 @@ const SIM_COLUMNS: ColumnDef<Unit>[] = [
 
 // Display Preferences default (TRU-FE-21) until the installer picks another zone.
 const DEFAULT_ZONE = "Africa/Lagos";
-const NOTES_MAX = 2000;
-const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
-const EVIDENCE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-];
 /** Statuses where an issue can no longer be raised; the server's 409 is the real gate. */
 const NO_REPORT = [
   "completed",
@@ -171,10 +201,18 @@ const NO_REPORT = [
   "issue_reported",
 ];
 
-const GATE_HINT: Record<NonNullable<InstallerChecklistItem["gated"]>, string> = {
-  device_communicating: "Available once every device on the job is verified and communicating.",
-  evidence: "Available once at least one evidence photo is uploaded.",
-};
+/** Why a gated item cannot be ticked yet, from data already on the job; null once the gate is open. */
+function gateReason(job: InstallerJobDetail, item: InstallerChecklistItem): string | null {
+  if (item.gated === "device_communicating") {
+    if (!job.units.length || job.units.some(u => !u.device))
+      return "Waiting for a device to be bound to every unit.";
+    if (job.units.some(u => u.device?.verificationStatus !== "verified"))
+      return "Verify the device in the Devices tab first (it must be verified and communicating).";
+  }
+  if (item.gated === "evidence" && job.evidence.length === 0)
+    return "Upload at least one evidence photo first.";
+  return null;
+}
 
 /**
  * GET /auth/installer/jobs/:jobId, laid out as appdemo's installer job page.
@@ -207,6 +245,11 @@ export default function JobDetailPage() {
     confirmed,
     setConfirmed,
   ] = useState(false);
+  const [
+    finishing,
+    setFinishing,
+  ] = useState(false);
+  const notesFlushRef = useRef<(() => Promise<boolean>) | null>(null);
 
   if (jobQuery.isLoading) {
     return (
@@ -262,6 +305,20 @@ export default function JobDetailPage() {
           : error.message || `${label} failed.`),
       },
     );
+
+  // A pending note is saved first: the completion summary reads the saved copy.
+  async function submit() {
+    setFinishing(true);
+    const saved = await notesFlushRef.current?.() ?? true;
+    setFinishing(false);
+    if (saved) {
+      run(
+        "Complete",
+        complete,
+        "Installation completed.",
+      );
+    }
+  }
 
   const time = formatTime12InTimezone(
     job.customer.scheduledAt,
@@ -400,7 +457,7 @@ export default function JobDetailPage() {
                 </SleekCard>
 
                 <SleekCard title="Installation Units">
-                  <UnitsTabs units={job.units} />
+                  <UnitsTabs job={job} />
                 </SleekCard>
 
                 {!waiting && (
@@ -409,6 +466,7 @@ export default function JobDetailPage() {
                     <EvidenceCard
                       job={job}
                       zone={zone}
+                      notesFlushRef={notesFlushRef}
                     />
                     <Card className="surface-sleek rounded-2xl">
                       <div className="flex flex-wrap items-center justify-between gap-3 p-5">
@@ -503,12 +561,8 @@ export default function JobDetailPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={!confirmed || complete.isPending}
-              onClick={() => run(
-                "Complete",
-                complete,
-                "Installation completed.",
-              )}
+              disabled={!confirmed || complete.isPending || finishing}
+              onClick={() => void submit()}
             >
               Submit Installation
             </AlertDialogAction>
@@ -625,11 +679,29 @@ function IssueCard({ ticketId }: { ticketId: string }) {
   );
 }
 
-function UnitsTabs({ units }: { units: Unit[] }) {
+function UnitVerification({ unit }: { unit: Unit }) {
+  const v = useContext(VerificationContext)!;
+  return (
+    <DeviceVerificationCell
+      status={v.statusOf(unit)}
+      reason={v.reasonOf(unit)}
+      controls={v.active}
+      beforeStart={v.beforeStart}
+      busy={v.verifying || v.checking}
+      onVerify={v.verify}
+      onCheck={v.checkStatus}
+    />
+  );
+}
+
+function UnitsTabs({ job }: { job: InstallerJobDetail }) {
+  const { units } = job;
+  const verification = useJobVerification(job);
   const [
-    open,
-    setOpen,
-  ] = useState<Unit | null>(null);
+    openIndex,
+    setOpenIndex,
+  ] = useState<number | null>(null);
+  const open = units.find(u => u.index === openIndex) ?? null;
   const vehicleColumns = useMemo<ColumnDef<Unit>[]>(
     () => [
       {
@@ -658,7 +730,7 @@ function UnitsTabs({ units }: { units: Unit[] }) {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setOpen(row.original)}
+            onClick={() => setOpenIndex(row.original.index)}
           >
             <Eye className="mr-1.5 h-4 w-4" />
             {" "}
@@ -671,7 +743,15 @@ function UnitsTabs({ units }: { units: Unit[] }) {
   );
 
   return (
-    <>
+    <VerificationContext.Provider value={verification}>
+      {verification.active && verification.error && (
+        <p
+          role="alert"
+          className="mb-3 text-sm text-destructive"
+        >
+          {verification.error}
+        </p>
+      )}
       <Tabs defaultValue="vehicles">
         <TabsList className="grid w-full grid-cols-3 sm:inline-grid sm:w-auto">
           <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
@@ -718,7 +798,7 @@ function UnitsTabs({ units }: { units: Unit[] }) {
 
       <Dialog
         open={!!open}
-        onOpenChange={o => !o && setOpen(null)}
+        onOpenChange={o => !o && setOpenIndex(null)}
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
@@ -776,8 +856,8 @@ function UnitsTabs({ units }: { units: Unit[] }) {
                 <p className="text-sm font-semibold">Device Attached</p>
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
                   <Tile
-                    label="Device ID"
-                    value={open.device?.name}
+                    label="Device name"
+                    value={open.device ? deviceName(open) : null}
                   />
                   <Tile
                     label="IMEI"
@@ -790,6 +870,18 @@ function UnitsTabs({ units }: { units: Unit[] }) {
                   <Tile
                     label="Model"
                     value={open.device?.model}
+                  />
+                  <Tile
+                    label="Verification"
+                    value={open.device
+                      ? (
+                          <UnitVerification unit={open} />
+                        )
+                      : null}
+                  />
+                  <Tile
+                    label="SIM ICCID"
+                    value={open.sim?.iccid}
                   />
                   <Tile
                     label="SIM phone number"
@@ -805,7 +897,7 @@ function UnitsTabs({ units }: { units: Unit[] }) {
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </VerificationContext.Provider>
   );
 }
 
@@ -843,32 +935,49 @@ function ChecklistCard({ job }: { job: InstallerJobDetail }) {
             className="space-y-2"
           >
             <p className="text-sm font-semibold">{group.label}</p>
-            {group.items.map(item => (
-              <label
-                key={item.key}
-                className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm"
-              >
-                <Checkbox
-                  checked={item.checked}
-                  disabled={!job.actions.canTick || tick.isPending}
-                  onCheckedChange={v => tick.mutate(
-                    {
-                      jobId: job.id,
-                      itemKey: item.key,
-                      data: { checked: !!v },
-                    },
-                    // Gate refusals ("Upload at least one evidence photo…") come back as 409 — show them as-is.
-                    { onError: error => toast.error(error.message) },
-                  )}
-                />
-                <span>
-                  {item.label}
-                  {item.gated && !item.checked && (
-                    <span className="block text-xs text-muted-foreground">{GATE_HINT[item.gated]}</span>
-                  )}
-                </span>
-              </label>
-            ))}
+            {group.items.map((item) => {
+              const reason = item.checked ? null : gateReason(
+                job,
+                item,
+              );
+              const inFlight = tick.isPending && tick.variables?.itemKey === item.key;
+              const blocked = !job.actions.canTick || !!reason;
+              return (
+                <label
+                  key={item.key}
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-sm ${blocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                >
+                  <Checkbox
+                    checked={item.checked}
+                    disabled={blocked || inFlight}
+                    aria-describedby={reason ? `gate-${item.key}` : undefined}
+                    onCheckedChange={v => tick.mutate(
+                      {
+                        jobId: job.id,
+                        itemKey: item.key,
+                        data: { checked: !!v },
+                      },
+                      {
+                        onError: error => toast.error(error.statusCode === 409 && /changed while/i.test(error.message)
+                          ? "This job changed. It has been reloaded."
+                          : "Could not update the checklist. Try again."),
+                      },
+                    )}
+                  />
+                  <span>
+                    {item.label}
+                    {reason && (
+                      <span
+                        id={`gate-${item.key}`}
+                        className="block text-xs text-muted-foreground"
+                      >
+                        {reason}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         ))}
       </div>
@@ -879,23 +988,32 @@ function ChecklistCard({ job }: { job: InstallerJobDetail }) {
 type PendingPhoto = {
   file: File;
   category: string;
+  message?: string;
 };
 
 /**
- * appdemo lists evidence per vehicle. The API keeps it per job with a
- * category, so "Attach Photos" asks for the category first.
+ * appdemo lists evidence per vehicle. The API keeps it per job with a category; with one
+ * category (today) "Attach Photos" opens the picker straight away, with several it asks first.
  * ponytail: the photo count is the job's — per-unit counts need a unit id on evidence.
  */
 function EvidenceCard({
-  job, zone,
+  job, zone, notesFlushRef,
 }: {
   job: InstallerJobDetail;
   zone: string;
+  notesFlushRef: MutableRefObject<(() => Promise<boolean>) | null>;
 }) {
   const upload = useUploadInstallerEvidence();
+  const remove = useDeleteInstallerEvidence();
+  const {
+    confirm, confirmDialog,
+  } = useConfirmAction();
   const categories = useInstallerOptions().data?.data.evidenceCategories ?? [];
+  const defaultCategory = categories[0]?.key ?? DEFAULT_EVIDENCE_CATEGORY;
   const fileRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef("");
+  const sendingRef = useRef(false);
+  const canUpload = job.actions.canUploadEvidence;
 
   const [
     failed,
@@ -908,7 +1026,13 @@ function EvidenceCard({
 
   // One request per photo, in turn, so each photo gets its own result.
   async function send(items: PendingPhoto[]) {
-    const valid = items.filter(({ file }) => {
+    if (sendingRef.current)
+      return;
+    const unique = new Map(items.map(item => [
+      evidenceFileKey(item.file),
+      item,
+    ]));
+    const valid = [...unique.values()].filter(({ file }) => {
       if (!EVIDENCE_TYPES.includes(file.type)) {
         toast.error(`${file.name}: use a JPG, PNG or WebP photo.`);
         return false;
@@ -921,33 +1045,36 @@ function EvidenceCard({
     });
     if (!valid.length)
       return;
+    sendingRef.current = true;
     setSending(true);
-    const failures: Array<PendingPhoto & { message: string }> = [];
+    const failures: PendingPhoto[] = [];
     for (const item of valid) {
       try {
         await upload.mutateAsync({
           jobId: job.id,
           file: item.file,
-          category: item.category,
+          category: item.category || defaultCategory,
         });
       }
       catch (error) {
         failures.push({
           ...item,
-          message: (error as { message?: string }).message ?? "upload failed",
+          message: evidenceErrorMessage((error as { statusCode?: number }).statusCode),
         });
       }
     }
+    sendingRef.current = false;
     setSending(false);
+    // Every file in this batch is settled: it either uploaded or is back in the queue once.
     setFailed(prev => [
-      ...prev.filter(p => !items.includes(p)),
+      ...prev.filter(p => !unique.has(evidenceFileKey(p.file))),
       ...failures,
     ]);
     const uploaded = valid.length - failures.length;
     if (!failures.length)
       toast.success(uploaded === 1 ? "Evidence uploaded." : `${uploaded} photos uploaded.`);
     else
-      toast.error(`${uploaded} of ${valid.length} uploaded. ${failures.map(f => `${f.file.name} failed (${f.message})`).join(", ")}. Retry below.`);
+      toast.error(`${uploaded} of ${valid.length} uploaded. ${failures.map(f => `${f.file.name}: ${f.message}`).join(" ")} Retry below.`);
   }
 
   async function view(evidenceId: string) {
@@ -967,6 +1094,42 @@ function EvidenceCard({
     }
   }
 
+  function askRemove(evidenceId: string) {
+    confirm({
+      title: "Remove this photo?",
+      description: job.evidence.length === 1
+        ? "It cannot be undone. It is the last photo, so \"Capture installation evidence\" will be unticked."
+        : "It cannot be undone.",
+      confirmLabel: "Remove",
+      onConfirm: async () => {
+        try {
+          await remove.mutateAsync({
+            jobId: job.id, evidenceId,
+          });
+          toast.success("Photo removed");
+        }
+        catch (error) {
+          toast.error(removeErrorMessage((error as { statusCode?: number }).statusCode));
+        }
+      },
+    });
+  }
+
+  const attachButton = (
+    <Button
+      size="sm"
+      variant="outline"
+      className="gap-2"
+      disabled={!canUpload || sending}
+      loading={sending}
+      onClick={categories.length > 1 ? undefined : () => fileRef.current?.click()}
+    >
+      <Upload className="h-4 w-4" />
+      {" "}
+      Attach Photos
+    </Button>
+  );
+
   return (
     <SleekCard
       title="Installation Evidence"
@@ -979,12 +1142,14 @@ function EvidenceCard({
           accept={EVIDENCE_TYPES.join(",")}
           multiple
           hidden
+          disabled={sending}
           onChange={(e) => {
+            const category = categoryRef.current || defaultCategory;
+            categoryRef.current = "";
             void send(Array.from(
               e.target.files ?? [],
               file => ({
-                file,
-                category: categoryRef.current,
+                file, category,
               }),
             ));
             e.target.value = "";
@@ -1006,54 +1171,65 @@ function EvidenceCard({
                   ].filter(Boolean).join(" · ")}
                 </p>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-2"
-                    disabled={!job.actions.canUploadEvidence || !categories.length}
-                    loading={sending}
-                  >
-                    <Upload className="h-4 w-4" />
-                    {" "}
-                    Attach Photos
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Photo of…</DropdownMenuLabel>
-                  {categories.map(c => (
-                    <DropdownMenuItem
-                      key={c.key}
-                      onSelect={() => {
-                        categoryRef.current = c.key;
-                        fileRef.current?.click();
-                      }}
-                    >
-                      {c.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {categories.length > 1
+                ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>{attachButton}</DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Photo of…</DropdownMenuLabel>
+                        {categories.map(c => (
+                          <DropdownMenuItem
+                            key={c.key}
+                            onSelect={() => {
+                              categoryRef.current = c.key;
+                              fileRef.current?.click();
+                            }}
+                          >
+                            {c.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )
+                : attachButton}
             </div>
           </div>
         ))}
 
         {failed.length > 0 && !sending && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm">
-            <span>
-              Not uploaded:
-              {" "}
-              {failed.map(f => f.file.name).join(", ")}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!job.actions.canUploadEvidence}
-              onClick={() => void send(failed)}
-            >
-              Retry
-            </Button>
+          <div className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>Not uploaded</span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!canUpload}
+                onClick={() => void send(failed)}
+              >
+                Retry
+              </Button>
+            </div>
+            <ul className="space-y-1">
+              {failed.map(f => (
+                <li
+                  key={evidenceFileKey(f.file)}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate">{f.file.name}</span>
+                    <span className="block text-xs text-muted-foreground">{f.message}</span>
+                  </span>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={`Remove ${f.file.name} from the queue`}
+                    onClick={() => setFailed(prev => prev.filter(p => p !== f))}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -1072,89 +1248,41 @@ function EvidenceCard({
                     zone,
                   )}
                 </p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 px-2"
-                  onClick={() => view(e.id)}
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  View photo
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 px-2"
+                    onClick={() => view(e.id)}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View photo
+                  </Button>
+                  {canUpload && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 gap-1 px-2 text-destructive hover:text-destructive"
+                      disabled={remove.isPending}
+                      onClick={() => askRemove(e.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
 
-        <NotesField job={job} />
+        <JobNotesField
+          job={job}
+          flushRef={notesFlushRef}
+        />
       </div>
+      {confirmDialog}
     </SleekCard>
-  );
-}
-
-/** Autosaves through PATCH /notes after the installer pauses typing. */
-function NotesField({ job }: { job: InstallerJobDetail }) {
-  const { mutate: saveNotes } = useSaveInstallerJobNotes();
-  const [
-    notes,
-    setNotes,
-  ] = useState(job.notes ?? "");
-  const [
-    state,
-    setState,
-  ] = useState<"idle" | "saving" | "saved" | "error">("idle");
-
-  const saveLater = useMemo(
-    () => debounce(
-      (value: string) => {
-        setState("saving");
-        saveNotes(
-          {
-            jobId: job.id,
-            data: { notes: value.trim() ? value : null },
-          },
-          {
-            onSuccess: () => setState("saved"),
-            onError: (error) => {
-              setState("error");
-              toast.error(error.message);
-            },
-          },
-        );
-      },
-      800,
-    ),
-    [
-      job.id,
-      saveNotes,
-    ],
-  );
-  useEffect(
-    () => () => saveLater.cancel(),
-    [saveLater],
-  );
-
-  return (
-    <div className="space-y-1.5 pt-2">
-      <div className="flex items-center justify-between">
-        <Label>Installer notes</Label>
-        <span className="text-xs text-muted-foreground">
-          {state === "saving" ? "Saving…" : state === "saved" ? "Saved" : state === "error" ? "Not saved" : ""}
-        </span>
-      </div>
-      <Textarea
-        value={notes}
-        disabled={!job.actions.canEditNotes}
-        maxLength={NOTES_MAX}
-        onChange={(e) => {
-          setNotes(e.target.value);
-          saveLater(e.target.value);
-        }}
-        placeholder="Add notes about the installation"
-        rows={3}
-      />
-      <p className="text-right text-xs text-muted-foreground">{`${notes.length}/${NOTES_MAX}`}</p>
-    </div>
   );
 }
 
@@ -1272,7 +1400,7 @@ function InstallationReport({
             />
           ))}
         </div>
-        <UnitsTabs units={job.units} />
+        <UnitsTabs job={job} />
         <div className="rounded-xl border p-4">
           <p className="text-sm font-semibold">Installation checklist</p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -1336,7 +1464,7 @@ function Tile({
   return (
     <div className="rounded-xl border p-3">
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-0.5 break-words text-sm font-medium">{value || "-"}</p>
+      <div className="mt-0.5 break-words text-sm font-medium">{value || "-"}</div>
     </div>
   );
 }

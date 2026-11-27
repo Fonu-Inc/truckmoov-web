@@ -3,6 +3,7 @@ import { axiosInstance } from '../lib/axios-instance'
 import type { ServerResponse } from '../lib/types'
 
 import type {
+  InstallerDeviceVerificationResponse,
   AccessLogListResponse,
   AlertActionPayload,
   AlertStatsResponse,
@@ -1421,4 +1422,9 @@ export async function getPublicTrack(token: string): Promise<PublicTrack | 'gone
     throw new Error(`Tracking link failed (${res.status})`)
   const body = await res.json() as { data?: PublicTrack } & PublicTrack
   return body.data ?? body
+}
+
+export async function getInstallerDeviceVerification() {
+  const { data } = await axiosInstance.get<InstallerDeviceVerificationResponse>('/fleet/installer/devices/verification')
+  return data
 }

@@ -10,6 +10,7 @@ import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
 import AuthPage from "@/features/auth/components/pages/AuthPage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { INSTALLER_ROLES } from "@/features/dashboard/utils/sidebarNav";
+import { RouteFallback } from "@/shared/components/ui/RouteFallback";
 import { useAuthStore } from "@/stores/authStore";
 
 const useRole = () => useAuthStore(s => s.user?.role);
@@ -53,6 +54,7 @@ const GuardedDashboardLayout = withGuard(
 export const router = createBrowserRouter([
   {
     Component: App,
+    HydrateFallback: RouteFallback,
     ErrorBoundary: RouteError,
     children: [
       {

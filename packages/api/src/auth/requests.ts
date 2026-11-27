@@ -128,6 +128,7 @@ import type {
   UpdateInstallerNotificationPreferencesPayload,
   UpdateInstallerProfilePayload,
   UpdateInstallerWorkPreferencesPayload,
+  DeleteInstallerEvidencePayload,
   InstallerEvidenceLinkResponse,
   InstallerJobResponse,
   InstallerJobsExportQuery,
@@ -819,11 +820,21 @@ export async function saveInstallerJobNotes({ jobId, data: body }: SaveInstaller
 
 export async function uploadInstallerEvidence({ jobId, category, file }: UploadInstallerEvidencePayload) {
   const form = new FormData()
-  form.append('category', category)
+  form.append('category', category || 'device_installation')
   form.append('file', file)
   const { data } = await axiosInstance.post<ServerResponse<unknown>>(`/auth/installer/jobs/${jobId}/evidence`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
+  return data
+}
+
+export async function deleteInstallerEvidence({ jobId, evidenceId }: DeleteInstallerEvidencePayload) {
+  const { data } = await axiosInstance.delete<InstallerJobResponse>(`/auth/installer/jobs/${jobId}/evidence/${evidenceId}`)
+  return data
+}
+
+export async function startInstallerDeviceVerification({ jobId }: { jobId: string }) {
+  const { data } = await axiosInstance.post<InstallerJobResponse>(`/auth/installer/jobs/${jobId}/devices/verification`)
   return data
 }
 

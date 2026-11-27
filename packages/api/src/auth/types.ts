@@ -363,6 +363,9 @@ export type InstallerChecklistItem = {
   gated?: 'device_communicating' | 'evidence'
 }
 
+/** null = verification never started. */
+export type InstallerDeviceVerificationStatus = 'waiting' | 'verified' | 'failed'
+
 export type InstallerJobDetail = {
   id: string
   jobNumber: string
@@ -401,7 +404,7 @@ export type InstallerJobDetail = {
       status: string
       statusLabel: string
       deviceType: string | null
-      verificationStatus: string | null
+      verificationStatus: InstallerDeviceVerificationStatus | null
     } | null
     sim: {
       iccid: string
@@ -456,6 +459,7 @@ export const INSTALLER_ISSUE_TYPES = [
 export type InstallerIssueType = (typeof INSTALLER_ISSUE_TYPES)[number]
 
 export type SetInstallerChecklistItemPayload = { jobId: string, itemKey: string, data: { checked: boolean } }
+export type DeleteInstallerEvidencePayload = { jobId: string, evidenceId: string }
 export type SaveInstallerJobNotesPayload = { jobId: string, data: { notes: string | null } }
 /** JPG, PNG or WebP, up to 10 MB. */
 export type UploadInstallerEvidencePayload = { jobId: string, category: string, file: File }

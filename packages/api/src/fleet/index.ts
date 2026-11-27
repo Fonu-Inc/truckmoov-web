@@ -198,6 +198,7 @@ import {
   deleteViolationRule,
   getViolations,
   setViolationStatus,
+  getInstallerDeviceVerification,
 } from './requests'
 
 export type * from './types'
@@ -251,6 +252,7 @@ import type {
 } from './types'
 
 export const FLEET_QUERY_KEY = {
+  installerDeviceVerification: ['fleet', 'installerDeviceVerification'] as const,
   trackingLive: ['fleet', 'tracking', 'live'] as const,
   trackingVehicles: (payload?: TrackingVehiclesQuery) => ['fleet', 'tracking', 'vehicles', payload],
   trackingAlerts: (payload?: TrackingAlertsQuery) => ['fleet', 'tracking', 'alerts', payload],
@@ -2199,5 +2201,15 @@ export function useSetViolationStatus() {
   return useMutation({
     mutationFn: setViolationStatus,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.violations }),
+  })
+}
+
+/** The installer's devices on open jobs. `refetchInterval` lets the job page watch a waiting device. */
+export function useInstallerDeviceVerification({ enabled, refetchInterval }: { enabled: boolean, refetchInterval?: number | false }) {
+  return useQuery({
+    queryKey: FLEET_QUERY_KEY.installerDeviceVerification,
+    queryFn: getInstallerDeviceVerification,
+    enabled,
+    refetchInterval,
   })
 }

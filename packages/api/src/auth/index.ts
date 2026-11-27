@@ -27,8 +27,10 @@ import {
   acceptInstallerJob,
   completeInstallerJob,
   exportInstallerJobs,
+  deleteInstallerEvidence,
   getInstallerEvidenceLink,
   getInstallerJob,
+  startInstallerDeviceVerification,
   getInstallerJobs,
   reportInstallerJobIssue,
   saveInstallerJobNotes,
@@ -455,6 +457,8 @@ import type {
   SystemOnboardingApplicationsQuery,
   SystemTenantResourcesPayload,
   InstallerJobResponse,
+  InstallerJobDetail,
+  DeleteInstallerEvidencePayload,
   InstallerJobsQuery,
   InstallerSupportTicketsQuery,
   ReportInstallerJobIssuePayload,
@@ -887,7 +891,7 @@ export function useInstallerOptions() {
 }
 
 export function useInstallerDisplayPreferences() {
-  return useQuery({ queryKey: AUTH_QUERY_KEY.installerDisplayPreferences, queryFn: getInstallerDisplayPreferences })
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerDisplayPreferences, queryFn: getInstallerDisplayPreferences, staleTime: 5 * 60 * 1000 })
 }
 
 // TRU-FE-21 — installer settings. Every PATCH answers with the whole record, so it goes straight
@@ -900,7 +904,7 @@ export function useUpdateInstallerDisplayPreferences() {
 }
 
 export function useInstallerProfile() {
-  return useQuery({ queryKey: AUTH_QUERY_KEY.installerProfile, queryFn: getInstallerProfile })
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerProfile, queryFn: getInstallerProfile, staleTime: 5 * 60 * 1000 })
 }
 
 export function useUpdateInstallerProfile() {
@@ -926,7 +930,7 @@ export function useChangeInstallerPassword() {
 }
 
 export function useInstallerNotificationPreferences() {
-  return useQuery({ queryKey: AUTH_QUERY_KEY.installerNotificationPreferences, queryFn: getInstallerNotificationPreferences })
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerNotificationPreferences, queryFn: getInstallerNotificationPreferences, staleTime: 5 * 60 * 1000 })
 }
 
 export function useUpdateInstallerNotificationPreferences() {
@@ -937,7 +941,7 @@ export function useUpdateInstallerNotificationPreferences() {
 }
 
 export function useInstallerWorkPreferences() {
-  return useQuery({ queryKey: AUTH_QUERY_KEY.installerWorkPreferences, queryFn: getInstallerWorkPreferences })
+  return useQuery({ queryKey: AUTH_QUERY_KEY.installerWorkPreferences, queryFn: getInstallerWorkPreferences, staleTime: 5 * 60 * 1000 })
 }
 
 export function useUpdateInstallerWorkPreferences() {
@@ -990,6 +994,22 @@ function jobMutationHandlers<TVars extends { jobId: string }>() {
   }
 }
 
+/**
+ * Edits that change only this job (tick, notes, photo removal, verification) write the answer into
+ * the job's cache and leave the dashboard, bell and list alone: none of them shows these fields.
+ */
+function jobEditHandlers<TVars extends { jobId: string }>() {
+  return {
+    onSuccess: (res: InstallerJobResponse, { jobId }: TVars) => {
+      queryClient.setQueryData(AUTH_QUERY_KEY.installerJob(jobId), res)
+    },
+    onError: (error: ServerErrorResponse, { jobId }: TVars) => {
+      if (error.statusCode === 409)
+        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerJob(jobId) })
+    },
+  }
+}
+
 export function useAcceptInstallerJob() {
   return useMutation({ mutationFn: acceptInstallerJob, ...jobMutationHandlers<{ jobId: string }>() })
 }
@@ -1013,12 +1033,69 @@ export function useStartInstallerJob() {
   return useMutation({ mutationFn: startInstallerJob, ...jobMutationHandlers<{ jobId: string }>() })
 }
 
-export function useSetInstallerChecklistItem() {
-  return useMutation({ mutationFn: setInstallerChecklistItem, ...jobMutationHandlers<SetInstallerChecklistItemPayload>() })
+function withTick(res: InstallerJobResponse, itemKey: string, checked: boolean): InstallerJobResponse {
+  const job = res.data
+  let delta = 0
+  const groups = job.checklist.groups.map(g => ({
+    ...g,
+    items: g.items.map((item) => {
+      if (item.key !== itemKey || item.checked === checked)
+        return item
+      delta = checked ? 1 : -1
+      return { ...item, checked, checkedAt: checked ? new Date().toISOString() : null }
+    }),
+  }))
+  const completed = job.checklist.completed + delta
+  const { total } = job.checklist
+  const next: InstallerJobDetail = {
+    ...job,
+    checklist: { ...job.checklist, groups, completed },
+    completion: { ...job.completion, checklist: `${completed}/${total}` },
+    actions: { ...job.actions, canComplete: job.actions.canTick && completed === total },
+  }
+  return { ...res, data: next }
 }
 
+/** Optimistic: the box flips at once and the server's answer replaces it. Ticks run in order. */
+export function useSetInstallerChecklistItem() {
+  return useMutation({
+    mutationFn: setInstallerChecklistItem,
+    scope: { id: 'installerChecklist' },
+    onMutate: async ({ jobId, itemKey, data }) => {
+      const key = AUTH_QUERY_KEY.installerJob(jobId)
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<InstallerJobResponse>(key)
+      if (previous)
+        queryClient.setQueryData(key, withTick(previous, itemKey, data.checked))
+      return { previous }
+    },
+    onSuccess: jobEditHandlers<SetInstallerChecklistItemPayload>().onSuccess,
+    onError: (error, vars, context) => {
+      if (context?.previous)
+        queryClient.setQueryData(AUTH_QUERY_KEY.installerJob(vars.jobId), context.previous)
+      jobEditHandlers<SetInstallerChecklistItemPayload>().onError(error, vars)
+    },
+  })
+}
+
+/** Only the notes are merged: the answer is the whole job and could undo a tick made meanwhile. */
 export function useSaveInstallerJobNotes() {
-  return useMutation({ mutationFn: saveInstallerJobNotes, ...jobMutationHandlers<SaveInstallerJobNotesPayload>() })
+  return useMutation({
+    mutationFn: saveInstallerJobNotes,
+    onSuccess: (res: InstallerJobResponse, { jobId }: SaveInstallerJobNotesPayload) => {
+      queryClient.setQueryData<InstallerJobResponse>(AUTH_QUERY_KEY.installerJob(jobId), old => old
+        ? {
+            ...old,
+            data: {
+              ...old.data,
+              notes: res.data.notes,
+              completion: { ...old.data.completion, notes: res.data.completion.notes },
+            },
+          }
+        : res)
+    },
+    onError: jobEditHandlers<SaveInstallerJobNotesPayload>().onError,
+  })
 }
 
 export function useReportInstallerJobIssue() {
@@ -1033,11 +1110,22 @@ export function useCompleteInstallerJob() {
 export function useUploadInstallerEvidence() {
   return useMutation({
     mutationFn: uploadInstallerEvidence,
-    onSuccess: (_res, { jobId }) => refreshInstallerJobs(jobId),
+    onSuccess: (_res, { jobId }) => queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerJob(jobId) }),
     onError: (error, { jobId }) => {
       if (error.statusCode === 409)
-        refreshInstallerJobs(jobId)
+        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.installerJob(jobId) })
     },
+  })
+}
+
+export function useDeleteInstallerEvidence() {
+  return useMutation({ mutationFn: deleteInstallerEvidence, ...jobEditHandlers<DeleteInstallerEvidencePayload>() })
+}
+
+export function useStartInstallerDeviceVerification() {
+  return useMutation({
+    mutationFn: startInstallerDeviceVerification,
+    ...jobEditHandlers<{ jobId: string }>(),
   })
 }
 

@@ -200,6 +200,12 @@ When a request returns 401 the axios instance:
 
 Concurrent 401 responses are queued and replayed once the single refresh resolves. If the refresh itself fails, `logout()` is called and all queued requests reject with `{ error: 'TOKEN_REFRESH_FAILED', statusCode: 401 }`.
 
+Before sending, the request interceptor also refreshes ahead of time: if the access token is a JWT that has expired or expires within 30 s, it awaits one shared `/auth/refresh` and then attaches the new token, so first-paint queries do not each log a red 401. Opaque tokens and a failed proactive refresh fall through to the 401 flow above. The sign-in, refresh and logout calls never trigger it.
+
+### Installer job mutations
+
+In `auth/index.ts`, `jobMutationHandlers` (accept, start, complete, report issue) writes the answer into the job cache and invalidates the dashboard, bell and job list, because the job moved between them. `jobEditHandlers` (checklist tick, notes, evidence removal, device verification start) only writes the answer into the job cache, and invalidates just that job on a 409. Use it for any edit that changes nothing outside the job. `useSetInstallerChecklistItem` is also optimistic: it flips the box in the cache, runs in order (`scope`), and restores the snapshot on error. Device verification status is read from the job's `units[].device.verificationStatus` and from `useInstallerDeviceVerification` (`GET /fleet/installer/devices/verification`), which the job page polls every 5 s while a device is waiting.
+
 ### Tenant support tickets
 
 Tenant-facing support uses the auth service through `@truckmoov/api/auth`:
