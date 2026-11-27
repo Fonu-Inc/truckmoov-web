@@ -467,6 +467,10 @@ import type {
   ReinstateSystemDevicePayload,
   UpdateSystemDevicePayload,
   AssignSystemDevicesPayload,
+  ImportPlatformStockPayload,
+  PlatformStockImportResponse,
+  SendTestTelemetryPayload,
+  SendTestTelemetryResponse,
   SystemDeviceWriteResponse,
   AssignSystemInstallationPayload,
   SystemInstallationAssignmentResponse,
@@ -1208,6 +1212,20 @@ export async function updateSystemDevice({ id, data: body }: UpdateSystemDeviceP
 
 export async function assignSystemDevices({ data: body }: AssignSystemDevicesPayload) {
   const { data } = await axiosInstance.post<SystemDeviceWriteResponse>('/auth/system/devices/assign', body)
+  return data
+}
+
+export async function importPlatformStock({ file }: ImportPlatformStockPayload) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await axiosInstance.post<PlatformStockImportResponse>('/auth/system/devices/stock/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function sendTestTelemetry(body: SendTestTelemetryPayload) {
+  const { data } = await axiosInstance.post<SendTestTelemetryResponse>('/auth/system/devices/test-telemetry', body)
   return data
 }
 

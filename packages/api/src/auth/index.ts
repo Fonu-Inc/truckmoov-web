@@ -15,6 +15,8 @@ import {
   approveSystemDeviceSetupRequest,
   assignSystemDeviceSetupRequest,
   assignSystemDevices,
+  importPlatformStock,
+  sendTestTelemetry,
   assignSystemInstallationOrder,
   getSystemDeviceSetupSummary,
   approveSIMRequest,
@@ -1713,6 +1715,27 @@ export function useAssignSystemDevices() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
+    },
+  })
+}
+
+export function useImportPlatformStock() {
+  return useMutation({
+    mutationFn: importPlatformStock,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
+    },
+  })
+}
+
+export function useSendTestTelemetry() {
+  return useMutation({
+    mutationFn: sendTestTelemetry,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesSummary })
+      queryClient.invalidateQueries({ queryKey: ['systemInstallationJobs'] })
     },
   })
 }

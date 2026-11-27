@@ -3000,6 +3000,43 @@ export type SystemDeviceWriteResult = {
 
 export type SystemDeviceWriteResponse = ServerResponse<SystemDeviceWriteResult>
 
+export type ImportPlatformStockPayload = {
+  file: File
+}
+
+export type PlatformStockRejectedRow = {
+  line: number
+  imei: string
+  reason: string
+}
+
+export type PlatformStockImportResult = {
+  total: number
+  created: number
+  skippedExisting: number
+  rejected: PlatformStockRejectedRow[]
+  rejectedTotal: number
+}
+
+export type PlatformStockImportResponse = ServerResponse<PlatformStockImportResult>
+
+export type SendTestTelemetryPayload = {
+  imei: string
+  latitude?: number
+  longitude?: number
+}
+
+export type TestTelemetryResult = {
+  published: boolean
+  imei: string
+  verificationStatusBefore: string | null
+  verificationStatusAfter: string | null
+  lifecycleStatusAfter: string | null
+  note: string
+}
+
+export type SendTestTelemetryResponse = ServerResponse<TestTelemetryResult>
+
 export type AssignSystemInstallationPayload = {
   id: string
   data: {

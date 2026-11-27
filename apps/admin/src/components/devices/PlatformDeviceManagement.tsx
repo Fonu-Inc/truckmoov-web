@@ -22,8 +22,10 @@ import {
   Download,
   Eye,
   MoreHorizontal,
+  PackagePlus,
   Pencil,
   PowerOff,
+  Radio,
   Search,
   Signal,
   SignalLow,
@@ -87,7 +89,9 @@ import {
   statusLabels,
 } from "./management/deviceStatus";
 import { EditDeviceDialog } from "./management/EditDeviceDialog";
+import { ImportPlatformStockDialog } from "./management/ImportPlatformStockDialog";
 import { RecordDeviceAssignmentDialog } from "./management/RecordDeviceAssignmentDialog";
+import { SendTestTelemetryDialog } from "./management/SendTestTelemetryDialog";
 
 const ONLINE_STATUSES = [
   "active",
@@ -146,6 +150,14 @@ export function PlatformDeviceManagement() {
   const [
     assignmentOpen,
     setAssignmentOpen,
+  ] = useState(false);
+  const [
+    importOpen,
+    setImportOpen,
+  ] = useState(false);
+  const [
+    telemetryOpen,
+    setTelemetryOpen,
   ] = useState(false);
   const [
     isExporting,
@@ -279,6 +291,22 @@ export function PlatformDeviceManagement() {
   return (
     <>
       <PageActions>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setImportOpen(true)}
+        >
+          <PackagePlus className="mr-2 h-4 w-4" />
+          Import stock
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setTelemetryOpen(true)}
+        >
+          <Radio className="mr-2 h-4 w-4" />
+          Send test telemetry
+        </Button>
         <Button
           size="sm"
           onClick={() => setAssignmentOpen(true)}
@@ -636,6 +664,14 @@ export function PlatformDeviceManagement() {
         devices={visibleDevices}
         open={assignmentOpen}
         onOpenChange={setAssignmentOpen}
+      />
+      <ImportPlatformStockDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+      />
+      <SendTestTelemetryDialog
+        open={telemetryOpen}
+        onOpenChange={setTelemetryOpen}
       />
     </>
   );
