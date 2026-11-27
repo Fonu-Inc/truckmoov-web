@@ -47,6 +47,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
+import { AddressField } from "@/features/apply/components/ui/AddressField";
 import { useApplyDraftStore } from "@/features/apply/stores/applyDraftStore";
 import {
   installationDateLimit,
@@ -137,6 +138,7 @@ export function ScheduleInstallationStep({
     mode: "onTouched",
     defaultValues: installation ?? {
       streetAddress: defaults.streetAddress ?? "",
+      addressVerification: defaults.addressVerification ?? null,
       city: defaults.city ?? "",
       state: defaults.state ?? "",
       date: "",
@@ -432,24 +434,10 @@ export function ScheduleInstallationStep({
             </div>
 
             <div className="space-y-3">
-              <Label required>Installation Address</Label>
-              <FormField
-                control={form.control}
-                name="streetAddress"
-                render={({ field }) => (
-                  <FormItem className="space-y-1.5">
-                    <FormLabel htmlFor="install-address">Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        id="install-address"
-                        placeholder="e.g. 15 Marina Road, Victoria Island"
-                        maxLength={200}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <AddressField
+                label="Installation Address"
+                placeholder="Search the installation address, e.g. 15 Marina Road, Victoria Island"
+                onRegionPrefilled={region => region.city && setLga(region.city)}
               />
               <div className="grid gap-3 sm:grid-cols-3">
                 <FormField

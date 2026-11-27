@@ -17,10 +17,17 @@ import type {
   OnboardingVehicleInput,
 } from "@truckmoov/api/auth";
 import type { ApplicantCustomerType } from "@truckmoov/app-core/apply/applyTypes";
+import type { AddressVerification } from "@/features/apply/utils/addressVerification";
 
 import { MAX_DOCUMENT_BYTES } from "@truckmoov/app-core/apply/applyTypes";
 
 import * as z from "zod";
+
+import {
+  ADDRESS_NOT_SELECTED,
+  isAddressVerified,
+  MAX_ADDRESS_LENGTH,
+} from "@/features/apply/utils/addressVerification";
 
 export const IDENTIFICATION_TYPES = [
   {
@@ -94,6 +101,30 @@ const stateField = z
   )
   .transform(value => normalizeState(value) ?? value);
 
+/** Not sent to the server: the address text only counts while it matches what was picked or confirmed. */
+const addressVerificationField = z.custom<AddressVerification | null | undefined>(() => true);
+
+function refineAddressVerified(
+  values: {
+    streetAddress?: string;
+    addressVerification?: AddressVerification | null;
+  },
+  ctx: z.RefinementCtx,
+) {
+  const address = values.streetAddress ?? "";
+  // A too-short address already carries its own message.
+  if (address.length >= 5 && !isAddressVerified(
+    address,
+    values.addressVerification,
+  )) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["streetAddress"],
+      message: ADDRESS_NOT_SELECTED,
+    });
+  }
+}
+
 const NG_PHONE = /^(?:\+234|234|0)[789][01]\d{8}$/;
 
 const phoneField = z
@@ -159,7 +190,11 @@ const businessDetailsBase = z.object({
   streetAddress: z.string().trim().min(
     5,
     "Enter your organization address.",
+  ).max(
+    MAX_ADDRESS_LENGTH,
+    "Address is too long.",
   ),
+  addressVerification: addressVerificationField,
   city: z.string().trim().min(
     2,
     "Enter your city.",
@@ -189,7 +224,7 @@ const businessDetailsBase = z.object({
   telecomMasterVerifiedMsisdn: z.string().default(""),
 });
 
-export const businessDetailsSchema = businessDetailsBase;
+export const businessDetailsSchema = businessDetailsBase.superRefine(refineAddressVerified);
 
 export type BusinessDetailsValues = z.infer<typeof businessDetailsBase>;
 
@@ -200,12 +235,21 @@ export type BusinessDetailsValues = z.infer<typeof businessDetailsBase>;
  */
 export function businessDetailsSchemaFor(customerType: "enterprise" | "owner_operator") {
   if (customerType === "enterprise") {
-    return businessDetailsBase.extend({ contactName: personNameField }).superRefine(refineTelecomMaster);
+    return businessDetailsBase.extend({ contactName: personNameField }).superRefine((values, ctx) => {
+      refineAddressVerified(
+        values,
+        ctx,
+      );
+      refineTelecomMaster(
+        values,
+        ctx,
+      );
+    });
   }
   return businessDetailsBase.extend({
     firstName: nameWordField,
     lastName: nameWordField,
-  });
+  }).superRefine(refineAddressVerified);
 }
 
 /** MTN Nigeria prefixes, the server's list (telecom-master.use-cases normalizeMtnNumber). */
@@ -253,6 +297,7 @@ export const EMPTY_BUSINESS_DETAILS: BusinessDetailsValues = {
   firstName: "",
   lastName: "",
   streetAddress: "",
+  addressVerification: null,
   city: "",
   state: "",
   rcNumber: "",
@@ -310,6 +355,8 @@ export function applicationToDetails(app: OnboardingApplication): BusinessDetail
     firstName,
     lastName: rest.join(" "),
     streetAddress: app.organization.streetAddress,
+    // A saved address was typed before lookups existed or elsewhere: it is verified again.
+    addressVerification: null,
     city: app.organization.city,
     state: app.organization.state as BusinessDetailsValues["state"],
     rcNumber: app.registry.rcNumber ?? "",
@@ -492,7 +539,11 @@ export const installationSchema = z.object({
   streetAddress: z.string().trim().min(
     5,
     "Enter the installation address.",
+  ).max(
+    MAX_ADDRESS_LENGTH,
+    "Address is too long.",
   ),
+  addressVerification: addressVerificationField,
   city: z.string().trim().min(
     2,
     "Enter the city.",
@@ -521,7 +572,7 @@ export const installationSchema = z.object({
   contactName: personNameField,
   contactPhone: phoneField,
   notes: z.string().trim().optional(),
-});
+}).superRefine(refineAddressVerified);
 
 export type InstallationValues = z.infer<typeof installationSchema>;
 

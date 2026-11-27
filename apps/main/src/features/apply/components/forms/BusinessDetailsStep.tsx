@@ -49,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { AddressField } from "@/features/apply/components/ui/AddressField";
 import { ApplicationSaveButton } from "@/features/apply/components/ui/ApplicationSaveButton";
 import { IndemnityDialog } from "@/features/apply/components/ui/IndemnityDialog";
 import { TelecomMasterSection } from "@/features/apply/components/ui/TelecomMasterSection";
@@ -62,7 +63,7 @@ import { cn } from "@/lib/utils";
 
 export const BUSINESS_DETAILS_FORM_ID = "apply-business-details-form";
 
-type FieldName = keyof BusinessDetailsValues;
+type FieldName = Exclude<keyof BusinessDetailsValues, "addressVerification">;
 
 type BusinessDetailsStepProps = {
   form: UseFormReturn<BusinessDetailsValues>;
@@ -347,12 +348,12 @@ export function BusinessDetailsStep({
                       "Contact Person’s Full Name",
                       "Adaeze Okonkwo",
                     ),
-                    field(
-                      "streetAddress",
-                      "Company Address",
-                      "123 Apapa-Oshodi Expressway",
-                      { className: "sm:col-span-2" },
-                    ),
+                    <AddressField
+                      key="streetAddress"
+                      label="Company Address"
+                      placeholder="Search your company address"
+                      className="sm:col-span-2"
+                    />,
                     stateField,
                     cityField,
                   ]
@@ -383,11 +384,11 @@ export function BusinessDetailsStep({
                       "Company Phone Number",
                       "+234 901 234 5678",
                     ),
-                    field(
-                      "streetAddress",
-                      "Business Address",
-                      "123 Apapa-Oshodi Expressway",
-                    ),
+                    <AddressField
+                      key="streetAddress"
+                      label="Business Address"
+                      placeholder="Search your business address"
+                    />,
                     stateField,
                     cityField,
                   ]}

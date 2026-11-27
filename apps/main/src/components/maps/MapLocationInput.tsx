@@ -1,5 +1,5 @@
 import type {
-  FormEvent, KeyboardEvent,
+  FormEvent, KeyboardEvent, Ref,
 } from "react";
 import {
   Loader2, MapPin,
@@ -16,10 +16,19 @@ import { Label } from "@/components/shadcn/label";
 import { getBrowserCoordinates } from "@/lib/browserLocation";
 import { cn } from "@/lib/utils";
 
+export type LocationPlace = {
+  state?: string;
+  city?: string;
+  county?: string;
+  district?: string;
+  locality?: string;
+};
+
 export type MapLocation = {
   address: string;
   lat: number;
   lng: number;
+  place?: LocationPlace;
 };
 
 type LocationSuggestion = {
@@ -36,6 +45,8 @@ type PhotonFeature = {
     housenumber?: string;
     street?: string;
     district?: string;
+    locality?: string;
+    county?: string;
     city?: string;
     state?: string;
     postcode?: string;
@@ -55,6 +66,19 @@ type UserLocationBias = {
 export type MapLocationInputProps = {
   onLocationSelect: (location: MapLocation) => void;
   value?: MapLocation | null;
+  /** Controlled input text, for forms that keep the typed text themselves. */
+  text?: string;
+  onTextChange?: (text: string) => void;
+  /** For a form's blur tracking and focus-on-error. */
+  inputRef?: Ref<HTMLInputElement>;
+  onBlur?: () => void;
+  /** Only Nigerian results, and no browser-location prompt. */
+  nigeriaOnly?: boolean;
+  /** Inside another form: renders a div and Enter searches instead of submitting. */
+  embedded?: boolean;
+  /** Shown as an alert when the lookup service fails; also reported through onLookupFailedChange. */
+  lookupErrorMessage?: string;
+  onLookupFailedChange?: (failed: boolean) => void;
   placeholder?: string;
   label?: string;
   /** Marks the label with a red asterisk. */
@@ -68,6 +92,8 @@ export type MapLocationInputProps = {
 };
 
 const PHOTON_API_URL = "https://photon.komoot.io";
+// minLon,minLat,maxLon,maxLat; it spills into neighbours, so results are also filtered by country code.
+const NIGERIA_BBOX = "2.6,4.2,14.7,13.9";
 let userLocationBiasPromise: Promise<UserLocationBias | null> | null = null;
 
 function getUserLocationBias() {
@@ -143,12 +169,18 @@ function formatAddress(properties: PhotonFeature["properties"]) {
   ).join(", ");
 }
 
-async function findLocations(query: string, signal?: AbortSignal) {
-  const locationBias = await getUserLocationBias();
+async function findLocations(query: string, signal?: AbortSignal, nigeriaOnly = false) {
+  const locationBias = nigeriaOnly ? null : await getUserLocationBias();
   const globalParams = new URLSearchParams({
     q: query,
     limit: "10",
   });
+  if (nigeriaOnly) {
+    globalParams.set(
+      "bbox",
+      NIGERIA_BBOX,
+    );
+  }
 
   if (locationBias) {
     globalParams.set(
@@ -207,7 +239,9 @@ async function findLocations(query: string, signal?: AbortSignal) {
     features = await fetchFeatures(globalParams);
   }
 
-  const suggestions = features.map<LocationSuggestion>((feature, index) => {
+  const suggestions = features.filter(
+    feature => !nigeriaOnly || feature.properties.countrycode?.toUpperCase() === "NG",
+  ).map<LocationSuggestion>((feature, index) => {
     const [
       lng,
       lat,
@@ -218,6 +252,13 @@ async function findLocations(query: string, signal?: AbortSignal) {
       lat,
       lng,
       countryCode: feature.properties.countrycode?.toUpperCase(),
+      place: {
+        state: feature.properties.state,
+        city: feature.properties.city,
+        county: feature.properties.county,
+        district: feature.properties.district,
+        locality: feature.properties.locality,
+      },
     };
   });
 
@@ -238,6 +279,14 @@ async function findLocations(query: string, signal?: AbortSignal) {
 export function MapLocationInput({
   onLocationSelect,
   value,
+  text,
+  onTextChange,
+  inputRef,
+  onBlur,
+  nigeriaOnly,
+  embedded,
+  lookupErrorMessage,
+  onLookupFailedChange,
   placeholder = "Enter a location and press Enter",
   label,
   required,
@@ -253,7 +302,7 @@ export function MapLocationInput({
   const [
     query,
     setQuery,
-  ] = useState(value?.address ?? "");
+  ] = useState(text ?? value?.address ?? "");
   const [
     selectedAddress,
     setSelectedAddress,
@@ -280,31 +329,55 @@ export function MapLocationInput({
     error,
     setError,
   ] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const [
+    lookupFailed,
+    setLookupFailed,
+  ] = useState(false);
+  // A restored value or controlled text must not trigger a search until the user types.
+  const [
+    userEdited,
+    setUserEdited,
+  ] = useState(false);
+  const formRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(
     () => {
-      void getUserLocationBias();
+      if (!nigeriaOnly)
+        void getUserLocationBias();
     },
-    [],
+    [nigeriaOnly],
   );
 
   useEffect(
     () => {
-      const nextAddress = value?.address ?? "";
-      setQuery(nextAddress);
-      setSelectedAddress(nextAddress || null);
+      onLookupFailedChange?.(lookupFailed);
     },
-    [value?.address],
+    [
+      lookupFailed,
+      onLookupFailedChange,
+    ],
+  );
+
+  useEffect(
+    () => {
+      const nextAddress = text ?? value?.address ?? "";
+      setQuery(nextAddress);
+      setSelectedAddress(nextAddress && nextAddress === value?.address ? nextAddress : null);
+    },
+    [
+      text,
+      value?.address,
+    ],
   );
 
   useEffect(
     () => {
       const location = query.trim();
-      if (location.length < 3 || location === selectedAddress) {
+      if (!userEdited || location.length < 3 || location === selectedAddress) {
         setSuggestions([]);
         setIsOpen(false);
         setIsSearching(false);
+        setLookupFailed(false);
         return;
       }
 
@@ -316,7 +389,9 @@ export function MapLocationInput({
             const results = await findLocations(
               location,
               controller.signal,
+              nigeriaOnly,
             );
+            setLookupFailed(false);
             setSuggestions(results);
             setHighlightedIndex(-1);
             setIsOpen(results.length > 0);
@@ -325,6 +400,7 @@ export function MapLocationInput({
             if ((searchError as Error).name !== "AbortError") {
               setSuggestions([]);
               setIsOpen(false);
+              setLookupFailed(true);
             }
           }
           finally {
@@ -343,6 +419,8 @@ export function MapLocationInput({
     [
       query,
       selectedAddress,
+      userEdited,
+      nigeriaOnly,
     ],
   );
 
@@ -371,6 +449,7 @@ export function MapLocationInput({
       address: result.address,
       lat: result.lat,
       lng: result.lng,
+      place: result.place,
     };
 
     setQuery(location.address);
@@ -382,10 +461,10 @@ export function MapLocationInput({
     onLocationSelect(location);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (event?: FormEvent<HTMLElement>) => {
+    event?.preventDefault();
 
-    const suggestedLocation = suggestions[highlightedIndex] ?? suggestions[0];
+    const suggestedLocation = suggestions[highlightedIndex] ?? (embedded ? undefined : suggestions[0]);
     if (suggestedLocation) {
       selectSuggestion(suggestedLocation);
       return;
@@ -399,7 +478,12 @@ export function MapLocationInput({
     setError(null);
 
     try {
-      const [result] = await findLocations(location);
+      const [result] = await findLocations(
+        location,
+        undefined,
+        nigeriaOnly,
+      );
+      setLookupFailed(false);
       if (!result) {
         setError("Location not found. Try a more specific address.");
         return;
@@ -407,7 +491,9 @@ export function MapLocationInput({
       selectSuggestion(result);
     }
     catch {
-      setError("Unable to find that location right now.");
+      setLookupFailed(true);
+      if (!lookupErrorMessage)
+        setError("Unable to find that location right now.");
     }
     finally {
       setIsSearching(false);
@@ -415,6 +501,14 @@ export function MapLocationInput({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (embedded && event.key === "Enter") {
+      if (event.nativeEvent.isComposing)
+        return;
+      event.preventDefault();
+      void handleSubmit();
+      return;
+    }
+
     if (!isOpen || suggestions.length === 0)
       return;
 
@@ -434,10 +528,11 @@ export function MapLocationInput({
     }
   };
 
+  const Root = embedded ? "div" : "form";
+
   return (
-    <form
-      ref={formRef}
-      onSubmit={handleSubmit}
+    <Root
+      onSubmit={embedded ? undefined : handleSubmit}
       className={cn(
         "space-y-2",
         isOpen && "relative z-[1200]",
@@ -456,27 +551,36 @@ export function MapLocationInput({
           {label}
         </Label>
       )}
-      <div className="relative">
+      <div
+        ref={formRef}
+        className="relative"
+      >
         <MapPin
           className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2"
           style={{ color: pinColor }}
         />
         <Input
           id={inputId}
+          ref={inputRef}
           type="text"
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
             setSelectedAddress(null);
+            setSuggestions([]);
+            setHighlightedIndex(-1);
+            setUserEdited(true);
+            onTextChange?.(event.target.value);
             if (error)
               setError(null);
           }}
           onFocus={() => suggestions.length > 0 && setIsOpen(true)}
+          onBlur={onBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           autoComplete="off"
           role="combobox"
-          aria-label="Map location"
+          aria-label={label ?? "Map location"}
           aria-autocomplete="list"
           aria-expanded={isOpen}
           aria-controls={suggestionsId}
@@ -513,6 +617,7 @@ export function MapLocationInput({
                 type="button"
                 role="option"
                 aria-selected={highlightedIndex === index}
+                onMouseDown={event => event.preventDefault()}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 onClick={() => selectSuggestion(suggestion)}
                 className={cn(
@@ -542,14 +647,14 @@ export function MapLocationInput({
         </p>
       )}
 
-      {error && (
+      {(error || (lookupFailed && lookupErrorMessage)) && (
         <p
           role="alert"
           className="rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground shadow-md"
         >
-          {error}
+          {error ?? lookupErrorMessage}
         </p>
       )}
-    </form>
+    </Root>
   );
 }

@@ -232,6 +232,21 @@ import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group"
 />
 ```
 
+### Address (Nigeria lookup)
+
+A free-text address that must be real is not an `<Input>`. Use `AddressField`
+(`apps/main/src/features/apply/components/ui/AddressField.tsx`) inside a `<Form>` that has
+`streetAddress`, `addressVerification`, `state` and `city`. It wraps `MapLocationInput` with
+`embedded` (renders a div, Enter searches instead of submitting the outer form) and `nigeriaOnly`
+(Photon with a Nigeria bbox, filtered to `NG`, no browser-location prompt).
+
+- The text only counts as verified while it equals the address that was picked (or confirmed by hand
+  while the lookup was down): `isAddressVerified` in `features/apply/utils/addressVerification.ts`. Add
+  `refineAddressVerified` from `applySchemas.ts` to the schema; the message is "Select your address from the suggestions".
+- A pick prefills State / City only when they are empty, and warns (never blocks) when they disagree.
+- `addressVerification` (with coordinates) lives in the form and its drafts only. It is not sent: the
+  onboarding DTOs are `forbidNonWhitelisted`.
+
 ## API Mutations
 
 Use mutation hooks from the feature API layer.

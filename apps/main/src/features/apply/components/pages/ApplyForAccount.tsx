@@ -805,6 +805,7 @@ export default function ApplyForAccount() {
               vehicles={application?.vehicles ?? []}
               defaults={{
                 streetAddress: form.getValues("streetAddress"),
+                addressVerification: form.getValues("addressVerification"),
                 city: form.getValues("city"),
                 state: form.getValues("state"),
                 contactName: form.getValues("contactName") || undefined,
