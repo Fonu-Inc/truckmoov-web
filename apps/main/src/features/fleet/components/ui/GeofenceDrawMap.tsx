@@ -1,3 +1,4 @@
+import { NIGERIA_BBOX } from "@truckmoov/app-core/geo/nigeria";
 import {
   MAP_ATTRIBUTION, MAP_TILES_LIGHT,
 } from "@truckmoov/reusables/lib/map";
@@ -35,7 +36,23 @@ export function GeofenceDrawMap({
     () => {
       if (!containerRef.current)
         return;
-      const map = L.map(containerRef.current).setView(
+      const map = L.map(
+        containerRef.current,
+        {
+          minZoom: 6,
+          maxBounds: [
+            [
+              NIGERIA_BBOX.minLat,
+              NIGERIA_BBOX.minLng,
+            ],
+            [
+              NIGERIA_BBOX.maxLat,
+              NIGERIA_BBOX.maxLng,
+            ],
+          ],
+          maxBoundsViscosity: 1,
+        },
+      ).setView(
         initialCenterRef.current,
         13,
       );

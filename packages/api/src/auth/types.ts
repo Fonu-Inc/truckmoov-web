@@ -985,6 +985,8 @@ export type SystemSimsQuery = {
     status?: string
     carrier?: string
     tenantId?: string
+    /** Comma-separated device ids, max 100 */
+    deviceIds?: string
     page?: number
     limit?: number
   }
@@ -4552,6 +4554,9 @@ export type ScheduleOnboardingInstallationPayload = {
     scheduledDate: string
     timeSlot: OnboardingTimeSlot
     addressLine: string
+    /** Both or neither; inside Nigeria. */
+    addressLatitude?: number
+    addressLongitude?: number
     city: string
     /** A Nigerian state or FCT. */
     state: string
@@ -5313,18 +5318,6 @@ export type SystemTenantExportResponse = ServerResponse<SystemTenantExport>
 export type SystemTenantExportsResponse = ServerResponse<{ items: SystemTenantExport[] }>
 export type RequestSystemTenantExportPayload = { id: string; data: { scope: SystemTenantExportScope } }
 export type DownloadSystemTenantExportPayload = { id: string; exportId: string }
-
-/** Fonu clickToCall block from GET /auth/telephony/click-to-call-credentials. */
-export type ClickToCallCredentials = {
-  enabled?: boolean
-  extension?: string | number
-  domain?: string
-  password?: string
-  wss_url?: string
-  destination?: string
-  origin?: string | { number?: string }
-  originUuid?: string
-}
 
 /** GET /auth/installation/status — the signed-in customer's own installation. */
 export type InstallationStatus = {

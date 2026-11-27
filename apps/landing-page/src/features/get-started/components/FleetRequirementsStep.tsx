@@ -72,8 +72,8 @@ import { cn } from "@/shared/utils";
 /**
  * Vehicles one at a time or by CSV, then device requests, all saved on the application as
  * they are made (main app: FleetRequirementsStep). Devices are bound to vehicles: the total
- * requested can never exceed the vehicles added. The main app's toasts show in the dialog's
- * banner (`onError` / `onSuccess`) here.
+ * requested can never exceed the vehicles added. The main app's toasts are `onSuccess` (a toast
+ * here too) and `onError` (the dialog's inline banner) here.
  */
 export function FleetRequirementsStep({
   application,
@@ -498,9 +498,11 @@ export function FleetRequirementsStep({
           required={deviceTotal > 0}
         />
 
-        {!canProceed && (
+        {(!canProceed || deviceTotal === 0) && (
           <p className="text-xs text-muted-foreground">
-            Add at least one vehicle to continue. Requesting devices is optional.
+            {canProceed
+              ? "Requesting devices is optional. If you request any, choose a pickup point."
+              : "Add at least one vehicle to continue. Requesting devices is optional."}
           </p>
         )}
       </div>

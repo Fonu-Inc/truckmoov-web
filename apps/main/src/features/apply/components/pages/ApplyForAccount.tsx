@@ -23,6 +23,7 @@ import {
   documentsForApplicant,
   isIndemnitySigned,
   isReturningSearch,
+  verificationCodeError,
 } from "@truckmoov/app-core/apply/applyTypes";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
@@ -78,6 +79,7 @@ import {
   describeClaims,
   detailsToPayload,
   EMPTY_BUSINESS_DETAILS,
+  normalizePhone,
   SERVER_FIELD_TO_FORM_FIELD,
 } from "@/features/apply/utils/applySchemas";
 
@@ -185,6 +187,17 @@ export default function ApplyForAccount() {
     saveError,
     setSaveError,
   ] = useState<string | null>(null);
+  const [
+    savingLabel,
+    setSavingLabel,
+  ] = useState("Saving your details…");
+  const [
+    codeLifetimes,
+    setCodeLifetimes,
+  ] = useState<{
+    email?: number;
+    phone?: number;
+  }>({});
   const [
     emailConflict,
     setEmailConflict,
@@ -398,20 +411,25 @@ export default function ApplyForAccount() {
     ],
   );
 
-  async function sendCode(channel: "email" | "phone") {
-    if (!applicationId)
+  async function sendCode(channel: "email" | "phone", id = applicationId) {
+    if (!id)
       return;
     const mutation = channel === "email" ? sendEmail : sendPhone;
     const setCooldown = channel === "email" ? setEmailCooldown : setPhoneCooldown;
+    // Marked before the call so a send still in flight is not repeated on arriving at the step.
+    sentRef.current[channel] = true;
     try {
-      const res = await mutation.mutateAsync({ id: applicationId });
-      sentRef.current[channel] = true;
+      const res = await mutation.mutateAsync({ id });
       setDestinations(previous => ({
         ...previous, [channel]: res.data.destination,
+      }));
+      setCodeLifetimes(previous => ({
+        ...previous, [channel]: res.data.expiresInSeconds,
       }));
       setCooldown(res.data.resendAfterSeconds);
     }
     catch (error) {
+      sentRef.current[channel] = false;
       const err = error as ServerErrorResponse;
       if (err.retryAfterSeconds)
         setCooldown(err.retryAfterSeconds);
@@ -453,7 +471,11 @@ export default function ApplyForAccount() {
       return true;
     }
     catch (error) {
-      toast.error((error as ServerErrorResponse).message || "That code didn't work. Try again.");
+      toast.error(verificationCodeError(
+        channel,
+        error as ServerErrorResponse,
+        codeLifetimes[channel],
+      ));
       return false;
     }
   }
@@ -492,6 +514,7 @@ export default function ApplyForAccount() {
     if (!customerType)
       return;
     setSaving(true);
+    setSavingLabel("Saving your details…");
     setSaveError(null);
     const payload = detailsToPayload(
       {
@@ -510,11 +533,39 @@ export default function ApplyForAccount() {
           id,
           data: payload,
         });
+        // A code already sent went to the old contact; the code screen must not keep showing it.
+        const stored = application?.organization;
+        if (stored && stored.businessEmail.trim().toLowerCase() !== payload.businessEmail.toLowerCase()) {
+          setDestinations(previous => ({
+            ...previous,
+            email: undefined,
+          }));
+          void sendCode(
+            "email",
+            id,
+          );
+        }
+        if (stored && normalizePhone(stored.organizationPhone) !== payload.organizationPhone) {
+          // Sent on arriving at the phone step.
+          sentRef.current.phone = false;
+          setDestinations(previous => ({
+            ...previous,
+            phone: undefined,
+          }));
+        }
       }
       else {
         const res = await createApplication.mutateAsync({ data: payload });
         id = res.data.id;
+        // The form already holds these details; rehydrating from the server would reset the
+        // picked address to "needs to be verified".
+        rehydratedRef.current = true;
         session.start(id);
+        // The code doesn't depend on the signature, so send it while the signature uploads.
+        void sendCode(
+          "email",
+          id,
+        );
       }
     }
     catch (error) {
@@ -526,6 +577,7 @@ export default function ApplyForAccount() {
     setEmailConflict(0);
 
     if (pendingSignature) {
+      setSavingLabel("Saving your signature…");
       try {
         await signIndemnity.mutateAsync({
           id,
@@ -835,6 +887,7 @@ export default function ApplyForAccount() {
               form={form}
               customerType={customerType}
               submitting={saving}
+              submittingLabel={savingLabel}
               indemnitySigned={isIndemnitySigned(application)}
               indemnityNotice={indemnityNotice}
               saveError={saveError}

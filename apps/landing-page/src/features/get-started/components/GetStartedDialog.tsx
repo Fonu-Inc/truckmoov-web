@@ -25,6 +25,7 @@ import {
   documentsComplete,
   documentsForApplicant,
   isIndemnitySigned,
+  verificationCodeError,
 } from "@truckmoov/app-core/apply/applyTypes";
 import {
   useEffect,
@@ -35,6 +36,7 @@ import {
 import {
   useForm, useWatch,
 } from "react-hook-form";
+import { toast } from "sonner";
 import { ApplicationSaveContext } from "@/features/get-started/components/ApplicationSaveContext";
 import { ApplicationStatusScreen } from "@/features/get-started/components/ApplicationStatusScreen";
 import { BusinessDetailsStep } from "@/features/get-started/components/BusinessDetailsStep";
@@ -61,6 +63,7 @@ import {
   describeClaims,
   detailsToPayload,
   EMPTY_BUSINESS_DETAILS,
+  normalizePhone,
   SERVER_FIELD_TO_FORM_FIELD,
 } from "@/features/get-started/schemas/applySchemas";
 import { useApplyDraftStore } from "@/features/get-started/stores/applyDraftStore";
@@ -91,7 +94,7 @@ type Phase = "form" | "status" | "payment";
 /** Shown before the flow when a draft is saved: "continue or start new?". */
 type Entry = "choice" | null;
 type Banner = {
-  tone: "error" | "info" | "success";
+  tone: "error" | "info";
   message: string;
 } | null;
 
@@ -185,6 +188,10 @@ export function GetStartedDialog({
     setSaveError,
   ] = useState<string | null>(null);
   const [
+    savingLabel,
+    setSavingLabel,
+  ] = useState("Saving your details…");
+  const [
     emailConflict,
     setEmailConflict,
   ] = useState(0);
@@ -206,6 +213,14 @@ export function GetStartedDialog({
   ] = useState<{
     email?: string;
     phone?: string;
+  }>({});
+  // Seconds a sent code stays valid, as the server reported it.
+  const [
+    codeLifetimes,
+    setCodeLifetimes,
+  ] = useState<{
+    email?: number;
+    phone?: number;
   }>({});
   const [
     emailCooldownSeed,
@@ -449,21 +464,27 @@ export function GetStartedDialog({
     });
   }
 
-  async function sendCode(channel: "email" | "phone") {
-    if (!applicationId)
+  async function sendCode(channel: "email" | "phone", id = applicationId) {
+    if (!id)
       return;
     const mutation = channel === "email" ? sendEmail : sendPhone;
     const setCooldown = channel === "email" ? setEmailCooldownSeed : setPhoneCooldownSeed;
+    // Marked before the call so a send still in flight is not repeated on arriving at the step.
+    sentRef.current[channel] = true;
     try {
-      const res = await mutation.mutateAsync({ id: applicationId });
-      sentRef.current[channel] = true;
+      const res = await mutation.mutateAsync({ id });
       setDestinations(previous => ({
         ...previous,
         [channel]: res.data.destination,
       }));
+      setCodeLifetimes(previous => ({
+        ...previous,
+        [channel]: res.data.expiresInSeconds,
+      }));
       setCooldown(res.data.resendAfterSeconds);
     }
     catch (error) {
+      sentRef.current[channel] = false;
       const err = error as ServerErrorResponse;
       if (err.retryAfterSeconds)
         setCooldown(err.retryAfterSeconds);
@@ -507,14 +528,15 @@ export function GetStartedDialog({
         id: applicationId,
         data: { code },
       });
-      setBanner({
-        tone: "success",
-        message: channel === "email" ? "Email address verified" : "Phone number verified",
-      });
+      toast.success(channel === "email" ? "Email address verified" : "Phone number verified");
       return true;
     }
     catch (error) {
-      showError((error as ServerErrorResponse).message || "That code didn't work. Try again.");
+      showError(verificationCodeError(
+        channel,
+        error as ServerErrorResponse,
+        codeLifetimes[channel],
+      ));
       return false;
     }
   }
@@ -553,6 +575,7 @@ export function GetStartedDialog({
     if (!customerType)
       return;
     setSaving(true);
+    setSavingLabel("Saving your details…");
     setSaveError(null);
     const payload = detailsToPayload(
       {
@@ -571,11 +594,39 @@ export function GetStartedDialog({
           id,
           data: payload,
         });
+        // A code already sent went to the old contact; the code screen must not keep showing it.
+        const stored = application?.organization;
+        if (stored && stored.businessEmail.trim().toLowerCase() !== payload.businessEmail.toLowerCase()) {
+          setDestinations(previous => ({
+            ...previous,
+            email: undefined,
+          }));
+          void sendCode(
+            "email",
+            id,
+          );
+        }
+        if (stored && normalizePhone(stored.organizationPhone) !== payload.organizationPhone) {
+          // Sent on arriving at the phone step.
+          sentRef.current.phone = false;
+          setDestinations(previous => ({
+            ...previous,
+            phone: undefined,
+          }));
+        }
       }
       else {
         const res = await createApplication.mutateAsync({ data: payload });
         id = res.data.id;
+        // The form already holds these details; rehydrating from the server would reset the
+        // picked address to "needs to be verified".
+        rehydratedRef.current = true;
         session.start(id);
+        // The code doesn't depend on the signature, so send it while the signature uploads.
+        void sendCode(
+          "email",
+          id,
+        );
       }
     }
     catch (error) {
@@ -587,6 +638,7 @@ export function GetStartedDialog({
     setEmailConflict(0);
 
     if (pendingSignature) {
+      setSavingLabel("Saving your signature…");
       try {
         await signIndemnity.mutateAsync({
           id,
@@ -733,10 +785,7 @@ export function GetStartedDialog({
       "step",
       String(step),
     );
-    setBanner({
-      tone: "success",
-      message: "Application progress saved. Your current application has been saved in this browser.",
-    });
+    toast.success("Application progress saved. Your current application has been saved in this browser.");
   }
 
   function close() {
@@ -845,6 +894,7 @@ export function GetStartedDialog({
           form={form}
           customerType={customerType}
           submitting={saving}
+          submittingLabel={savingLabel}
           indemnitySigned={isIndemnitySigned(application)}
           indemnityNotice={indemnityNotice}
           saveError={saveError}
@@ -904,10 +954,7 @@ export function GetStartedDialog({
           onBack={() => setStep(3)}
           onNext={() => setStep(5)}
           onError={showError}
-          onSuccess={message => setBanner({
-            tone: "success",
-            message,
-          })}
+          onSuccess={message => toast.success(message)}
         />
       );
     }
@@ -955,6 +1002,7 @@ export function GetStartedDialog({
             steps={STEP_LABELS}
             current={visibleStep - 1}
             submitted={false}
+            afterReviewFrom={phase === "payment" ? undefined : 3}
           />
         )}
 
@@ -964,7 +1012,6 @@ export function GetStartedDialog({
             className={cn(
               "shrink-0 border-b px-7 py-3 text-sm",
               banner.tone === "error" && "border-destructive/20 bg-destructive/10 text-destructive",
-              banner.tone === "success" && "border-success/20 bg-success-soft text-success-deep",
               banner.tone === "info" && "border-border bg-surface text-heading",
             )}
           >

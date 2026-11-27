@@ -316,3 +316,15 @@ import CatalogCardForm, {
 | Use `FormField` | Wraps Controller with context so FormMessage can read the error |
 | Wrap input with `FormControl` | Auto-wires `id`, `aria-describedby`, and `aria-invalid` via Slot |
 | Export form ids | Prevents duplicated string ids across files |
+
+## Addresses
+
+Every address is a Nigerian address, and the server enforces it too.
+
+- Every address that carries coordinates is a `MapLocationInput` with `nigeriaOnly` (a lookup limited to Nigeria), embedded (`embedded`) when it sits inside another form. Never a free-text address `Input` for those.
+- Street lines inside KYC forms (`TenantKYCVerification` address line 1/2, `OnboardingKYCStep` address line 1) store no coordinates, so they stay plain `Input`s beside the Nigerian state and LGA selects. The server validates them (3 to 200 characters with a letter) and canonicalises the state.
+- The picked `lat`/`lng` are checked against the Nigeria box with `isInsideNigeria` from `@truckmoov/app-core/geo/nigeria` (lat 4.2 to 13.9, lng 2.6 to 14.7, the same box as the backend). `(0, 0)` and other countries fail with "Choose an address in Nigeria from the suggestions". It is a floor, not proof the address exists.
+- Typing after a pick must clear the picked coordinates: wire `onTextChange` to reset `lat`/`lng` to 0 and pass `value` through `pickerValue` (`components/jobs/jobLocation.ts`) so stale coordinates never ride along with edited text. `locationError` gives the message for a form schema or a dialog.
+- The geofence map is bounded to the Nigeria box and refuses points outside it.
+- Country fields in KYC are a read-only "Nigeria", always sent as `Nigeria`.
+- Do not apply the box to telemetry, device positions or live tracking.

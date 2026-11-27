@@ -2,6 +2,7 @@ import type { DeviceFulfilment } from "@truckmoov/app-core/apply/applyTypes";
 
 import { useQuery } from "@tanstack/react-query";
 import { getPickupLocationsQueryOptions } from "@truckmoov/api/auth";
+import { pickupLocationLabel } from "@truckmoov/app-core/apply/applyTypes";
 import { PackageCheck } from "lucide-react";
 
 import { Label } from "@/components/shadcn/label";
@@ -139,7 +140,7 @@ export function DeviceFulfilmentCard({
                   key={store.id}
                   value={store.id}
                 >
-                  {store.isDemo ? `${store.name} (demo)` : store.name}
+                  {pickupLocationLabel(store)}
                 </SelectItem>
               ))}
             </SelectContent>

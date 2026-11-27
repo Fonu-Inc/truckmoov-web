@@ -4,12 +4,9 @@ import {
   MessageSquare,
   MoreHorizontal,
   Phone,
-  PhoneCall,
   Send,
-  X,
 } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
@@ -46,17 +43,10 @@ export function DriverCommunicationActions({
 }: DriverCommunicationActionsProps) {
   const sendSMS = async (..._args: any[]) => {};
   const sendWhatsApp = async (..._args: any[]) => {};
-  const initiateCall = async (..._args: any[]): Promise<any> => null;
-  const endCall = async (..._args: any[]) => {};
   const isSending = false;
-  const isCalling = false;
   const [
     isMessageDialogOpen,
     setIsMessageDialogOpen,
-  ] = useState(false);
-  const [
-    isCallDialogOpen,
-    setIsCallDialogOpen,
   ] = useState(false);
   const [
     messageContent,
@@ -66,14 +56,6 @@ export function DriverCommunicationActions({
     messageType,
     setMessageType,
   ] = useState<"whatsapp" | "sms">("whatsapp");
-  const [
-    callStatus,
-    setCallStatus,
-  ] = useState<"idle" | "calling" | "connected" | "ended">("idle");
-  const [
-    currentCallId,
-    setCurrentCallId,
-  ] = useState<string | null>(null);
 
   const handleSendMessage = async () => {
     if (!messageContent.trim())
@@ -104,42 +86,6 @@ export function DriverCommunicationActions({
     catch {
       // Error handled in hook
     }
-  };
-
-  const handleCall = async () => {
-    try {
-      setCallStatus("calling");
-      setIsCallDialogOpen(true);
-      const result = await initiateCall(
-        driverId,
-        driverName,
-        driverPhone,
-        "Fleet Manager",
-      );
-      if (result?.dbCallId) {
-        setCurrentCallId(result.dbCallId);
-        setCallStatus("connected");
-      }
-    }
-    catch {
-      setCallStatus("idle");
-      setIsCallDialogOpen(false);
-    }
-  };
-
-  const handleEndCall = async () => {
-    if (currentCallId) {
-      await endCall(currentCallId);
-    }
-    setCallStatus("ended");
-    setTimeout(
-      () => {
-        setIsCallDialogOpen(false);
-        setCallStatus("idle");
-        setCurrentCallId(null);
-      },
-      1500,
-    );
   };
 
   const handleQuickWhatsApp = () => {
@@ -184,10 +130,6 @@ export function DriverCommunicationActions({
               Send SMS
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleCall}>
-              <PhoneCall className="h-4 w-4 mr-2 text-warning" />
-              Call Driver
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleQuickWhatsApp}>
               <MessageSquare className="h-4 w-4 mr-2 text-success" />
               Open in WhatsApp
@@ -207,16 +149,6 @@ export function DriverCommunicationActions({
           setMessageContent={setMessageContent}
           onSend={handleSendMessage}
           isSending={isSending}
-        />
-
-        {/* Call Dialog */}
-        <CallDialog
-          open={isCallDialogOpen}
-          onOpenChange={setIsCallDialogOpen}
-          driverName={driverName}
-          driverPhone={driverPhone}
-          callStatus={callStatus}
-          onEndCall={handleEndCall}
         />
       </>
     );
@@ -255,19 +187,6 @@ export function DriverCommunicationActions({
         >
           <Mail className={iconSize} />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            buttonSize,
-            "text-warning hover:text-warning hover:bg-warning/10",
-          )}
-          onClick={handleCall}
-          disabled={isCalling}
-          title="Call Driver"
-        >
-          <PhoneCall className={iconSize} />
-        </Button>
 
         <MessageDialog
           open={isMessageDialogOpen}
@@ -280,15 +199,6 @@ export function DriverCommunicationActions({
           setMessageContent={setMessageContent}
           onSend={handleSendMessage}
           isSending={isSending}
-        />
-
-        <CallDialog
-          open={isCallDialogOpen}
-          onOpenChange={setIsCallDialogOpen}
-          driverName={driverName}
-          driverPhone={driverPhone}
-          callStatus={callStatus}
-          onEndCall={handleEndCall}
         />
       </div>
     );
@@ -321,16 +231,6 @@ export function DriverCommunicationActions({
         <Phone className={`${iconSize} text-primary`} />
         SMS
       </Button>
-      <Button
-        variant="outline"
-        size={size}
-        className="gap-2"
-        onClick={handleCall}
-        disabled={isCalling}
-      >
-        <PhoneCall className={`${iconSize} text-warning`} />
-        Call
-      </Button>
 
       <MessageDialog
         open={isMessageDialogOpen}
@@ -343,15 +243,6 @@ export function DriverCommunicationActions({
         setMessageContent={setMessageContent}
         onSend={handleSendMessage}
         isSending={isSending}
-      />
-
-      <CallDialog
-        open={isCallDialogOpen}
-        onOpenChange={setIsCallDialogOpen}
-        driverName={driverName}
-        driverPhone={driverPhone}
-        callStatus={callStatus}
-        onEndCall={handleEndCall}
       />
     </div>
   );
@@ -451,70 +342,6 @@ function MessageDialog({
                 )}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// Call Dialog Component
-function CallDialog({
-  open,
-  onOpenChange,
-  driverName,
-  driverPhone,
-  callStatus,
-  onEndCall,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  driverName: string;
-  driverPhone: string;
-  callStatus: "idle" | "calling" | "connected" | "ended";
-  onEndCall: () => void;
-}) {
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent className="sm:max-w-sm">
-        <div className="flex flex-col items-center py-8 space-y-4">
-          <div className={cn(
-            "w-20 h-20 rounded-full flex items-center justify-center",
-            callStatus === "calling" && "bg-warning/20 animate-pulse",
-            callStatus === "connected" && "bg-success/20",
-            callStatus === "ended" && "bg-muted",
-          )}
-          >
-            <PhoneCall className={cn(
-              "h-10 w-10",
-              callStatus === "calling" && "text-warning",
-              callStatus === "connected" && "text-success",
-              callStatus === "ended" && "text-muted-foreground",
-            )}
-            />
-          </div>
-          <div className="text-center">
-            <h3 className="font-semibold text-lg">{driverName}</h3>
-            <p className="text-sm text-muted-foreground">{driverPhone}</p>
-          </div>
-          <Badge variant="secondary">
-            {callStatus === "calling" && "Calling..."}
-            {callStatus === "connected" && "Connected"}
-            {callStatus === "ended" && "Call Ended"}
-          </Badge>
-          {callStatus !== "ended" && (
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={onEndCall}
-              className="gap-2 mt-4"
-            >
-              <X className="h-4 w-4" />
-              End Call
-            </Button>
-          )}
-        </div>
       </DialogContent>
     </Dialog>
   );

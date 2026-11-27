@@ -12,7 +12,10 @@ import {
   getOnboardingM2mPlansQueryOptions,
   getPickupLocationsQueryOptions,
 } from "@truckmoov/api/auth";
-import { requestedDeviceTotal } from "@truckmoov/app-core/apply/applyTypes";
+import {
+  pickupLocationLabel,
+  requestedDeviceTotal,
+} from "@truckmoov/app-core/apply/applyTypes";
 import { DialogFooter } from "@/features/get-started/components/DialogFooter";
 import {
   InfoRow,
@@ -70,8 +73,9 @@ export function ReviewStep({
       footer={(
         <DialogFooter
           onBack={onBack}
-          continueLabel={submitting ? "Submitting…" : "Submit Application"}
-          continueDisabled={submitting}
+          continueLabel="Submit Application"
+          continueLoading={submitting}
+          continueLoadingLabel="Submitting…"
           onContinue={onSubmit}
         />
       )}
@@ -178,7 +182,7 @@ export function ReviewStep({
               />
               <Field
                 label="Pickup location"
-                value={pickup ? `${pickup.name}, ${pickup.area}, ${pickup.state}` : ""}
+                value={pickup ? `${pickupLocationLabel(pickup)}, ${pickup.area}, ${pickup.state}` : ""}
               />
             </dl>
           )}
@@ -245,9 +249,11 @@ export function ReviewStep({
         {submitError && <Notice>{submitError}</Notice>}
 
         <InfoRow className="text-xs text-muted-foreground">
-          By submitting, you confirm the information above is accurate. Once submitted, your
-          application will be reviewed by the Fleet Pro team.
+          By submitting, you confirm the information above is accurate.
         </InfoRow>
+        <Notice tone="info">
+          After you submit, our team reviews your application. You can pay once it is approved.
+        </Notice>
       </div>
     </StepLayout>
   );

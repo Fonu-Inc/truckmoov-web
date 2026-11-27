@@ -13,6 +13,7 @@
     "./apply/companyName": "./src/apply/companyName.ts",
     "./apply/vehicleSheet": "./src/apply/vehicleSheet.ts",
     "./apply/vehicleSheetFile": "./src/apply/vehicleSheetFile.ts",
+    "./geo/nigeria": "./src/geo/nigeria.ts",
     "./utils/general-utils": "./src/utils/general-utils.ts",
     "./utils/time-utils": "./src/utils/time-utils.ts"
   },

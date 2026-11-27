@@ -3,10 +3,7 @@ import {
   Activity, Inbox,
   Loader2, Mail, MessageSquare, Send, Users,
 } from "lucide-react";
-import {
-  useEffect, useState,
-} from "react";
-import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
+import { useState } from "react";
 // Import the tab components
 import { DriverBehaviorTab } from "@/components/drivers/DriverBehaviorTab";
 import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
@@ -24,7 +21,6 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useFonuCall } from "@/contexts/FonuCallContext";
 
 export default function DispatcherDrivers() {
   const [
@@ -37,10 +33,6 @@ export default function DispatcherDrivers() {
   ] = useState("drivers");
 
   // Communication state
-  const [
-    isCallDialogOpen,
-    setIsCallDialogOpen,
-  ] = useState(false);
   const [
     isMessageDialogOpen,
     setIsMessageDialogOpen,
@@ -57,30 +49,6 @@ export default function DispatcherDrivers() {
   const sendSMS = async (..._args: any[]) => {};
   const sendWhatsApp = async (..._args: any[]) => {};
   const isSending = false;
-
-  // SIP call control (shared across app)
-  const {
-    endCall: sipEndCall, status: sipStatus, durationSeconds,
-  } = useFonuCall();
-
-  // Only auto-close dialog when call ends/fails, don't auto-open on mount
-  useEffect(
-    () => {
-      if (sipStatus === "ended" || sipStatus === "failed") {
-        const timer = setTimeout(
-          setIsCallDialogOpen,
-          600,
-          false,
-        );
-        return () => clearTimeout(timer);
-      }
-    },
-    [sipStatus],
-  );
-
-  const handleEndCall = () => {
-    sipEndCall();
-  };
 
   const handleSendMessage = async () => {
     if (!selectedContactPhone || !messageContent.trim())
@@ -168,31 +136,6 @@ export default function DispatcherDrivers() {
           <DriverBehaviorTab />
         </TabsContent>
       </Tabs>
-
-      {/* Call Interaction Modal */}
-      <CallInteractionModal
-        open={isCallDialogOpen}
-        onOpenChange={setIsCallDialogOpen}
-        contactName={selectedContactName}
-        contactPhone={selectedContactPhone}
-        status={sipStatus}
-        durationSeconds={durationSeconds}
-        onEndCall={handleEndCall}
-        recordingEnabled
-        onToggleRecord={(rec) => {
-          console.log(
-            "[Call] recording toggled",
-            rec,
-          );
-        }}
-        onSaveNote={(note) => {
-          console.log(
-            "[Call] note saved",
-            note,
-          );
-          return true;
-        }}
-      />
 
       {/* Message Dialog */}
       <Dialog

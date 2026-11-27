@@ -10,6 +10,10 @@ import {
   useVehicles,
 } from "@truckmoov/api/fleet";
 import {
+  isInsideNigeria,
+  NIGERIA_OUT_OF_BOUNDS_MESSAGE,
+} from "@truckmoov/app-core/geo/nigeria";
+import {
   AlertTriangle,
   Archive,
   ArrowLeft,
@@ -290,6 +294,23 @@ export function GeofenceManagementDialog({
     const isPolygon = editForm.geofence_type === "POLYGON";
     if (isPolygon && editForm.points.length < 3) {
       toast.error("Click at least 3 points on the map to draw the zone");
+      return;
+    }
+
+    const outside = isPolygon
+      ? editForm.points.some(([
+          lat,
+          lng,
+        ]) => !isInsideNigeria(
+          lat,
+          lng,
+        ))
+      : !isInsideNigeria(
+          editForm.center[0],
+          editForm.center[1],
+        );
+    if (outside) {
+      toast.error(NIGERIA_OUT_OF_BOUNDS_MESSAGE);
       return;
     }
 
@@ -694,17 +715,26 @@ export function GeofenceManagementDialog({
                             radiusMeters={editForm.radius_meters}
                             points={editForm.points}
                             color={editForm.color}
-                            onMapClick={latLng => setEditForm(prev => (prev.geofence_type === "POLYGON"
-                              ? {
-                                  ...prev,
-                                  points: [
-                                    ...prev.points,
-                                    latLng,
-                                  ],
-                                }
-                              : {
-                                  ...prev, center: latLng,
-                                }))}
+                            onMapClick={(latLng) => {
+                              if (!isInsideNigeria(
+                                latLng[0],
+                                latLng[1],
+                              )) {
+                                toast.error(NIGERIA_OUT_OF_BOUNDS_MESSAGE);
+                                return;
+                              }
+                              setEditForm(prev => (prev.geofence_type === "POLYGON"
+                                ? {
+                                    ...prev,
+                                    points: [
+                                      ...prev.points,
+                                      latLng,
+                                    ],
+                                  }
+                                : {
+                                    ...prev, center: latLng,
+                                  }));
+                            }}
                           />
                           {editForm.geofence_type === "POLYGON" && (
                             <div className="flex items-center justify-between gap-2">

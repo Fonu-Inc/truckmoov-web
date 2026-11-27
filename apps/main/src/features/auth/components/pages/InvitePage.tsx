@@ -15,7 +15,7 @@ export default function InvitePage() {
   return (
     <AuthCardShell
       title="Complete your profile"
-      description="Add your name and choose a password to finish activating your FleetPro account."
+      description="Choose a password to finish activating your FleetPro account."
     >
       {!hasInvite
         ? (

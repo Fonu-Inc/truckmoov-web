@@ -128,12 +128,17 @@ export function VerificationStep({
                   disabled={checking}
                 />
               </div>
-              {checking && (
-                <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Spinner className="size-3.5 border-2" />
-                  Verifying…
-                </p>
-              )}
+              <div
+                role="status"
+                aria-live="polite"
+              >
+                {(checking || sending) && (
+                  <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Spinner className="size-3.5 border-2" />
+                    {checking ? "Verifying…" : `Sending a code to your ${label}…`}
+                  </p>
+                )}
+              </div>
               <InfoRow className="mt-[17px]">
                 Didn't receive it?
                 {" "}

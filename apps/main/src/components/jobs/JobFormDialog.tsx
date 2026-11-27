@@ -72,6 +72,10 @@ import {
   SPECIAL_HANDLING,
   VEHICLE_TYPES,
 } from "./jobFormOptions";
+import {
+  locationError,
+  pickerValue,
+} from "./jobLocation";
 
 // Everything the wizard collects beyond the core fields flows into `metadata`
 // and `attachmentFiles`. The Jobs page turns them into the dispatch payload
@@ -123,6 +127,22 @@ const jobSchema = z.object({
   cargoUnit: z.string().optional(),
   cargoValue: z.coerce.number().min(0).optional(),
   vehicleType: z.string().optional(),
+}).superRefine((data, ctx) => {
+  for (const key of [
+    "pickup",
+    "delivery",
+  ] as const) {
+    const message = locationError(
+      data[`${key}Address`],
+      data[`${key}Lat`],
+      data[`${key}Lng`],
+    );
+    if (message) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom, message, path: [`${key}Address`],
+      });
+    }
+  }
 });
 
 type JobFormData = z.infer<typeof jobSchema>;
@@ -282,6 +302,10 @@ export function JobFormDialog({
     attachments,
     setAttachments,
   ] = useState<File[]>([]);
+  const [
+    showStopErrors,
+    setShowStopErrors,
+  ] = useState(false);
 
   const form = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
@@ -314,6 +338,7 @@ export function JobFormDialog({
       setEquipment([]);
       setEquipmentOther("");
       setAttachments([]);
+      setShowStopErrors(false);
       if (job) {
         const prefill = job.prefill;
         const jobStops = (job as Job & {
@@ -394,9 +419,11 @@ export function JobFormDialog({
   const values = form.watch();
 
   const pickupValue = useMemo<MapLocation>(
-    () => ({
-      address: values.pickupAddress || "", lat: values.pickupLat || 0, lng: values.pickupLng || 0,
-    }),
+    () => pickerValue(
+      values.pickupAddress || "",
+      values.pickupLat || 0,
+      values.pickupLng || 0,
+    ),
     [
       values.pickupAddress,
       values.pickupLat,
@@ -405,9 +432,11 @@ export function JobFormDialog({
   );
 
   const deliveryValue = useMemo<MapLocation>(
-    () => ({
-      address: values.deliveryAddress || "", lat: values.deliveryLat || 0, lng: values.deliveryLng || 0,
-    }),
+    () => pickerValue(
+      values.deliveryAddress || "",
+      values.deliveryLat || 0,
+      values.deliveryLng || 0,
+    ),
     [
       values.deliveryAddress,
       values.deliveryLat,
@@ -476,6 +505,58 @@ export function JobFormDialog({
     [routePoints],
   );
 
+  const typeAddress = (key: "pickup" | "delivery") => (text: string) => {
+    form.setValue(
+      `${key}Address`,
+      text,
+    );
+    form.setValue(
+      `${key}Lat`,
+      0,
+    );
+    form.setValue(
+      `${key}Lng`,
+      0,
+    );
+  };
+
+  const pickLocation = (key: "pickup" | "delivery") => (v: MapLocation) => {
+    form.setValue(
+      `${key}Lat`,
+      v.lat,
+    );
+    form.setValue(
+      `${key}Lng`,
+      v.lng,
+    );
+    form.setValue(
+      `${key}Address`,
+      v.address,
+    );
+    // Validate once all three are set, or the resolver sees a half-updated pick.
+    void form.trigger([
+      `${key}Address`,
+      `${key}Lat`,
+      `${key}Lng`,
+    ]);
+  };
+
+  const stopHasError = (s: IntermediateStop) => s.kind === "simple"
+    ? Boolean(locationError(
+        s.address,
+        s.lat,
+        s.lng,
+      ))
+    : Boolean(locationError(
+        s.pickupAddress,
+        s.pickupLat,
+        s.pickupLng,
+      ) || locationError(
+        s.deliveryAddress,
+        s.deliveryLat,
+        s.deliveryLng,
+      ));
+
   const handleNext = async () => {
     if (step === 1) {
       const ok = await form.trigger([
@@ -486,7 +567,18 @@ export function JobFormDialog({
         "deliveryLat",
         "deliveryLng",
       ]);
-      if (!ok)
+      setShowStopErrors(true);
+      const v = form.getValues();
+      const badEnds = Boolean(locationError(
+        v.pickupAddress,
+        v.pickupLat,
+        v.pickupLng,
+      ) || locationError(
+        v.deliveryAddress,
+        v.deliveryLat,
+        v.deliveryLng,
+      ));
+      if (!ok || badEnds || stops.some(stopHasError))
         return;
       setStep(2);
     }
@@ -509,6 +601,11 @@ export function JobFormDialog({
   ));
 
   const handleFinalSubmit = (data: JobFormData) => {
+    if (stops.some(stopHasError)) {
+      setShowStopErrors(true);
+      setStep(1);
+      return;
+    }
     const metadata: Record<string, unknown> = {
       priority: data.priority,
       cargoCategory: data.cargoCategory === "Other" ? data.cargoCategoryOther : data.cargoCategory,
@@ -686,24 +783,12 @@ export function JobFormDialog({
                     error={form.formState.errors.pickupAddress?.message}
                     placeholder="e.g. Apapa Port, Lagos"
                     pinColor="#22c55e"
+                    nigeriaOnly
+                    embedded
                     value={pickupValue}
-                    onLocationSelect={(v) => {
-                      form.setValue(
-                        "pickupAddress",
-                        v.address,
-                        { shouldValidate: true },
-                      );
-                      form.setValue(
-                        "pickupLat",
-                        v.lat,
-                        { shouldValidate: true },
-                      );
-                      form.setValue(
-                        "pickupLng",
-                        v.lng,
-                        { shouldValidate: true },
-                      );
-                    }}
+                    text={values.pickupAddress}
+                    onTextChange={typeAddress("pickup")}
+                    onLocationSelect={pickLocation("pickup")}
                   />
                   <MapLocationInput
                     label="Delivery address"
@@ -711,24 +796,12 @@ export function JobFormDialog({
                     error={form.formState.errors.deliveryAddress?.message}
                     placeholder="e.g. Wuse Zone 5, Abuja"
                     pinColor="#ef4444"
+                    nigeriaOnly
+                    embedded
                     value={deliveryValue}
-                    onLocationSelect={(v) => {
-                      form.setValue(
-                        "deliveryAddress",
-                        v.address,
-                        { shouldValidate: true },
-                      );
-                      form.setValue(
-                        "deliveryLat",
-                        v.lat,
-                        { shouldValidate: true },
-                      );
-                      form.setValue(
-                        "deliveryLng",
-                        v.lng,
-                        { shouldValidate: true },
-                      );
-                    }}
+                    text={values.deliveryAddress}
+                    onTextChange={typeAddress("delivery")}
+                    onLocationSelect={pickLocation("delivery")}
                   />
                 </div>
 
@@ -782,9 +855,25 @@ export function JobFormDialog({
                                 label="Stop location"
                                 placeholder="e.g. Fuel station, Lokoja"
                                 pinColor="#f59e0b"
-                                value={{
-                                  address: s.address, lat: s.lat, lng: s.lng,
-                                }}
+                                nigeriaOnly
+                                embedded
+                                error={showStopErrors ? locationError(
+                                  s.address,
+                                  s.lat,
+                                  s.lng,
+                                ) : undefined}
+                                value={pickerValue(
+                                  s.address,
+                                  s.lat,
+                                  s.lng,
+                                )}
+                                text={s.address}
+                                onTextChange={address => patchStop(
+                                  s.id,
+                                  {
+                                    address, lat: 0, lng: 0,
+                                  },
+                                )}
                                 onLocationSelect={v => patchStop(
                                   s.id,
                                   {
@@ -799,9 +888,25 @@ export function JobFormDialog({
                                   label="Intermediate pickup"
                                   placeholder="e.g. Warehouse B"
                                   pinColor="#3b82f6"
-                                  value={{
-                                    address: s.pickupAddress, lat: s.pickupLat, lng: s.pickupLng,
-                                  }}
+                                  nigeriaOnly
+                                  embedded
+                                  error={showStopErrors ? locationError(
+                                    s.pickupAddress,
+                                    s.pickupLat,
+                                    s.pickupLng,
+                                  ) : undefined}
+                                  value={pickerValue(
+                                    s.pickupAddress,
+                                    s.pickupLat,
+                                    s.pickupLng,
+                                  )}
+                                  text={s.pickupAddress}
+                                  onTextChange={pickupAddress => patchStop(
+                                    s.id,
+                                    {
+                                      pickupAddress, pickupLat: 0, pickupLng: 0,
+                                    },
+                                  )}
                                   onLocationSelect={v => patchStop(
                                     s.id,
                                     {
@@ -813,9 +918,25 @@ export function JobFormDialog({
                                   label="Intermediate delivery"
                                   placeholder="e.g. Store C"
                                   pinColor="#a855f7"
-                                  value={{
-                                    address: s.deliveryAddress, lat: s.deliveryLat, lng: s.deliveryLng,
-                                  }}
+                                  nigeriaOnly
+                                  embedded
+                                  error={showStopErrors ? locationError(
+                                    s.deliveryAddress,
+                                    s.deliveryLat,
+                                    s.deliveryLng,
+                                  ) : undefined}
+                                  value={pickerValue(
+                                    s.deliveryAddress,
+                                    s.deliveryLat,
+                                    s.deliveryLng,
+                                  )}
+                                  text={s.deliveryAddress}
+                                  onTextChange={deliveryAddress => patchStop(
+                                    s.id,
+                                    {
+                                      deliveryAddress, deliveryLat: 0, deliveryLng: 0,
+                                    },
+                                  )}
                                   onLocationSelect={v => patchStop(
                                     s.id,
                                     {

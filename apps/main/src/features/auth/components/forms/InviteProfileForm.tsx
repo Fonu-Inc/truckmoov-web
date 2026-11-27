@@ -6,7 +6,6 @@ import { PasswordFieldControl } from "@truckmoov/reusables/components/app/Passwo
 import {
   Mail, User,
 } from "lucide-react";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -28,10 +27,7 @@ import {
 
 const invitePasswordSchema = z
   .object({
-    fullName: z.string().min(
-      2,
-      "Enter your full name.",
-    ),
+    fullName: z.string(),
     newPassword: newPasswordSchema,
     confirmPassword: confirmPasswordSchema,
   })
@@ -58,7 +54,10 @@ export function InviteProfileForm({
   const signedInUser = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
   // The name on the application or installer record; the server uses it and ignores a typed one.
-  const knownName = useValidateInvite(inviteToken).data?.data.fullName ?? null;
+  const invite = useValidateInvite(inviteToken);
+  const knownName = invite.data?.data.fullName ?? null;
+  // Until the invite answers, whether a name is on file is unknown, so no name field shows yet.
+  const inviteChecked = !invite.isPending;
 
   const form = useForm<InvitePasswordFormValues>({
     resolver: zodResolver(invitePasswordSchema),
@@ -69,23 +68,14 @@ export function InviteProfileForm({
     },
   });
 
-  useEffect(
-    () => {
-      if (knownName) {
-        form.setValue(
-          "fullName",
-          knownName,
-          { shouldValidate: true },
-        );
-      }
-    },
-    [
-      knownName,
-      form,
-    ],
-  );
-
   function onSubmit(values: InvitePasswordFormValues) {
+    if (!knownName && values.fullName.trim().length < 2) {
+      form.setError(
+        "fullName",
+        { message: "Enter your full name." },
+      );
+      return;
+    }
     // Accepting creates a different account; the old session must not outlive it in this browser.
     if (signedInUser)
       logout();
@@ -136,28 +126,36 @@ export function InviteProfileForm({
           <span className="truncate">{email}</span>
         </div>
 
-        <FormField
-          control={form.control}
-          name="fullName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel required>Full name</FormLabel>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <FormControl>
-                  <Input
-                    placeholder="Jane Doe"
-                    autoComplete="name"
-                    className="pl-10"
-                    readOnly={Boolean(knownName)}
-                    {...field}
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {knownName && (
+          <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/40 px-3 py-2 text-sm">
+            <User className="h-4 w-4 shrink-0 text-primary" />
+            <span className="truncate">{knownName}</span>
+          </div>
+        )}
+
+        {inviteChecked && !knownName && (
+          <FormField
+            control={form.control}
+            name="fullName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel required>Full name</FormLabel>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <FormControl>
+                    <Input
+                      placeholder="Jane Doe"
+                      autoComplete="name"
+                      className="pl-10"
+                      {...field}
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
@@ -204,6 +202,7 @@ export function InviteProfileForm({
           form={INVITE_PASSWORD_FORM_ID}
           className="w-full"
           loading={registerInvited.isPending}
+          disabled={!inviteChecked}
         >
           Activate account
         </Button>

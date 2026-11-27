@@ -343,7 +343,6 @@ import {
   setOnboardingBillingEmail,
   startOnboardingPayment,
   verifyOnboardingPayment,
-  getClickToCallCredentials,
   getInstallationStatus,
   confirmInstallation,
   cancelInstallation,
@@ -591,7 +590,6 @@ export const AUTH_QUERY_KEY = {
   onboardingStatus: ['onboardingStatus'],
   onboardingPlans: ['onboardingPlans'],
   onboardingSubscriptionCaps: ['onboardingSubscriptionCaps'],
-  clickToCallCredentials: ['clickToCallCredentials'],
   simDataBundles: (payload: SimDataBundlesQuery) => ['simDataBundles', payload],
   sims: (payload?: SimsQuery) => payload ? ['sims', payload] : ['sims'],
   sim: (id: string) => ['sim', id],
@@ -3773,15 +3771,6 @@ export function useVerifyOnboardingPayment() {
   return useMutation({
     mutationFn: verifyOnboardingPayment,
     onSuccess: (res, { id }) => queryClient.setQueryData(AUTH_QUERY_KEY.onboardingOrder(id), res),
-  })
-}
-
-export function getClickToCallCredentialsQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.clickToCallCredentials,
-    queryFn: getClickToCallCredentials,
-    staleTime: Infinity,
-    retry: false,
   })
 }
 

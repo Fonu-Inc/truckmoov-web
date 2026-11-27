@@ -625,11 +625,8 @@ export function TenantKYCVerification({
                 <Label htmlFor="country">Country</Label>
                 <Input
                   id="country"
-                  value={businessInfo.country || "Nigeria"}
-                  onChange={e => setBusinessInfo({
-                    ...businessInfo, country: e.target.value,
-                  })}
-                  placeholder="Country"
+                  value="Nigeria"
+                  readOnly
                 />
               </div>
             </div>

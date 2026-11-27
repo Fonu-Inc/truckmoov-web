@@ -40,6 +40,7 @@ const STATUS: Record<UploadStatus, {
 export function UploadField({
   title,
   description,
+  formats,
   fileName,
   status,
   error,
@@ -52,6 +53,8 @@ export function UploadField({
 }: {
   title: string;
   description?: string;
+  /** The accepted file types and size, shown while no file is filed. */
+  formats?: string;
   fileName?: string | null;
   status?: UploadStatus | null;
   error?: string | null;
@@ -92,10 +95,11 @@ export function UploadField({
           {description && (!hasFile || status === "rejected") && (
             <p className="mt-3 text-xs leading-[17px] text-heading">{description}</p>
           )}
+          {formats && !hasFile && <p className="mt-1 text-xs leading-[17px] text-muted-foreground">{formats}</p>}
         </div>
         {status && <Pill tone={STATUS[status].tone}>{STATUS[status].label}</Pill>}
       </div>
-      {children}
+      {children && <div className="mt-4">{children}</div>}
       <input
         ref={inputRef}
         type="file"
@@ -110,7 +114,11 @@ export function UploadField({
       />
       {hasFile
         ? (
-            <div className="mt-2.5 flex h-[45.5px] items-center gap-2.5 rounded-[12px] border-[0.5px] border-border bg-background pr-4 pl-[21px]">
+            <div className={cn(
+              "flex h-[45.5px] items-center gap-2.5 rounded-[12px] border-[0.5px] border-border bg-background pr-4 pl-[21px]",
+              children ? "mt-4" : "mt-2.5",
+            )}
+            >
               <Paperclip className="size-4 shrink-0" />
               <span className="flex-1 truncate text-xs font-medium text-heading">{fileName}</span>
               {status === "pending" && onRetry && (
@@ -154,7 +162,10 @@ export function UploadField({
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={busy}
-              className="mt-[22px] flex h-[37.5px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-[12px] border-[0.5px] border-border text-xs font-medium text-heading transition-colors hover:border-border-deep hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(
+                "flex h-[37.5px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-[12px] border-[0.5px] border-border text-xs font-medium text-heading transition-colors hover:border-border-deep hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50",
+                children ? "mt-4" : "mt-[22px]",
+              )}
             >
               <CloudArrowUp className={cn(
                 "size-4",

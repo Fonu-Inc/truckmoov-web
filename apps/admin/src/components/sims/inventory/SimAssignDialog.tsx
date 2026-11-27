@@ -102,6 +102,13 @@ export function SimAssignDialog({
     setPage,
   ] = useState(1);
   const [
+    picked,
+    setPicked,
+  ] = useState<{
+    id: string;
+    imei: string;
+  } | null>(null);
+  const [
     lastSimId,
     setLastSimId,
   ] = useState(sim?.id);
@@ -132,20 +139,29 @@ export function SimAssignDialog({
     1,
     Math.ceil(total / DEVICE_PAGE_SIZE),
   );
-  // The linked device may sit on another page or be filtered out, so always keep it selectable.
-  const linkedMissing = Boolean(sim?.deviceId)
-    && tenantId === sim?.tenantId
-    && !pageDevices.some(device => device.id === sim?.deviceId);
-  const tenantDevices = linkedMissing && sim?.deviceId
-    ? [
-        {
-          id: sim.deviceId,
-          imei: sim.deviceImei ?? sim.deviceId,
-        },
-        ...pageDevices,
-      ]
-    : pageDevices;
+  // The linked or just-picked device may sit on another page or be filtered out, so always keep it selectable.
+  const linkedDevice = sim?.deviceId && tenantId === sim.tenantId
+    ? {
+        id: sim.deviceId,
+        imei: sim.deviceImei ?? sim.deviceId,
+      }
+    : null;
+  const pinnedDevices = [
+    linkedDevice,
+    picked?.id === deviceId ? picked : null,
+  ].filter((device, index, all): device is NonNullable<typeof device> =>
+    Boolean(device)
+    && !pageDevices.some(d => d.id === device?.id)
+    && all.findIndex(d => d?.id === device?.id) === index);
+  const tenantDevices = [
+    ...pinnedDevices,
+    ...pageDevices,
+  ];
   const loadingDevices = loadingOptions || devicesQuery.isLoading;
+
+  // The last page emptied (devices moved away): step back to the last valid page.
+  if (!devicesQuery.isPlaceholderData && pageDevices.length === 0 && total > 0 && page > 1)
+    setPage(lastPage);
 
   useEffect(
     () => {
@@ -281,7 +297,10 @@ export function SimAssignDialog({
                   <Select
                     name={field.name}
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setPicked(tenantDevices.find(device => device.id === value) ?? null);
+                    }}
                     disabled={!tenantId || loadingOptions || (devicesQuery.isLoading && tenantDevices.length === 0)}
                   >
                     <FormControl>

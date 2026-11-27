@@ -7,10 +7,13 @@ export function Stepper({
   steps,
   current,
   submitted,
+  afterReviewFrom,
 }: {
   steps: readonly string[];
   current: number;
   submitted: boolean;
+  /** Steps from this index on open only once the application is reviewed; they say so. */
+  afterReviewFrom?: number;
 }) {
   return (
     <ol className="relative flex shrink-0 border-b border-border px-[22px] pt-[14px] pb-[15px]">
@@ -53,6 +56,9 @@ export function Stepper({
             >
               {label}
             </span>
+            {afterReviewFrom !== undefined && index >= afterReviewFrom && (
+              <span className="-mt-2.5 text-2xs text-faint-foreground">After review</span>
+            )}
           </li>
         );
       })}

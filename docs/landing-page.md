@@ -169,6 +169,22 @@ step component names the main component it mirrors. The look follows the Figma G
 - `SubDialog` for nested dialogs
 - the class recipes in `utils/getStartedContent.ts`
 - native `<select>` where main uses the shadcn Select
+- success messages (code verified, progress saved, fleet requirements saved) are `sonner` toasts, as in
+  main; errors stay in the dialog's inline banner. `GetStartedHost` mounts the light-only `Toaster`
+  (`shared/components/shadcn/sonner.tsx`) beside the dialog, so sonner loads only with the wizard
+
+Behaviour worth knowing (all shared with main through `@truckmoov/app-core/apply/applyTypes` where marked):
+
+- Continue on Customer Details shows a spinner and what is being saved ("Saving your details…", then "Saving your signature…"). The email code is sent as soon as the application exists, in parallel with the signature upload, and the code screen says "Sending a code…" while it is in flight.
+- The application is created from the form's own values, so the dialog does not rehydrate the form from the server after creating it (that would reset the picked address to "needs to be verified"). Rehydration only runs for a resumed draft.
+- Editing a picked address clears the State and City the pick filled in, each only while it still holds the picked value, so a City chosen by hand survives. The Enter-key search is aborted by typing, and a stray space keeps the suggestions. The main app's `AddressField` / `MapLocationInput` do the same.
+- The code is sent before step 1 is finished. If the applicant corrects the business email and continues, a new code goes to the new address and the code screen drops the old masked destination; a changed phone number does the same on arriving at the phone step.
+- Loading states are announced: the Continue button is `aria-busy` and a `role="status"` region repeats its label, and the code screen's "Verifying…" / "Sending a code…" sits in a `role="status"` region. The ID card type on Required Documents uses the `Label` primitive with `required`.
+- A refused code says which channel it was and how long codes last (the server's `expiresInSeconds`, else "a few minutes") only when the server answered "incorrect or has expired". Other 4xx messages stay as sent; a network failure or a 5xx says "We couldn't check the code. Try again.": `verificationCodeError` (shared).
+- Pickup points show one "(demo)": the demo rows already have it in the name, `pickupLocationLabel` (shared) adds it only when missing.
+- Documents: only the Customer Request Letter is PDF-only (`RequiredDocument.pdfOnly`, as the server enforces); every other document takes PDF, JPG or PNG up to 10 MB. Each row states its formats (`documentFormatHint`, shared).
+- Device Pickup marks its fields required only once devices are requested, and says so in its description.
+- The stepper marks Payment and Installation Scheduling "After review", and the review screen says payment opens once the application is approved.
 
 ### Resume
 

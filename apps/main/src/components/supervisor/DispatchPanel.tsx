@@ -1,11 +1,15 @@
 import {
-  Clock, MapPin, Package, Send, Truck, User,
+  Clock, Package, Send, Truck, User,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  locationError, pickerValue,
+} from "@/components/jobs/jobLocation";
+import { MapLocationInput } from "@/components/maps/MapLocationInput";
+
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-
 import {
   Dialog,
   DialogContent,
@@ -60,11 +64,19 @@ export function DispatchPanel({
     vehicleId: selectedVehicleId || "",
     driverId: "",
     pickupLocation: "",
+    pickupLat: 0,
+    pickupLng: 0,
     deliveryLocation: "",
+    deliveryLat: 0,
+    deliveryLng: 0,
     cargoDescription: "",
     priority: "normal",
     notes: "",
   });
+  const [
+    showErrors,
+    setShowErrors,
+  ] = useState(false);
   const [
     isSubmitting,
     setIsSubmitting,
@@ -77,7 +89,25 @@ export function DispatchPanel({
 
   const handleSubmit = async () => {
     if (!formData.vehicleId || !formData.pickupLocation || !formData.deliveryLocation) {
+      setShowErrors(true);
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (
+      locationError(
+        formData.pickupLocation,
+        formData.pickupLat,
+        formData.pickupLng,
+      )
+      || locationError(
+        formData.deliveryLocation,
+        formData.deliveryLat,
+        formData.deliveryLng,
+      )
+    ) {
+      setShowErrors(true);
+      toast.error("Choose an address in Nigeria from the suggestions");
       return;
     }
 
@@ -104,11 +134,16 @@ export function DispatchPanel({
       vehicleId: "",
       driverId: "",
       pickupLocation: "",
+      pickupLat: 0,
+      pickupLng: 0,
       deliveryLocation: "",
+      deliveryLat: 0,
+      deliveryLng: 0,
       cargoDescription: "",
       priority: "normal",
       notes: "",
     });
+    setShowErrors(false);
   };
 
   return (
@@ -212,45 +247,55 @@ export function DispatchPanel({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label
-              htmlFor="pickup"
-              className="flex items-center gap-1"
-              required
-            >
-              <MapPin className="h-3 w-3" />
-              {" "}
-              Pickup Location
-            </Label>
-            <Input
-              id="pickup"
-              placeholder="Enter pickup address"
-              value={formData.pickupLocation}
-              onChange={e => setFormData({
-                ...formData, pickupLocation: e.target.value,
-              })}
-            />
-          </div>
+          <MapLocationInput
+            embedded
+            nigeriaOnly
+            required
+            label="Pickup Location"
+            placeholder="Enter pickup address"
+            error={showErrors ? locationError(
+              formData.pickupLocation,
+              formData.pickupLat,
+              formData.pickupLng,
+            ) : undefined}
+            value={pickerValue(
+              formData.pickupLocation,
+              formData.pickupLat,
+              formData.pickupLng,
+            )}
+            text={formData.pickupLocation}
+            onTextChange={pickupLocation => setFormData(prev => ({
+              ...prev, pickupLocation, pickupLat: 0, pickupLng: 0,
+            }))}
+            onLocationSelect={v => setFormData(prev => ({
+              ...prev, pickupLocation: v.address, pickupLat: v.lat, pickupLng: v.lng,
+            }))}
+          />
 
-          <div className="space-y-2">
-            <Label
-              htmlFor="delivery"
-              className="flex items-center gap-1"
-              required
-            >
-              <MapPin className="h-3 w-3" />
-              {" "}
-              Delivery Location
-            </Label>
-            <Input
-              id="delivery"
-              placeholder="Enter delivery address"
-              value={formData.deliveryLocation}
-              onChange={e => setFormData({
-                ...formData, deliveryLocation: e.target.value,
-              })}
-            />
-          </div>
+          <MapLocationInput
+            embedded
+            nigeriaOnly
+            required
+            label="Delivery Location"
+            placeholder="Enter delivery address"
+            error={showErrors ? locationError(
+              formData.deliveryLocation,
+              formData.deliveryLat,
+              formData.deliveryLng,
+            ) : undefined}
+            value={pickerValue(
+              formData.deliveryLocation,
+              formData.deliveryLat,
+              formData.deliveryLng,
+            )}
+            text={formData.deliveryLocation}
+            onTextChange={deliveryLocation => setFormData(prev => ({
+              ...prev, deliveryLocation, deliveryLat: 0, deliveryLng: 0,
+            }))}
+            onLocationSelect={v => setFormData(prev => ({
+              ...prev, deliveryLocation: v.address, deliveryLat: v.lat, deliveryLng: v.lng,
+            }))}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

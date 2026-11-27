@@ -154,12 +154,17 @@ export function VerificationStep({
                   </InputOTPGroup>
                 </InputOTP>
 
-                {checking && (
-                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Verifying…
-                  </p>
-                )}
+                <div
+                  role="status"
+                  aria-live="polite"
+                >
+                  {(checking || sending) && (
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      {checking ? "Verifying…" : `Sending a code to your ${label}…`}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <p className="text-sm text-muted-foreground">

@@ -1,6 +1,7 @@
 import type {
   FormEvent, KeyboardEvent, Ref,
 } from "react";
+import { NIGERIA_BBOX } from "@truckmoov/app-core/geo/nigeria";
 import {
   Loader2, MapPin,
 } from "lucide-react";
@@ -93,7 +94,7 @@ export type MapLocationInputProps = {
 
 const PHOTON_API_URL = "https://photon.komoot.io";
 // minLon,minLat,maxLon,maxLat; it spills into neighbours, so results are also filtered by country code.
-const NIGERIA_BBOX = "2.6,4.2,14.7,13.9";
+const NIGERIA_PHOTON_BBOX = `${NIGERIA_BBOX.minLng},${NIGERIA_BBOX.minLat},${NIGERIA_BBOX.maxLng},${NIGERIA_BBOX.maxLat}`;
 let userLocationBiasPromise: Promise<UserLocationBias | null> | null = null;
 
 function getUserLocationBias() {
@@ -178,7 +179,7 @@ async function findLocations(query: string, signal?: AbortSignal, nigeriaOnly = 
   if (nigeriaOnly) {
     globalParams.set(
       "bbox",
-      NIGERIA_BBOX,
+      NIGERIA_PHOTON_BBOX,
     );
   }
 
@@ -339,6 +340,8 @@ export function MapLocationInput({
     setUserEdited,
   ] = useState(false);
   const formRef = useRef<HTMLDivElement | null>(null);
+  // The Enter-key search in flight; typing aborts it so its result can't replace newer text.
+  const enterSearchRef = useRef<AbortController | null>(null);
 
   useEffect(
     () => {
@@ -474,15 +477,19 @@ export function MapLocationInput({
     if (!location || isSearching)
       return;
 
+    const controller = new AbortController();
+    enterSearchRef.current = controller;
     setIsSearching(true);
     setError(null);
 
     try {
       const [result] = await findLocations(
         location,
-        undefined,
+        controller.signal,
         nigeriaOnly,
       );
+      if (controller.signal.aborted)
+        return;
       setLookupFailed(false);
       if (!result) {
         setError("Location not found. Try a more specific address.");
@@ -490,13 +497,18 @@ export function MapLocationInput({
       }
       selectSuggestion(result);
     }
-    catch {
+    catch (searchError) {
+      if ((searchError as Error).name === "AbortError")
+        return;
       setLookupFailed(true);
       if (!lookupErrorMessage)
         setError("Unable to find that location right now.");
     }
     finally {
-      setIsSearching(false);
+      if (enterSearchRef.current === controller) {
+        enterSearchRef.current = null;
+        setIsSearching(false);
+      }
     }
   };
 
@@ -565,10 +577,19 @@ export function MapLocationInput({
           type="text"
           value={query}
           onChange={(event) => {
+            // A changed query voids the results and any Enter search in flight; a stray space
+            // doesn't change the query.
+            if (event.target.value.trim() !== query.trim()) {
+              enterSearchRef.current?.abort();
+              if (enterSearchRef.current) {
+                enterSearchRef.current = null;
+                setIsSearching(false);
+              }
+              setSuggestions([]);
+              setHighlightedIndex(-1);
+            }
             setQuery(event.target.value);
             setSelectedAddress(null);
-            setSuggestions([]);
-            setHighlightedIndex(-1);
             setUserEdited(true);
             onTextChange?.(event.target.value);
             if (error)

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { use } from "react";
 import { ApplicationSaveContext } from "@/features/get-started/components/ApplicationSaveContext";
+import { Spinner } from "@/features/get-started/components/StepParts";
 import {
   PRIMARY_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
@@ -23,6 +24,7 @@ export function DialogFooter({
   continueLabel,
   continueDisabled = false,
   continueLoading = false,
+  continueLoadingLabel = "Please wait…",
   backMuted = false,
   backLabel = "Back",
   continueArrow = true,
@@ -34,6 +36,8 @@ export function DialogFooter({
   continueLabel?: string;
   continueDisabled?: boolean;
   continueLoading?: boolean;
+  /** What the Continue button says while `continueLoading`, e.g. what is being saved. */
+  continueLoadingLabel?: string;
   backMuted?: boolean;
   backLabel?: string;
   /** False drops the → from the Continue button (steps whose design shows a plain label). */
@@ -77,19 +81,29 @@ export function DialogFooter({
           Save and continue later
         </button>
       )}
+      {/* Always rendered so the change of text is announced. */}
+      <span
+        role="status"
+        aria-live="polite"
+        className="sr-only"
+      >
+        {continueLoading ? continueLoadingLabel : ""}
+      </span>
       {continueLabel && (
         <button
           type={form ? "submit" : "button"}
           form={form}
           onClick={form ? undefined : onContinue}
           disabled={continueDisabled || continueLoading}
+          aria-busy={continueLoading}
           className={cn(
             PRIMARY_BUTTON_CLASS,
             "min-w-[165px] gap-[14px]",
           )}
         >
-          {continueLoading ? "Please wait…" : continueLabel}
-          {continueArrow && (
+          {continueLoading && <Spinner className="size-4 border-2 border-heading/25 border-t-heading" />}
+          {continueLoading ? continueLoadingLabel : continueLabel}
+          {continueArrow && !continueLoading && (
             <ArrowRight
               className="size-3.5"
               strokeWidth={1.5}

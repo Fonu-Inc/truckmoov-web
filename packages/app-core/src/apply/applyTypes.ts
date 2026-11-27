@@ -20,14 +20,57 @@ export type RequiredDocument = {
   type: OnboardingUploadableDocumentType;
   label: string;
   requirement?: string;
+  /** The server refuses anything but a PDF for this one; every other document also takes JPG or PNG. */
+  pdfOnly?: boolean;
 };
+
+/** The accepted formats and size for a document, shown under its title. */
+export function documentFormatHint(document: RequiredDocument) {
+  return document.pdfOnly ? "PDF only, 10 MB or smaller." : "PDF, JPG or PNG, 10 MB or smaller.";
+}
+
+/** A pickup point's name; the demo rows already carry "(demo)" in the name. */
+export function pickupLocationLabel(location: {
+  name: string;
+  isDemo: boolean;
+}) {
+  return location.isDemo && !/\(demo\)\s*$/i.test(location.name) ? `${location.name} (demo)` : location.name;
+}
+
+/**
+ * What to tell the applicant when a verification code isn't accepted. The "incorrect or
+ * expired" answer is replaced with advice; other messages the server sent on purpose
+ * ("too many attempts", a 4xx) stay as sent; a network failure or a 5xx is not a verdict on the code.
+ */
+export function verificationCodeError(
+  channel: "email" | "phone",
+  error: {
+    message?: string;
+    statusCode?: number;
+  },
+  expiresInSeconds?: number,
+) {
+  const {
+    message, statusCode = 0,
+  } = error;
+  if (!message || !/incorrect or has expired/i.test(message)) {
+    return message && statusCode >= 400 && statusCode < 500
+      ? message
+      : "We couldn't check the code. Try again.";
+  }
+  const noun = channel === "email" ? "email" : "phone";
+  const minutes = expiresInSeconds ? Math.max(1, Math.round(expiresInSeconds / 60)) : 0;
+  const lifetime = minutes ? `${minutes} ${minutes === 1 ? "minute" : "minutes"}` : "a few minutes";
+  return `That ${noun} code is incorrect or has expired. Check you used the newest code we sent to your ${noun === "email" ? "email address" : "phone number"} (a new code replaces the old one). Codes expire after ${lifetime}. Use "Resend code" to get a new one.`;
+}
 
 /** Documents required from Enterprise customers, as the design lists them. */
 export const ENTERPRISE_DOCUMENTS: RequiredDocument[] = [
   {
     type: "customer_request_letter",
     label: "Customer Request Letter",
-    requirement: "Must bear the full business name and be submitted as a signed, non-editable PDF document.",
+    requirement: "Must bear the full business name and be signed. Upload it as a non-editable PDF.",
+    pdfOnly: true,
   },
   {
     type: "cac_document",

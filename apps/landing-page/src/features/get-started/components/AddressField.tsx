@@ -92,6 +92,30 @@ export function AddressField({
     );
   }
 
+  function clearPickedRegion(next: string) {
+    // State and City came from the pick and go with it, each only if still the picked value.
+    if (verification?.status !== "selected" || isAddressVerified(
+      next,
+      verification,
+    )) {
+      return;
+    }
+    if (verification.state && state === verification.state) {
+      form.setValue(
+        "state",
+        "",
+        { shouldDirty: true },
+      );
+    }
+    if (verification.city && city === verification.city) {
+      form.setValue(
+        "city",
+        "",
+        { shouldDirty: true },
+      );
+    }
+  }
+
   function handleSelect(location: PickedLocation) {
     const address = location.address.slice(
       0,
@@ -179,7 +203,10 @@ export function AddressField({
                 text={text}
                 selectedAddress={verification?.status === "selected" ? verification.address : null}
                 placeholder={placeholder}
-                onTextChange={field.onChange}
+                onTextChange={(next) => {
+                  clearPickedRegion(next);
+                  field.onChange(next);
+                }}
                 onBlur={field.onBlur}
                 inputRef={field.ref}
                 onSelect={handleSelect}

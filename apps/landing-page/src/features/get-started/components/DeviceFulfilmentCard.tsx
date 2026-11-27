@@ -4,6 +4,7 @@ import type { DeviceFulfilment } from "@truckmoov/app-core/apply/applyTypes";
 import { Package } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
 import { getPickupLocationsQueryOptions } from "@truckmoov/api/auth";
+import { pickupLocationLabel } from "@truckmoov/app-core/apply/applyTypes";
 import { NIGERIAN_STATES } from "@/features/get-started/schemas/applySchemas";
 import {
   CARD_CLASS,
@@ -25,7 +26,7 @@ export function DeviceFulfilmentCard({
 }: {
   value: DeviceFulfilment;
   onChange: (value: DeviceFulfilment) => void;
-  /** Pickup is only enforced once devices are requested. */
+  /** Pickup is only enforced once devices are requested; the fields are marked required only then. */
   required?: boolean;
 }) {
   const locationsQuery = useQuery(getPickupLocationsQueryOptions());
@@ -43,6 +44,8 @@ export function DeviceFulfilmentCard({
           <h3 className="text-base leading-5 font-semibold text-heading">Device Pickup</h3>
           <p className="mt-1 text-xs leading-[17px] text-muted-foreground">
             Requested devices are collected from an MTN Connect Store or Service Centre.
+            {" "}
+            {required ? "Required for your device request." : "Only needed if you request devices."}
           </p>
         </div>
       </div>
@@ -172,7 +175,7 @@ export function DeviceFulfilmentCard({
                 value={store.id}
                 className="text-heading"
               >
-                {store.isDemo ? `${store.name} (demo)` : store.name}
+                {pickupLocationLabel(store)}
               </option>
             ))}
           </select>

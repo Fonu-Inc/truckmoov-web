@@ -12,14 +12,13 @@ import {
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, Ban, Clock, Eye, Mail, MessageSquare,
-  MoreHorizontal, Phone, Plus, RotateCcw, Search, Send, SlidersHorizontal,
+  MoreHorizontal, Plus, RotateCcw, Search, Send, SlidersHorizontal,
   Upload, UserCheck, Users, UserX,
 } from "lucide-react";
 import {
-  useEffect, useMemo, useState,
+  useMemo, useState,
 } from "react";
 import { toast } from "sonner";
-import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
 import { DriverDetailsSheet } from "@/components/drivers/DriverDetailsSheet";
 import { DriverFormDialog } from "@/components/drivers/DriverFormDialog";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
@@ -57,7 +56,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useFonuCall } from "@/contexts/FonuCallContext";
 import { getPerformanceBand } from "@/features/drivers/utils/driverPerformance";
 import {
   DRIVER_STATUSES, driverScore, formatScore, toDriverRow, toLocalDriver,
@@ -131,9 +129,6 @@ export default function DriversPage() {
     setDriverPendingSuspend,
   ] = useState<DriverRow | null>(null);
   const sendMessage = useSendNotifyMessage();
-  const {
-    startCall, endCall, status: callStatus, durationSeconds,
-  } = useFonuCall();
 
   const [
     searchQuery,
@@ -166,10 +161,6 @@ export default function DriversPage() {
   const [
     isDetailsOpen,
     setIsDetailsOpen,
-  ] = useState(false);
-  const [
-    isCallOpen,
-    setIsCallOpen,
   ] = useState(false);
   const [
     isMessageOpen,
@@ -261,20 +252,6 @@ export default function DriversPage() {
     ],
   );
 
-  useEffect(
-    () => {
-      if (callStatus === "ended" || callStatus === "failed") {
-        const timer = setTimeout(
-          setIsCallOpen,
-          600,
-          false,
-        );
-        return () => clearTimeout(timer);
-      }
-    },
-    [callStatus],
-  );
-
   const openAdd = () => {
     setSelectedDriver(null);
     setIsFormOpen(true);
@@ -323,25 +300,6 @@ export default function DriversPage() {
         onError: error => toast.error(error.message),
       },
     );
-  };
-
-  const handleCall = async (driver: DriverRow) => {
-    setSelectedDriver(driver);
-    setIsCallOpen(true);
-    try {
-      await startCall(
-        driver.name,
-        driver.phone,
-        [
-          `X-Driver-ID: ${driver.id}`,
-          `X-Driver-Name: ${driver.name}`,
-        ],
-      );
-    }
-    catch (error) {
-      setIsCallOpen(false);
-      toast.error(error instanceof Error ? error.message : "Unable to start call");
-    }
   };
 
   const openSms = (driver: DriverRow) => {
@@ -399,11 +357,6 @@ export default function DriversPage() {
     : null;
 
   const driverPage = useClientPage(filteredDrivers);
-  const callBusy = [
-    "connecting",
-    "ringing",
-    "connected",
-  ].includes(callStatus);
 
   const kpiTiles = [
     {
@@ -494,13 +447,6 @@ export default function DriversPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem
-                      disabled={callBusy}
-                      onClick={() => void handleCall(driver)}
-                    >
-                      <Phone className="mr-2 h-4 w-4" />
-                      Call
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => openSms(driver)}>
                       <MessageSquare className="mr-2 h-4 w-4" />
                       Send SMS
@@ -1010,19 +956,6 @@ export default function DriversPage() {
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
         driver={selectedLocalDriver}
-      />
-
-      <CallInteractionModal
-        open={isCallOpen}
-        onOpenChange={setIsCallOpen}
-        contactName={selectedDriver?.name}
-        contactPhone={selectedDriver?.phone}
-        status={callStatus}
-        durationSeconds={durationSeconds}
-        onEndCall={endCall}
-        recordingEnabled
-        onToggleRecord={() => {}}
-        onSaveNote={() => true}
       />
 
       <Dialog

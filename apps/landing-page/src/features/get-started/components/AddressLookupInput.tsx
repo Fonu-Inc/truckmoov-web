@@ -94,6 +94,8 @@ export function AddressLookupInput({
     setUserEdited,
   ] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  // The Enter-key search in flight; typing aborts it so its result can't replace newer text.
+  const enterSearchRef = useRef<AbortController | null>(null);
 
   const query = text.trim();
   const searchDue = userEdited && query.length >= LOOKUP_MIN_CHARS && query !== selectedAddress?.trim();
@@ -196,10 +198,17 @@ export function AddressLookupInput({
     if (!query || isSearching)
       return;
 
+    const controller = new AbortController();
+    enterSearchRef.current = controller;
     setIsSearching(true);
     setNotFound(false);
     try {
-      const [result] = await findLocations(query);
+      const [result] = await findLocations(
+        query,
+        controller.signal,
+      );
+      if (controller.signal.aborted)
+        return;
       setLookupFailed(false);
       if (!result) {
         setNotFound(true);
@@ -207,11 +216,15 @@ export function AddressLookupInput({
       }
       pick(result);
     }
-    catch {
-      setLookupFailed(true);
+    catch (searchError) {
+      if ((searchError as Error).name !== "AbortError")
+        setLookupFailed(true);
     }
     finally {
-      setIsSearching(false);
+      if (enterSearchRef.current === controller) {
+        enterSearchRef.current = null;
+        setIsSearching(false);
+      }
     }
   }
 
@@ -258,9 +271,17 @@ export function AddressLookupInput({
         value={text}
         onChange={(event) => {
           onTextChange(event.target.value);
-          // Results for the old text must never be pickable against the new one.
-          setSuggestions([]);
-          setHighlightedIndex(-1);
+          // A changed query voids the results and any Enter search in flight; a stray space
+          // doesn't change the query.
+          if (event.target.value.trim() !== query) {
+            enterSearchRef.current?.abort();
+            if (enterSearchRef.current) {
+              enterSearchRef.current = null;
+              setIsSearching(false);
+            }
+            setSuggestions([]);
+            setHighlightedIndex(-1);
+          }
           setUserEdited(true);
           setNotFound(false);
           if (event.target.value.trim().length < LOOKUP_MIN_CHARS) {

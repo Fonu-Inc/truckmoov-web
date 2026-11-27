@@ -10,7 +10,10 @@ import {
   getPickupLocationsQueryOptions,
 } from "@truckmoov/api/auth";
 
-import { requestedDeviceTotal } from "@truckmoov/app-core/apply/applyTypes";
+import {
+  pickupLocationLabel,
+  requestedDeviceTotal,
+} from "@truckmoov/app-core/apply/applyTypes";
 
 import {
   ArrowLeft,
@@ -175,7 +178,7 @@ export function ReviewStep({
             />
             <Field
               label="Pickup location"
-              value={pickup ? `${pickup.name}, ${pickup.area}, ${pickup.state}` : ""}
+              value={pickup ? `${pickupLocationLabel(pickup)}, ${pickup.area}, ${pickup.state}` : ""}
             />
           </div>
         )}
@@ -266,8 +269,8 @@ export function ReviewStep({
       )}
 
       <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
-        By submitting, you confirm the information above is accurate. Once submitted, your
-        application will be reviewed by the Fleet Pro team.
+        By submitting, you confirm the information above is accurate. After you submit, our team
+        reviews your application. You can pay once it is approved.
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">

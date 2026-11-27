@@ -192,6 +192,13 @@ export default function OnboardingApplicationPage() {
     dialog,
     setDialog,
   ] = useState<DialogKind | null>(null);
+  // The dialog content keeps rendering the last kind while it fades out; `null` would fall through to "Request More Information".
+  const [
+    shownKind,
+    setShownKind,
+  ] = useState<DialogKind>("approved");
+  if (dialog && dialog !== shownKind)
+    setShownKind(dialog);
   const [
     section,
     setSection,
@@ -263,7 +270,7 @@ export default function OnboardingApplicationPage() {
   const returning = isReturningApplication(app.documents);
 
   const submit = async () => {
-    if (!dialog)
+    if (!dialog || saving)
       return;
     setSaving(true);
     try {
@@ -367,16 +374,19 @@ export default function OnboardingApplicationPage() {
               )}
               {decidable && (
                 <>
-                  <Button onClick={() => {
-                    setMessage("");
-                    setDialog("approved");
-                  }}
+                  <Button
+                    disabled={saving || actions.approvePending}
+                    onClick={() => {
+                      setMessage("");
+                      setDialog("approved");
+                    }}
                   >
                     <Check className="mr-2 h-4 w-4" />
                     Approve Application
                   </Button>
                   <Button
                     variant="outline"
+                    disabled={saving}
                     onClick={() => {
                       setMessage("");
                       setDialog("more_info");
@@ -387,6 +397,7 @@ export default function OnboardingApplicationPage() {
                   </Button>
                   <Button
                     variant="destructive"
+                    disabled={saving}
                     onClick={() => {
                       setMessage("");
                       setDialog("rejected");
@@ -509,14 +520,14 @@ export default function OnboardingApplicationPage() {
       </div>
       <Dialog
         open={!!dialog}
-        onOpenChange={open => !open && setDialog(null)}
+        onOpenChange={open => !open && !saving && setDialog(null)}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{dialog === "approved" ? "Approve Application" : dialog === "rejected" ? "Reject Application" : "Request More Information"}</DialogTitle>
-            <DialogDescription>{dialog === "approved" ? `Approve ${app.organizationName}? Devices are allocated automatically from platform stock. SIMs must still be allocated separately.` : "Record the reason for this decision."}</DialogDescription>
+            <DialogTitle>{shownKind === "approved" ? "Approve Application" : shownKind === "rejected" ? "Reject Application" : "Request More Information"}</DialogTitle>
+            <DialogDescription>{shownKind === "approved" ? `Approve ${app.organizationName}? Devices are allocated automatically from platform stock. SIMs must still be allocated separately.` : "Record the reason for this decision."}</DialogDescription>
           </DialogHeader>
-          {dialog === "more_info" && (
+          {shownKind === "more_info" && (
             <div className="space-y-2">
               <Label>Area</Label>
               <Select
@@ -540,7 +551,7 @@ export default function OnboardingApplicationPage() {
               </Select>
             </div>
           )}
-          {dialog !== "approved" && (
+          {shownKind !== "approved" && (
             <div className="space-y-2">
               <Label required>Reason</Label>
               <Textarea
@@ -553,12 +564,13 @@ export default function OnboardingApplicationPage() {
           <DialogFooter>
             <Button
               variant="outline"
+              disabled={saving}
               onClick={() => setDialog(null)}
             >
               Cancel
             </Button>
             <Button
-              disabled={saving || (dialog !== "approved" && !message.trim())}
+              disabled={saving || (shownKind !== "approved" && !message.trim())}
               onClick={submit}
             >
               {saving ? "Saving…" : "Confirm"}

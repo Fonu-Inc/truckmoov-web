@@ -8,7 +8,6 @@ import type {
   ActivityLogResponse,
   ActivityLogVerifyResponse,
   ApproveSIMRequestPayload,
-  ClickToCallCredentials,
   AssignSystemSupportTicketPayload,
   AttachSupportTicketFilesPayload,
   CommunicationRateHistoryPayload,
@@ -3024,12 +3023,6 @@ export async function downloadSystemTenantExport({ id, exportId }: DownloadSyste
     responseType: 'blob',
   })
   return data
-}
-
-/** SIP settings for the browser dialer. The Fonu key stays on the server. */
-export async function getClickToCallCredentials() {
-  const { data } = await axiosInstance.get<ServerResponse<ClickToCallCredentials>>('/auth/telephony/click-to-call-credentials')
-  return data.data
 }
 
 export async function getInstallationStatus() {

@@ -12,6 +12,7 @@ import {
   getOnboardingOrderQueryOptions,
   useScheduleOnboardingInstallation,
 } from "@truckmoov/api/auth";
+import { isInsideNigeria } from "@truckmoov/app-core/geo/nigeria";
 import {
   AlertTriangle,
   CalendarCheck,
@@ -204,6 +205,15 @@ export function ScheduleInstallationStep({
       });
       return;
     }
+    const picked = values.addressVerification;
+    const pickedCoordinates = picked?.status === "selected" && picked.lat !== undefined && picked.lng !== undefined && isInsideNigeria(
+      picked.lat,
+      picked.lng,
+    )
+      ? {
+          addressLatitude: picked.lat, addressLongitude: picked.lng,
+        }
+      : {};
     try {
       const res = await schedule.mutateAsync({
         id: applicationId,
@@ -211,6 +221,7 @@ export function ScheduleInstallationStep({
           scheduledDate: values.date,
           timeSlot: values.timeSlot,
           addressLine: values.streetAddress,
+          ...pickedCoordinates,
           city: values.city,
           state: values.state,
           siteContactName: values.contactName,

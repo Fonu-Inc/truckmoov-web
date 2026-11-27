@@ -9,7 +9,6 @@ import { useAuthStore } from "@/features/auth/stores/authStore";
 import { GlobalSupportChat } from "./components/support/GlobalSupportChat";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
-import { FonuCallProvider } from "./contexts/FonuCallContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { BrandingProvider } from "./features/settings/branding/BrandingProvider";
 
@@ -38,12 +37,10 @@ function App() {
             <BrandingProvider>
               <Sonner />
               <AuthGuard>
-                <FonuCallProvider>
-                  <ErrorBoundary variant="page">
-                    <Outlet />
-                  </ErrorBoundary>
-                  <GlobalSupportChat />
-                </FonuCallProvider>
+                <ErrorBoundary variant="page">
+                  <Outlet />
+                </ErrorBoundary>
+                <GlobalSupportChat />
               </AuthGuard>
             </BrandingProvider>
           </PreferencesProvider>

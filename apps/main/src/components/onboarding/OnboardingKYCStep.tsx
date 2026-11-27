@@ -318,7 +318,7 @@ export function OnboardingKYCStep({
           city: businessInfo.city,
           state: businessInfo.state,
           postalCode: businessInfo.postalCode,
-          country: businessInfo.country,
+          country: "Nigeria",
           phone: businessInfo.phone,
           email: businessInfo.email,
           billingEmail: businessInfo.billingEmail,
@@ -722,13 +722,8 @@ export function OnboardingKYCStep({
               <Label htmlFor="country">Country</Label>
               <Input
                 id="country"
-                value={businessInfo.country ?? ""}
-                onChange={e => updateField(
-                  "country",
-                  e.target.value || null,
-                )}
-                placeholder="Nigeria"
-                disabled={isBusinessInfoLoading}
+                value="Nigeria"
+                readOnly
               />
             </div>
           </div>

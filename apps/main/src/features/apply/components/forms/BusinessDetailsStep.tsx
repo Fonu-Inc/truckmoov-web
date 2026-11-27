@@ -14,6 +14,7 @@ import {
   ExternalLink,
   FileSignature,
   FileText,
+  Loader2,
   Mail,
 } from "lucide-react";
 import {
@@ -69,6 +70,8 @@ type BusinessDetailsStepProps = {
   form: UseFormReturn<BusinessDetailsValues>;
   customerType: ApplicantCustomerType;
   submitting: boolean;
+  /** What is being saved right now, shown on the Continue button. */
+  submittingLabel?: string;
   /** Whether the server already holds a signature for the current agreement. */
   indemnitySigned: boolean;
   /** Set when the agreement changed since the applicant signed, or a resumed draft lost an unsent signature. */
@@ -95,6 +98,7 @@ export function BusinessDetailsStep({
   form,
   customerType,
   submitting,
+  submittingLabel = "Saving your details…",
   indemnitySigned: signedOnServer,
   indemnityNotice,
   saveError,
@@ -597,10 +601,19 @@ export function BusinessDetailsStep({
               type="submit"
               size="lg"
               className="min-w-40"
-              loading={submitting}
+              disabled={submitting}
+              aria-busy={submitting}
             >
-              {nextLabel}
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {submitting ? submittingLabel : nextLabel}
             </Button>
+            <span
+              role="status"
+              aria-live="polite"
+              className="sr-only"
+            >
+              {submitting ? submittingLabel : ""}
+            </span>
           </div>
         </form>
       </Form>

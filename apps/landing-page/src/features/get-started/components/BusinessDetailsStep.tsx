@@ -66,6 +66,7 @@ export function BusinessDetailsStep({
   form,
   customerType,
   submitting,
+  submittingLabel,
   indemnitySigned: signedOnServer,
   indemnityNotice,
   saveError,
@@ -77,6 +78,8 @@ export function BusinessDetailsStep({
   form: UseFormReturn<BusinessDetailsValues>;
   customerType: ApplicantCustomerType;
   submitting: boolean;
+  /** What is being saved right now, shown on the Continue button. */
+  submittingLabel?: string;
   /** Whether the server already holds a signature for the current agreement. */
   indemnitySigned: boolean;
   /** Set when the agreement changed since the applicant signed. */
@@ -275,6 +278,7 @@ export function BusinessDetailsStep({
           continueLabel="Continue"
           continueArrow={false}
           continueLoading={submitting}
+          continueLoadingLabel={submittingLabel}
         />
       )}
     >
@@ -432,8 +436,8 @@ export function BusinessDetailsStep({
                       </span>
                     </span>
                     <span className={cn(
-                      "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                      selected ? "bg-brand-deep text-field-soft" : "bg-surface text-muted-foreground",
+                      "inline-flex shrink-0 items-center self-start rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors",
+                      selected ? "bg-brand-deep text-field-soft" : "border-[0.5px] border-border bg-surface text-muted-foreground",
                     )}
                     >
                       {selected ? "Selected" : `Select ${plan.name}`}

@@ -11,6 +11,7 @@ import {
   useUpdateOnboardingApplication,
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
+import { documentFormatHint } from "@truckmoov/app-core/apply/applyTypes";
 import {
   AlertCircle,
   ArrowLeft,
@@ -26,6 +27,7 @@ import {
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import { Label } from "@/components/shadcn/label";
 import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
@@ -72,15 +74,17 @@ const ID_CARD_TYPES: Array<{
   },
 ];
 
+const ID_TYPE_FIELD_ID = "identification-card-type";
+
 const ID_TYPE_REQUIRED = "Select your identification card type first. Only a National Identification Card or Driver's License is accepted. Any other card will be rejected.";
 
-function uploadError(error: unknown) {
+function uploadError(error: unknown, pdfOnly: boolean) {
   const err = error as ServerErrorResponse;
   if (err.statusCode === 413)
-    return "This file is larger than 10 MB. Please upload a smaller PDF file.";
+    return `This file is larger than 10 MB. Please upload a smaller ${pdfOnly ? "PDF " : ""}file.`;
   return describeClaims(err.claimTypes)
     ?? err.message
-    ?? "Upload a PDF file.";
+    ?? (pdfOnly ? "Upload a PDF file." : "Upload a PDF, JPG or PNG file.");
 }
 
 /**
@@ -167,12 +171,12 @@ export function DocumentsStep({
   }
 
   async function handleFile(slot: Slot, file: File) {
-    // The design takes PDFs only, and asks which ID card it is before the upload.
+    // Asks which ID card it is before the upload; only the Customer Request Letter must be a PDF.
     const localError = slot.document.type === "identification_card" && !idType
       ? ID_TYPE_REQUIRED
       : checkFile(
           file,
-          true,
+          Boolean(slot.document.pdfOnly),
         );
     if (localError) {
       setRow(
@@ -204,7 +208,10 @@ export function DocumentsStep({
       setRow(
         setErrors,
         slot.key,
-        uploadError(error),
+        uploadError(
+          error,
+          Boolean(slot.document.pdfOnly),
+        ),
       );
     }
     finally {
@@ -251,8 +258,8 @@ export function DocumentsStep({
       <div>
         <h2 className="text-lg font-semibold text-foreground">Required Documents</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          All requested documents are mandatory. Upload each document as a PDF file smaller than 10 MB. Files
-          are validated as soon as they are added.
+          All requested documents are mandatory. Each file is checked as soon as you add it; the accepted
+          formats are listed under each document.
         </p>
       </div>
 
@@ -285,6 +292,8 @@ export function DocumentsStep({
               index={index + 1}
               label={`${slot.document.label} (Required)`}
               requirement={slot.document.requirement}
+              formats={documentFormatHint(slot.document)}
+              pdfOnly={slot.document.pdfOnly}
               idType={slot.document.type === "identification_card" ? idType : undefined}
               onIdType={value => void saveIdType(value)}
               document={document}
@@ -335,6 +344,8 @@ function DocumentRow({
   index,
   label,
   requirement,
+  formats,
+  pdfOnly,
   idType,
   onIdType,
   document,
@@ -346,6 +357,8 @@ function DocumentRow({
   index: number;
   label: string;
   requirement?: string;
+  formats: string;
+  pdfOnly?: boolean;
   /** Set on the identification card row: the card type picked in the design's select. */
   idType?: string;
   onIdType?: (value: string) => void;
@@ -400,13 +413,25 @@ function DocumentRow({
             {requirement && (
               <p className="mt-0.5 text-xs text-muted-foreground">{requirement}</p>
             )}
+            <p className="mt-0.5 text-xs text-muted-foreground">{formats}</p>
             {idType !== undefined && (
-              <div className="mt-2 max-w-64">
+              <div className="mt-2 max-w-64 space-y-1.5">
+                <Label
+                  htmlFor={ID_TYPE_FIELD_ID}
+                  required
+                  className="text-xs"
+                >
+                  Identification card type
+                </Label>
                 <Select
                   value={idType}
                   onValueChange={value => onIdType?.(value)}
                 >
-                  <SelectTrigger className="h-9 rounded-xl text-xs">
+                  <SelectTrigger
+                    id={ID_TYPE_FIELD_ID}
+                    aria-required="true"
+                    className="h-9 rounded-xl text-xs"
+                  >
                     <SelectValue placeholder="Select ID type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -455,7 +480,7 @@ function DocumentRow({
           <input
             ref={inputRef}
             type="file"
-            accept="application/pdf,.pdf"
+            accept={pdfOnly ? "application/pdf,.pdf" : "application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png"}
             className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];

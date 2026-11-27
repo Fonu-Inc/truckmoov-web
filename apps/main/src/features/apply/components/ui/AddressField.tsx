@@ -88,6 +88,30 @@ export function AddressField({
     );
   }
 
+  function clearPickedRegion(next: string) {
+    // State and City came from the pick and go with it, each only if still the picked value.
+    if (verification?.status !== "selected" || isAddressVerified(
+      next,
+      verification,
+    )) {
+      return;
+    }
+    if (verification.state && state === verification.state) {
+      form.setValue(
+        "state",
+        "",
+        { shouldDirty: true },
+      );
+    }
+    if (verification.city && city === verification.city) {
+      form.setValue(
+        "city",
+        "",
+        { shouldDirty: true },
+      );
+    }
+  }
+
   function handleSelect(location: MapLocation) {
     const address = location.address.slice(
       0,
@@ -174,7 +198,10 @@ export function AddressField({
               error={fieldState.error?.message}
               lookupErrorMessage="Couldn't look up addresses right now"
               onLookupFailedChange={setLookupFailed}
-              onTextChange={field.onChange}
+              onTextChange={(next) => {
+                clearPickedRegion(next);
+                field.onChange(next);
+              }}
               inputRef={field.ref}
               onBlur={field.onBlur}
               onLocationSelect={handleSelect}

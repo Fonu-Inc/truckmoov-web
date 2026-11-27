@@ -13,6 +13,7 @@ import {
   useUpdateOnboardingApplication,
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
+import { documentFormatHint } from "@truckmoov/app-core/apply/applyTypes";
 import {
   useEffect,
   useEffectEvent,
@@ -40,7 +41,9 @@ import {
 import {
   CARD_CLASS,
   FIELD_CLASS,
+  LABEL_CLASS,
 } from "@/features/get-started/utils/getStartedContent";
+import { Label } from "@/shared/components/shadcn/label";
 import { cn } from "@/shared/utils";
 
 type Slot = {
@@ -69,22 +72,24 @@ const ID_CARD_TYPES: Array<{
   },
 ];
 
+const ID_TYPE_FIELD_ID = "identification-card-type";
+
 const ID_TYPE_REQUIRED = "Select your identification card type first. Only a National Identification Card or Driver's License is accepted. Any other card will be rejected.";
 
-function uploadError(error: unknown) {
+function uploadError(error: unknown, pdfOnly: boolean) {
   const err = error as ServerErrorResponse;
   if (err.statusCode === 413)
-    return "This file is larger than 10 MB. Please upload a smaller PDF file.";
+    return `This file is larger than 10 MB. Please upload a smaller ${pdfOnly ? "PDF " : ""}file.`;
   return describeClaims(err.claimTypes)
     ?? err.message
-    ?? "Upload a PDF file.";
+    ?? (pdfOnly ? "Upload a PDF file." : "Upload a PDF, JPG or PNG file.");
 }
 
 /**
  * Required documents (main app: DocumentsStep). The list depends on the customer type (a
  * returning MTN customer owes only the Customer Request Letter); what is filed comes from
- * the server. Every document is a PDF. A failed
- * upload is kept in IndexedDB so an applicant who comes back can retry it without finding
+ * the server. Documents take PDF, JPG or PNG, except the Customer Request Letter, which must
+ * be a PDF (as the server enforces). A failed upload is kept in IndexedDB so an applicant who comes back can retry it without finding
  * the file again. The signed indemnity form is generated at signing and never uploaded here.
  */
 export function DocumentsStep({
@@ -212,12 +217,12 @@ export function DocumentsStep({
   }
 
   async function handleFile(slot: Slot, file: File) {
-    // The design takes PDFs only, and asks which ID card it is before the upload.
+    // Asks which ID card it is before the upload.
     const localError = slot.document.type === "identification_card" && !idType
       ? ID_TYPE_REQUIRED
       : checkFile(
           file,
-          true,
+          Boolean(slot.document.pdfOnly),
         );
     if (localError) {
       setRow(
@@ -250,7 +255,10 @@ export function DocumentsStep({
       void deleteDraftFile(`${PENDING_PREFIX}${slot.key}`);
     }
     catch (error) {
-      const message = uploadError(error);
+      const message = uploadError(
+        error,
+        Boolean(slot.document.pdfOnly),
+      );
       const status = (error as ServerErrorResponse).statusCode;
       // A file the server refused (bad format, duplicate) won't succeed on retry; only keep
       // the ones lost to the network or a server hiccup.
@@ -341,7 +349,7 @@ export function DocumentsStep({
     >
       <StepHeading
         title="Required Documents"
-        description="All requested documents are mandatory. Upload each document as a PDF file smaller than 10 MB. Files are validated as soon as they are added."
+        description="All requested documents are mandatory. Each file is checked as soon as you add it; the accepted formats are listed under each document."
       />
 
       <div className={cn(
@@ -365,11 +373,12 @@ export function DocumentsStep({
               key={slot.key}
               title={`${slot.document.label} (Required)`}
               description={document?.rejectionReason ?? slot.document.requirement}
+              formats={documentFormatHint(slot.document)}
               fileName={document?.documentName ?? unsent?.file.name}
               status={document ? (document.status === "rejected" ? "rejected" : "uploaded") : unsent ? "pending" : null}
               error={errors[slot.key] ?? unsent?.error}
               busy={Boolean(busy[slot.key])}
-              pdfOnly
+              pdfOnly={slot.document.pdfOnly}
               onSelect={file => void handleFile(
                 slot,
                 file,
@@ -388,33 +397,42 @@ export function DocumentsStep({
                 : undefined}
             >
               {slot.document.type === "identification_card" && (
-                <select
-                  aria-label="Identification card type"
-                  value={idType}
-                  onChange={(event) => {
-                    setRow(
-                      setErrors,
-                      slot.key,
-                    );
-                    void saveIdType(event.target.value);
-                  }}
-                  className={cn(
-                    FIELD_CLASS,
-                    "mt-3 h-10 max-w-64 text-xs",
-                    !idType && "text-faint-foreground",
-                  )}
-                >
-                  <option value="">Select ID type</option>
-                  {ID_CARD_TYPES.map(type => (
-                    <option
-                      key={type.value}
-                      value={type.value}
-                      className="text-heading"
-                    >
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor={ID_TYPE_FIELD_ID}
+                    required
+                    className={LABEL_CLASS}
+                  >
+                    Identification card type
+                  </Label>
+                  <select
+                    id={ID_TYPE_FIELD_ID}
+                    aria-required="true"
+                    value={idType}
+                    onChange={(event) => {
+                      setRow(
+                        setErrors,
+                        slot.key,
+                      );
+                      void saveIdType(event.target.value);
+                    }}
+                    className={cn(
+                      FIELD_CLASS,
+                      !idType && "text-faint-foreground",
+                    )}
+                  >
+                    <option value="">Select ID type</option>
+                    {ID_CARD_TYPES.map(type => (
+                      <option
+                        key={type.value}
+                        value={type.value}
+                        className="text-heading"
+                      >
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </UploadField>
           );

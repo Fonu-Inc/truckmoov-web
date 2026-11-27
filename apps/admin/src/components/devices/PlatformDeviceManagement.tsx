@@ -131,7 +131,6 @@ function getSignalIcon(strength: number | null, status: string) {
 
 export function PlatformDeviceManagement() {
   const queryClient = useQueryClient();
-  const simsQuery = useQuery(getSystemSimsQueryOptions());
   const tenantsQuery = useQuery(getSystemTenantsQueryOptions());
   const manufacturersQuery = useQuery(getSystemDeviceManufacturersQueryOptions("all"));
   const suspendMutation = useSuspendSystemDevice();
@@ -231,6 +230,19 @@ export function PlatformDeviceManagement() {
   });
 
   const devices = devicesQuery.data?.data.items ?? [];
+  const deviceIds = devices.map(d => d.id).join(",");
+  const simsQuery = useQuery({
+    ...getSystemSimsQueryOptions({
+      params: {
+        deviceIds,
+        limit: 100,
+      },
+    }),
+    enabled: deviceIds !== "",
+    placeholderData: keepPreviousData,
+  });
+  // Placeholder data is the previous page's SIMs, so it can't answer for the current devices.
+  const simsLoading = simsQuery.isFetching || simsQuery.isPlaceholderData;
   const stats = devicesQuery.data?.data.summary;
   const total = devicesQuery.data?.data.total ?? 0;
   // Last row of the last page was removed: step back to the last valid page.
@@ -405,7 +417,7 @@ export function PlatformDeviceManagement() {
                 </p>
               </div>
             )
-          : <span className="text-xs text-muted-foreground">No SIM linked</span>;
+          : <span className="text-xs text-muted-foreground">{simsLoading ? "…" : simsQuery.isError ? "-" : "No SIM linked"}</span>;
       },
     },
     {
