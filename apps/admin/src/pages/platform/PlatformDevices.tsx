@@ -2,6 +2,7 @@ import {
   BookOpen,
   ClipboardCheck,
   Cpu,
+  Package,
 } from "lucide-react";
 import { useState } from "react";
 import { DeviceCatalogManager } from "@/components/devices/DeviceCatalogManager";
@@ -27,9 +28,13 @@ const TAB_HEADINGS: Record<string, {
     title: "Device Requests",
     description: "Review and manage device requests submitted by customers, including their request status and approval progress.",
   },
-  catalog: {
+  inventory: {
     title: "Device Inventory",
-    description: "Monitor available devices, track stock levels, and manage the platform's device inventory.",
+    description: "View available physical devices and assign stock to tenants.",
+  },
+  catalog: {
+    title: "Supported Models",
+    description: "Manage the device models the platform supports.",
   },
 };
 
@@ -37,8 +42,8 @@ export default function PlatformDevices() {
   const [
     activeTab,
     setActiveTab,
-  ] = useState("management");
-  const heading = TAB_HEADINGS[activeTab] ?? TAB_HEADINGS.management;
+  ] = useState("inventory");
+  const heading = TAB_HEADINGS[activeTab] ?? TAB_HEADINGS.inventory;
 
   return (
     <div className="space-y-6">
@@ -48,6 +53,13 @@ export default function PlatformDevices() {
       >
         <div className="flex justify-center">
           <TabsList className="h-auto max-w-full flex-wrap gap-1">
+            <TabsTrigger
+              value="inventory"
+              className="flex items-center gap-2"
+            >
+              <Package className="h-4 w-4" />
+              Device Inventory
+            </TabsTrigger>
             <TabsTrigger
               value="management"
               className="flex items-center gap-2"
@@ -67,7 +79,7 @@ export default function PlatformDevices() {
               className="flex items-center gap-2"
             >
               <BookOpen className="h-4 w-4" />
-              Device Inventory
+              Supported Models
             </TabsTrigger>
           </TabsList>
         </div>
@@ -76,6 +88,13 @@ export default function PlatformDevices() {
           title={heading.title}
           description={heading.description}
         />
+
+        <TabsContent
+          value="inventory"
+          className="mt-4"
+        >
+          <PlatformDeviceManagement inventory />
+        </TabsContent>
 
         <TabsContent
           value="management"
