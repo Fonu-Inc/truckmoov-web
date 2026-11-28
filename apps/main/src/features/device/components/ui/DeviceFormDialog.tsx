@@ -1,7 +1,8 @@
+import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
 import type { IoTDevice } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/shadcn/button";
@@ -99,6 +100,7 @@ export function DeviceFormDialog({
   title,
   isSubmitting = false,
 }: DeviceFormDialogProps) {
+  const [chosenId,setChosenId]=useState<string>();
   const form = useForm<DeviceFormData>({
     resolver: zodResolver(deviceSchema),
     defaultValues: {
@@ -113,6 +115,7 @@ export function DeviceFormDialog({
 
   useEffect(
     () => {
+      setChosenId(undefined);
       if (device) {
         const isKnown = manufacturers.includes(device.manufacturer);
         form.reset({
@@ -225,6 +228,12 @@ export function DeviceFormDialog({
               )}
             />
 
+            {!isEditing && <DeviceStockModelSelects value={chosenId} disabled={isSubmitting} onChange={model=>{
+              setChosenId(model?.id);
+              form.setValue("manufacturer",model?.manufacturer??"",{shouldValidate:true});
+              form.setValue("model",model?.model??"",{shouldValidate:true});
+            }}/>}
+            {isEditing && <>
             <FormField
               control={form.control}
               name="manufacturer"
@@ -296,6 +305,8 @@ export function DeviceFormDialog({
                 </FormItem>
               )}
             />
+
+            </>}
 
             {!isEditing && (
               <FormField

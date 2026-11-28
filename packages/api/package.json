@@ -13,6 +13,7 @@
     "./lib/realtime-socket": "./src/lib/realtime-socket.ts",
     "./lib/types": "./src/lib/types.ts",
     "./auth": "./src/auth/index.ts",
+    "./auth/device-stock": "./src/auth/device-stock.ts",
     "./fleet": "./src/fleet/index.ts",
     "./dispatch": "./src/dispatch/index.ts",
     "./tracking": "./src/tracking/index.ts",

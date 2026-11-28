@@ -61,7 +61,7 @@ export const onboardingInstance = axios.create({
 onboardingInstance.interceptors.request.use((config) => {
   requireBackendUrl()
   const token = getOnboardingToken()
-  if (token) {
+  if (token && !config.headers.has('X-Application-Token')) {
     config.headers['X-Application-Token'] = token
   }
   return config

@@ -1,3 +1,4 @@
+import { supportedStockModels } from "@truckmoov/api/auth/device-stock";
 import type {
   OnboardingApplication,
   OnboardingApplicationVehicle,
@@ -224,7 +225,18 @@ export function FleetRequirementsStep({
    * Adds a device request, or with `requestId` changes that one in place; when stock is
    * short, asks before placing it anyway.
    */
+  const { data: supportedModels = [] } = useQuery({
+    queryKey: ["supported-device-stock-models"],
+    queryFn: supportedStockModels,
+    enabled: deviceRequests.some(request => !!request.deviceModelId),
+  });
+  const modelLabel = (id?: string | null) => {
+    const model = supportedModels.find(model => model.id === id);
+    return model ? `${model.manufacturer} ${model.model}` : "Device request";
+  };
+
   async function placeDeviceRequest(data: {
+    deviceModelId: string;
     quantity: number;
     useCase: string;
     notes?: string;
@@ -246,7 +258,7 @@ export function FleetRequirementsStep({
     const shortfall = res.data as OnboardingDeviceRequestShortfall;
     const accepted = await confirm({
       title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} in stock`,
-      description: "Your request can still be placed. Devices are provisioned as stock arrives, which may delay your installation.",
+      description: "Your request can still be placed. Only available units will be charged. You can join the waitlist for the rest.",
       confirmLabel: `Request ${data.quantity} anyway`,
     });
     if (!accepted) {
@@ -409,7 +421,7 @@ export function FleetRequirementsStep({
         {deviceRequests.map(request => (
           <Row
             key={request.id}
-            primary={`Device request · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`}
+            primary={`${modelLabel(request.deviceModelId)} · ${request.quantity} device${request.quantity === 1 ? "" : "s"}`}
             secondary={`${request.useCase} · MTN SIM connectivity`}
             badge="Requested"
             removing={removingId === request.id}
@@ -503,6 +515,7 @@ export function FleetRequirementsStep({
         initial={deviceModal?.request
           ? {
               quantity: deviceModal.request.quantity,
+              deviceModelId: deviceModal.request.deviceModelId ?? "",
               useCase: deviceModal.request.useCase,
               notes: deviceModal.request.notes ?? "",
             }
@@ -514,6 +527,7 @@ export function FleetRequirementsStep({
           const data = {
             quantity: values.quantity,
             useCase: values.useCase.trim(),
+            deviceModelId: values.deviceModelId,
             notes: values.notes?.trim() || undefined,
           };
           const editing = deviceModal?.request;

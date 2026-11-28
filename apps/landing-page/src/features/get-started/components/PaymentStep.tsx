@@ -1,5 +1,6 @@
 "use client";
 
+import { OnboardingStockBreakdown } from "@/features/get-started/components/OnboardingStockBreakdown";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import { ShieldCheck } from "@phosphor-icons/react/dist/ssr";
 import { useQuery } from "@tanstack/react-query";
@@ -210,7 +211,7 @@ export function PaymentStep({
     try {
       const res = await startPayment.mutateAsync({
         id: applicationId,
-        data: { redirectUrl: `${window.location.origin}${window.location.pathname}?${PAYMENT_RETURN_PARAM}=return` },
+        data: { expectedDeviceCount: order?.deviceCount, redirectUrl: `${window.location.origin}${window.location.pathname}?${PAYMENT_RETURN_PARAM}=return` },
       });
       if (res.data.authorizationUrl) {
         window.location.assign(res.data.authorizationUrl);
@@ -258,12 +259,16 @@ export function PaymentStep({
     );
   }
 
+  if (order.deviceCount === 0 && !paid) {
+    return <OnboardingStockBreakdown applicationId={applicationId} paid={false} zero />;
+  }
   const waitingForWebhook = confirming && pending;
   const pollTimedOut = waitingForWebhook && windowEnded;
   const plural = order.deviceCount === 1 ? "" : "s";
 
   return (
     <StepLayout>
+      <OnboardingStockBreakdown applicationId={applicationId} paid={paid} zero={false} />
       <StepHeading
         title="Payment"
         description="Your application passed system verification. Pay your quotation, then schedule installation. Your subscription becomes active only after installation and final system verification."

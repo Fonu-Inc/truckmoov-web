@@ -216,7 +216,7 @@ export function DeviceCatalogManager() {
         {stats.map(stat => (
           <div
             key={stat.label}
-            className="rounded-lg border bg-card p-3"
+            className="rounded-xl border bg-card p-3"
           >
             <p className={`text-2xl font-bold ${stat.className}`}>{stat.value ?? "N/A"}</p>
             <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -231,7 +231,7 @@ export function DeviceCatalogManager() {
         </Button>
       </PageActions>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -240,7 +240,7 @@ export function DeviceCatalogManager() {
                 Device Inventory
               </CardTitle>
               <CardDescription>
-                Manage supported device manufacturers and models
+                Manage device manufacturers, models, protocols, ports, features, and support status
               </CardDescription>
             </div>
             <Button

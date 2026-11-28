@@ -394,6 +394,7 @@ export default function DeviceManagement() {
     preferredDate?: string;
     preferredTime?: string;
     manufacturer?: string;
+    model?: string;
     trackerType?: DeviceTrackerType;
   }) => {
     try {

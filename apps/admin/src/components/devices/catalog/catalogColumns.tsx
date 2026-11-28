@@ -61,7 +61,7 @@ export function getCatalogColumns({
       cell: ({ row }) => (
         <Badge
           variant="outline"
-          className={`${badgeBase} ${PROTOCOL_BADGE_CLASS[row.original.protocolType] ?? "border-muted bg-muted text-muted-foreground"}`}
+          className={`${badgeBase} uppercase ${PROTOCOL_BADGE_CLASS[row.original.protocolType] ?? "border-muted bg-muted text-muted-foreground"}`}
         >
           {row.original.protocolType}
         </Badge>

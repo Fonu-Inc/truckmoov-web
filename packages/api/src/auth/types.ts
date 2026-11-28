@@ -4259,6 +4259,7 @@ export type OnboardingApplicationVehicle = {
 }
 
 export type OnboardingApplicationDeviceRequest = {
+  deviceModelId?: string | null
   id: string
   quantity: number
   useCase: string
@@ -4535,7 +4536,7 @@ export type OnboardingOrderResponse = ServerResponse<{
 export type SetOnboardingBillingEmailPayload = { id: string, data: { billingEmail: string } }
 export type SetOnboardingBillingEmailResponse = ServerResponse<{ billingEmail: string, billingEmailVerified: boolean }>
 
-export type StartOnboardingPaymentPayload = { id: string, data: { redirectUrl?: string } }
+export type StartOnboardingPaymentPayload = { id: string, data: { redirectUrl?: string; expectedDeviceCount?: number } }
 export type StartOnboardingPaymentResponse = ServerResponse<{
   reference: string
   authorizationUrl: string | null
@@ -4596,6 +4597,7 @@ export type AddOnboardingDeviceRequestPayload = {
     useCase: string
     notes?: string
     /** Only after a shortfall: resend the same request with this set to place it anyway. */
+    deviceModelId?: string
     confirmAvailableQuantity?: boolean
   }
 }

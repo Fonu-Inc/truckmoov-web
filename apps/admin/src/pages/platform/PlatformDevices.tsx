@@ -2,10 +2,13 @@ import {
   BookOpen,
   ClipboardCheck,
   Cpu,
+  Hourglass,
 } from "lucide-react";
 import { useState } from "react";
 import { DeviceCatalogManager } from "@/components/devices/DeviceCatalogManager";
+import { DeviceInventoryModels } from "@/components/devices/DeviceInventoryModels";
 import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
+import { DeviceStockWaitlist } from "@/components/devices/DeviceStockWaitlist";
 import { PlatformDeviceManagement } from "@/components/devices/PlatformDeviceManagement";
 import {
   Tabs,
@@ -27,6 +30,7 @@ const TAB_HEADINGS: Record<string, {
     title: "Device Requests",
     description: "Review and manage device requests submitted by customers, including their request status and approval progress.",
   },
+  waitlist: { title: "Stock Waitlist", description: "Review stock requests, payment offers and paid units ready to assign." },
   catalog: {
     title: "Device Inventory",
     description: "Monitor available devices, track stock levels, and manage the platform's device inventory.",
@@ -69,6 +73,10 @@ export default function PlatformDevices() {
               <BookOpen className="h-4 w-4" />
               Device Inventory
             </TabsTrigger>
+            <TabsTrigger value="waitlist" className="flex items-center gap-2">
+              <Hourglass className="h-4 w-4" />
+              Stock Waitlist
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -95,8 +103,22 @@ export default function PlatformDevices() {
           value="catalog"
           className="mt-4"
         >
-          <DeviceCatalogManager />
+          <Tabs defaultValue="inventory">
+            <div className="mb-4 flex justify-center">
+              <TabsList aria-label="Device Inventory views">
+                <TabsTrigger value="inventory">Inventory</TabsTrigger>
+                <TabsTrigger value="models">Models</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="inventory">
+              <DeviceCatalogManager />
+            </TabsContent>
+            <TabsContent value="models">
+              <DeviceInventoryModels />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
+        <TabsContent value="waitlist" className="mt-4"><DeviceStockWaitlist /></TabsContent>
       </Tabs>
     </div>
   );

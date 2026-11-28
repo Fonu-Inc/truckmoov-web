@@ -215,11 +215,7 @@ export default function ActivationOnboarding() {
     {
       manufacturer: string; model?: string; quantity: number;
     }[]
-  >([
-    {
-      manufacturer: "Teltonika", model: "FMC130", quantity: 10,
-    },
-  ]);
+  >([]);
 
   // --- SIMs state ----------------------------------------------------------
   const [

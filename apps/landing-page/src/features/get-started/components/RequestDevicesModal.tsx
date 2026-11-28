@@ -1,5 +1,6 @@
 "use client";
 
+import { DeviceStockModelSelects } from "@/features/get-started/components/DeviceStockModelSelects";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { Resolver } from "react-hook-form";
 import type { DeviceRequestValues } from "@/features/get-started/schemas/applySchemas";
@@ -30,6 +31,7 @@ import {
 import { cn } from "@/shared/utils";
 
 const EMPTY_DEVICE_REQUEST: DeviceRequestValues = {
+  deviceModelId: "",
   quantity: 1,
   useCase: "",
   notes: "",
@@ -143,6 +145,12 @@ export function RequestDevicesModal({
           className="space-y-[19px]"
           onSubmit={form.handleSubmit(handleSubmit)}
         >
+          <FormField control={form.control} name="deviceModelId" render={({field})=>(
+              <FormItem>
+                <DeviceStockModelSelects key={open ? "open" : "closed"} value={field.value} disabled={saving} onChange={model=>field.onChange(model?.id??"")}/>
+                <FormMessage/>
+              </FormItem>
+            )}/>
           <FormField
             control={form.control}
             name="quantity"

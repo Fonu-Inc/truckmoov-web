@@ -1,4 +1,6 @@
 import type { DeviceTrackerType } from "@truckmoov/api/fleet";
+import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
+import type { StockModel } from "@truckmoov/api/auth/device-stock";
 import { useQuery } from "@tanstack/react-query";
 import { getPickupLocationsQueryOptions } from "@truckmoov/api/auth";
 import {
@@ -31,6 +33,7 @@ export type RequestDevicePayload = {
   preferredTime?: string;
   /** Retained so the dispatcher's full request dialog can reuse this payload. */
   manufacturer?: string;
+  model?: string;
   trackerType?: DeviceTrackerType;
 };
 
@@ -52,13 +55,12 @@ const EMPTY = {
 
 /**
  * "Request Device" in two steps: what is needed, then the pickup point it is
- * collected from (pickup only, for every customer type). Hardware
- * (manufacturer / tracker type) is chosen by the platform, so the request
- * carries only the tenant's intent.
+ * collected from (pickup only, for every customer type). The tenant chooses the exact device model.
  */
 export function RequestDeviceDialog({
   open, onOpenChange, onSubmit,
 }: RequestDeviceDialogProps) {
+  const [stockModel,setStockModel]=useState<StockModel|null>(null);
   const [
     step,
     setStep,
@@ -77,6 +79,7 @@ export function RequestDeviceDialog({
       if (open) {
         setStep("details");
         setForm(EMPTY);
+        setStockModel(null);
       }
     },
     [open],
@@ -86,7 +89,7 @@ export function RequestDeviceDialog({
     ...f, [key]: value,
   }));
   const quantity = Number(form.quantity);
-  const detailsValid = Number.isInteger(quantity) && quantity > 0 && form.useCase.trim().length > 0;
+  const detailsValid = Number.isInteger(quantity) && quantity > 0 && form.useCase.trim().length > 0 && !!stockModel;
 
   const locationsQuery = useQuery({
     ...getPickupLocationsQueryOptions(),
@@ -98,11 +101,13 @@ export function RequestDeviceDialog({
   const pickup = locations.find(location => location.id === form.pickupLocationId);
 
   const submit = async () => {
-    if (!detailsValid || !pickup)
+    if (!detailsValid || !pickup || !stockModel)
       return;
     setIsSubmitting(true);
     const result = await onSubmit({
       quantity,
+      manufacturer:stockModel.manufacturer,
+      model:stockModel.model,
       useCase: form.useCase.trim(),
       notes: form.notes.trim() || undefined,
       pickupLocationId: pickup.id,
@@ -132,6 +137,7 @@ export function RequestDeviceDialog({
         {step === "details"
           ? (
               <div className="space-y-4">
+                <DeviceStockModelSelects value={stockModel?.id} onChange={setStockModel}/>
                 <div className="space-y-2">
                   <Label
                     htmlFor="req-qty"
@@ -183,6 +189,7 @@ export function RequestDeviceDialog({
             )
           : (
               <div className="space-y-4">
+                <DeviceStockModelSelects value={stockModel?.id} onChange={setStockModel}/>
                 <div className="space-y-2">
                   <Label>State</Label>
                   <Select

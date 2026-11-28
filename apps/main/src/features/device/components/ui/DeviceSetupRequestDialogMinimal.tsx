@@ -1,3 +1,5 @@
+import { supportedStockModels } from "@truckmoov/api/auth/device-stock";
+import { useQuery } from "@tanstack/react-query";
 import type { SimBundleValue } from "./SimBundlePicker";
 import {
   AlertTriangle, Cpu, Loader2,
@@ -62,10 +64,7 @@ type Props = {
 export function DeviceSetupRequestDialogMinimal({
   open, onOpenChange, onSubmit, quotaRemaining, quotaLabel,
 }: Props) {
-  const getManufacturers = (): string[] => [];
-  const getModelsForManufacturer = (_manufacturer: string): {
-    id: string; model: string;
-  }[] => [];
+  const {data: catalog=[]}=useQuery({queryKey:["supported-device-stock-models"],queryFn:supportedStockModels,enabled:open});
 
   const [
     quantity,
@@ -96,8 +95,8 @@ export function DeviceSetupRequestDialogMinimal({
     setNeedsSim,
   ] = useState(false);
 
-  const manufacturers = getManufacturers();
-  const models = manufacturer ? getModelsForManufacturer(manufacturer) : [];
+  const manufacturers = [...new Set(catalog.map(m=>m.manufacturer))].sort();
+  const models = catalog.filter(m=>m.manufacturer===manufacturer);
 
   const reset = () => {
     setQuantity(1);

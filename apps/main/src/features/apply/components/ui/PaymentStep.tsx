@@ -1,3 +1,4 @@
+import { OnboardingStockBreakdown } from "@truckmoov/reusables/components/onboarding-stock-breakdown";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 
 import { useQuery } from "@tanstack/react-query";
@@ -201,7 +202,7 @@ export function PaymentStep({
     try {
       const res = await startPayment.mutateAsync({
         id: applicationId,
-        data: { redirectUrl: `${window.location.origin}/apply?${PAYMENT_RETURN_PARAM}=return` },
+        data: { expectedDeviceCount: order?.deviceCount, redirectUrl: `${window.location.origin}/apply?${PAYMENT_RETURN_PARAM}=return` },
       });
       if (res.data.authorizationUrl) {
         window.location.assign(res.data.authorizationUrl);
@@ -256,11 +257,15 @@ export function PaymentStep({
     );
   }
 
+  if (order.deviceCount === 0 && !paid) {
+    return <OnboardingStockBreakdown applicationId={applicationId} paid={false} zero />;
+  }
   const waitingForWebhook = confirming && pending;
   const pollTimedOut = waitingForWebhook && windowEnded;
 
   return (
     <div className="space-y-6">
+      <OnboardingStockBreakdown applicationId={applicationId} paid={paid} zero={false} />
       <div>
         <h2 className="text-lg font-semibold text-foreground">Payment</h2>
         <p className="mt-1 text-sm text-muted-foreground">

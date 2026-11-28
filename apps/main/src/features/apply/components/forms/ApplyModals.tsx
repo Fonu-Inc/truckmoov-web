@@ -1,3 +1,4 @@
+import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type {
   DeviceRequestValues,
@@ -451,6 +452,7 @@ export function VehicleModal({
 }
 
 const EMPTY_DEVICE_REQUEST: DeviceRequestValues = {
+  deviceModelId: "",
   quantity: 1,
   useCase: "",
   notes: "",
@@ -545,6 +547,12 @@ export function RequestDevicesModal({
             className="space-y-4"
             onSubmit={form.handleSubmit(handleSubmit)}
           >
+            <FormField control={form.control} name="deviceModelId" render={({field})=>(
+              <FormItem>
+                <DeviceStockModelSelects key={open ? "open" : "closed"} value={field.value} disabled={saving} onChange={model=>field.onChange(model?.id??"")}/>
+                <FormMessage/>
+              </FormItem>
+            )}/>
             <FormField
               control={form.control}
               name="quantity"
