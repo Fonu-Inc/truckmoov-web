@@ -36,7 +36,9 @@ type DeviceDetailSheetProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-function SimCardContent({ sim, loading, error }: {
+function SimCardContent({
+  sim, loading, error,
+}: {
   sim: SystemSimItem | undefined;
   loading: boolean;
   error: boolean;
@@ -216,7 +218,11 @@ export function DeviceDetailSheet({
                 <CardTitle className="text-sm font-medium">SIM Card</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <SimCardContent sim={sim} loading={simLoading} error={simError} />
+                <SimCardContent
+                  sim={sim}
+                  loading={simLoading}
+                  error={simError}
+                />
               </CardContent>
             </Card>
 
