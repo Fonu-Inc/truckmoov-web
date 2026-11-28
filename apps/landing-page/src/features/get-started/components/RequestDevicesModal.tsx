@@ -56,8 +56,8 @@ export function RequestDevicesModal({
   initial?: DeviceRequestValues | null;
   maxQuantity: number;
   onOpenChange: (open: boolean) => void;
-  /** Rejects with the server error on failure. */
-  onSubmit: (values: DeviceRequestValues) => Promise<unknown>;
+  /** Returns false when the customer cancels the stock confirmation. */
+  onSubmit: (values: DeviceRequestValues) => Promise<boolean>;
 }) {
   const form = useForm<DeviceRequestValues>({
     // `quantity` is coerced, so the schema input is `unknown`; the form holds the parsed values.
@@ -91,8 +91,9 @@ export function RequestDevicesModal({
   async function handleSubmit(values: DeviceRequestValues) {
     setSaving(true);
     try {
-      await onSubmit(values);
-      onOpenChange(false);
+      form.clearErrors();
+      if (await onSubmit(values))
+        onOpenChange(false);
     }
     catch (error) {
       const err = error as ServerErrorResponse;

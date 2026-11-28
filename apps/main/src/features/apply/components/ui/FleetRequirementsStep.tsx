@@ -253,30 +253,29 @@ export function FleetRequirementsStep({
         });
     const res = await send(data);
     if (res.data.requestSaved)
-      return;
+      return true;
     // Stock can't cover it and nothing was saved. Placing it anyway waits for stock.
     const shortfall = res.data as OnboardingDeviceRequestShortfall;
     const accepted = await confirm({
-      title: `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} in stock`,
+      title: shortfall.availableQuantity === 0
+        ? "No devices of this model in stock"
+        : `Only ${shortfall.availableQuantity} device${shortfall.availableQuantity === 1 ? "" : "s"} in stock`,
       description: "Your request can still be placed. Only available units will be charged. You can join the waitlist for the rest.",
       confirmLabel: `Request ${data.quantity} anyway`,
     });
-    if (!accepted) {
-      throw Object.assign(
-        new Error(shortfall.message),
-        { field: "quantity" },
-      );
-    }
+    if (!accepted)
+      return false;
     const confirmed = await send({
       ...data,
       confirmAvailableQuantity: true,
     });
     if (!confirmed.data.requestSaved) {
       throw Object.assign(
-        new Error((confirmed.data as OnboardingDeviceRequestShortfall).message),
+        new Error("The request couldn't be saved. Please try again."),
         { field: "quantity" },
       );
     }
+    return true;
   }
 
   async function removeDeviceRequest(requestId: string) {
@@ -531,11 +530,13 @@ export function FleetRequirementsStep({
             notes: values.notes?.trim() || undefined,
           };
           const editing = deviceModal?.request;
-          await placeDeviceRequest(
+          const saved = await placeDeviceRequest(
             data,
             editing?.id,
           );
-          toast.success(editing ? "Device request updated." : "Device request added.");
+          if (saved)
+            toast.success(editing ? "Device request updated." : "Device request added.");
+          return saved;
         }}
       />
       <VehicleBulkUploadModal
