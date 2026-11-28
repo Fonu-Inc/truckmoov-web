@@ -127,6 +127,8 @@ export function ScheduleInstallationStep({
   } | null>(null);
 
   const deviceCount = orderQuery.data?.data.order.deviceCount ?? 0;
+  const paidModels = orderQuery.data?.data.order.deviceLines?.flatMap(line =>
+    Array.from({ length: line.quantity }).fill(`${line.manufacturer} ${line.model}`)) ?? [];
   const deviceIndexes = Array.from(
     { length: deviceCount },
     (_, index) => index + 1,
@@ -396,7 +398,10 @@ export function ScheduleInstallationStep({
                             >
                               {assignedTo ? <Check className="h-4 w-4" /> : <Cpu className="h-4 w-4" />}
                             </span>
-                            <p className="text-sm font-medium text-foreground">{deviceLabel(deviceIndex)}</p>
+                            <p className="text-sm font-medium text-foreground">
+                              {deviceLabel(deviceIndex)}
+                              {paidModels[deviceIndex - 1] ? ` · ${paidModels[deviceIndex - 1]}` : ""}
+                            </p>
                           </div>
 
                           <Select

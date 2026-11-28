@@ -132,6 +132,8 @@ export function ScheduleInstallationStep({
   } | null>(null);
 
   const deviceCount = orderQuery.data?.data.order.deviceCount ?? 0;
+  const paidModels = orderQuery.data?.data.order.deviceLines?.flatMap(line =>
+    Array.from({ length: line.quantity }).fill(`${line.manufacturer} ${line.model}`)) ?? [];
   const deviceIndexes = Array.from(
     { length: deviceCount },
     (_, index) => index + 1,
@@ -375,10 +377,13 @@ export function ScheduleInstallationStep({
                         >
                           {assignedTo ? <Check className="size-4" /> : <Cpu className="size-4" />}
                         </span>
-                        <span className="text-sm font-medium text-heading">{deviceLabel(deviceIndex)}</span>
+                        <span className="text-sm font-medium text-heading">
+                          {deviceLabel(deviceIndex)}
+                          {paidModels[deviceIndex - 1] ? ` · ${paidModels[deviceIndex - 1]}` : ""}
+                        </span>
                       </div>
                       <select
-                        aria-label={`Vehicle for ${deviceLabel(deviceIndex)}`}
+                        aria-label={`Vehicle for ${deviceLabel(deviceIndex)}${paidModels[deviceIndex - 1] ? ` · ${paidModels[deviceIndex - 1]}` : ""}`}
                         value={assignedTo ?? ""}
                         onChange={event => assign(
                           deviceIndex,

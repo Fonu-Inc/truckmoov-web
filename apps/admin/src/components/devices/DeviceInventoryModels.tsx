@@ -10,7 +10,10 @@ import {
 
 export function DeviceInventoryModels() {
   const models = useQuery({
-    queryKey: ["platform-device-stock", "models-in-inventory"],
+    queryKey: [
+      "platform-device-stock",
+      "models-in-inventory",
+    ],
     queryFn: deviceInventoryModels,
     refetchInterval: 30_000,
   });
@@ -35,7 +38,11 @@ export function DeviceInventoryModels() {
           </TableHeader>
           <TableBody>
             {models.data?.map(model => (
-              <TableRow key={JSON.stringify([model.manufacturer, model.model])}>
+              <TableRow key={JSON.stringify([
+                model.manufacturer,
+                model.model,
+              ])}
+              >
                 <TableCell className="px-4 py-4 font-medium">{model.manufacturer}</TableCell>
                 <TableCell className="px-4 py-4">{model.model}</TableCell>
                 <TableCell className="px-4 py-4 tabular-nums">{model.total}</TableCell>
@@ -43,15 +50,42 @@ export function DeviceInventoryModels() {
               </TableRow>
             ))}
             {models.isPending && (
-              <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">Loading device models…</TableCell></TableRow>
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  Loading device models…
+                </TableCell>
+              </TableRow>
             )}
             {models.isError && !models.data && (
-              <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                Could not load device models. <Button variant="outline" size="sm" onClick={() => void models.refetch()}>Retry</Button>
-              </TableCell></TableRow>
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  Could not load device models.
+                  {" "}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void models.refetch()}
+                  >
+                    Retry
+                  </Button>
+                </TableCell>
+              </TableRow>
             )}
             {models.isSuccess && models.data.length === 0 && (
-              <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">No devices in inventory yet.</TableCell></TableRow>
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  No devices in inventory yet.
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>

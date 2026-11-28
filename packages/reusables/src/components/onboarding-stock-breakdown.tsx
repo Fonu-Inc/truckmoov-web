@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApplicationStock, joinApplicationStock } from "@truckmoov/api/auth/device-stock";
 
-export function OnboardingStockBreakdown({ applicationId, paid, zero }: { applicationId: string; paid: boolean; zero: boolean }) {
+export function OnboardingStockBreakdown({ applicationId, paid, zero, hideRows = false }: { applicationId: string; paid: boolean; zero: boolean; hideRows?: boolean }) {
   const qc=useQueryClient();
   const key=["application-device-stock",applicationId];
   const {data:rows,isError,isPending,refetch}=useQuery({queryKey:key,queryFn:()=>getApplicationStock(applicationId),retry:false});
@@ -13,8 +13,8 @@ export function OnboardingStockBreakdown({ applicationId, paid, zero }: { applic
   if(!rows?.length) return zero ? <p>No devices are available for payment yet.</p> : null;
   const joined=rows.some(r=>r.joinedAt);
   return <section className="space-y-3 rounded-lg border bg-card p-4 text-sm" aria-label="Device stock">
-    <h3 className="font-semibold">Device stock by model</h3>
-    {rows.map(r=><div key={r.id} className="space-y-1 border-b pb-3 last:border-0">
+    {!hideRows && <h3 className="font-semibold">Device stock by model</h3>}
+    {!hideRows && rows.map(r=><div key={r.id} className="space-y-1 border-b pb-3 last:border-0">
       <p className="font-medium">{r.manufacturer} {r.model}</p>
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-muted-foreground">
         <span>Requested: {r.requested}</span>

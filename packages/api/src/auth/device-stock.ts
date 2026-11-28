@@ -1,5 +1,6 @@
 import { axiosInstance } from "../lib/axios-instance";
 import { onboardingInstance } from "../lib/onboarding-instance";
+import type { OnboardingOrder } from "./types";
 
 export type StockModel = { id: string; manufacturer: string; model: string };
 export type StockBuckets = { available: number; held: number; paid: number };
@@ -21,6 +22,18 @@ export type StockWaitlistDetail = StockWaitlistRow & {
   offers: StockOffer[]; paidUnits: { id: string; imei: string; offerId: string }[]; offerUrl: string;
 };
 export type ApplicationStockRow = StockWaitlistRow & { availableNow: number; offerUrl: string | null };
+
+export type StockSelection = { requestId: string; modelId: string; quantity: number };
+export type OnboardingStockReview = {
+  fingerprint: string;
+  order: OnboardingOrder;
+  lines: (Omit<StockModel,"id"> & {
+    modelId: string; requestId: string; requested: number; originalNow: number; waiting: number;
+    alternativeKind: "models" | "manufacturers" | null;
+    options: { modelId: string; manufacturer: string; model: string; available: number }[];
+    replacements: { modelId: string; manufacturer: string; model: string; quantity: number }[];
+  })[];
+};
 
 type Res<T> = { status: boolean; message: string; data: T };
 const admin = "/auth/system/device-stock";
@@ -55,6 +68,21 @@ export async function resendStockEmail(id: string, emailId: string) {
 }
 export async function getApplicationStock(id: string) {
   return (await onboardingInstance.get<Res<ApplicationStockRow[]>>(appStock(id))).data.data;
+}
+export async function reviewOnboardingStock(id: string, selections: StockSelection[]) {
+  const result = (await onboardingInstance.post<Res<OnboardingStockReview | null>>(`${appStock(id)}/review`, { selections })).data.data;
+  if (result === null) return null;
+  const count = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+  if (!result || !/^[a-f0-9]{64}$/.test(result.fingerprint) || !count(result.order?.deviceCount)
+    || !Number.isFinite(result.order.totalNgn) || !Array.isArray(result.lines) || !result.lines.length
+    || !result.lines.every(line => count(line.requested) && count(line.originalNow) && count(line.waiting)
+      && Array.isArray(line.options) && line.options.every(option => count(option.available))
+      && Array.isArray(line.replacements) && line.replacements.every(item => count(item.quantity))
+      && line.requested === line.originalNow + line.waiting + line.replacements.reduce((n, item) => n + item.quantity, 0))
+    || result.order.deviceCount !== result.lines.reduce((n, line) => n + line.requested - line.waiting, 0)) {
+    throw new Error("Inventory response could not be checked");
+  }
+  return result;
 }
 export async function joinApplicationStock(id: string) {
   return (await onboardingInstance.post<Res<ApplicationStockRow[]>>(`${appStock(id)}/join`)).data.data;

@@ -1,6 +1,5 @@
 "use client";
 
-import { supportedStockModels } from "@truckmoov/api/auth/device-stock";
 import type {
   OnboardingApplication,
   OnboardingApplicationVehicle,
@@ -31,6 +30,7 @@ import {
   useUpdateOnboardingVehicle,
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
+import { supportedStockModels } from "@truckmoov/api/auth/device-stock";
 import {
   fulfilmentComplete,
   fulfilmentToPayload,

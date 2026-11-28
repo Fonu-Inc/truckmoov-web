@@ -1,8 +1,10 @@
-import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
 import type { IoTDevice } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/shadcn/button";
@@ -100,7 +102,10 @@ export function DeviceFormDialog({
   title,
   isSubmitting = false,
 }: DeviceFormDialogProps) {
-  const [chosenId,setChosenId]=useState<string>();
+  const [
+    chosenId,
+    setChosenId,
+  ] = useState<string>();
   const form = useForm<DeviceFormData>({
     resolver: zodResolver(deviceSchema),
     defaultValues: {
@@ -228,85 +233,101 @@ export function DeviceFormDialog({
               )}
             />
 
-            {!isEditing && <DeviceStockModelSelects value={chosenId} disabled={isSubmitting} onChange={model=>{
-              setChosenId(model?.id);
-              form.setValue("manufacturer",model?.manufacturer??"",{shouldValidate:true});
-              form.setValue("model",model?.model??"",{shouldValidate:true});
-            }}/>}
-            {isEditing && <>
-            <FormField
-              control={form.control}
-              name="manufacturer"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel required>Manufacturer</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isSubmitting}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select manufacturer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {manufacturers.map(m => (
-                        <SelectItem
-                          key={m}
-                          value={m}
-                        >
-                          {m}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value={CUSTOM_VALUE}>Custom…</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {manufacturerValue === CUSTOM_VALUE && (
-              <FormField
-                control={form.control}
-                name="customManufacturer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel required>Custom Manufacturer</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter manufacturer name"
-                        maxLength={50}
-                        disabled={isSubmitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {!isEditing && (
+              <DeviceStockModelSelects
+                value={chosenId}
+                disabled={isSubmitting}
+                onChange={(model) => {
+                  setChosenId(model?.id);
+                  form.setValue(
+                    "manufacturer",
+                    model?.manufacturer ?? "",
+                    { shouldValidate: true },
+                  );
+                  form.setValue(
+                    "model",
+                    model?.model ?? "",
+                    { shouldValidate: true },
+                  );
+                }}
               />
             )}
+            {isEditing && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="manufacturer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel required>Manufacturer</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select manufacturer" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {manufacturers.map(m => (
+                            <SelectItem
+                              key={m}
+                              value={m}
+                            >
+                              {m}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value={CUSTOM_VALUE}>Custom…</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="model"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel required>Model</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="FMC130"
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                {manufacturerValue === CUSTOM_VALUE && (
+                  <FormField
+                    control={form.control}
+                    name="customManufacturer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel required>Custom Manufacturer</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter manufacturer name"
+                            maxLength={50}
+                            disabled={isSubmitting}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
-            </>}
+                <FormField
+                  control={form.control}
+                  name="model"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel required>Model</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="FMC130"
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+              </>
+            )}
 
             {!isEditing && (
               <FormField

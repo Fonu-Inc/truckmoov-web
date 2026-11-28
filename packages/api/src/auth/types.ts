@@ -4497,12 +4497,14 @@ export type OnboardingVehicleImportColumnsResponse = ServerResponse<{ columns: O
 
 /** The order, priced by the server from the application's own device rows (TRU-FE-14). */
 export type OnboardingOrder = {
+  deviceLines?: { manufacturer: string; model: string; quantity: number }[]
   planCode: string
   planName: string
   deviceCount: number
   perDeviceNgn: number
   devicesNgn: number
   installationNgn: number
+  installationPerDeviceNgn: number
   /** 0 unless a new Telecom Master number was requested; absent on older paid orders. */
   telecomMasterSimNgn?: number
   totalNgn: number
@@ -4536,7 +4538,7 @@ export type OnboardingOrderResponse = ServerResponse<{
 export type SetOnboardingBillingEmailPayload = { id: string, data: { billingEmail: string } }
 export type SetOnboardingBillingEmailResponse = ServerResponse<{ billingEmail: string, billingEmailVerified: boolean }>
 
-export type StartOnboardingPaymentPayload = { id: string, data: { redirectUrl?: string; expectedDeviceCount?: number } }
+export type StartOnboardingPaymentPayload = { id: string, data: { redirectUrl?: string; expectedDeviceCount?: number; stockReview?: { fingerprint: string; selections: import("./device-stock").StockSelection[] } } }
 export type StartOnboardingPaymentResponse = ServerResponse<{
   reference: string
   authorizationUrl: string | null

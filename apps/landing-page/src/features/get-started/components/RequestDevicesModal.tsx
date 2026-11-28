@@ -1,6 +1,5 @@
 "use client";
 
-import { DeviceStockModelSelects } from "@/features/get-started/components/DeviceStockModelSelects";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { Resolver } from "react-hook-form";
 import type { DeviceRequestValues } from "@/features/get-started/schemas/applySchemas";
@@ -11,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useForm } from "react-hook-form";
+import { DeviceStockModelSelects } from "@/features/get-started/components/DeviceStockModelSelects";
 import { SubDialog } from "@/features/get-started/components/SubDialog";
 import { deviceRequestSchema } from "@/features/get-started/schemas/applySchemas";
 import {
@@ -145,12 +145,21 @@ export function RequestDevicesModal({
           className="space-y-[19px]"
           onSubmit={form.handleSubmit(handleSubmit)}
         >
-          <FormField control={form.control} name="deviceModelId" render={({field})=>(
+          <FormField
+            control={form.control}
+            name="deviceModelId"
+            render={({ field }) => (
               <FormItem>
-                <DeviceStockModelSelects key={open ? "open" : "closed"} value={field.value} disabled={saving} onChange={model=>field.onChange(model?.id??"")}/>
-                <FormMessage/>
+                <DeviceStockModelSelects
+                  key={open ? "open" : "closed"}
+                  value={field.value}
+                  disabled={saving}
+                  onChange={model => field.onChange(model?.id ?? "")}
+                />
+                <FormMessage />
               </FormItem>
-            )}/>
+            )}
+          />
           <FormField
             control={form.control}
             name="quantity"

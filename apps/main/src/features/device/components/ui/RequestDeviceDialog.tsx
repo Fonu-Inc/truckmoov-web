@@ -1,8 +1,8 @@
-import type { DeviceTrackerType } from "@truckmoov/api/fleet";
-import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
 import type { StockModel } from "@truckmoov/api/auth/device-stock";
+import type { DeviceTrackerType } from "@truckmoov/api/fleet";
 import { useQuery } from "@tanstack/react-query";
 import { getPickupLocationsQueryOptions } from "@truckmoov/api/auth";
+import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
 import {
   ArrowLeft, Loader2, MapPin, Send,
 } from "lucide-react";
@@ -60,7 +60,10 @@ const EMPTY = {
 export function RequestDeviceDialog({
   open, onOpenChange, onSubmit,
 }: RequestDeviceDialogProps) {
-  const [stockModel,setStockModel]=useState<StockModel|null>(null);
+  const [
+    stockModel,
+    setStockModel,
+  ] = useState<StockModel | null>(null);
   const [
     step,
     setStep,
@@ -106,8 +109,8 @@ export function RequestDeviceDialog({
     setIsSubmitting(true);
     const result = await onSubmit({
       quantity,
-      manufacturer:stockModel.manufacturer,
-      model:stockModel.model,
+      manufacturer: stockModel.manufacturer,
+      model: stockModel.model,
       useCase: form.useCase.trim(),
       notes: form.notes.trim() || undefined,
       pickupLocationId: pickup.id,
@@ -137,7 +140,10 @@ export function RequestDeviceDialog({
         {step === "details"
           ? (
               <div className="space-y-4">
-                <DeviceStockModelSelects value={stockModel?.id} onChange={setStockModel}/>
+                <DeviceStockModelSelects
+                  value={stockModel?.id}
+                  onChange={setStockModel}
+                />
                 <div className="space-y-2">
                   <Label
                     htmlFor="req-qty"
@@ -189,7 +195,10 @@ export function RequestDeviceDialog({
             )
           : (
               <div className="space-y-4">
-                <DeviceStockModelSelects value={stockModel?.id} onChange={setStockModel}/>
+                <DeviceStockModelSelects
+                  value={stockModel?.id}
+                  onChange={setStockModel}
+                />
                 <div className="space-y-2">
                   <Label>State</Label>
                   <Select

@@ -1,16 +1,16 @@
-import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type {
   DeviceRequestValues,
   VehicleValues,
 } from "@/features/apply/utils/applySchemas";
-
 import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
   deviceUseCaseOptions,
   PURCHASE_TYPE_LABELS,
   VEHICLE_TYPE_LABELS,
 } from "@truckmoov/app-core/apply/applyTypes";
+import { DeviceStockModelSelects } from "@truckmoov/reusables/components/devices-stock-model-selects";
 import {
   FileText,
   UploadCloud,
@@ -547,12 +547,21 @@ export function RequestDevicesModal({
             className="space-y-4"
             onSubmit={form.handleSubmit(handleSubmit)}
           >
-            <FormField control={form.control} name="deviceModelId" render={({field})=>(
-              <FormItem>
-                <DeviceStockModelSelects key={open ? "open" : "closed"} value={field.value} disabled={saving} onChange={model=>field.onChange(model?.id??"")}/>
-                <FormMessage/>
-              </FormItem>
-            )}/>
+            <FormField
+              control={form.control}
+              name="deviceModelId"
+              render={({ field }) => (
+                <FormItem>
+                  <DeviceStockModelSelects
+                    key={open ? "open" : "closed"}
+                    value={field.value}
+                    disabled={saving}
+                    onChange={model => field.onChange(model?.id ?? "")}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="quantity"

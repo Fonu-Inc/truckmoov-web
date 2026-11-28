@@ -525,7 +525,10 @@ export const SERVER_VEHICLE_FIELD: Record<string, keyof VehicleValues> = {
 };
 
 export const deviceRequestSchema = z.object({
-  deviceModelId: z.string().min(1, "Select a supported model"),
+  deviceModelId: z.string().min(
+    1,
+    "Select a supported model",
+  ),
   quantity: z.coerce.number().int().min(
     1,
     "Enter the number of devices you need.",

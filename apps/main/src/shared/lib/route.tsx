@@ -283,7 +283,9 @@ export const router = createBrowserRouter([
         Component: CompleteProfilePage,
       },
 
-      { path: "/stock-offer/:requestId", lazy: async () => ({ Component: (await import("@/pages/StockOfferPage")).default }) },
+      {
+        path: "/stock-offer/:requestId", lazy: async () => ({ Component: (await import("@/pages/StockOfferPage")).default }),
+      },
 
       // Public account application. Renders its own split branding panel, so it
       // sits outside AuthLayout. Also listed in PUBLIC_ROUTES.

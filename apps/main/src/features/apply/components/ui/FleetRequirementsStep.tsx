@@ -1,4 +1,3 @@
-import { supportedStockModels } from "@truckmoov/api/auth/device-stock";
 import type {
   OnboardingApplication,
   OnboardingApplicationVehicle,
@@ -7,8 +6,8 @@ import type {
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
 import type { ReactNode } from "react";
 import type { DetailState } from "@/features/apply/components/ui/DetailDialog";
-
 import { useQuery } from "@tanstack/react-query";
+
 import {
   getPickupLocationsQueryOptions,
   useAddOnboardingDeviceRequest,
@@ -20,6 +19,7 @@ import {
   useUpdateOnboardingVehicle,
   useUploadOnboardingApplicationDocument,
 } from "@truckmoov/api/auth";
+import { supportedStockModels } from "@truckmoov/api/auth/device-stock";
 import {
   fulfilmentComplete,
   fulfilmentToPayload,

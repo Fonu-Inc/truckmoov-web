@@ -1,12 +1,14 @@
-import { OnboardingStockBreakdown } from "@truckmoov/reusables/components/onboarding-stock-breakdown";
 import type { ServerErrorResponse } from "@truckmoov/api/lib/types";
-
 import { useQuery } from "@tanstack/react-query";
 import {
   getOnboardingOrderQueryOptions,
   useStartOnboardingPayment,
   useVerifyOnboardingPayment,
 } from "@truckmoov/api/auth";
+import { OnboardingStockBreakdown } from "@truckmoov/reusables/components/onboarding-stock-breakdown";
+
+import { OnboardingStockReviewPanel } from "@truckmoov/reusables/components/onboarding-stock-review";
+import { useOnboardingStockReview } from "@truckmoov/reusables/hooks/use-onboarding-stock-review";
 import {
   AlertCircle,
   Loader2,
@@ -114,11 +116,31 @@ export function PaymentStep({
   const verifyPayment = useVerifyOnboardingPayment();
   const verify = verifyPayment.mutate;
   const orderData = orderQuery.data?.data;
-  const order = orderData?.order;
+
   const payment = orderData?.payment ?? null;
   // Paid, or the stage has already moved past payment (the webhook landed).
   const paid = payment?.status === "paid" || STAGES_AFTER_PAYMENT.includes(orderData?.stage ?? "");
   const pending = payment?.status === "pending";
+  const showStockReview = orderData?.stage === "payment" && !pending && !paid;
+  const stockReview = useOnboardingStockReview(
+    applicationId,
+    showStockReview,
+  );
+  const review = showStockReview ? stockReview.data : null;
+  const [
+    editingAlternatives,
+    setEditingAlternatives,
+  ] = useState(false);
+  const order = review?.order ?? orderData?.order;
+  const payable = review ? review.order.deviceCount > 0 : orderData?.payable === true;
+  const stockReviewPanel = review ? (
+    <OnboardingStockReviewPanel
+      review={review}
+      selections={stockReview.selections}
+      onSelectionsChange={stockReview.setSelections}
+      onEditingChange={setEditingAlternatives}
+    />
+  ) : null;
 
   // Ask the provider directly in case its webhook is late, then every so often until the window ends.
   useEffect(
@@ -202,7 +224,15 @@ export function PaymentStep({
     try {
       const res = await startPayment.mutateAsync({
         id: applicationId,
-        data: { expectedDeviceCount: order?.deviceCount, redirectUrl: `${window.location.origin}/apply?${PAYMENT_RETURN_PARAM}=return` },
+        data: {
+          expectedDeviceCount: order?.deviceCount,
+          ...(review ? {
+            stockReview: {
+              fingerprint: review.fingerprint, selections: stockReview.selections,
+            },
+          } : {}),
+          redirectUrl: `${window.location.origin}/apply?${PAYMENT_RETURN_PARAM}=return`,
+        },
       });
       if (res.data.authorizationUrl) {
         window.location.assign(res.data.authorizationUrl);
@@ -225,8 +255,15 @@ export function PaymentStep({
     }
     catch (error) {
       setPayError(paymentError(error));
-      if ((error as ServerErrorResponse).statusCode === 409)
+      savePaymentStart(
+        applicationId,
+        null,
+      );
+      if ((error as ServerErrorResponse).statusCode === 409) {
         void orderQuery.refetch();
+        if (showStockReview)
+          void stockReview.refetch();
+      }
     }
   }
 
@@ -257,15 +294,68 @@ export function PaymentStep({
     );
   }
 
+  if (showStockReview && stockReview.isError) {
+    return (
+      <section
+        className="space-y-2 rounded-xl border p-4"
+        role="alert"
+      >
+        <p>We couldn’t check device stock. No payment has started.</p>
+        <button
+          type="button"
+          className="text-primary underline"
+          onClick={() => void stockReview.refetch()}
+        >
+          Retry stock check
+        </button>
+      </section>
+    );
+  }
+  if (showStockReview && stockReview.isPending) {
+    return (
+      <p
+        className="p-4 text-sm text-muted-foreground"
+        role="status"
+      >
+        Checking device stock…
+      </p>
+    );
+  }
   if (order.deviceCount === 0 && !paid) {
-    return <OnboardingStockBreakdown applicationId={applicationId} paid={false} zero />;
+    return (
+      <div className="space-y-4">
+        {stockReviewPanel}
+        {!editingAlternatives && (
+          <OnboardingStockBreakdown
+            applicationId={applicationId}
+            paid={false}
+            zero
+            hideRows={!!review}
+          />
+        )}
+        {payError && (
+          <p
+            role="alert"
+            className="text-destructive"
+          >
+            {payError}
+          </p>
+        )}
+      </div>
+    );
   }
   const waitingForWebhook = confirming && pending;
   const pollTimedOut = waitingForWebhook && windowEnded;
 
   return (
     <div className="space-y-6">
-      <OnboardingStockBreakdown applicationId={applicationId} paid={paid} zero={false} />
+      {stockReviewPanel ?? (
+        <OnboardingStockBreakdown
+          applicationId={applicationId}
+          paid={paid}
+          zero={false}
+        />
+      )}
       <div>
         <h2 className="text-lg font-semibold text-foreground">Payment</h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -377,7 +467,7 @@ export function PaymentStep({
                 size="lg"
                 className="mt-5 w-full sm:w-auto"
                 loading={startPayment.isPending}
-                disabled={!orderData.payable || waitingForWebhook}
+                disabled={!payable || waitingForWebhook || editingAlternatives || (showStockReview && stockReview.isFetching)}
                 onClick={() => void pay()}
               >
                 Make Payment
@@ -415,7 +505,7 @@ export function PaymentStep({
           {`${payment.problem ?? "We received a payment that does not match the amount due."} Reference: ${payment.reference}.`}
         </p>
       )}
-      {!orderData.payable && !paid && (
+      {!payable && !paid && (
         <p className="rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
           Payment opens once our team has allocated your devices and SIMs. We'll email you when you can pay.
         </p>

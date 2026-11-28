@@ -30,7 +30,9 @@ const TAB_HEADINGS: Record<string, {
     title: "Device Requests",
     description: "Review and manage device requests submitted by customers, including their request status and approval progress.",
   },
-  waitlist: { title: "Stock Waitlist", description: "Review stock requests, payment offers and paid units ready to assign." },
+  waitlist: {
+    title: "Stock Waitlist", description: "Review stock requests, payment offers and paid units ready to assign.",
+  },
   catalog: {
     title: "Device Inventory",
     description: "Monitor available devices, track stock levels, and manage the platform's device inventory.",
@@ -73,7 +75,10 @@ export default function PlatformDevices() {
               <BookOpen className="h-4 w-4" />
               Device Inventory
             </TabsTrigger>
-            <TabsTrigger value="waitlist" className="flex items-center gap-2">
+            <TabsTrigger
+              value="waitlist"
+              className="flex items-center gap-2"
+            >
               <Hourglass className="h-4 w-4" />
               Stock Waitlist
             </TabsTrigger>
@@ -118,7 +123,12 @@ export default function PlatformDevices() {
             </TabsContent>
           </Tabs>
         </TabsContent>
-        <TabsContent value="waitlist" className="mt-4"><DeviceStockWaitlist /></TabsContent>
+        <TabsContent
+          value="waitlist"
+          className="mt-4"
+        >
+          <DeviceStockWaitlist />
+        </TabsContent>
       </Tabs>
     </div>
   );
