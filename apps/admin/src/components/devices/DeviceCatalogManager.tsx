@@ -237,7 +237,7 @@ export function DeviceCatalogManager() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                Supported Models
+                Device Inventory
               </CardTitle>
               <CardDescription>
                 Manage supported device manufacturers and models

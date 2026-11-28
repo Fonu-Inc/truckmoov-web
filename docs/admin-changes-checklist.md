@@ -174,7 +174,3 @@ The fleetflow screens are unchanged; this wires the fields the reference showed 
 - [x] Tenant Adoption Export Data — `GET /auth/system/bundle-adoption/export` with the same search and bundle type: one row per live bundle (Tenant · Mobile Number · ICCID · Vehicle · Bundle · Type · Price · Expires), the columns of the fork's CSV. It is no longer built in the browser
 - [x] Tenant Adoption Vehicle — the registration plate, named by fleet (`GET /fleet/internal/tenants/:id/vehicle-labels`, asked once per tenant). Blank when the SIM has no vehicle or fleet cannot be reached
 - [~] Subscription vs Top-up is derived by decision, not stored: the first live bundle on a mobile number is its Subscription and each one added on top is a Top-up (`kind` on the adoption line)
-
-### Device inventory
-
-- Device Inventory opens on allocatable physical stock, with total and per-model counts, single-device add, CSV import, and tenant assignment. Supported Models stays separate. Assigned Devices lists tenant-held units. The stock picker and inventory use the same availability scope.

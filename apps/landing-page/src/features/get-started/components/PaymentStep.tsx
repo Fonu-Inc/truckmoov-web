@@ -210,10 +210,7 @@ export function PaymentStep({
     try {
       const res = await startPayment.mutateAsync({
         id: applicationId,
-        data: {
-          redirectUrl: `${window.location.origin}${window.location.pathname}?${PAYMENT_RETURN_PARAM}=return`,
-          expectedDeviceCount: order?.deviceCount,
-        },
+        data: { redirectUrl: `${window.location.origin}${window.location.pathname}?${PAYMENT_RETURN_PARAM}=return` },
       });
       if (res.data.authorizationUrl) {
         window.location.assign(res.data.authorizationUrl);
@@ -261,7 +258,6 @@ export function PaymentStep({
     );
   }
 
-  const notBilled = (order.requestedDeviceCount ?? order.deviceCount) - order.deviceCount;
   const waitingForWebhook = confirming && pending;
   const pollTimedOut = waitingForWebhook && windowEnded;
   const plural = order.deviceCount === 1 ? "" : "s";
@@ -297,16 +293,6 @@ export function PaymentStep({
               MTN connectivity where applicable.
             </p>
           </div>
-          {notBilled > 0 && (
-            <p
-              role="status"
-              className="mt-4 rounded-lg border p-3 text-sm"
-            >
-              {notBilled === 1
-                ? "1 requested device is not available and is not included in this charge."
-                : `${notBilled} requested devices are not available and are not included in this charge.`}
-            </p>
-          )}
           <dl className="mt-4 space-y-2 text-sm">
             <Line
               label={`M2M package (${order.deviceCount} devices)`}

@@ -83,7 +83,6 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import { useDebouncedValue } from "@/features/communications/useDebouncedValue";
 import { PageActions } from "@/shared/components/layout/PageTitle";
 import { useConfirmAction } from "@/shared/hooks/useConfirmAction";
-import { AddPlatformStockDialog } from "./management/AddPlatformStockDialog";
 import { DeviceDetailSheet } from "./management/DeviceDetailSheet";
 import {
   formatLastSeen,
@@ -98,6 +97,18 @@ import { EditDeviceDialog } from "./management/EditDeviceDialog";
 import { ImportPlatformStockDialog } from "./management/ImportPlatformStockDialog";
 import { RecordDeviceAssignmentDialog } from "./management/RecordDeviceAssignmentDialog";
 import { SendTestTelemetryDialog } from "./management/SendTestTelemetryDialog";
+
+const SCOPE_OPTIONS = [
+  {
+    value: "assigned", label: "Assigned to tenants",
+  },
+  {
+    value: "stock", label: "In stock",
+  },
+  {
+    value: "all", label: "All devices",
+  },
+] as const;
 
 const ONLINE_STATUSES = [
   "active",
@@ -118,7 +129,7 @@ function getSignalIcon(strength: number | null, status: string) {
   return <SignalZero className="h-4 w-4 text-destructive" />;
 }
 
-export function PlatformDeviceManagement({ inventory = false }: { inventory?: boolean }) {
+export function PlatformDeviceManagement() {
   const queryClient = useQueryClient();
   const tenantsQuery = useQuery(getSystemTenantsQueryOptions());
   const manufacturersQuery = useQuery(getSystemDeviceManufacturersQueryOptions("all"));
@@ -138,10 +149,9 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
     setStatusFilter,
   ] = useState("all");
   const [
-    stockScope,
-    setStockScope,
-  ] = useState<"available" | "stock">("available");
-  const scope = inventory ? stockScope : "assigned";
+    scope,
+    setScope,
+  ] = useState<"assigned" | "stock" | "all">("assigned");
   const [
     filterDraft,
     setFilterDraft,
@@ -167,10 +177,6 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
     setAssignmentOpen,
   ] = useState(false);
   const [
-    addOpen,
-    setAddOpen,
-  ] = useState(false);
-  const [
     importOpen,
     setImportOpen,
   ] = useState(false);
@@ -187,7 +193,7 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
     searchQuery.trim(),
     300,
   );
-  const tenantId = !inventory && filterDraft.tenant?.enabled ? filterDraft.tenant.value : undefined;
+  const tenantId = filterDraft.tenant?.enabled ? filterDraft.tenant.value : undefined;
   const manufacturer = filterDraft.manufacturer?.enabled ? filterDraft.manufacturer.value : undefined;
   const lastSeen = filterDraft.lastSeen?.enabled && filterDraft.lastSeen.value ? LAST_SEEN_DAYS[filterDraft.lastSeen.value] : undefined;
   const filters: NonNullable<SystemDevicesQuery["params"]> = {
@@ -197,7 +203,7 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
     tenantId,
     manufacturer,
     lastSeenDays: lastSeen,
-    hideFaulty: scope === "assigned",
+    hideFaulty: true,
   };
   const {
     page, pageSize, pagination, setPage,
@@ -238,7 +244,6 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
   // Placeholder data is the previous page's SIMs, so it can't answer for the current devices.
   const simsLoading = simsQuery.isFetching || simsQuery.isPlaceholderData;
   const stats = devicesQuery.data?.data.summary;
-  const availableByModel = devicesQuery.data?.data.availableByModel ?? [];
   const total = devicesQuery.data?.data.total ?? 0;
   // Last row of the last page was removed: step back to the last valid page.
   useEffect(
@@ -549,24 +554,14 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
   return (
     <>
       <PageActions>
-        {inventory && (
-          <Button
-            size="sm"
-            onClick={() => setAddOpen(true)}
-          >
-            Add device
-          </Button>
-        )}
-        {inventory && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setImportOpen(true)}
-          >
-            <PackagePlus className="mr-2 h-4 w-4" />
-            Import stock
-          </Button>
-        )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setImportOpen(true)}
+        >
+          <PackagePlus className="mr-2 h-4 w-4" />
+          Import stock
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -584,15 +579,13 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
           <Radio className="mr-2 h-4 w-4" />
           Send test telemetry
         </Button>
-        {inventory && (
-          <Button
-            size="sm"
-            onClick={() => setAssignmentOpen(true)}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Assign to Tenant
-          </Button>
-        )}
+        <Button
+          size="sm"
+          onClick={() => setAssignmentOpen(true)}
+        >
+          <UserPlus className="mr-2 h-4 w-4" />
+          Record Assignment
+        </Button>
       </PageActions>
       <Card>
         <CardHeader className="pb-4">
@@ -600,10 +593,10 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Cpu className="h-5 w-5 text-primary" />
-                {inventory ? "Available devices" : "Assigned Devices"}
+                Assigned Devices
               </CardTitle>
               <CardDescription>
-                {inventory ? "Platform-owned devices eligible for assignment to a tenant" : "Devices that have been assigned to tenants across the platform"}
+                Devices that have been assigned to tenants across the platform
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -621,29 +614,23 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
 
           {/* Summary Stats */}
           <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {(inventory
-              ? [
-                  {
-                    label: stockScope === "available" ? "Available" : "Platform stock", value: stats?.all, icon: Cpu, tone: "text-primary bg-primary/10",
-                  },
-                ]
-              : [
-                  {
-                    label: "All Devices", value: stats?.all, icon: Cpu, tone: "text-primary bg-primary/10",
-                  },
-                  {
-                    label: "Active", value: stats?.active, icon: Activity, tone: "text-success bg-success/10",
-                  },
-                  {
-                    label: "Inactive", value: stats?.inactive, icon: PowerOff, tone: "text-muted-foreground bg-muted",
-                  },
-                  {
-                    label: "Assigned", value: stats?.assigned, icon: UserCheck, tone: "text-info bg-info/10",
-                  },
-                  {
-                    label: "Unassigned", value: stats?.unassigned, icon: UserX, tone: "text-warning bg-warning/10",
-                  },
-                ]).map((k) => {
+            {[
+              {
+                label: "All Devices", value: stats?.all, icon: Cpu, tone: "text-primary bg-primary/10",
+              },
+              {
+                label: "Active", value: stats?.active, icon: Activity, tone: "text-success bg-success/10",
+              },
+              {
+                label: "Inactive", value: stats?.inactive, icon: PowerOff, tone: "text-muted-foreground bg-muted",
+              },
+              {
+                label: "Assigned", value: stats?.assigned, icon: UserCheck, tone: "text-info bg-info/10",
+              },
+              {
+                label: "Unassigned", value: stats?.unassigned, icon: UserX, tone: "text-warning bg-warning/10",
+              },
+            ].map((k) => {
               const Icon = k.icon;
               return (
                 <div
@@ -665,29 +652,6 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
           </div>
         </CardHeader>
         <CardContent>
-          {inventory && availableByModel.length > 0 && (
-            <div
-              className="mb-6 flex flex-wrap gap-2"
-              aria-label="Available units by model"
-            >
-              {availableByModel.map(entry => (
-                <Badge
-                  key={JSON.stringify([
-                    entry.manufacturer,
-                    entry.model,
-                  ])}
-                  variant="outline"
-                >
-                  {entry.manufacturer}
-                  {" "}
-                  {entry.model}
-                  :
-                  {" "}
-                  {entry.available}
-                </Badge>
-              ))}
-            </div>
-          )}
           <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -698,23 +662,24 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
-            {inventory && (
-              <Select
-                value={stockScope}
-                onValueChange={value => setStockScope(value as typeof stockScope)}
-              >
-                <SelectTrigger
-                  aria-label="Stock availability"
-                  className="w-[190px]"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">Available units</SelectItem>
-                  <SelectItem value="stock">All platform stock</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            <Select
+              value={scope}
+              onValueChange={value => setScope(value as typeof scope)}
+            >
+              <SelectTrigger className="w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SCOPE_OPTIONS.map(o => (
+                  <SelectItem
+                    key={o.value}
+                    value={o.value}
+                  >
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select
               value={statusFilter}
               onValueChange={setStatusFilter}
@@ -752,18 +717,16 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
                     },
                   ],
                 },
-                ...(!inventory ? [
-                  {
-                    key: "tenant",
-                    label: "Tenant",
-                    type: "select",
-                    options: (tenantsQuery.data?.data.tenants ?? [])
-                      .map(t => ({
-                        value: t.id, label: t.name,
-                      }))
-                      .sort((a, b) => a.label.localeCompare(b.label)),
-                  } as const,
-                ] : []),
+                {
+                  key: "tenant",
+                  label: "Tenant",
+                  type: "select",
+                  options: (tenantsQuery.data?.data.tenants ?? [])
+                    .map(t => ({
+                      value: t.id, label: t.name,
+                    }))
+                    .sort((a, b) => a.label.localeCompare(b.label)),
+                },
                 {
                   key: "manufacturer",
                   label: "Manufacturer",
@@ -802,7 +765,7 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
               errorMessage="Unable to load devices."
               onRetry={() => devicesQuery.refetch()}
               hasActiveFilters={hasActiveFilters}
-              emptyState={inventory ? "No devices match this inventory view." : "No devices assigned to tenants."}
+              emptyState={scope === "stock" ? "No devices in platform stock." : "No devices registered across tenants."}
               filteredEmptyState="No devices match your filters."
               pagination={pagination(devicesQuery.data?.data.total ?? 0)}
             />
@@ -829,10 +792,6 @@ export function PlatformDeviceManagement({ inventory = false }: { inventory?: bo
       <RecordDeviceAssignmentDialog
         open={assignmentOpen}
         onOpenChange={setAssignmentOpen}
-      />
-      <AddPlatformStockDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
       />
       <ImportPlatformStockDialog
         open={importOpen}

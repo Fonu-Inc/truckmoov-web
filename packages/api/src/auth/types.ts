@@ -944,7 +944,7 @@ export type SystemDevicesQuery = {
     /** Ignored by the CSV export, which always returns every matching row. */
     page?: number
     limit?: number
-    scope?: 'assigned' | 'stock' | 'available' | 'all'
+    scope?: 'assigned' | 'stock' | 'all'
     tenantId?: string
     bucket?: SystemDeviceBucket
     lastSeenDays?: 7 | 30 | 90
@@ -2996,7 +2996,6 @@ export type SystemDeviceInventoryList = {
   total: number
   page: number
   limit: number
-  availableByModel?: { manufacturer: string; model: string; available: number }[]
   /** Counts over the scope set only (ignores search, bucket and the other filters). */
   summary: {
     all: number
@@ -4500,7 +4499,6 @@ export type OnboardingOrder = {
   planCode: string
   planName: string
   deviceCount: number
-  requestedDeviceCount?: number
   perDeviceNgn: number
   devicesNgn: number
   installationNgn: number
@@ -4537,7 +4535,7 @@ export type OnboardingOrderResponse = ServerResponse<{
 export type SetOnboardingBillingEmailPayload = { id: string, data: { billingEmail: string } }
 export type SetOnboardingBillingEmailResponse = ServerResponse<{ billingEmail: string, billingEmailVerified: boolean }>
 
-export type StartOnboardingPaymentPayload = { id: string, data: { redirectUrl?: string, expectedDeviceCount?: number } }
+export type StartOnboardingPaymentPayload = { id: string, data: { redirectUrl?: string } }
 export type StartOnboardingPaymentResponse = ServerResponse<{
   reference: string
   authorizationUrl: string | null

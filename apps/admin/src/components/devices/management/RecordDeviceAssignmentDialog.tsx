@@ -105,7 +105,8 @@ export function RecordDeviceAssignmentDialog({
   const devicesQuery = useQuery({
     ...getSystemDevicesQueryOptions({
       params: {
-        scope: "available",
+        scope: "stock",
+        hideFaulty: true,
         search: debouncedSearch || undefined,
         page: currentPage,
         limit: PAGE_SIZE,
